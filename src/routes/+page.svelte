@@ -1,14 +1,15 @@
 <script lang="ts">
-  import { listBooks } from "$lib/library/books";
+  import { initClient as initCalibreClient } from "$lib/library/calibre";
 
-  import Greeter from "./Greeter.svelte";
   import * as bindings from "../bindings";
   import { convertFileSrc } from "@tauri-apps/api/tauri";
+
+  let library = initCalibreClient();
 
   let books: bindings.CalibreBook[] = [];
 
   (async () => {
-    books = await listBooks();
+    books = await library.listBooks();
   })();
 </script>
 
@@ -17,9 +18,6 @@
 </svelte:head>
 
 <section class="scrollable-section">
-  <h1>citadel</h1>
-  <Greeter />
-
   <div class="books">
     <div class="book">
       <p class="cover">Cover</p>
