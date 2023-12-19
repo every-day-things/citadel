@@ -30,6 +30,17 @@ body {
   overflow: hidden; */
 }
 
+/* #region disable-scrollbars */
+/* Disable default scrollbars for Webkit & Gecko browsers */
+html::-webkit-scrollbar {
+  display: none;
+}
+html,
+body {
+  scrollbar-width: none; /* Firefox */
+}
+/* #endregion disable-scrollbars */
+
 h1,
 h2,
 p {

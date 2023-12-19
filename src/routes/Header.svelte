@@ -27,6 +27,8 @@
   header {
     display: flex;
     justify-content: space-around;
+    position: sticky;
+    top: 0;
   }
 
   nav {
