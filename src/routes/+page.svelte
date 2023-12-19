@@ -8,8 +8,6 @@
   let books: bindings.CalibreBook[] = [];
 
   (async () => {
-    const result = await bindings.commands.someStruct();
-    console.log(result.some_field);
     books = await listBooks();
   })();
 </script>
@@ -32,6 +30,7 @@
     {#each books as book}
       <div class="book">
         {#if book.has_cover}
+          <!-- svelte-ignore a11y-missing-attribute -->
           <img
             src={convertFileSrc(
               "/Users/phil/dev/macos-book-app/sample-library/" +
