@@ -2,14 +2,7 @@
   import Counter from "./Counter.svelte";
   import welcome from "$lib/images/svelte-welcome.webp";
   import welcome_fallback from "$lib/images/svelte-welcome.png";
-  import { invoke } from "@tauri-apps/api/tauri";
-
-  let name = "";
-  let greetMsg = "";
-
-  async function greet() {
-    greetMsg = await invoke("greet", { name });
-  }
+  import Greeter from "./Greeter.svelte";
 </script>
 
 <svelte:head>
@@ -29,19 +22,7 @@
     to your new<br />SvelteKit app
   </h1>
 
-  <form>
-    <label for="name">What's your name?</label>
-    <input
-      type="text"
-      id="name"
-      bind:value={name}
-      placeholder="Enter your name"
-    />
-
-    <button type="button" on:click={greet}> greet</button>
-
-    <p>{greetMsg}</p>
-  </form>
+  <Greeter />
 
   <h2>
     try editing <strong>src/routes/+page.svelte</strong>
