@@ -66,7 +66,7 @@
   }
 
   .counter button:hover {
-    background-color: var(--color-bg-1);
+    background-color: var(--bg-brand);
   }
 
   svg {
@@ -77,7 +77,7 @@
   path {
     vector-effect: non-scaling-stroke;
     stroke-width: 2px;
-    stroke: #444;
+    stroke: #d1d1d1;
   }
 
   .counter-viewport {
