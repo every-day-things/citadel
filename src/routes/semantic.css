@@ -1,0 +1,67 @@
+/* ============================= */
+/* C O L O R  P A L E T T E */
+/* ============================= */
+
+:root {
+  --black: #000;
+  --white: #fff;
+
+  --breath-of-fresh-air: #cfd8e4;
+  --blue-silk: #d3dce8;
+  --first-snow: #eef0f8;
+
+  --intergalactic-highway: #2a3a7a;
+
+  /* ---- Gradients ---- */
+  /* #region gradients */
+  --gradient--back-1: radial-gradient(
+      50% 50% at 50% 50%,
+      rgba(255, 255, 255, 0.75) 0%,
+      rgba(255, 255, 255, 0) 100%
+    ),
+    linear-gradient(
+      180deg,
+      var(--breath-of-fresh-air) 0%,
+      var(--blue-silk) 15%,
+      var(--first-snow) 50%
+    );
+  --gradient--back-2: radial-gradient(
+      rgba(0, 0, 0, 0) 0.42%,
+      rgba(26, 13, 124, 0.75)
+    ),
+    linear-gradient(
+      rgb(6, 18, 27),
+      hsl(209, 57.26%, 30.33%) 13.45%,
+      rgb(34, 83, 133) 17.65%,
+      hsl(224, 37.81%, 4.84%) 50%
+    );
+  /* #endregion gradients */
+}
+
+/* ============================= */
+/* Dark Mode */
+/* ============================= */
+/* #region darkmode */
+:root {
+  --text-primary: var(--white);
+  --surface-primary: var(--black);
+  --background-gradient-image: var(--gradient--back-2);
+
+  --bg-brand: var(--intergalactic-highway);
+}
+/* #endregion darkmode */
+
+/* ============================= */
+/* Light Mode */
+/* ============================= */
+/* #region lightmode */
+@media (prefers-color-scheme: light) {
+  :root {
+    --text-primary: var(--black);
+    --surface-primary: var(--blue-silk);
+    --background-gradient-image: var(--gradient--back-1);
+
+    --bg-brand: var(--blue-silk);
+  }
+}
+/* #endregion lightmode */
