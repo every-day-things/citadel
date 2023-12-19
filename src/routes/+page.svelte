@@ -1,23 +1,15 @@
 <script>
-  import Counter from "./Counter.svelte";
   import Greeter from "./Greeter.svelte";
 </script>
 
 <svelte:head>
-  <title>Home</title>
-  <meta name="description" content="Svelte demo app" />
+  <title>Library</title>
 </svelte:head>
 
 <section>
   <h1>citadel</h1>
 
   <Greeter />
-
-  <h2>
-    try editing <strong>src/routes/+page.svelte</strong>
-  </h2>
-
-  <Counter />
 </section>
 
 <style>

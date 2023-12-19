@@ -11,7 +11,7 @@
     </svg>
     <ul>
       <li aria-current={$page.url.pathname === "/" ? "page" : undefined}>
-        <a href="/">Home</a>
+        <a href="/">Library</a>
       </li>
       <li aria-current={$page.url.pathname === "/about" ? "page" : undefined}>
         <a href="/about">About</a>
@@ -32,7 +32,8 @@
   nav {
     display: flex;
     justify-content: center;
-    --background: rgba(255, 255, 255, 0.7);
+    color: var(--text-onsecondary);
+    --background: var(--bg-secondary);
   }
 
   svg {
@@ -80,7 +81,6 @@
     height: 100%;
     align-items: center;
     padding: 0 0.5rem;
-    color: var(--text-primary);
     font-weight: 700;
     font-size: 0.8rem;
     text-transform: uppercase;

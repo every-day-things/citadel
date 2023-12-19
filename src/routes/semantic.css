@@ -6,11 +6,19 @@
   --black: #000;
   --white: #fff;
 
-  --breath-of-fresh-air: #cfd8e4;
-  --blue-silk: #d3dce8;
-  --first-snow: #eef0f8;
-
   --intergalactic-highway: #2a3a7a;
+
+  /* catppuccin macchiato*/
+  --midnight-express: #252739;
+  --dark: #1f202f;
+  --eigengrau: #181926;
+  --diva: #bda3f3;
+  /* catppuccin latte*/
+  /* catppuccin latte*/
+  --paper-white: #f0f1f5;
+  --diamond-cut: #e7e9ef;
+  --delicate-cloud: #dde0e8;
+  --candy-grape-fizz: #7944ea;
 
   /* ---- Gradients ---- */
   /* #region gradients */
@@ -21,20 +29,14 @@
     ),
     linear-gradient(
       180deg,
-      var(--breath-of-fresh-air) 0%,
-      var(--blue-silk) 15%,
-      var(--first-snow) 50%
+      var(--delicate-cloud) 0%,
+      var(--diamond-cut) 15%,
+      var(--paper-white) 50%
     );
-  --gradient--back-2: radial-gradient(
-      rgba(0, 0, 0, 0) 0.42%,
-      rgba(26, 13, 124, 0.75)
-    ),
-    linear-gradient(
-      rgb(6, 18, 27),
-      hsl(209, 57.26%, 30.33%) 13.45%,
-      rgb(34, 83, 133) 17.65%,
-      hsl(224, 37.81%, 4.84%) 50%
-    );
+  --gradient--back-2: linear-gradient(
+    var(--midnight-express) 0%,
+    var(--midnight-express) 100%
+  );
   /* #endregion gradients */
 }
 
@@ -43,8 +45,11 @@
 /* ============================= */
 /* #region darkmode */
 :root {
-  --text-primary: var(--white);
-  --surface-primary: var(--black);
+  --text-primary: var(--paper-white);
+  --text-onsecondary: var(--paper-white);
+  --icon-brand: var(--diva);
+  --bg-primary: var(--midnight-express);
+  --bg-secondary: var(--eigengrau);
   --background-gradient-image: var(--gradient--back-2);
 
   --bg-brand: var(--intergalactic-highway);
@@ -58,10 +63,11 @@
 @media (prefers-color-scheme: light) {
   :root {
     --text-primary: var(--black);
-    --surface-primary: var(--blue-silk);
+    --text-onsecondary: var(--paper-white);
+    --icon-brand: var(--candy-grape-fizz);
+    --bg-primary: var(--paper-white);
+    --bg-secondary: var(--midnight-express);
     --background-gradient-image: var(--gradient--back-1);
-
-    --bg-brand: var(--blue-silk);
   }
 }
 /* #endregion lightmode */

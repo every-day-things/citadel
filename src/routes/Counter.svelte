@@ -66,7 +66,7 @@
   }
 
   .counter button:hover {
-    background-color: var(--bg-brand);
+    background-color: var(--bg-primary);
   }
 
   svg {

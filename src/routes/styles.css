@@ -19,7 +19,7 @@ body {
   min-height: 100vh;
   margin: 0;
   background-attachment: fixed;
-  background-color: var(--surface-primary);
+  background-color: var(--bg-primary);
   background-size: 100vw 100vh;
   background-image: var(--background-gradient-image);
   /* Ensure there is no overscroll.*/
@@ -41,7 +41,7 @@ p {
 }
 
 a {
-  color: var(--color-theme-1);
+  color: inherit;
   text-decoration: none;
 }
 
