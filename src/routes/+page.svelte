@@ -1,5 +1,17 @@
-<script>
+<script lang="ts">
+  import type { ExStruct } from "../bindings";
+
   import Greeter from "./Greeter.svelte";
+  import * as bindings from "../bindings";
+
+  const a: ExStruct = {
+    some_field: "some value",
+  };
+
+  (async () => {
+    const result = await bindings.commands.someStruct();
+    console.log(result.some_field);
+  })();
 </script>
 
 <svelte:head>
