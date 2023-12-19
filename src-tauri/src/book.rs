@@ -8,7 +8,7 @@ pub fn some_struct() -> ExStruct {
     }
 }
 
-#[derive(Serialize, specta::Type)] // For Specta support you must add the `specta::Type` derive macro.
+#[derive(Serialize, specta::Type)]
 pub struct ExStruct {
     some_field: String,
 }
@@ -17,4 +17,20 @@ pub struct ExStruct {
 #[specta::specta]
 pub fn hello_world(my_name: String) -> String {
     format!("Hello, {my_name}! You've been greeted from Rust!")
+}
+
+#[derive(Serialize, specta::Type)]
+pub struct LibraryBook {
+    // Define the fields of LibraryBook struct here
+    pub title: String,
+}
+
+#[derive(Serialize, specta::Type)]
+pub struct LibraryAuthor {
+    // Define the fields of LibraryAuthor struct here
+}
+
+pub trait Library {
+    fn list_books(&self) -> Vec<LibraryBook>;
+    fn list_authors(&self) -> Vec<LibraryAuthor>;
 }

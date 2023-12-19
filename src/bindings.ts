@@ -6,6 +6,9 @@ return await TAURI_INVOKE("plugin:tauri-specta|hello_world", { myName });
 },
 async someStruct() : Promise<ExStruct> {
 return await TAURI_INVOKE("plugin:tauri-specta|some_struct");
+},
+async loadBooksFromDb() : Promise<CalibreBook[]> {
+return await TAURI_INVOKE("plugin:tauri-specta|load_books_from_db");
 }
 }
 
@@ -13,6 +16,7 @@ return await TAURI_INVOKE("plugin:tauri-specta|some_struct");
 
 /** user-defined types **/
 
+export type CalibreBook = { id: number; title: string; sortable_title: string; sortable_author_list: string; path: string; has_cover: boolean; order_in_series: string; authors: string[] }
 export type ExStruct = { some_field: string }
 
 /** tauri-specta globals **/

@@ -9,15 +9,14 @@ mod book;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
-  let x = libs::calibre::add(4, 8);
-  format!("Hello, {}!{x}", name)
+  format!("Hello, {}!", name)
 }
 
 fn main() {
   let specta_builder = {
     // You can use `tauri_specta::js::builder` for exporting JS Doc instead of Typescript!`
     let specta_builder = tauri_specta::ts::builder()
-        .commands(tauri_specta::collect_commands![book::hello_world, book::some_struct]); // <- Each of your comments
+        .commands(tauri_specta::collect_commands![book::hello_world, book::some_struct, libs::calibre::load_books_from_db]); // <- Each of your comments
 
 
     #[cfg(debug_assertions)] // <- Only export on non-release builds
