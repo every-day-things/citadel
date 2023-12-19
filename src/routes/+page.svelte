@@ -3,10 +3,12 @@
 
   import * as bindings from "../bindings";
   import { convertFileSrc } from "@tauri-apps/api/tauri";
+  import BookTable from "../components/molecules/BookTable.svelte";
+  import CoverView from "../components/molecules/CoverView.svelte";
 
   let library = initCalibreClient();
-
   let books: bindings.CalibreBook[] = [];
+  let view: "table" | "cover" = "table";
 
   (async () => {
     books = await library.listBooks();
@@ -19,29 +21,31 @@
 
 <section class="scrollable-section">
   <div class="books">
-    <div class="book">
-      <p class="cover">Cover</p>
-      <p class="title">Title</p>
-      <!-- <p class="title">Title sort</p> -->
-      <p class="title">Authors</p>
+    <div class="view-control">
+      <button on:click={() => (view = "table")}>Table</button>
+      <button on:click={() => (view = "cover")}>Covers</button>
     </div>
-    {#each books as book}
-      <div class="book">
-        {#if book.has_cover}
-          <!-- svelte-ignore a11y-missing-attribute -->
-          <img
-            src={convertFileSrc(
-              "/Users/phil/dev/macos-book-app/sample-library/" +
-                book.path +
-                "/cover.jpg"
-            )}
-          />
-        {/if}
-        <p>{book.title}</p>
-        <!-- <p>{book.sortable_title}</p> -->
-        <p>{book.authors.join(", ")}</p>
-      </div>
-    {/each}
+    {#if view === "cover"}
+      <CoverView
+        bookList={books}
+        coverPathForBook={(book) =>
+          convertFileSrc(
+            "/Users/phil/dev/macos-book-app/sample-library/" +
+              book.path +
+              "/cover.jpg"
+          )}
+      />
+    {:else if view === "table"}
+      <BookTable
+        bookList={books}
+        coverPathForBook={(book) =>
+          convertFileSrc(
+            "/Users/phil/dev/macos-book-app/sample-library/" +
+              book.path +
+              "/cover.jpg"
+          )}
+      />
+    {/if}
   </div>
 </section>
 
@@ -52,10 +56,7 @@
     justify-content: center;
     align-items: center;
     flex: 0.6;
-  }
-
-  h1 {
-    width: 100%;
+    overscroll-behavior: contain;
   }
 
   .books {
@@ -63,25 +64,5 @@
     flex-direction: column;
     gap: 16px;
     width: 100%;
-  }
-
-  .book {
-    display: grid;
-    grid-template-columns: 0.3fr 1fr 0.5fr;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    gap: 16px 16px;
-    grid-template-areas: "cover title authors";
-  }
-
-  .book p {
-    grid-area: "title";
-  }
-
-  .book img {
-    grid-area: "cover";
-    max-width: 120px;
   }
 </style>

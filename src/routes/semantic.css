@@ -62,7 +62,7 @@
 /* #region lightmode */
 @media (prefers-color-scheme: light) {
   :root {
-    --text-primary: var(--black);
+    --text-primary: var(--midnight-express);
     --text-onsecondary: var(--paper-white);
     --icon-brand: var(--candy-grape-fizz);
     --bg-primary: var(--paper-white);

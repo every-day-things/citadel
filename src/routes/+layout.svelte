@@ -29,7 +29,6 @@
     margin: 0 auto;
     box-sizing: border-box;
     height: 100vh;
-    overflow: auto;
-    scrollbar-width: none;
+    overflow: scroll;
   }
 </style>
