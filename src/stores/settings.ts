@@ -27,12 +27,15 @@ const createSettingsStore = () => {
   });
 
   return {
-    set: <S extends Path<SettingsSchema>>(
+    set: async <S extends Path<SettingsSchema>>(
       key: S,
       value: PathValue<SettingsSchema, S>
     ) => {
       settings.update((s) => ({ ...s, [key]: value }));
-      manager.set(key, value);
+      await manager.set(key, value);
+    },
+    get: <S extends Path<SettingsSchema>>(key: S) => {
+      return manager.get(key);
     },
     subscribe: settings.subscribe,
   };
