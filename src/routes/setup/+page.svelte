@@ -7,12 +7,8 @@
     const selected = await open({
       multiple: false,
       directory: true,
-      filters: [
-        {
-          name: "Image",
-          extensions: ["png", "jpeg"],
-        },
-      ],
+      recursive: true,
+      title: "Select Calibre Library Folder",
     });
 
     if (typeof selected === "string") {
