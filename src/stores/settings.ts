@@ -8,12 +8,13 @@ export type SettingsSchema = {
   calibreLibraryPath: string;
 };
 
+let resolveSettingsLoaded: () => void;
+const settingsLoadedPromise = new Promise<void>((resolve) => {
+  resolveSettingsLoaded = resolve;
+});
+
 const createSettingsStore = () => {
-  const settings = writable<SettingsSchema>({
-    theme: "light",
-    startFullscreen: false,
-    calibreLibraryPath: "",
-  });
+  const settings = writable<SettingsSchema>();
   const manager = new SettingsManager<SettingsSchema>(
     {
       theme: "light",
@@ -24,6 +25,10 @@ const createSettingsStore = () => {
   );
   manager.initialize().then(async () => {
     await manager.syncCache();
+    for (const [key, value] of Object.entries(manager.settings)) {
+      settings.update((s) => ({ ...s, [key]: value }));
+    }
+    resolveSettingsLoaded();
   });
 
   return {
@@ -41,4 +46,5 @@ const createSettingsStore = () => {
   };
 };
 
+export const waitForSettings = () => settingsLoadedPromise;
 export const settings = createSettingsStore();

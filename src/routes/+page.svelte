@@ -7,9 +7,8 @@
   import * as bindings from "../bindings";
   import BookTable from "../components/molecules/BookTable.svelte";
   import CoverView from "../components/molecules/CoverView.svelte";
-  import { settings } from "../stores/settings";
+  import { settings, waitForSettings } from "../stores/settings";
   import type { Library } from "$lib/library/backend";
-  import { set } from "tauri-settings";
   import { derived, writable } from "svelte/store";
 
   let library: Library;
@@ -25,6 +24,7 @@
 
   // ensure app setup
   onMount(async () => {
+    await waitForSettings();
     if ($settings.calibreLibraryPath === "") {
       goto("/setup");
     } else {
