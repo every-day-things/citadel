@@ -1,20 +1,37 @@
 <script lang="ts">
   import { initClient as initCalibreClient } from "$lib/library/calibre";
 
-  import * as bindings from "../bindings";
+  import { goto } from "$app/navigation";
   import { convertFileSrc } from "@tauri-apps/api/tauri";
+  import { onMount } from "svelte";
+  import * as bindings from "../bindings";
   import BookTable from "../components/molecules/BookTable.svelte";
   import CoverView from "../components/molecules/CoverView.svelte";
+  import { settings } from "../stores/settings";
+  import type { Library } from "$lib/library/backend";
+  import { set } from "tauri-settings";
+  import { derived, writable } from "svelte/store";
 
-  let library = initCalibreClient();
-  let books: bindings.CalibreBook[] = [];
+  let library: Library;
+  let books = writable([] as bindings.CalibreBook[]);
   let view: "table" | "cover" = "table";
+  const range = derived(books, ($books) => {
+    if ($books.length === 0) {
+      return "0";
+    } else {
+      return `1-${$books.length}`;
+    }
+  });
 
-  const range = `1-${books.length}`;
-
-  (async () => {
-    books = await library.listBooks();
-  })();
+  // ensure app setup
+  onMount(async () => {
+    if ($settings.calibreLibraryPath === "") {
+      goto("/setup");
+    } else {
+      library = initCalibreClient();
+      books.set(await library.listBooks());
+    }
+  });
 </script>
 
 <svelte:head>
@@ -27,10 +44,10 @@
       <button on:click={() => (view = "table")}>Table</button>
       <button on:click={() => (view = "cover")}>Covers</button>
     </div>
-    <span>Showing {range} of {books.length} items</span>
+    <span>Showing {$range} of {$books.length} items</span>
     {#if view === "cover"}
       <CoverView
-        bookList={books}
+        bookList={$books}
         coverPathForBook={(book) =>
           convertFileSrc(
             "/Users/phil/dev/macos-book-app/sample-library/" +
@@ -40,7 +57,7 @@
       />
     {:else if view === "table"}
       <BookTable
-        bookList={books}
+        bookList={$books}
         coverPathForBook={(book) =>
           convertFileSrc(
             "/Users/phil/dev/macos-book-app/sample-library/" +

@@ -1,8 +1,10 @@
 import { commands } from "../../bindings";
+import { settings } from "../../stores/settings";
 import type { Library } from "./backend";
 
 const listBooks = async () => {
-  const results = commands.loadBooksFromDb();
+  const libraryUrl = await settings.get("calibreLibraryPath");
+  const results = commands.loadBooksFromDb(libraryUrl);
   return results;
 };
 
