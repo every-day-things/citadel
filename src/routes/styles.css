@@ -54,6 +54,7 @@ p {
 a {
   color: inherit;
   text-decoration: none;
+  cursor: default;
 }
 
 a:hover {
