@@ -21,6 +21,7 @@
         /><path d="M9 4v16" /><path d="M15 10l-2 2l2 2" /></svg
       >
     </button>
+    <a href="/setup"> Do setup</a>
     <div class="group">
       <p>My Library</p>
       <a>Add books</a>
