@@ -103,6 +103,9 @@
     height: 100%;
     padding: 8px 16px;
     background-color: var(--bg-secondary);
+    width: 236px;
+    min-width: 236px;
+    box-sizing: border-box;
   }
   p,
   a {
