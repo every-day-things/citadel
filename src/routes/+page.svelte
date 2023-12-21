@@ -32,6 +32,13 @@
       books.set(await library.listBooks());
     }
   });
+
+  const x = async () => {
+    const res = await bindings.commands.addBookToDb(
+      "/Users/phil/Downloads/Secrets of the Autistic Millionaire.epub"
+    );
+    console.log(res);
+  };
 </script>
 
 <svelte:head>
@@ -44,6 +51,7 @@
       <button on:click={() => (view = "table")}>Table</button>
       <button on:click={() => (view = "cover")}>Covers</button>
     </div>
+    <button on:click={x}>Action!</button>
     <span>Showing {$range} of {$books.length} items</span>
     {#if view === "cover"}
       <CoverView

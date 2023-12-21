@@ -1,18 +1,18 @@
+use crate::book::ImportableBookMetadata;
+use crate::libs::file_formats::read_epub_metadata;
+
 use diesel::prelude::*;
 use diesel::query_dsl::RunQueryDsl;
 use diesel::BelongingToDsl;
 use diesel::Connection;
 use serde::Serialize;
 
-use crate::libs::calibre::models::Book;
-
 pub mod models;
 pub mod schema;
 
-use schema::books::dsl::*;
-
-use self::models::BookAuthorLink;
+use self::models::{Book, BookAuthorLink};
 use self::schema::authors;
+use schema::books::dsl::*;
 
 #[derive(Serialize, specta::Type, Debug)]
 pub struct CalibreBook {
@@ -77,4 +77,18 @@ pub fn load_books_from_db(library_path: String) -> Vec<CalibreBook> {
             book_to_calibre_book(b, author_names)
         })
         .collect()
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn add_book_to_db(file_path: String) -> ImportableBookMetadata {
+    let res = read_epub_metadata(file_path);
+
+    ImportableBookMetadata {
+        title: res.title.unwrap_or("".to_string()),
+        author: res.creator,
+        language: res.language,
+        publisher: res.publisher,
+        identifier: res.identifier,
+    }
 }

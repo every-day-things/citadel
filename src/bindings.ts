@@ -4,11 +4,11 @@
 async helloWorld(myName: string) : Promise<string> {
 return await TAURI_INVOKE("plugin:tauri-specta|hello_world", { myName });
 },
-async someStruct() : Promise<ExStruct> {
-return await TAURI_INVOKE("plugin:tauri-specta|some_struct");
-},
 async loadBooksFromDb(libraryPath: string) : Promise<CalibreBook[]> {
 return await TAURI_INVOKE("plugin:tauri-specta|load_books_from_db", { libraryPath });
+},
+async addBookToDb(filePath: string) : Promise<ImportableBookMetadata> {
+return await TAURI_INVOKE("plugin:tauri-specta|add_book_to_db", { filePath });
 }
 }
 
@@ -17,7 +17,14 @@ return await TAURI_INVOKE("plugin:tauri-specta|load_books_from_db", { libraryPat
 /** user-defined types **/
 
 export type CalibreBook = { id: number; title: string; sortable_title: string; sortable_author_list: string; path: string; has_cover: boolean; order_in_series: string; authors: string[] }
-export type ExStruct = { some_field: string }
+/**
+ * Represents metadata for pre-import books, which have a very loose structure.
+ */
+export type ImportableBookMetadata = { 
+/**
+ * The title of the book, if one is available, or the name of the file to import.
+ */
+title: string; author: string | null; identifier: string | null; publisher: string | null; language: string | null }
 
 /** tauri-specta globals **/
 
