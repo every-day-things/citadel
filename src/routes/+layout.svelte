@@ -10,7 +10,9 @@
 
   <main>
     <Sidebar />
-    <slot />
+    <div class="scrollable">
+      <slot />
+    </div>
   </main>
 </div>
 
@@ -28,6 +30,23 @@
     width: 100%;
     margin: 0;
     box-sizing: border-box;
+    height: fit-content;
+  }
+
+  .scrollable {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: scroll;
+    width: 100%;
     height: 100vh;
+    box-sizing: border-box;
+  }
+  .scrollable::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollable {
+    scrollbar-width: none; /* Firefox */
   }
 </style>

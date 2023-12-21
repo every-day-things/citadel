@@ -78,7 +78,7 @@
     align-items: center;
     overscroll-behavior: contain;
     padding: 16px;
-    width: 100%;
+    width: fit-content;
   }
 
   .books {

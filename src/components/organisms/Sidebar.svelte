@@ -101,7 +101,7 @@
     display: flex;
     flex-direction: column;
     top: 0;
-    height: 100%;
+    height: 100vh;
     padding: 8px 16px;
     background-color: var(--bg-secondary);
     width: 236px;
