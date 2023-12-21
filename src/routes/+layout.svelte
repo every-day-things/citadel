@@ -1,4 +1,5 @@
 <script>
+  import Sidebar from "../components/organisms/Sidebar.svelte";
   import Header from "./Header.svelte";
   import "./semantic.css";
   import "./styles.css";
@@ -8,6 +9,7 @@
   <Header />
 
   <main>
+    <Sidebar />
     <slot />
   </main>
 </div>
@@ -22,13 +24,10 @@
   main {
     flex: 1;
     display: flex;
-    flex-direction: column;
-    padding: 1rem;
+    flex-direction: row;
     width: 100%;
-    max-width: 64rem;
-    margin: 0 auto;
+    margin: 0;
     box-sizing: border-box;
     height: 100vh;
-    overflow: scroll;
   }
 </style>

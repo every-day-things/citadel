@@ -10,6 +10,8 @@
   let books: bindings.CalibreBook[] = [];
   let view: "table" | "cover" = "table";
 
+  const range = `1-${books.length}`;
+
   (async () => {
     books = await library.listBooks();
   })();
@@ -25,6 +27,7 @@
       <button on:click={() => (view = "table")}>Table</button>
       <button on:click={() => (view = "cover")}>Covers</button>
     </div>
+    <span>Showing {range} of {books.length} items</span>
     {#if view === "cover"}
       <CoverView
         bookList={books}
@@ -51,12 +54,14 @@
 
 <style>
   section {
+    margin-top: 64px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    flex: 0.6;
     overscroll-behavior: contain;
+    padding: 16px;
+    width: 100%;
   }
 
   .books {

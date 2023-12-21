@@ -10,15 +10,21 @@
 
   /* catppuccin macchiato*/
   --midnight-express: #252739;
+  --macchiato-base: #24273a;
   --dark: #1f202f;
   --eigengrau: #181926;
   --diva: #bda3f3;
+  --macchiato-overlay0: #6e738d;
   /* catppuccin latte*/
   /* catppuccin latte*/
-  --paper-white: #f0f1f5;
-  --diamond-cut: #e7e9ef;
-  --delicate-cloud: #dde0e8;
-  --candy-grape-fizz: #7944ea;
+  --latte-base: #eff1f5;
+  --latte-mantle: #e6e9ef;
+  --latte-crust: #dce0e8;
+  --latte-mauve: #8839ef;
+  --latte-text: #4d4f69;
+  --latte-subtext1: #5c5f77;
+  --latte-subtext0: #6c6f85;
+  --latte-overlay0: #9ca0b0;
 
   /* ---- Gradients ---- */
   /* #region gradients */
@@ -29,9 +35,9 @@
     ),
     linear-gradient(
       180deg,
-      var(--delicate-cloud) 0%,
-      var(--diamond-cut) 15%,
-      var(--paper-white) 50%
+      var(--latte-crust) 0%,
+      var(--latte-mantle) 15%,
+      var(--latte-base) 50%
     );
   --gradient--back-2: linear-gradient(
     var(--midnight-express) 0%,
@@ -45,8 +51,12 @@
 /* ============================= */
 /* #region darkmode */
 :root {
-  --text-primary: var(--paper-white);
-  --text-onsecondary: var(--paper-white);
+  /* #region text */
+  --text-primary: var(--latte-base);
+  --text-secondary: var(--macchiato-overlay0);
+  --text-onsecondary: var(--latte-base);
+  /* #endregion text */
+
   --icon-brand: var(--diva);
   --bg-primary: var(--midnight-express);
   --bg-secondary: var(--eigengrau);
@@ -62,10 +72,15 @@
 /* #region lightmode */
 @media (prefers-color-scheme: light) {
   :root {
-    --text-primary: var(--midnight-express);
-    --text-onsecondary: var(--paper-white);
-    --icon-brand: var(--candy-grape-fizz);
-    --bg-primary: var(--paper-white);
+    /* #region text */
+    --text-primary: var(--latte-text);
+    --text-secondary: var(--latte-overlay0);
+    --text-onsecondary: var(--latte-base);
+    /* #endregion text */
+
+    --icon-brand: var(--latte-mauve);
+
+    --bg-primary: var(--latte-base);
     --bg-secondary: var(--midnight-express);
     --background-gradient-image: var(--gradient--back-1);
   }

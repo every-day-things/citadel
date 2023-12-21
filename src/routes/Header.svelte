@@ -1,7 +1,5 @@
 <script>
   import { page } from "$app/stores";
-  // import logo from "$lib/images/svelte-logo.svg";
-  // import github from "$lib/images/github.svg";
 </script>
 
 <header>
@@ -27,8 +25,9 @@
   header {
     display: flex;
     justify-content: space-around;
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: calc(50% - 213px / 2);
   }
 
   nav {
