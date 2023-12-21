@@ -30,6 +30,7 @@
   },
   "type": "module",
   "dependencies": {
-    "@tauri-apps/api": "^1.5.2"
+    "@tauri-apps/api": "^1.5.2",
+    "tauri-settings": "^0.3.4"
   }
 }
