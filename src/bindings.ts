@@ -7,8 +7,8 @@ return await TAURI_INVOKE("plugin:tauri-specta|hello_world", { myName });
 async someStruct() : Promise<ExStruct> {
 return await TAURI_INVOKE("plugin:tauri-specta|some_struct");
 },
-async loadBooksFromDb() : Promise<CalibreBook[]> {
-return await TAURI_INVOKE("plugin:tauri-specta|load_books_from_db");
+async loadBooksFromDb(libraryPath: string) : Promise<CalibreBook[]> {
+return await TAURI_INVOKE("plugin:tauri-specta|load_books_from_db", { libraryPath });
 }
 }
 

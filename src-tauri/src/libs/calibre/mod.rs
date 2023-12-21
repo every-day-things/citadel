@@ -4,7 +4,6 @@ use diesel::BelongingToDsl;
 use diesel::Connection;
 use serde::Serialize;
 
-use crate::book::LibraryBook;
 use crate::libs::calibre::models::Book;
 
 pub mod models;
@@ -12,9 +11,8 @@ pub mod schema;
 
 use schema::books::dsl::*;
 
-use self::models::Author;
 use self::models::BookAuthorLink;
-use self::schema::{authors, books_authors_link};
+use self::schema::authors;
 
 #[derive(Serialize, specta::Type, Debug)]
 pub struct CalibreBook {
@@ -26,23 +24,6 @@ pub struct CalibreBook {
     has_cover: bool,
     order_in_series: String,
     authors: Vec<String>,
-}
-
-#[derive(Debug)]
-struct CalibreAuthor {
-    id: i32,
-    name: String,
-    name_sort: String,
-}
-
-struct DbInitError {
-    message: String,
-}
-
-struct CalibreLibrary {
-    library_url: String,
-    book_list: Vec<CalibreBook>,
-    conn: diesel::SqliteConnection,
 }
 
 fn book_to_calibre_book(book: &Book, author_names: Vec<String>) -> CalibreBook {
@@ -58,16 +39,16 @@ fn book_to_calibre_book(book: &Book, author_names: Vec<String>) -> CalibreBook {
     }
 }
 
-pub fn establish_connection() -> diesel::SqliteConnection {
-    let database_url = "/Users/phil/dev/macos-book-app/sample-library/metadata.db";
+pub fn establish_connection(library_path: String) -> diesel::SqliteConnection {
+    let database_url = library_path + "/metadata.db";
     diesel::SqliteConnection::establish(&database_url)
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn load_books_from_db() -> Vec<CalibreBook> {
-    let conn = &mut establish_connection();
+pub fn load_books_from_db(library_path: String) -> Vec<CalibreBook> {
+    let conn = &mut establish_connection(library_path);
     let results = books
         .select(Book::as_select())
         .load::<Book>(conn)
@@ -96,41 +77,4 @@ pub fn load_books_from_db() -> Vec<CalibreBook> {
             book_to_calibre_book(b, author_names)
         })
         .collect()
-}
-
-impl CalibreLibrary {
-    fn new(&self, library_url: &str) -> Self {
-        let conn = establish_connection();
-        let loaded_books = Self::load_books_from_db(&self);
-
-        Self {
-            library_url: library_url.to_string(),
-            book_list: loaded_books,
-            conn,
-        }
-    }
-
-    fn load_books_from_db(self: &Self) -> Vec<CalibreBook> {
-        let conn = &mut establish_connection();
-        let results = books
-            .limit(5)
-            .select(Book::as_select())
-            .load::<Book>(conn)
-            .expect("error loading books");
-        println!("# of books - {}", results.len());
-        Vec::<CalibreBook>::new()
-    }
-
-    fn list_books(&self) -> Vec<LibraryBook> {
-        self.book_list
-            .iter()
-            .map(|cb| LibraryBook {
-                title: cb.title.clone(),
-            })
-            .collect()
-    }
-
-    fn list_authors(&self) -> Vec<LibraryBook> {
-        Vec::new()
-    }
 }
