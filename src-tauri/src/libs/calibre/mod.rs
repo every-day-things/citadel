@@ -65,11 +65,27 @@ fn book_to_calibre_book(book: &Book, author_names: Vec<String>) -> CalibreBook {
         authors: author_names,
     }
 }
-
 pub fn establish_connection(library_path: String) -> diesel::SqliteConnection {
     let database_url = library_path + "/metadata.db";
-    diesel::SqliteConnection::establish(&database_url)
-        .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
+
+    // Register foreign function definitions which Sqlite can call on insert or update.
+    sql_function!(fn title_sort(title: Text) -> Text);
+    sql_function!(fn uuid4() -> Text);
+
+    let mut conn = diesel::SqliteConnection::establish(&database_url)
+        .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
+    let mutable_conn = &mut conn;
+
+    // Register our implementations of required foreign functions. We MUST do this,
+    // because Calibre does so. These are not available in the Sqlite DB when we
+    // connect.
+    // See: https://github.com/kovidgoyal/calibre/blob/7f3ccb333d906f5867636dd0dc4700b495e5ae6f/src/calibre/library/database.py#L55-L70
+    let _ = title_sort::register_impl(mutable_conn, |title: String| title);
+    let _ = uuid4::register_impl(mutable_conn, || {
+        "005ef67f-b152-4fc1-87c9-38dfd4928315".to_string()
+    });
+
+    conn
 }
 
 #[tauri::command]
@@ -174,7 +190,7 @@ fn insert_book_metadata(
     let book_file_name = gen_book_file_name(&md.title, &author_str);
 
     let new_book = Book {
-        id: None, // Required by Diesel, but should be set by Sqlite on insert.
+        id: None, // Set on Insert
         title: md.title.clone(),
         sort: None,
         timestamp: None,
@@ -196,7 +212,7 @@ fn insert_book_metadata(
         .unwrap();
 
     let new_author = Author {
-        id: None, // Required by Diesel, but should be set by Sqlite on insert.
+        id: None, // Set on Insert
         name: author_str.clone(),
         sort: None,
         link: "".to_string(),
@@ -208,7 +224,7 @@ fn insert_book_metadata(
         .unwrap();
 
     let new_book_author_link = BookAuthorLink {
-        id: None, // Required by Diesel, but should be set by Sqlite on insert.
+        id: None, // Set on Insert
         author: author_inserted.id.unwrap(),
         book: book_inserted.id.unwrap(),
     };
@@ -244,7 +260,7 @@ fn insert_book_metadata(
 #[specta::specta]
 pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetadata) {
     // TODO:
-    // 1. Reorg so that we insert book, author first, get the IDs, _then_ move files.
+    // 1. ✅ Reorg so that we insert book, author first, get the IDs, _then_ move files.
     // 2. Extract functionality into small functions to make it clear what this does
     // 3. Improve error handling, as needed
     // 4. Remove hard-coded values obvs. — ids, but also UUIDs and timestamps
@@ -256,20 +272,12 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
     let author_path = create_folder_for_author(library_path.clone(), author_str.clone()).unwrap();
 
     // 7. Add metadata to database
-    sql_function!(fn title_sort(title: Text) -> Text);
-    sql_function!(fn uuid4() -> Text);
     let conn = &mut establish_connection(library_path.clone());
 
-    // Run SQL to create new "title_sort" function only for the lifetime of the connection
-    // We do this because we have to.
-    // See: https://github.com/kovidgoyal/calibre/blob/7f3ccb333d906f5867636dd0dc4700b495e5ae6f/src/calibre/library/database.py#L55-L70
-    let _ = title_sort::register_impl(conn, |title: String| title);
-    let _ = uuid4::register_impl(conn, || "005ef67f-b152-4fc1-87c9-38dfd4928315".to_string());
     let inserted_book = insert_book_metadata(conn, &md).unwrap();
 
     // Create Book folder, using ID of book
     let book_id = inserted_book.book_id;
-    let author_id = inserted_book.author_ids[0];
 
     let book_folder_name = gen_book_folder_name(md.title.clone(), book_id);
     let book_folder_path = Path::new(&author_path).join(&book_folder_name);
