@@ -1,9 +1,11 @@
+use std::io::Error;
 use std::path::PathBuf;
 
 use crate::book::ImportableBookMetadata;
 use crate::libs::file_formats::read_epub_metadata;
 use crate::templates::format_calibre_metadata_opf;
 
+use calibre_db::books_authors_link::author;
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use diesel::query_dsl::RunQueryDsl;
@@ -140,6 +142,19 @@ pub fn get_importable_file_metadata(file: ImportableFile) -> ImportableBookMetad
     }
 }
 
+fn create_folder_for_author(library_path: String, author_name: String) -> Result<PathBuf, Error> {
+    let author_path = Path::new(&library_path).join(&author_name);
+    let author_folder = Path::new(&author_path);
+    if !author_folder.exists() {
+        match std::fs::create_dir(author_folder) {
+            Ok(_) => Ok(author_path),
+            Err(e) => Err(e),
+        }
+    } else {
+        Ok(author_path)
+    }
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetadata) {
@@ -153,15 +168,11 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
 
     // 5. Create Author folder
     let author_str = md.author.unwrap();
-    let author_path = Path::new(&library_path).join(&author_str);
-    let author_folder = Path::new(&author_path);
-    if !author_folder.exists() {
-        std::fs::create_dir_all(author_folder).expect("Could not create author folder");
-    }
+    let author_path = create_folder_for_author(library_path.clone(), author_str.clone()).unwrap();
 
     // Create Book folder, using ID of book
-    let book_id = 286;
-    let author_id = 215;
+    let book_id = 287;
+    let author_id = 216;
 
     let book_folder_name = "{title} ({id})"
         .replace("{title}", &md.title)
