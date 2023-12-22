@@ -143,6 +143,14 @@ pub fn get_importable_file_metadata(file: ImportableFile) -> ImportableBookMetad
 #[tauri::command]
 #[specta::specta]
 pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetadata) {
+    // TODO:
+    // 1. Reorg so that we insert book, author first, get the IDs, _then_ move files.
+    // 2. Extract functionality into small functions to make it clear what this does
+    // 3. Improve error handling, as needed
+    // 4. Remove hard-coded values obvs. — ids, but also UUIDs and timestamps
+    // 5. Make testable
+    // 6. Correctly implement `title_sort` and `uuid4` sqlite functions
+
     // 5. Create Author folder
     let author_str = md.author.unwrap();
     let author_path = Path::new(&library_path).join(&author_str);
