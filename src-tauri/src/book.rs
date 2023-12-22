@@ -1,4 +1,6 @@
-use serde::Serialize;
+use std::path::PathBuf;
+
+use serde::{Deserialize, Serialize};
 
 #[tauri::command]
 #[specta::specta]
@@ -18,7 +20,7 @@ pub struct LibraryAuthor {
 }
 
 /// Represents metadata for pre-import books, which have a very loose structure.
-#[derive(Serialize, specta::Type)]
+#[derive(Serialize, Deserialize, specta::Type)]
 pub struct ImportableBookMetadata {
     /// The title of the book, if one is available, or the name of the file to import.
     pub title: String,
@@ -26,6 +28,7 @@ pub struct ImportableBookMetadata {
     pub identifier: Option<String>,
     pub publisher: Option<String>,
     pub language: Option<String>,
+    pub path: PathBuf,
 }
 
 pub trait Library {

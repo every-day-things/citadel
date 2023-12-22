@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use crate::book::ImportableBookMetadata;
 use crate::libs::file_formats::read_epub_metadata;
+use crate::templates::format_calibre_metadata_opf;
 
 use diesel::prelude::*;
 use diesel::query_dsl::RunQueryDsl;
@@ -17,6 +18,8 @@ use self::models::{Book, BookAuthorLink};
 use self::schema::authors;
 use schema::books::dsl::*;
 use std::path::Path;
+
+use super::file_formats::cover_data;
 
 #[derive(Serialize, specta::Type, Debug)]
 pub struct CalibreBook {
@@ -97,12 +100,10 @@ pub fn load_books_from_db(library_path: String) -> Vec<CalibreBook> {
 pub fn check_file_importable(path_to_file: String) -> ImportableFile {
     let file_path = Path::new(&path_to_file);
 
-    // 1. Does file exist?
     if !file_path.exists() {
         panic!("File does not exist at {}", path_to_file);
     }
 
-    // 2. Check that file extension is supported (one of: epub, mobi, pdf)
     let file_extension = file_path.extension().and_then(|ext| ext.to_str());
 
     match file_extension {
@@ -121,11 +122,8 @@ pub fn check_file_importable(path_to_file: String) -> ImportableFile {
 #[tauri::command]
 #[specta::specta]
 pub fn get_importable_file_metadata(file: ImportableFile) -> ImportableBookMetadata {
-    // 3. Read metadata from file
+    // TODO Do not assume file is an EPUB
     let res = read_epub_metadata(file.path.as_path());
-
-    // 4. Copy file to Import folder in library
-    // TODO: How?? I think hash file + put hash in ImportableFile + copy file as hash to import folder
 
     ImportableBookMetadata {
         title: res.title.unwrap_or("".to_string()),
@@ -133,13 +131,52 @@ pub fn get_importable_file_metadata(file: ImportableFile) -> ImportableBookMetad
         language: res.language,
         publisher: res.publisher,
         identifier: res.identifier,
+        path: file.path,
     }
 }
 
-pub fn add_book_to_db_by_metadata(md: ImportableBookMetadata) {
-    // 5. Check that file exists in Import folder
+#[tauri::command]
+#[specta::specta]
+pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetadata) {
+    // 5. Create Author folder
+    let author_str = md.author.unwrap();
+    let author_path = Path::new(&library_path).join(&author_str);
+    let author_folder = Path::new(&author_path);
+    if !author_folder.exists() {
+        std::fs::create_dir_all(author_folder).expect("Could not create author folder");
+    }
 
     // 6. Copy file to library folder
+    let file_name = "{title} - {author}.{extension}"
+        .replace("{title}", &md.title)
+        .replace("{author}", &author_str.clone())
+        .replace(
+            "{extension}",
+            &md.path.extension().unwrap().to_str().unwrap(),
+        );
+    let new_file_path = author_path.join(file_name);
+    std::fs::copy(md.path.clone(), new_file_path).expect("Could not copy file to library folder");
+
+    // 6a. Copy cover to library folder
+    let cover_data = cover_data(&md.path.clone()).unwrap(); // Unwrap the Option<Vec<u8>> value
+    let cover_path = author_path.join("cover.jpg");
+    std::fs::write(cover_path, &cover_data).expect("Could not write cover data to file");
+
+    // 6b. Copy metadata.opf to library folder
+    let metadata_opf = format_calibre_metadata_opf(
+        "282",
+        "151b2732-3b05-4306-b0ed-ab5a081f1930",
+        &md.title.as_str(),
+        &author_str,
+        &author_str,
+        "2021-01-01",
+        "eng",
+        &["tag1", "tag2", "tag3"],
+        "2021-01-01T00:00:00+00:00",
+        &md.title.as_str(),
+    );
+    let metadata_opf_path = author_path.join("metadata.opf");
+    std::fs::write(metadata_opf_path, &metadata_opf).expect("Could not write metadata.opf");
 
     // 7. Add metadata to database
 }

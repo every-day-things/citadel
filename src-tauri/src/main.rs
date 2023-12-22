@@ -5,8 +5,8 @@ pub mod libs {
     pub mod calibre;
     pub mod file_formats;
 }
-
 mod book;
+mod templates;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -15,13 +15,13 @@ fn greet(name: &str) -> String {
 
 fn main() {
     let specta_builder = {
-        // You can use `tauri_specta::js::builder` for exporting JS Doc instead of Typescript!`
         let specta_builder = tauri_specta::ts::builder().commands(tauri_specta::collect_commands![
             book::hello_world,
             libs::calibre::load_books_from_db,
             libs::calibre::get_importable_file_metadata,
             libs::calibre::check_file_importable,
-        ]); // <- Each of your comments
+            libs::calibre::add_book_to_db_by_metadata,
+        ]);
 
         #[cfg(debug_assertions)] // <- Only export on non-release builds
         let specta_builder = specta_builder.path("../src/bindings.ts");

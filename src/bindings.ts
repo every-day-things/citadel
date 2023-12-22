@@ -12,6 +12,9 @@ return await TAURI_INVOKE("plugin:tauri-specta|get_importable_file_metadata", { 
 },
 async checkFileImportable(pathToFile: string) : Promise<ImportableFile> {
 return await TAURI_INVOKE("plugin:tauri-specta|check_file_importable", { pathToFile });
+},
+async addBookToDbByMetadata(libraryPath: string, md: ImportableBookMetadata) : Promise<null> {
+return await TAURI_INVOKE("plugin:tauri-specta|add_book_to_db_by_metadata", { libraryPath, md });
 }
 }
 
@@ -27,7 +30,7 @@ export type ImportableBookMetadata = {
 /**
  * The title of the book, if one is available, or the name of the file to import.
  */
-title: string; author: string | null; identifier: string | null; publisher: string | null; language: string | null }
+title: string; author: string | null; identifier: string | null; publisher: string | null; language: string | null; path: string }
 export type ImportableFile = { path: string }
 
 /** tauri-specta globals **/

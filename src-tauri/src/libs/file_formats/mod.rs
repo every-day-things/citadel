@@ -11,6 +11,14 @@ pub struct EpubMetadata {
     pub cover_image_data: Option<Vec<u8>>,
 }
 
+pub fn cover_data(path: &Path) -> Option<Vec<u8>> {
+    let doc = EpubDoc::new(path);
+    assert!(doc.is_ok());
+    let mut doc = doc.unwrap();
+
+    doc.get_cover().map(|(data, id)| data)
+}
+
 pub fn read_epub_metadata(path: &Path) -> EpubMetadata {
     let doc = EpubDoc::new(path);
     assert!(doc.is_ok());
