@@ -84,7 +84,7 @@ pub struct CustomColumn {
     pub normalized: bool,
 }
 
-#[derive(Queryable, Selectable)]
+#[derive(Queryable, Selectable, Insertable)]
 #[diesel(table_name = data)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Data {

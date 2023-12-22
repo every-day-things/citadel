@@ -5,7 +5,6 @@ use crate::libs::file_formats::read_epub_metadata;
 use crate::templates::format_calibre_metadata_opf;
 
 use chrono::NaiveDateTime;
-use diesel::connection::SimpleConnection;
 use diesel::prelude::*;
 use diesel::query_dsl::RunQueryDsl;
 use diesel::sql_types::Text;
@@ -22,6 +21,7 @@ use self::models::{Book, BookAuthorLink};
 use schema::authors;
 use schema::books;
 use schema::books_authors_link;
+use schema::data;
 use std::path::Path;
 
 use super::file_formats::cover_data;
@@ -152,8 +152,8 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
     }
 
     // Create Book folder, using ID of book
-    let book_id = 284;
-    let author_id = 213;
+    let book_id = 285;
+    let author_id = 214;
 
     let book_folder_name = "{title} ({id})"
         .replace("{title}", &md.title)
@@ -168,9 +168,11 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
     let book_dir_abs_path = Path::new(&library_path).join(&book_dir_rel_path);
 
     // 6. Copy file to library folder
-    let file_name = "{title} - {author}.{extension}"
+    let book_author_name = "{title} - {author}"
         .replace("{title}", &md.title)
-        .replace("{author}", &author_str.clone())
+        .replace("{author}", &author_str.clone());
+    let file_name = "{name}.{extension}"
+        .replace("{name}", &book_author_name)
         .replace(
             "{extension}",
             &md.path.extension().unwrap().to_str().unwrap(),
@@ -186,7 +188,7 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
 
     // 6b. Copy metadata.opf to library folder
     let metadata_opf = format_calibre_metadata_opf(
-        "282",
+        format!("{}", book_id).as_str(),
         "151b2732-3b05-4306-b0ed-ab5a081f1930",
         &md.title.as_str(),
         &author_str,
@@ -251,8 +253,15 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
         .execute(conn)
         .expect("Error saving new book author link");
 
-    // INSERT INTO authors(id,name,sort,link) VALUES(213,'Charles Dickens','Dickens, Charles','');
-    // INSERT INTO books(id,title,sort,timestamp,pubdate,series_index,author_sort,isbn,lccn,path,flags,uuid,has_cover,last_modified) VALUES(281,'A Tale of Two Cities','Tale of Two Cities, A','2023-12-22 06:31:37.254486+00:00','1994-01-02 00:00:00+00:00',1.0,'Dickens, Charles','','','Charles Dickens/A Tale of Two Cities (281)',1,'c4c886db-0ba2-4d23-81d7-8f3e99231593',1,'2023-12-22 06:31:37.346988+00:00');
-    // INSERT INTO books_authors_link(id,book,author) VALUES(333,281,213);
-    // INSERT INTO books_languages_link(id,book,lang_code,item_order) VALUES(245,281,1,0);
+    // Add to `data` table so Calibre knows which files exist
+    diesel::insert_into(data::dsl::data)
+        .values((
+            data::id.eq(265),
+            data::book.eq(book_id),
+            data::format.eq("EPUB"),
+            data::uncompressed_size.eq(7704777),
+            data::name.eq(book_author_name),
+        ))
+        .execute(conn)
+        .expect("Error saving new data");
 }
