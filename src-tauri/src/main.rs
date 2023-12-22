@@ -19,7 +19,8 @@ fn main() {
         let specta_builder = tauri_specta::ts::builder().commands(tauri_specta::collect_commands![
             book::hello_world,
             libs::calibre::load_books_from_db,
-            libs::calibre::add_book_to_db
+            libs::calibre::get_importable_file_metadata,
+            libs::calibre::check_file_importable,
         ]); // <- Each of your comments
 
         #[cfg(debug_assertions)] // <- Only export on non-release builds

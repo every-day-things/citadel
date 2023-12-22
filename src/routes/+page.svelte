@@ -41,10 +41,13 @@
   });
 
   const x = async () => {
-    const res = await bindings.commands.addBookToDb(
+    const importableFile = await bindings.commands.checkFileImportable(
       "/Users/phil/Downloads/Secrets of the Autistic Millionaire.epub"
     );
-    console.log(res);
+    console.log(importableFile);
+    const metadata =
+      await bindings.commands.getImportableFileMetadata(importableFile);
+    console.log(metadata);
   };
 </script>
 

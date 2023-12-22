@@ -7,8 +7,11 @@ return await TAURI_INVOKE("plugin:tauri-specta|hello_world", { myName });
 async loadBooksFromDb(libraryPath: string) : Promise<CalibreBook[]> {
 return await TAURI_INVOKE("plugin:tauri-specta|load_books_from_db", { libraryPath });
 },
-async addBookToDb(filePath: string) : Promise<ImportableBookMetadata> {
-return await TAURI_INVOKE("plugin:tauri-specta|add_book_to_db", { filePath });
+async getImportableFileMetadata(file: ImportableFile) : Promise<ImportableBookMetadata> {
+return await TAURI_INVOKE("plugin:tauri-specta|get_importable_file_metadata", { file });
+},
+async checkFileImportable(pathToFile: string) : Promise<ImportableFile> {
+return await TAURI_INVOKE("plugin:tauri-specta|check_file_importable", { pathToFile });
 }
 }
 
@@ -25,6 +28,7 @@ export type ImportableBookMetadata = {
  * The title of the book, if one is available, or the name of the file to import.
  */
 title: string; author: string | null; identifier: string | null; publisher: string | null; language: string | null }
+export type ImportableFile = { path: string }
 
 /** tauri-specta globals **/
 

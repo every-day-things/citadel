@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use crate::book::ImportableBookMetadata;
 use crate::libs::file_formats::read_epub_metadata;
 
@@ -5,6 +7,7 @@ use diesel::prelude::*;
 use diesel::query_dsl::RunQueryDsl;
 use diesel::BelongingToDsl;
 use diesel::Connection;
+use serde::Deserialize;
 use serde::Serialize;
 
 pub mod models;
@@ -13,6 +16,7 @@ pub mod schema;
 use self::models::{Book, BookAuthorLink};
 use self::schema::authors;
 use schema::books::dsl::*;
+use std::path::Path;
 
 #[derive(Serialize, specta::Type, Debug)]
 pub struct CalibreBook {
@@ -24,6 +28,15 @@ pub struct CalibreBook {
     has_cover: bool,
     order_in_series: String,
     authors: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, specta::Type, Debug)]
+pub struct ImportableFile {
+    path: PathBuf,
+}
+
+fn get_supported_extensions() -> Vec<&'static str> {
+    vec!["epub", "mobi", "pdf"]
 }
 
 fn book_to_calibre_book(book: &Book, author_names: Vec<String>) -> CalibreBook {
@@ -81,8 +94,38 @@ pub fn load_books_from_db(library_path: String) -> Vec<CalibreBook> {
 
 #[tauri::command]
 #[specta::specta]
-pub fn add_book_to_db(file_path: String) -> ImportableBookMetadata {
-    let res = read_epub_metadata(file_path);
+pub fn check_file_importable(path_to_file: String) -> ImportableFile {
+    let file_path = Path::new(&path_to_file);
+
+    // 1. Does file exist?
+    if !file_path.exists() {
+        panic!("File does not exist at {}", path_to_file);
+    }
+
+    // 2. Check that file extension is supported (one of: epub, mobi, pdf)
+    let file_extension = file_path.extension().and_then(|ext| ext.to_str());
+
+    match file_extension {
+        Some(extension) if get_supported_extensions().contains(&extension) => ImportableFile {
+            path: PathBuf::from(path_to_file),
+        },
+        Some(extension) => {
+            panic!("Unsupported file extension: {}", extension);
+        }
+        None => {
+            panic!("File does not have an extension");
+        }
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn get_importable_file_metadata(file: ImportableFile) -> ImportableBookMetadata {
+    // 3. Read metadata from file
+    let res = read_epub_metadata(file.path.as_path());
+
+    // 4. Copy file to Import folder in library
+    // TODO: How?? I think hash file + put hash in ImportableFile + copy file as hash to import folder
 
     ImportableBookMetadata {
         title: res.title.unwrap_or("".to_string()),
@@ -91,4 +134,12 @@ pub fn add_book_to_db(file_path: String) -> ImportableBookMetadata {
         publisher: res.publisher,
         identifier: res.identifier,
     }
+}
+
+pub fn add_book_to_db_by_metadata(md: ImportableBookMetadata) {
+    // 5. Check that file exists in Import folder
+
+    // 6. Copy file to library folder
+
+    // 7. Add metadata to database
 }

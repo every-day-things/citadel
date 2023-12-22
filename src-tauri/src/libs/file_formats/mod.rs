@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use epub::doc::EpubDoc;
 
 pub struct EpubMetadata {
@@ -9,7 +11,7 @@ pub struct EpubMetadata {
     pub cover_image_data: Option<Vec<u8>>,
 }
 
-pub fn read_epub_metadata(path: String) -> EpubMetadata {
+pub fn read_epub_metadata(path: &Path) -> EpubMetadata {
     let doc = EpubDoc::new(path);
     assert!(doc.is_ok());
     let mut doc = doc.unwrap();
