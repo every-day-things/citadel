@@ -20,7 +20,7 @@ pub struct Annotation {
     pub searchable_text: String,
 }
 
-#[derive(Queryable, Selectable, Identifiable)]
+#[derive(Queryable, Selectable, Identifiable, Insertable)]
 #[diesel(table_name = authors)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Author {
@@ -30,7 +30,7 @@ pub struct Author {
     pub link: String,
 }
 
-#[derive(Queryable, Selectable, Identifiable)]
+#[derive(Queryable, Selectable, Identifiable, Insertable)]
 #[diesel(table_name = books)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Book {
@@ -195,7 +195,7 @@ pub struct Tag {
     pub name: String,
 }
 
-#[derive(Identifiable, Associations, Queryable, Selectable)]
+#[derive(Identifiable, Associations, Queryable, Selectable, Insertable)]
 #[diesel(belongs_to(Book, foreign_key = book))]
 #[diesel(belongs_to(Author, foreign_key = author))]
 #[diesel(table_name = books_authors_link)]

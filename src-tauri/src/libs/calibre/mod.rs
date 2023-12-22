@@ -4,8 +4,11 @@ use crate::book::ImportableBookMetadata;
 use crate::libs::file_formats::read_epub_metadata;
 use crate::templates::format_calibre_metadata_opf;
 
+use chrono::NaiveDateTime;
+use diesel::connection::SimpleConnection;
 use diesel::prelude::*;
 use diesel::query_dsl::RunQueryDsl;
+use diesel::sql_types::Text;
 use diesel::BelongingToDsl;
 use diesel::Connection;
 use serde::Deserialize;
@@ -14,9 +17,11 @@ use serde::Serialize;
 pub mod models;
 pub mod schema;
 
+use self::models::Author;
 use self::models::{Book, BookAuthorLink};
-use self::schema::authors;
-use schema::books::dsl::*;
+use schema::authors;
+use schema::books;
+use schema::books_authors_link;
 use std::path::Path;
 
 use super::file_formats::cover_data;
@@ -65,7 +70,7 @@ pub fn establish_connection(library_path: String) -> diesel::SqliteConnection {
 #[specta::specta]
 pub fn load_books_from_db(library_path: String) -> Vec<CalibreBook> {
     let conn = &mut establish_connection(library_path);
-    let results = books
+    let results = books::dsl::books
         .select(Book::as_select())
         .load::<Book>(conn)
         .expect("error loading books");
@@ -146,6 +151,22 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
         std::fs::create_dir_all(author_folder).expect("Could not create author folder");
     }
 
+    // Create Book folder, using ID of book
+    let book_id = 284;
+    let author_id = 213;
+
+    let book_folder_name = "{title} ({id})"
+        .replace("{title}", &md.title)
+        .replace("{id}", &book_id.to_string());
+    let book_folder_path = Path::new(&author_path).join(&book_folder_name);
+    if !book_folder_path.exists() {
+        std::fs::create_dir_all(book_folder_path).expect("Could not create book folder");
+    }
+
+    // Relative path to the Book's folder, from the Library root
+    let book_dir_rel_path = Path::new(&author_str).join(&book_folder_name);
+    let book_dir_abs_path = Path::new(&library_path).join(&book_dir_rel_path);
+
     // 6. Copy file to library folder
     let file_name = "{title} - {author}.{extension}"
         .replace("{title}", &md.title)
@@ -154,12 +175,13 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
             "{extension}",
             &md.path.extension().unwrap().to_str().unwrap(),
         );
-    let new_file_path = author_path.join(file_name);
-    std::fs::copy(md.path.clone(), new_file_path).expect("Could not copy file to library folder");
+    let new_file_path = book_dir_abs_path.join(file_name);
+    std::fs::copy(md.path.clone(), new_file_path.clone())
+        .expect("Could not copy file to library folder");
 
     // 6a. Copy cover to library folder
     let cover_data = cover_data(&md.path.clone()).unwrap(); // Unwrap the Option<Vec<u8>> value
-    let cover_path = author_path.join("cover.jpg");
+    let cover_path = book_dir_abs_path.join("cover.jpg");
     std::fs::write(cover_path, &cover_data).expect("Could not write cover data to file");
 
     // 6b. Copy metadata.opf to library folder
@@ -175,8 +197,62 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
         "2021-01-01T00:00:00+00:00",
         &md.title.as_str(),
     );
-    let metadata_opf_path = author_path.join("metadata.opf");
+    let metadata_opf_path = book_dir_abs_path.join("metadata.opf");
     std::fs::write(metadata_opf_path, &metadata_opf).expect("Could not write metadata.opf");
 
     // 7. Add metadata to database
+    sql_function!(fn title_sort(title: Text) -> Text);
+    sql_function!(fn uuid4() -> Text);
+    let conn = &mut establish_connection(library_path);
+
+    // Run SQL to create new "title_sort" function only for the lifetime of the connection
+    // We do this because we have to.
+    // See: https://github.com/kovidgoyal/calibre/blob/7f3ccb333d906f5867636dd0dc4700b495e5ae6f/src/calibre/library/database.py#L55-L70
+    let _ = title_sort::register_impl(conn, |title: String| title);
+    let _ = uuid4::register_impl(conn, || "005ef67f-b152-4fc1-87c9-38dfd4928315".to_string());
+
+    let new_book = Book {
+        id: book_id,
+        title: md.title,
+        sort: None,
+        timestamp: None,
+        pubdate: None,
+        series_index: 1.0,
+        author_sort: None,
+        isbn: None,
+        lccn: None,
+        path: book_dir_rel_path.to_str().unwrap().to_string(),
+        flags: 1,
+        uuid: None,
+        has_cover: None,
+        last_modified: NaiveDateTime::from_timestamp_millis(1703232998396).unwrap(),
+    };
+    diesel::insert_into(books::dsl::books)
+        .values(new_book)
+        .execute(conn)
+        .expect("Error saving new book");
+    let new_author = Author {
+        id: author_id,
+        name: author_str,
+        sort: None,
+        link: "".to_string(),
+    };
+    diesel::insert_into(authors::dsl::authors)
+        .values(&new_author)
+        .execute(conn)
+        .expect("Error saving new author");
+    let new_book_author_link = BookAuthorLink {
+        id: 333,
+        author: author_id,
+        book: book_id,
+    };
+    diesel::insert_into(books_authors_link::dsl::books_authors_link)
+        .values(&new_book_author_link)
+        .execute(conn)
+        .expect("Error saving new book author link");
+
+    // INSERT INTO authors(id,name,sort,link) VALUES(213,'Charles Dickens','Dickens, Charles','');
+    // INSERT INTO books(id,title,sort,timestamp,pubdate,series_index,author_sort,isbn,lccn,path,flags,uuid,has_cover,last_modified) VALUES(281,'A Tale of Two Cities','Tale of Two Cities, A','2023-12-22 06:31:37.254486+00:00','1994-01-02 00:00:00+00:00',1.0,'Dickens, Charles','','','Charles Dickens/A Tale of Two Cities (281)',1,'c4c886db-0ba2-4d23-81d7-8f3e99231593',1,'2023-12-22 06:31:37.346988+00:00');
+    // INSERT INTO books_authors_link(id,book,author) VALUES(333,281,213);
+    // INSERT INTO books_languages_link(id,book,lang_code,item_order) VALUES(245,281,1,0);
 }
