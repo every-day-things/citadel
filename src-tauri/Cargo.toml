@@ -25,6 +25,7 @@ tauri = { version = "1.5.3", features = [ "dialog-open", "fs-create-dir", "fs-re
 specta = "=2.0.0-rc.7"
 tauri-plugin-persisted-scope = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1", features = ["protocol-asset"] }
 tauri-specta = { version = "=2.0.0-rc.4", features = ["javascript", "typescript"] }
+uuid = { version = "1.6.1", features = [ "v4", "fast-rng", ] }
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.

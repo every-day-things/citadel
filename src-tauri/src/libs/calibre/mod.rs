@@ -81,9 +81,7 @@ pub fn establish_connection(library_path: String) -> diesel::SqliteConnection {
     // connect.
     // See: https://github.com/kovidgoyal/calibre/blob/7f3ccb333d906f5867636dd0dc4700b495e5ae6f/src/calibre/library/database.py#L55-L70
     let _ = title_sort::register_impl(mutable_conn, |title: String| title);
-    let _ = uuid4::register_impl(mutable_conn, || {
-        "005ef67f-b152-4fc1-87c9-38dfd4928315".to_string()
-    });
+    let _ = uuid4::register_impl(mutable_conn, || uuid::Uuid::new_v4().to_string());
 
     conn
 }
