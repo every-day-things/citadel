@@ -24,7 +24,7 @@ pub struct Annotation {
 #[diesel(table_name = authors)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Author {
-    pub id: i32,
+    pub id: Option<i32>,
     pub name: String,
     pub sort: Option<String>,
     pub link: String,
@@ -88,7 +88,7 @@ pub struct CustomColumn {
 #[diesel(table_name = data)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Data {
-    pub id: i32,
+    pub id: Option<i32>,
     pub book: i32,
     pub format: String,
     pub uncompressed_size: i32,
@@ -200,7 +200,7 @@ pub struct Tag {
 #[diesel(belongs_to(Author, foreign_key = author))]
 #[diesel(table_name = books_authors_link)]
 pub struct BookAuthorLink {
-    pub id: i32,
+    pub id: Option<i32>,
     pub book: i32,
     pub author: i32,
 }

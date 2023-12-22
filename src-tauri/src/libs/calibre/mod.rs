@@ -2,6 +2,7 @@ use std::io::Error;
 use std::path::PathBuf;
 
 use crate::book::ImportableBookMetadata;
+use crate::libs::file_formats::cover_data;
 use crate::libs::file_formats::read_epub_metadata;
 use crate::templates::format_calibre_metadata_opf;
 
@@ -26,8 +27,6 @@ use schema::books_authors_link;
 use schema::data;
 use std::path::Path;
 
-use super::file_formats::cover_data;
-
 #[derive(Serialize, specta::Type, Debug)]
 pub struct CalibreBook {
     id: i32,
@@ -45,13 +44,18 @@ pub struct ImportableFile {
     path: PathBuf,
 }
 
+struct InsertedBook {
+    book_id: i32,
+    author_ids: Vec<i32>,
+}
+
 fn get_supported_extensions() -> Vec<&'static str> {
     vec!["epub", "mobi", "pdf"]
 }
 
 fn book_to_calibre_book(book: &Book, author_names: Vec<String>) -> CalibreBook {
     CalibreBook {
-        id: book.id,
+        id: book.id.unwrap(),
         title: book.title.clone(),
         sortable_title: book.sort.clone().unwrap_or(book.title.clone()),
         sortable_author_list: book.author_sort.clone().unwrap_or("".to_string()),
@@ -151,6 +155,91 @@ fn create_folder_for_author(library_path: String, author_name: String) -> Result
     }
 }
 
+fn gen_book_folder_name(book_name: String, book_id: i32) -> String {
+    "{title} ({id})"
+        .replace("{title}", &book_name)
+        .replace("{id}", &book_id.to_string())
+}
+fn gen_book_file_name(book_title: &String, author_name: &String) -> String {
+    "{title} - {author}"
+        .replace("{title}", book_title)
+        .replace("{author}", author_name)
+}
+
+fn insert_book_metadata(
+    conn: &mut diesel::SqliteConnection,
+    md: &ImportableBookMetadata,
+) -> Result<InsertedBook, Error> {
+    let author_str = md.author.clone().unwrap_or("Unknown".to_string());
+    let book_file_name = gen_book_file_name(&md.title, &author_str);
+
+    let new_book = Book {
+        id: None, // Required by Diesel, but should be set by Sqlite on insert.
+        title: md.title.clone(),
+        sort: None,
+        timestamp: None,
+        pubdate: None,
+        series_index: 1.0,
+        author_sort: None,
+        isbn: None,
+        lccn: None,
+        path: "".to_owned(), // Book Folder relative path, but requires knowing the books ID.
+        flags: 1,
+        uuid: None,
+        has_cover: None,
+        last_modified: NaiveDateTime::from_timestamp_millis(1703232998396).unwrap(),
+    };
+    let book_inserted = diesel::insert_into(books::table)
+        .values(&new_book)
+        .returning(Book::as_returning())
+        .get_result(conn)
+        .unwrap();
+
+    let new_author = Author {
+        id: None, // Required by Diesel, but should be set by Sqlite on insert.
+        name: author_str.clone(),
+        sort: None,
+        link: "".to_string(),
+    };
+    let author_inserted = diesel::insert_into(authors::dsl::authors)
+        .values(&new_author)
+        .returning(Author::as_returning())
+        .get_result(conn)
+        .unwrap();
+
+    let new_book_author_link = BookAuthorLink {
+        id: None, // Required by Diesel, but should be set by Sqlite on insert.
+        author: author_inserted.id.unwrap(),
+        book: book_inserted.id.unwrap(),
+    };
+    diesel::insert_into(books_authors_link::dsl::books_authors_link)
+        .values(&new_book_author_link)
+        .execute(conn)
+        .expect("Error saving new book author link");
+
+    // Add to `data` table so Calibre knows which files exist
+    let file_size = std::fs::metadata(md.path.clone())
+        .expect("Could not get file metadata")
+        .len();
+    diesel::insert_into(data::dsl::data)
+        .values((
+            data::id.eq(None::<i32>), // Required by Diesel, but should be set by Sqlite on insert.
+            data::book.eq(book_inserted.id.unwrap()),
+            data::format.eq("EPUB"), // TODO: Based on ImportableBookMetadata
+            data::uncompressed_size.eq(diesel::dsl::sql::<diesel::sql_types::Integer>(
+                format!("{}", file_size).as_str(),
+            )),
+            data::name.eq(book_file_name),
+        ))
+        .execute(conn)
+        .expect("Error saving new data");
+
+    Ok(InsertedBook {
+        book_id: book_inserted.id.unwrap(),
+        author_ids: vec![author_inserted.id.unwrap()],
+    })
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetadata) {
@@ -163,16 +252,26 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
     // 6. Correctly implement `title_sort` and `uuid4` sqlite functions
 
     // 5. Create Author folder
-    let author_str = md.author.unwrap();
+    let author_str = md.author.clone().unwrap();
     let author_path = create_folder_for_author(library_path.clone(), author_str.clone()).unwrap();
 
-    // Create Book folder, using ID of book
-    let book_id = 287;
-    let author_id = 216;
+    // 7. Add metadata to database
+    sql_function!(fn title_sort(title: Text) -> Text);
+    sql_function!(fn uuid4() -> Text);
+    let conn = &mut establish_connection(library_path.clone());
 
-    let book_folder_name = "{title} ({id})"
-        .replace("{title}", &md.title)
-        .replace("{id}", &book_id.to_string());
+    // Run SQL to create new "title_sort" function only for the lifetime of the connection
+    // We do this because we have to.
+    // See: https://github.com/kovidgoyal/calibre/blob/7f3ccb333d906f5867636dd0dc4700b495e5ae6f/src/calibre/library/database.py#L55-L70
+    let _ = title_sort::register_impl(conn, |title: String| title);
+    let _ = uuid4::register_impl(conn, || "005ef67f-b152-4fc1-87c9-38dfd4928315".to_string());
+    let inserted_book = insert_book_metadata(conn, &md).unwrap();
+
+    // Create Book folder, using ID of book
+    let book_id = inserted_book.book_id;
+    let author_id = inserted_book.author_ids[0];
+
+    let book_folder_name = gen_book_folder_name(md.title.clone(), book_id);
     let book_folder_path = Path::new(&author_path).join(&book_folder_name);
     if !book_folder_path.exists() {
         std::fs::create_dir_all(book_folder_path).expect("Could not create book folder");
@@ -183,16 +282,14 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
     let book_dir_abs_path = Path::new(&library_path).join(&book_dir_rel_path);
 
     // 6. Copy file to library folder
-    let book_author_name = "{title} - {author}"
-        .replace("{title}", &md.title)
-        .replace("{author}", &author_str.clone());
-    let file_name = "{name}.{extension}"
-        .replace("{name}", &book_author_name)
+    let book_file_name = gen_book_file_name(&md.title, &author_str);
+    let filename_with_ext = "{name}.{extension}"
+        .replace("{name}", &book_file_name)
         .replace(
             "{extension}",
             &md.path.extension().unwrap().to_str().unwrap(),
         );
-    let new_file_path = book_dir_abs_path.join(file_name);
+    let new_file_path = book_dir_abs_path.join(filename_with_ext);
     std::fs::copy(md.path.clone(), new_file_path.clone())
         .expect("Could not copy file to library folder");
 
@@ -216,72 +313,4 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
     );
     let metadata_opf_path = book_dir_abs_path.join("metadata.opf");
     std::fs::write(metadata_opf_path, &metadata_opf).expect("Could not write metadata.opf");
-
-    // 7. Add metadata to database
-    sql_function!(fn title_sort(title: Text) -> Text);
-    sql_function!(fn uuid4() -> Text);
-    let conn = &mut establish_connection(library_path);
-
-    // Run SQL to create new "title_sort" function only for the lifetime of the connection
-    // We do this because we have to.
-    // See: https://github.com/kovidgoyal/calibre/blob/7f3ccb333d906f5867636dd0dc4700b495e5ae6f/src/calibre/library/database.py#L55-L70
-    let _ = title_sort::register_impl(conn, |title: String| title);
-    let _ = uuid4::register_impl(conn, || "005ef67f-b152-4fc1-87c9-38dfd4928315".to_string());
-
-    let new_book = Book {
-        id: book_id,
-        title: md.title,
-        sort: None,
-        timestamp: None,
-        pubdate: None,
-        series_index: 1.0,
-        author_sort: None,
-        isbn: None,
-        lccn: None,
-        path: book_dir_rel_path.to_str().unwrap().to_string(),
-        flags: 1,
-        uuid: None,
-        has_cover: None,
-        last_modified: NaiveDateTime::from_timestamp_millis(1703232998396).unwrap(),
-    };
-    diesel::insert_into(books::dsl::books)
-        .values(new_book)
-        .execute(conn)
-        .expect("Error saving new book");
-    let new_author = Author {
-        id: author_id,
-        name: author_str,
-        sort: None,
-        link: "".to_string(),
-    };
-    diesel::insert_into(authors::dsl::authors)
-        .values(&new_author)
-        .execute(conn)
-        .expect("Error saving new author");
-    let new_book_author_link = BookAuthorLink {
-        id: 333,
-        author: author_id,
-        book: book_id,
-    };
-    diesel::insert_into(books_authors_link::dsl::books_authors_link)
-        .values(&new_book_author_link)
-        .execute(conn)
-        .expect("Error saving new book author link");
-
-    // Add to `data` table so Calibre knows which files exist
-    let file_size = std::fs::metadata(md.path.clone())
-        .expect("Could not get file metadata")
-        .len();
-    diesel::insert_into(data::dsl::data)
-        .values((
-            data::id.eq(265),
-            data::book.eq(book_id),
-            data::format.eq("EPUB"),
-            data::uncompressed_size.eq(diesel::dsl::sql::<diesel::sql_types::Integer>(
-                format!("{}", file_size).as_str(),
-            )),
-            data::name.eq(book_author_name),
-        ))
-        .execute(conn)
-        .expect("Error saving new data");
 }
