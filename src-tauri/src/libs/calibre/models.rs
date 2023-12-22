@@ -34,7 +34,7 @@ pub struct Author {
 #[diesel(table_name = books)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Book {
-    pub id: i32,
+    pub id: Option<i32>,
     pub title: String,
     pub sort: Option<String>,
     pub timestamp: Option<NaiveDateTime>,

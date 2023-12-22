@@ -80,23 +80,19 @@ pub fn load_books_from_db(library_path: String) -> Vec<CalibreBook> {
     results
         .iter()
         .map(|b| {
-            let authors_of_book = BookAuthorLink::belonging_to(b)
-                .select(BookAuthorLink::as_select())
-                .load::<BookAuthorLink>(conn)
-                .expect("error loading authors");
-            let author_names: Vec<String> = authors_of_book
+            if b.id.is_none() {
+                panic!("Book has no ID");
+            }
+            let book_authors = books_authors_link::dsl::books_authors_link
+                .filter(books_authors_link::dsl::book.is(b.id.unwrap()))
+                .inner_join(authors::dsl::authors)
+                .select(Author::as_select())
+                .load::<Author>(conn)
+                .expect("error loading books and authors");
+            let author_names = book_authors
                 .iter()
-                .map(|a| {
-                    // I cannot figure out how to do this in one query with a join.
-                    // Ah well, we'll fix it later.
-                    let v = authors::table
-                        .filter(authors::id.is(a.author))
-                        .select(authors::name)
-                        .load::<String>(conn)
-                        .expect("error loading authors");
-                    v[0].clone()
-                })
-                .collect();
+                .map(|a| a.name.clone())
+                .collect::<Vec<String>>();
             book_to_calibre_book(b, author_names)
         })
         .collect()

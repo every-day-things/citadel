@@ -24,7 +24,7 @@ diesel::table! {
 
 diesel::table! {
     books (id) {
-        id -> Integer,
+        id -> Nullable<Integer>,
         title -> Text,
         sort -> Nullable<Text>,
         timestamp -> Nullable<Timestamp>,
@@ -229,3 +229,12 @@ diesel::table! {
         tag -> Integer,
     }
 }
+
+// ========================================================== //
+// Relations
+// ========================================================== //
+
+diesel::joinable!(books_authors_link -> books (book));
+diesel::joinable!(books_authors_link -> authors (author));
+
+diesel::allow_tables_to_appear_in_same_query!(books_authors_link, books, authors);
