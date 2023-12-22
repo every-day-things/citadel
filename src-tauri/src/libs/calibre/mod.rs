@@ -152,8 +152,8 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
     }
 
     // Create Book folder, using ID of book
-    let book_id = 285;
-    let author_id = 214;
+    let book_id = 286;
+    let author_id = 215;
 
     let book_folder_name = "{title} ({id})"
         .replace("{title}", &md.title)
@@ -254,12 +254,17 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
         .expect("Error saving new book author link");
 
     // Add to `data` table so Calibre knows which files exist
+    let file_size = std::fs::metadata(md.path.clone())
+        .expect("Could not get file metadata")
+        .len();
     diesel::insert_into(data::dsl::data)
         .values((
             data::id.eq(265),
             data::book.eq(book_id),
             data::format.eq("EPUB"),
-            data::uncompressed_size.eq(7704777),
+            data::uncompressed_size.eq(diesel::dsl::sql::<diesel::sql_types::Integer>(
+                format!("{}", file_size).as_str(),
+            )),
             data::name.eq(book_author_name),
         ))
         .execute(conn)
