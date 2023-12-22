@@ -1,6 +1,6 @@
 import { commands } from "../../bindings";
 import { settings } from "../../stores/settings";
-import type { Library } from "./backend";
+import type { Library, Options } from "./typesLibrary";
 
 const listBooks = async () => {
   const libraryUrl = await settings.get("calibreLibraryPath");
@@ -8,7 +8,11 @@ const listBooks = async () => {
   return results;
 };
 
-export const initClient = (): Library => {
+export const initCalibreClient = (options: Options): Library => {
+  if (options.connectionType === "remote") {
+    throw new Error("Remote connection not implemented");
+  }
+
   return {
     listBooks,
   };

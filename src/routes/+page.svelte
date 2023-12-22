@@ -1,17 +1,23 @@
 <script lang="ts">
-  import { initClient as initCalibreClient } from "$lib/library/calibre";
-
   import { goto } from "$app/navigation";
   import { convertFileSrc } from "@tauri-apps/api/tauri";
   import { onMount } from "svelte";
+  import { derived, writable } from "svelte/store";
   import * as bindings from "../bindings";
   import BookTable from "../components/molecules/BookTable.svelte";
   import CoverView from "../components/molecules/CoverView.svelte";
+  import {
+    initLibrary,
+    libraryClient,
+    waitForLibrary,
+  } from "../stores/library";
   import { settings, waitForSettings } from "../stores/settings";
-  import type { Library } from "$lib/library/backend";
-  import { derived, writable } from "svelte/store";
 
-  let library: Library;
+  initLibrary({
+    libraryType: "calibre",
+    connectionType: "local",
+  });
+
   let books = writable([] as bindings.CalibreBook[]);
   let view: "table" | "cover" = "table";
   const range = derived(books, ($books) => {
@@ -24,12 +30,13 @@
 
   // ensure app setup
   onMount(async () => {
+    await waitForLibrary();
     await waitForSettings();
+
     if ($settings.calibreLibraryPath === "") {
       goto("/setup");
     } else {
-      library = initCalibreClient();
-      books.set(await library.listBooks());
+      books.set(await libraryClient().listBooks());
     }
   });
 
