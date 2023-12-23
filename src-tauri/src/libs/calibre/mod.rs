@@ -194,9 +194,9 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
     // 1. ✅ Reorg so that we insert book, author first, get the IDs, _then_ move files.
     // 2. Extract functionality into small functions to make it clear what this does
     // 3. Improve error handling, as needed
-    // 4. Remove hard-coded values obvs. — ids, but also UUIDs and timestamps
+    // 4. ✅ Remove hard-coded values obvs. — ids, but also UUIDs and timestamps
     // 5. Make testable
-    // 6. Correctly implement `title_sort` and `uuid4` sqlite functions
+    // 6. ✅ Correctly implement `title_sort` and `uuid4` sqlite functions
 
     // 5. Create Author folder
     let author_str = md.author.clone().unwrap();
