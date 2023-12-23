@@ -1,4 +1,3 @@
-use std::fmt::Display;
 use std::io::Error;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -9,10 +8,7 @@ use crate::libs::file_formats::cover_data;
 use crate::libs::file_formats::read_epub_metadata;
 use crate::templates::format_calibre_metadata_opf;
 
-use chrono::DateTime;
 use chrono::NaiveDate;
-use chrono::NaiveDateTime;
-use chrono::NaiveTime;
 use chrono::Utc;
 use diesel::prelude::*;
 use diesel::query_dsl::RunQueryDsl;
@@ -21,17 +17,18 @@ use diesel::Connection;
 use serde::Deserialize;
 use serde::Serialize;
 
+pub mod add_book;
 pub mod models;
+pub mod names;
 pub mod schema;
 
+use self::add_book::insert_book_metadata;
 use self::models::Author;
-use self::models::Data;
-use self::models::{Book, BookAuthorLink};
+use self::models::Book;
 use regex::Regex;
 use schema::authors;
 use schema::books;
 use schema::books_authors_link;
-use schema::data;
 use std::path::Path;
 
 #[derive(Serialize, specta::Type, Debug)]
@@ -49,12 +46,6 @@ pub struct CalibreBook {
 #[derive(Serialize, Deserialize, specta::Type, Debug)]
 pub struct ImportableFile {
     path: PathBuf,
-}
-
-struct InsertedBook {
-    book_id: i32,
-    book_uuid: String,
-    author_ids: Vec<i32>,
 }
 
 fn get_supported_extensions() -> Vec<&'static str> {
@@ -196,97 +187,6 @@ fn create_folder_for_author(library_path: String, author_name: String) -> Result
     }
 }
 
-fn gen_book_folder_name(book_name: String, book_id: i32) -> String {
-    "{title} ({id})"
-        .replace("{title}", &book_name)
-        .replace("{id}", &book_id.to_string())
-}
-fn gen_book_file_name(book_title: &String, author_name: &String) -> String {
-    "{title} - {author}"
-        .replace("{title}", book_title)
-        .replace("{author}", author_name)
-}
-
-fn insert_book_metadata(
-    conn: &mut diesel::SqliteConnection,
-    md: &ImportableBookMetadata,
-    now: DateTime<Utc>,
-) -> Result<InsertedBook, Error> {
-    let author_str = md.author.clone().unwrap_or("Unknown".to_string());
-    let book_file_name = gen_book_file_name(&md.title, &author_str);
-
-    let publication_date = md
-        .publication_date
-        .clone()
-        .map(|date| NaiveDateTime::new(date, NaiveTime::from_hms(0, 0, 0)));
-
-    let new_book = Book {
-        id: None, // Set on Insert
-        title: md.title.clone(),
-        sort: None, // Set on Insert
-        timestamp: Some(now.naive_local()),
-        pubdate: publication_date,
-        series_index: 1.0,
-        author_sort: None, // TODO: Create "authors sort" fn & call here
-        isbn: None,
-        lccn: None,
-        path: "".to_owned(), // Book Folder relative path, but requires knowing the books ID.
-        flags: 1,
-        uuid: None, // Set on Insert
-        has_cover: Some(md.file_contains_cover),
-        last_modified: now.naive_local(),
-    };
-    let book_inserted = diesel::insert_into(books::table)
-        .values(&new_book)
-        .returning(Book::as_returning())
-        .get_result(conn)
-        .unwrap();
-
-    let new_author = Author {
-        id: None, // Set on Insert
-        name: author_str.clone(),
-        sort: None, // TODO: Call "authors sort" fn here
-        link: "".to_string(),
-    };
-    let author_inserted = diesel::insert_into(authors::dsl::authors)
-        .values(&new_author)
-        .returning(Author::as_returning())
-        .get_result(conn)
-        .unwrap();
-
-    let new_book_author_link = BookAuthorLink {
-        id: None, // Set on Insert
-        author: author_inserted.id.unwrap(),
-        book: book_inserted.id.unwrap(),
-    };
-    diesel::insert_into(books_authors_link::dsl::books_authors_link)
-        .values(&new_book_author_link)
-        .execute(conn)
-        .expect("Error saving new book author link");
-
-    // Add to `data` table so Calibre knows which files exist
-    let file_size = std::fs::metadata(md.path.clone())
-        .expect("Could not get file metadata")
-        .len();
-    let new_book_data = Data {
-        id: None, // Set on Insert
-        book: book_inserted.id.unwrap(),
-        format: md.file_type.to_string(),
-        uncompressed_size: file_size.try_into().unwrap_or(0),
-        name: book_file_name,
-    };
-    diesel::insert_into(data::dsl::data)
-        .values(new_book_data)
-        .execute(conn)
-        .expect("Error saving new data");
-
-    Ok(InsertedBook {
-        book_id: book_inserted.id.unwrap(),
-        book_uuid: book_inserted.uuid.unwrap(),
-        author_ids: vec![author_inserted.id.unwrap()],
-    })
-}
-
 #[tauri::command]
 #[specta::specta]
 pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetadata) {
@@ -311,7 +211,7 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
     // Create Book folder, using ID of book
     let book_id = inserted_book.book_id;
 
-    let book_folder_name = gen_book_folder_name(md.title.clone(), book_id);
+    let book_folder_name = names::gen_book_folder_name(md.title.clone(), book_id);
     let book_folder_path = Path::new(&author_path).join(&book_folder_name);
     if !book_folder_path.exists() {
         std::fs::create_dir_all(book_folder_path).expect("Could not create book folder");
@@ -322,7 +222,7 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
     let book_dir_abs_path = Path::new(&library_path).join(&book_dir_rel_path);
 
     // 6. Copy file to library folder
-    let book_file_name = gen_book_file_name(&md.title, &author_str);
+    let book_file_name = names::gen_book_file_name(&md.title, &author_str);
     let filename_with_ext = "{name}.{extension}"
         .replace("{name}", &book_file_name)
         .replace(
