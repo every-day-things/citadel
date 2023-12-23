@@ -12,6 +12,7 @@
     waitForLibrary,
   } from "../stores/library";
   import { settings, waitForSettings } from "../stores/settings";
+  import { dialog, tauri } from "@tauri-apps/api";
 
   initLibrary({
     libraryType: "calibre",
@@ -40,9 +41,23 @@
     }
   });
 
-  const x = async () => {
-    const filePath =
-      "/Users/phil/Downloads/Secrets of the Autistic Millionaire.epub";
+  const addEpub = async () => {
+    let filePath = await dialog.open({
+      multiple: false,
+      directory: false,
+      filters: [
+        {
+          name: "EPUB",
+          extensions: ["epub"],
+        },
+      ],
+    });
+    if (!filePath) {
+      return;
+    }
+    if (typeof filePath === "object") {
+      filePath = filePath[0];
+    }
     const importableFile =
       await bindings.commands.checkFileImportable(filePath);
     console.log(importableFile);
@@ -51,7 +66,9 @@
     console.log(metadata);
 
     const libPath = await settings.get("calibreLibraryPath");
-    const y = await bindings.commands.addBookToDbByMetadata(libPath, metadata);
+    await bindings.commands.addBookToDbByMetadata(libPath, metadata);
+
+    books.set(await libraryClient().listBooks());
   };
 </script>
 
@@ -65,7 +82,7 @@
       <button on:click={() => (view = "table")}>Table</button>
       <button on:click={() => (view = "cover")}>Covers</button>
     </div>
-    <button on:click={x}>Action!</button>
+    <button on:click={addEpub}>Add EPUB</button>
     <span>Showing {$range} of {$books.length} items</span>
     {#if view === "cover"}
       <CoverView
