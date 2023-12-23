@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 #[tauri::command]
@@ -28,7 +29,12 @@ pub struct ImportableBookMetadata {
     pub identifier: Option<String>,
     pub publisher: Option<String>,
     pub language: Option<String>,
+    pub tags: Vec<String>,
+    /// Path of the file to import.
     pub path: PathBuf,
+    pub publication_date: Option<NaiveDate>,
+    /// True if a cover image can be extracted from the file at `path`.
+    pub file_contains_cover: bool,
 }
 
 pub trait Library {

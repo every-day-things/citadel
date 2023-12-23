@@ -30,7 +30,15 @@ export type ImportableBookMetadata = {
 /**
  * The title of the book, if one is available, or the name of the file to import.
  */
-title: string; author: string | null; identifier: string | null; publisher: string | null; language: string | null; path: string }
+title: string; author: string | null; identifier: string | null; publisher: string | null; language: string | null; tags: string[]; 
+/**
+ * Path of the file to import.
+ */
+path: string; publication_date: string | null; 
+/**
+ * True if a cover image can be extracted from the file at `path`.
+ */
+file_contains_cover: boolean }
 export type ImportableFile = { path: string }
 
 /** tauri-specta globals **/

@@ -7,8 +7,10 @@ pub struct EpubMetadata {
     pub creator: Option<String>,
     pub identifier: Option<String>,
     pub publisher: Option<String>,
+    pub publication_date: Option<String>,
     pub language: Option<String>,
     pub cover_image_data: Option<Vec<u8>>,
+    pub subjects: Vec<String>,
 }
 
 pub fn cover_data(path: &Path) -> Option<Vec<u8>> {
@@ -31,5 +33,11 @@ pub fn read_epub_metadata(path: &Path) -> EpubMetadata {
         publisher: doc.mdata("publisher"),
         language: doc.mdata("language"),
         cover_image_data: doc.get_cover().map(|(data, id)| data),
+        publication_date: doc.mdata("date"),
+        subjects: doc
+            .metadata
+            .get("subject")
+            .map(|v| v.to_vec())
+            .unwrap_or(Vec::new()),
     }
 }
