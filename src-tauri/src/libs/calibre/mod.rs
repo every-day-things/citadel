@@ -6,12 +6,10 @@ use crate::libs::file_formats::cover_data;
 use crate::libs::file_formats::read_epub_metadata;
 use crate::templates::format_calibre_metadata_opf;
 
-use calibre_db::books_authors_link::author;
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use diesel::query_dsl::RunQueryDsl;
 use diesel::sql_types::Text;
-use diesel::BelongingToDsl;
 use diesel::Connection;
 use serde::Deserialize;
 use serde::Serialize;
