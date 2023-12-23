@@ -1,8 +1,10 @@
+use std::fmt::Display;
 use std::io::Error;
 use std::path::PathBuf;
 use std::str::FromStr;
 
 use crate::book::ImportableBookMetadata;
+use crate::book::ImportableBookType;
 use crate::libs::file_formats::cover_data;
 use crate::libs::file_formats::read_epub_metadata;
 use crate::templates::format_calibre_metadata_opf;
@@ -165,6 +167,7 @@ pub fn get_importable_file_metadata(file: ImportableFile) -> ImportableBookMetad
     let res = read_epub_metadata(file.path.as_path());
 
     ImportableBookMetadata {
+        file_type: ImportableBookType::EPUB,
         title: res.title.unwrap_or("".to_string()),
         author: res.creator,
         language: res.language,
@@ -268,7 +271,7 @@ fn insert_book_metadata(
     let new_book_data = Data {
         id: None, // Set on Insert
         book: book_inserted.id.unwrap(),
-        format: "EPUB".to_string(), // TODO: Based on ImportableBookMetadata
+        format: md.file_type.to_string(),
         uncompressed_size: file_size.try_into().unwrap_or(0),
         name: book_file_name,
     };

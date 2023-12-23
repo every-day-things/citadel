@@ -26,7 +26,7 @@ export type CalibreBook = { id: number; title: string; sortable_title: string; s
 /**
  * Represents metadata for pre-import books, which have a very loose structure.
  */
-export type ImportableBookMetadata = { 
+export type ImportableBookMetadata = { file_type: ImportableBookType; 
 /**
  * The title of the book, if one is available, or the name of the file to import.
  */
@@ -39,6 +39,7 @@ path: string; publication_date: string | null;
  * True if a cover image can be extracted from the file at `path`.
  */
 file_contains_cover: boolean }
+export type ImportableBookType = "EPUB" | "PDF" | "MOBI"
 export type ImportableFile = { path: string }
 
 /** tauri-specta globals **/

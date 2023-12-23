@@ -20,9 +20,27 @@ pub struct LibraryAuthor {
     // Define the fields of LibraryAuthor struct here
 }
 
+#[derive(Serialize, Deserialize, specta::Type)]
+pub enum ImportableBookType {
+    EPUB = 0,
+    PDF = 1,
+    MOBI = 2,
+}
+
+impl std::fmt::Display for ImportableBookType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ImportableBookType::EPUB => write!(f, "EPUB"),
+            ImportableBookType::PDF => write!(f, "PDF"),
+            ImportableBookType::MOBI => write!(f, "MOBI"),
+        }
+    }
+}
+
 /// Represents metadata for pre-import books, which have a very loose structure.
 #[derive(Serialize, Deserialize, specta::Type)]
 pub struct ImportableBookMetadata {
+    pub file_type: ImportableBookType,
     /// The title of the book, if one is available, or the name of the file to import.
     pub title: String,
     pub author: Option<String>,
