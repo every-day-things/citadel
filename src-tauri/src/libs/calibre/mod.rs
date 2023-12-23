@@ -253,4 +253,11 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
     );
     let metadata_opf_path = book_dir_abs_path.join("metadata.opf");
     std::fs::write(metadata_opf_path, &metadata_opf).expect("Could not write metadata.opf");
+
+    // 7. Update Book with relative path to book folder
+    diesel::update(books::dsl::books.filter(books::id.eq(book_id)))
+        .set(books::path.eq(book_dir_rel_path.to_str().unwrap()))
+        .returning(Book::as_returning())
+        .get_result(conn)
+        .unwrap();
 }
