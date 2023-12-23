@@ -21,6 +21,7 @@ pub mod schema;
 
 use self::models::Author;
 use self::models::{Book, BookAuthorLink};
+use regex::Regex;
 use schema::authors;
 use schema::books;
 use schema::books_authors_link;
@@ -80,7 +81,19 @@ pub fn establish_connection(library_path: String) -> diesel::SqliteConnection {
     // because Calibre does so. These are not available in the Sqlite DB when we
     // connect.
     // See: https://github.com/kovidgoyal/calibre/blob/7f3ccb333d906f5867636dd0dc4700b495e5ae6f/src/calibre/library/database.py#L55-L70
-    let _ = title_sort::register_impl(mutable_conn, |title: String| title);
+    let _ = title_sort::register_impl(mutable_conn, |title: String| {
+        // Based on Calibre's implementation
+        // https://github.com/kovidgoyal/calibre/blob/7f3ccb333d906f5867636dd0dc4700b495e5ae6f/src/calibre/library/database.py#L61C1-L69C54
+        let title_pat = Regex::new(r"^(A|The|An)\s+").unwrap();
+
+        if let Some(matched) = title_pat.find(&title) {
+            let prep = matched.as_str();
+            let new_title = title.replacen(prep, "", 1) + ", " + prep;
+            return new_title.trim().to_string();
+        }
+
+        title.to_string()
+    });
     let _ = uuid4::register_impl(mutable_conn, || uuid::Uuid::new_v4().to_string());
 
     conn
