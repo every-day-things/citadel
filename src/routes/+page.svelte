@@ -12,7 +12,8 @@
     waitForLibrary,
   } from "../stores/library";
   import { settings, waitForSettings } from "../stores/settings";
-  import { dialog, tauri } from "@tauri-apps/api";
+  import { dialog, path } from "@tauri-apps/api";
+  import { joinSync } from "$lib/path";
 
   initLibrary({
     libraryType: "calibre",
@@ -40,6 +41,12 @@
       books.set(await libraryClient().listBooks());
     }
   });
+
+  const coverImageUrl = (book: bindings.CalibreBook) => {
+    const p = joinSync($settings.calibreLibraryPath, book.path, "cover.jpg");
+
+    return convertFileSrc(p);
+  };
 
   const addEpub = async () => {
     let filePath = await dialog.open({
@@ -85,25 +92,9 @@
     <button on:click={addEpub}>Add EPUB</button>
     <span>Showing {$range} of {$books.length} items</span>
     {#if view === "cover"}
-      <CoverView
-        bookList={$books}
-        coverPathForBook={(book) =>
-          convertFileSrc(
-            "/Users/phil/dev/macos-book-app/sample-library/" +
-              book.path +
-              "/cover.jpg"
-          )}
-      />
+      <CoverView bookList={$books} coverPathForBook={coverImageUrl} />
     {:else if view === "table"}
-      <BookTable
-        bookList={$books}
-        coverPathForBook={(book) =>
-          convertFileSrc(
-            "/Users/phil/dev/macos-book-app/sample-library/" +
-              book.path +
-              "/cover.jpg"
-          )}
-      />
+      <BookTable bookList={$books} coverPathForBook={coverImageUrl} />
     {/if}
   </div>
 </section>
