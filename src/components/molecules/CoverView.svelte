@@ -19,7 +19,7 @@
           on:dragstart={(e) => dragHandler(e, book)}
         />
         <span class="title">{shortenToXChars(book.title, 50)}</span>
-        <span class="authors">{book.authors}</span>
+        <span class="authors">{book.authors.join(", ")}</span>
       {/if}
     </div>
   {/each}
