@@ -12,7 +12,7 @@
     waitForLibrary,
   } from "../stores/library";
   import { settings, waitForSettings } from "../stores/settings";
-  import { dialog, path } from "@tauri-apps/api";
+  import { dialog } from "@tauri-apps/api";
   import { joinSync } from "$lib/path";
 
   initLibrary({
