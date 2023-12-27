@@ -15,6 +15,7 @@
   import { dialog } from "@tauri-apps/api";
   import { joinSync } from "$lib/path";
   import { addBook } from "$lib/library/addBook";
+  import { books } from "../stores/books";
 
   const coverImageAbsPath = (book: bindings.CalibreBook) => {
     return joinSync(
@@ -44,7 +45,6 @@
     connectionType: "local",
   });
 
-  let books = writable([] as bindings.CalibreBook[]);
   let view: "table" | "cover" = "cover";
   const range = derived(books, ($books) => {
     if ($books.length === 0) {
@@ -69,11 +69,6 @@
   const coverImageUrl = (book: bindings.CalibreBook) => {
     return convertFileSrc(coverImageAbsPath(book));
   };
-
-  const addEpub = async () => {
-    await addBook(await settings.get("calibreLibraryPath"));
-    books.set(await libraryClient().listBooks());
-  };
 </script>
 
 <svelte:head>
@@ -86,7 +81,6 @@
       <button on:click={() => (view = "table")}>Table</button>
       <button on:click={() => (view = "cover")}>Covers</button>
     </div>
-    <button on:click={addEpub}>Add EPUB</button>
     <span>Showing {$range} of {$books.length} items</span>
     {#if view === "cover"}
       <CoverView

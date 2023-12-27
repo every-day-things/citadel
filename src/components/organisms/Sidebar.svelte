@@ -1,11 +1,15 @@
 <script lang="ts">
   import { addBook } from "$lib/library/addBook";
+  import { books } from "../../stores/books";
+  import { libraryClient } from "../../stores/library";
   import { settings } from "../../stores/settings";
 
   let sidebarOpen = false;
 
   const addBookHandler = async () => {
     await addBook(await settings.get("calibreLibraryPath"));
+    // side effects: update in-cache book list when Library updated
+    books.set(await libraryClient().listBooks());
   };
 </script>
 
