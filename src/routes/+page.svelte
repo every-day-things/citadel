@@ -15,6 +15,29 @@
   import { dialog } from "@tauri-apps/api";
   import { joinSync } from "$lib/path";
 
+  const coverImageAbsPath = (book: bindings.CalibreBook) => {
+    return joinSync(
+      $settings.calibreLibraryPath,
+      book.dir_rel_path,
+      "cover.jpg"
+    );
+  };
+  const bookAbsPath = (book: bindings.CalibreBook) => {
+    return joinSync(
+      $settings.calibreLibraryPath,
+      book.dir_rel_path,
+      book.filename
+    );
+  };
+  const x = (event: DragEvent, book: bindings.CalibreBook) => {
+    event.preventDefault();
+    // @ts-ignore
+    window.__TAURI__.drag.startDrag({
+      item: [bookAbsPath(book)],
+      icon: coverImageAbsPath(book),
+    });
+  };
+
   initLibrary({
     libraryType: "calibre",
     connectionType: "local",
@@ -43,9 +66,7 @@
   });
 
   const coverImageUrl = (book: bindings.CalibreBook) => {
-    const p = joinSync($settings.calibreLibraryPath, book.path, "cover.jpg");
-
-    return convertFileSrc(p);
+    return convertFileSrc(coverImageAbsPath(book));
   };
 
   const addEpub = async () => {
@@ -92,7 +113,11 @@
     <button on:click={addEpub}>Add EPUB</button>
     <span>Showing {$range} of {$books.length} items</span>
     {#if view === "cover"}
-      <CoverView bookList={$books} coverPathForBook={coverImageUrl} />
+      <CoverView
+        bookList={$books}
+        coverPathForBook={coverImageUrl}
+        dragHandler={x}
+      />
     {:else if view === "table"}
       <BookTable bookList={$books} coverPathForBook={coverImageUrl} />
     {/if}

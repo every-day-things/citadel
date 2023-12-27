@@ -33,6 +33,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![greet])
         .plugin(specta_builder)
         .plugin(tauri_plugin_persisted_scope::init())
+        .plugin(tauri_plugin_drag::init())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

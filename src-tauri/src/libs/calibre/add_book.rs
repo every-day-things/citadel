@@ -1,5 +1,4 @@
 use chrono::{DateTime, NaiveDateTime, NaiveTime, Utc};
-use diesel::sql_types::Integer;
 use std::io::Error;
 
 use diesel::prelude::*;

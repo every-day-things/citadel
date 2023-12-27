@@ -29,6 +29,7 @@ use regex::Regex;
 use schema::authors;
 use schema::books;
 use schema::books_authors_link;
+use schema::data;
 use std::path::Path;
 
 #[derive(Serialize, specta::Type, Debug)]
@@ -37,7 +38,8 @@ pub struct CalibreBook {
     title: String,
     sortable_title: String,
     sortable_author_list: String,
-    path: String,
+    dir_rel_path: String,
+    filename: String,
     has_cover: bool,
     order_in_series: String,
     authors: Vec<String>,
@@ -52,13 +54,18 @@ fn get_supported_extensions() -> Vec<&'static str> {
     vec!["epub", "mobi", "pdf"]
 }
 
-fn book_to_calibre_book(book: &Book, author_names: Vec<String>) -> CalibreBook {
+fn book_to_calibre_book(
+    book: &Book,
+    author_names: Vec<String>,
+    book_file_name: String,
+) -> CalibreBook {
     CalibreBook {
         id: book.id.unwrap(),
         title: book.title.clone(),
         sortable_title: book.sort.clone().unwrap_or(book.title.clone()),
         sortable_author_list: book.author_sort.clone().unwrap_or("".to_string()),
-        path: book.path.clone(),
+        dir_rel_path: book.path.clone(),
+        filename: book_file_name.clone(),
         has_cover: book.has_cover.unwrap_or(false),
         order_in_series: "".to_string(),
         authors: author_names,
@@ -122,7 +129,16 @@ pub fn load_books_from_db(library_path: String) -> Vec<CalibreBook> {
                 .iter()
                 .map(|a| a.name.clone())
                 .collect::<Vec<String>>();
-            book_to_calibre_book(b, author_names)
+            let book_file_name = data::table
+                .select((data::name, data::format))
+                .filter(data::dsl::book.eq(b.id.unwrap()))
+                .first::<(String, String)>(conn)
+                .expect("Error loading book file name");
+            book_to_calibre_book(
+                b,
+                author_names,
+                format!("{}.{}", book_file_name.0, book_file_name.1.to_lowercase()),
+            )
         })
         .collect()
 }

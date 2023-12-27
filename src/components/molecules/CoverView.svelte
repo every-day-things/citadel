@@ -3,6 +3,7 @@
 
   export let bookList: CalibreBook[];
   export let coverPathForBook: (book: CalibreBook) => string;
+  export let dragHandler: (event: DragEvent, book: CalibreBook) => void;
 
   const shortenToXChars = (str: string, x: number) =>
     str.length > x ? str.slice(0, x) + "..." : str;
@@ -13,7 +14,10 @@
     <div class="book">
       {#if book.has_cover}
         <!-- svelte-ignore a11y-missing-attribute -->
-        <img src={coverPathForBook(book)} />
+        <img
+          src={coverPathForBook(book)}
+          on:dragstart={(e) => dragHandler(e, book)}
+        />
         <span class="title">{shortenToXChars(book.title, 50)}</span>
         <span class="authors">{book.authors}</span>
       {/if}
