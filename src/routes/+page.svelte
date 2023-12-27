@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import { convertFileSrc } from "@tauri-apps/api/tauri";
   import { onMount } from "svelte";
-  import { derived, writable } from "svelte/store";
+  import { derived } from "svelte/store";
   import * as bindings from "../bindings";
   import BookTable from "../components/molecules/BookTable.svelte";
   import CoverView from "../components/molecules/CoverView.svelte";
@@ -12,9 +12,7 @@
     waitForLibrary,
   } from "../stores/library";
   import { settings, waitForSettings } from "../stores/settings";
-  import { dialog } from "@tauri-apps/api";
   import { joinSync } from "$lib/path";
-  import { addBook } from "$lib/library/addBook";
   import { books } from "../stores/books";
 
   const coverImageAbsPath = (book: bindings.CalibreBook) => {
