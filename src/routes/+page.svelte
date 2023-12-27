@@ -21,7 +21,7 @@
   });
 
   let books = writable([] as bindings.CalibreBook[]);
-  let view: "table" | "cover" = "table";
+  let view: "table" | "cover" = "cover";
   const range = derived(books, ($books) => {
     if ($books.length === 0) {
       return "0";
