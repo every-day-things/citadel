@@ -1,5 +1,12 @@
 <script lang="ts">
+  import { addBook } from "$lib/library/addBook";
+  import { settings } from "../../stores/settings";
+
   let sidebarOpen = false;
+
+  const addBookHandler = async () => {
+    await addBook(await settings.get("calibreLibraryPath"));
+  };
 </script>
 
 {#if sidebarOpen}
@@ -24,7 +31,7 @@
     <a href="/setup"> Do setup</a>
     <div class="group">
       <p>My Library</p>
-      <a>Add books</a>
+      <button on:click={addBookHandler}>⊕ Add book</button>
       <a>Configure library</a>
       <a>Switch library</a>
     </div>
