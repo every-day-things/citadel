@@ -1,10 +1,13 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { pickLibrary } from "$lib/library/pickLibrary";
+  import { settings } from "../../stores/settings";
 
   const openFilePicker = async () => {
     await pickLibrary();
-    goto("/");
+    if ($settings.calibreLibraryPath !== "") {
+      goto("/");
+    }
   };
 </script>
 
