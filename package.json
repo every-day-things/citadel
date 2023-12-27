@@ -30,6 +30,7 @@
   },
   "type": "module",
   "dependencies": {
+    "@crabnebula/tauri-plugin-drag": "^0.2.0",
     "@tauri-apps/api": "^1.5.2",
     "tauri-settings": "^0.3.4"
   }
