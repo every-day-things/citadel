@@ -14,6 +14,7 @@
   import { settings, waitForSettings } from "../stores/settings";
   import { dialog } from "@tauri-apps/api";
   import { joinSync } from "$lib/path";
+  import { addBook } from "$lib/library/addBook";
 
   const coverImageAbsPath = (book: bindings.CalibreBook) => {
     return joinSync(
@@ -70,32 +71,7 @@
   };
 
   const addEpub = async () => {
-    let filePath = await dialog.open({
-      multiple: false,
-      directory: false,
-      filters: [
-        {
-          name: "EPUB",
-          extensions: ["epub"],
-        },
-      ],
-    });
-    if (!filePath) {
-      return;
-    }
-    if (typeof filePath === "object") {
-      filePath = filePath[0];
-    }
-    const importableFile =
-      await bindings.commands.checkFileImportable(filePath);
-    console.log(importableFile);
-    const metadata =
-      await bindings.commands.getImportableFileMetadata(importableFile);
-    console.log(metadata);
-
-    const libPath = await settings.get("calibreLibraryPath");
-    await bindings.commands.addBookToDbByMetadata(libPath, metadata);
-
+    await addBook(await settings.get("calibreLibraryPath"));
     books.set(await libraryClient().listBooks());
   };
 </script>
