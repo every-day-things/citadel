@@ -1,22 +1,10 @@
 <script lang="ts">
-  import { open } from "@tauri-apps/api/dialog";
-  import { settings } from "../../stores/settings";
   import { goto } from "$app/navigation";
+  import { pickLibrary } from "$lib/library/pickLibrary";
 
   const openFilePicker = async () => {
-    const selected = await open({
-      multiple: false,
-      directory: true,
-      recursive: true,
-      title: "Select Calibre Library Folder",
-    });
-
-    if (typeof selected === "string") {
-      await settings.set("calibreLibraryPath", selected);
-      goto("/");
-    } else {
-      console.log("no path selected", selected);
-    }
+    await pickLibrary();
+    goto("/");
   };
 </script>
 

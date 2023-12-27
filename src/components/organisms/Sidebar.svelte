@@ -1,5 +1,6 @@
 <script lang="ts">
   import { addBook } from "$lib/library/addBook";
+  import { pickLibrary } from "$lib/library/pickLibrary";
   import { books } from "../../stores/books";
   import { libraryClient } from "../../stores/library";
   import { settings } from "../../stores/settings";
@@ -10,6 +11,10 @@
     await addBook(await settings.get("calibreLibraryPath"));
     // side effects: update in-cache book list when Library updated
     books.set(await libraryClient().listBooks());
+  };
+
+  const switchLibraryHandler = async () => {
+    await pickLibrary();
   };
 </script>
 
@@ -37,7 +42,7 @@
       <p>My Library</p>
       <button on:click={addBookHandler}>⊕ Add book</button>
       <a>Configure library</a>
-      <a>Switch library</a>
+      <button on:click={switchLibraryHandler}>Switch Library</button>
     </div>
     <div class="group">
       <p>My Shelves</p>
