@@ -18,7 +18,7 @@ fn greet(name: &str) -> String {
 
 fn main() {
     // print output from list_books_on_external_drive() to console
-    println!("books on ext drive: {:?}", list_books_on_external_drive());
+    println!("books on ext drive: {:?}", list_books_on_external_drive(String::from("/Volumes/NO NAME")));
     let specta_builder = {
         let specta_builder = tauri_specta::ts::builder().commands(tauri_specta::collect_commands![
             book::hello_world,

@@ -1,21 +1,21 @@
-use self::external_drive::ThumbnailDetail;
-
 mod external_drive;
+mod calibre_ext_cache;
 
 #[derive(Debug)]
 pub struct DeviceBook {
-  title: String,
-  authors: Vec<String>,
-  thumbnail: Option<ThumbnailDetail>
+  pub title: String,
+  pub authors: Vec<String>,
+  pub id: String,
+  pub uuid: String,
 }
 
 pub trait Device {
   fn list_books(&self) -> Vec<DeviceBook>;
 }
 
-pub fn list_books_on_external_drive() -> Vec<DeviceBook> {
+pub fn list_books_on_external_drive(path: String) -> Vec<DeviceBook> {
     let device = external_drive::ExternalDrive {
-      path: String::from("/Volumes/NO NAME"),
+      path,
     };
     device.list_books()
 }
