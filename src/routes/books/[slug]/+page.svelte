@@ -15,10 +15,9 @@
     const new_book = await commands.updateBook(
       libPath,
       data.id.toString(),
-      formData.get("title") ?? data.title,
+      formData.get("title") as string | undefined ?? data.title ?? "",
     );
     invalidateAll();
-    console.log(new_book);
   };
 </script>
 
