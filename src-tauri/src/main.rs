@@ -1,9 +1,12 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use libs::devices::list_books_on_external_drive;
+
 pub mod libs {
     pub mod calibre;
     pub mod file_formats;
+    pub mod devices;
 }
 mod book;
 mod templates;
@@ -14,6 +17,8 @@ fn greet(name: &str) -> String {
 }
 
 fn main() {
+    // print output from list_books_on_external_drive() to console
+    println!("books on ext drive: {:?}", list_books_on_external_drive());
     let specta_builder = {
         let specta_builder = tauri_specta::ts::builder().commands(tauri_specta::collect_commands![
             book::hello_world,
