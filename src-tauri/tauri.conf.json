@@ -31,6 +31,9 @@
       "protocol": {
         "asset": true,
         "assetScope": []
+      },
+      "shell": {
+        "open": "^/|((!-).*:).*"
       }
     },
     "bundle": {

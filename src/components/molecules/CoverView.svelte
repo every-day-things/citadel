@@ -5,6 +5,7 @@
   export let bookList: CalibreBook[];
   export let coverPathForBook: (book: CalibreBook) => string;
   export let dragHandler: (event: DragEvent, book: CalibreBook) => void;
+  export let bookAbsPath: (book: CalibreBook) => string;
 
   let selectedItem: CalibreBook | undefined;
 </script>
@@ -17,6 +18,7 @@
           {book}
           {coverPathForBook}
           {dragHandler}
+          {bookAbsPath}
           isSelected={selectedItem?.id === book.id}
           onClickHandler={() => (selectedItem = book)}
         />

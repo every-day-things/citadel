@@ -83,6 +83,7 @@
     {#if view === "cover"}
       <CoverView
         bookList={$books}
+        bookAbsPath={bookAbsPath}
         coverPathForBook={coverImageUrl}
         dragHandler={x}
       />

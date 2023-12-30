@@ -1,8 +1,10 @@
 <script lang="ts">
+  import { open } from "@tauri-apps/api/shell";
   import type { CalibreBook } from "../../bindings";
 
   export let coverPathForBook: (book: CalibreBook) => string;
   export let dragHandler: (event: DragEvent, book: CalibreBook) => void;
+  export let bookAbsPath: (book: CalibreBook) => string;
   export let onClickHandler: () => void;
   export let book: CalibreBook;
   export let isSelected = false;
@@ -18,7 +20,7 @@
   {#if isSelected}
     <div class="controls">
       <button>Edit</button>
-      <button>Read ↗</button>
+      <button on:click={() => open(bookAbsPath(book))}>Read ↗</button>
       <button disabled>Info</button>
       <button disabled>Send</button>
       <button disabled>Convert</button>
