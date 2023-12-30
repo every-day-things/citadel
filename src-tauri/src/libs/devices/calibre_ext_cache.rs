@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 
-use serde::{Serialize, Deserialize, Deserializer, de};
+use serde::{Serialize, Deserialize, Deserializer, de, Serializer};
 use serde_json::Value;
 
 use super::DeviceBook;
 
 pub type MetadataRoot = Vec<Item>;
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Clone)]
 pub struct ThumbnailDetail {
     width: i32,
     height: i32,
@@ -24,6 +24,20 @@ impl<'de> Deserialize<'de> for ThumbnailDetail {
         let height = arr.get(1).ok_or_else(|| de::Error::custom("height missing"))?.as_i64().unwrap() as i32;
         let data = arr.get(2).ok_or_else(|| de::Error::custom("data missing"))?.as_str().unwrap().to_string();
         Ok(ThumbnailDetail { width, height, data })
+    }
+}
+
+impl Serialize for ThumbnailDetail {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let arr: Vec<Value> = vec![
+            Value::Number(serde_json::Number::from(self.width)),
+            Value::Number(serde_json::Number::from(self.height)),
+            Value::String(self.data.clone())
+        ];
+        arr.serialize(serializer)
     }
 }
 
