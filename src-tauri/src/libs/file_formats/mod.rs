@@ -18,7 +18,7 @@ pub fn cover_data(path: &Path) -> Option<Vec<u8>> {
     assert!(doc.is_ok());
     let mut doc = doc.unwrap();
 
-    doc.get_cover().map(|(data, id)| data)
+    doc.get_cover().map(|(data, _id)| data)
 }
 
 pub fn read_epub_metadata(path: &Path) -> EpubMetadata {
@@ -32,7 +32,7 @@ pub fn read_epub_metadata(path: &Path) -> EpubMetadata {
         identifier: doc.mdata("identifier"),
         publisher: doc.mdata("publisher"),
         language: doc.mdata("language"),
-        cover_image_data: doc.get_cover().map(|(data, id)| data),
+        cover_image_data: doc.get_cover().map(|(data, _id)| data),
         publication_date: doc.mdata("date"),
         subjects: doc
             .metadata

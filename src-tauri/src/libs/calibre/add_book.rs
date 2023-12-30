@@ -65,7 +65,7 @@ pub fn insert_book_metadata(
     let publication_date = md
         .publication_date
         .clone()
-        .map(|date| NaiveDateTime::new(date, NaiveTime::from_hms(0, 0, 0)));
+        .map(|date| NaiveDateTime::new(date, NaiveTime::from_hms_opt(0, 0, 0).unwrap()));
 
     let new_book = Book {
         id: None, // Set on Insert
