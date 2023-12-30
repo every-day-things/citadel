@@ -19,7 +19,7 @@
 <div class="container">
   {#if isSelected}
     <div class="controls">
-      <button>Edit</button>
+      <a href="/books/{book.id}"><button>Edit</button></a>
       <button on:click={() => open(bookAbsPath(book))}>Read ↗</button>
       <button disabled>Info</button>
       <button disabled>Send</button>

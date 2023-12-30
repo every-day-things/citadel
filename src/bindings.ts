@@ -15,6 +15,9 @@ return await TAURI_INVOKE("plugin:tauri-specta|check_file_importable", { pathToF
 },
 async addBookToDbByMetadata(libraryPath: string, md: ImportableBookMetadata) : Promise<null> {
 return await TAURI_INVOKE("plugin:tauri-specta|add_book_to_db_by_metadata", { libraryPath, md });
+},
+async updateBook(libraryPath: string, bookId: string, newTitle: string) : Promise<CalibreBook[]> {
+return await TAURI_INVOKE("plugin:tauri-specta|update_book", { libraryPath, bookId, newTitle });
 }
 }
 

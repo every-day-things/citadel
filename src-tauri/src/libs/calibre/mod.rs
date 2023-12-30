@@ -32,7 +32,7 @@ use schema::books_authors_link;
 use schema::data;
 use std::path::Path;
 
-#[derive(Serialize, specta::Type, Debug)]
+#[derive(Serialize, specta::Type, Debug, Clone)]
 pub struct CalibreBook {
     id: i32,
     title: String,
@@ -276,4 +276,23 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
         .returning(Book::as_returning())
         .get_result(conn)
         .unwrap();
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn update_book(library_path: String, book_id: String, new_title: String) -> Vec<CalibreBook> {
+    let conn = &mut establish_connection(library_path.clone());
+    let book_id_int = book_id.parse::<i32>().unwrap();
+
+    let updated = diesel::update(books::dsl::books.filter(books::id.eq(book_id_int)))
+        .set((books::title.eq(new_title),))
+        .returning(Book::as_returning())
+        .get_result(conn)
+        .unwrap();
+
+    load_books_from_db(library_path)
+        .iter()
+        .filter(|b| b.id == updated.id.unwrap())
+        .cloned()
+        .collect()
 }
