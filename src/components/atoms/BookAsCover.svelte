@@ -15,21 +15,37 @@
 <!-- svelte-ignore a11y-missing-attribute -->
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <div class="container">
-  <div class="cover">
-    <img
-      src={coverPathForBook(book)}
-      on:dragstart={(e) => dragHandler(e, book)}
-      on:click={onClickHandler}
-      class:selected={isSelected}
-    />
-    <span class="title">{shortenToXChars(book.title, 50)}</span>
-    <span class="authors">{book.authors.join(", ")}</span>
-  </div>
-  <div class="controls">
-  </div>
+  {#if isSelected}
+    <div class="controls">
+      <button>Edit</button>
+      <button>Read ↗</button>
+      <button disabled>Info</button>
+      <button disabled>Send</button>
+      <button disabled>Convert</button>
+      <hr />
+      <button disabled>Delete</button>
+    </div>
+  {:else}
+    <div class="cover">
+      <img
+        src={coverPathForBook(book)}
+        on:dragstart={(e) => dragHandler(e, book)}
+        on:click={onClickHandler}
+        class:selected={isSelected}
+      />
+      <span class="title">{shortenToXChars(book.title, 50)}</span>
+      <span class="authors">{book.authors.join(", ")}</span>
+    </div>
+  {/if}
 </div>
 
 <style>
+  .controls {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
   img {
     grid-area: "cover";
     max-width: 100%;
