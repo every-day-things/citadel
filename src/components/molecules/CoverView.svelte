@@ -34,11 +34,4 @@
     gap: 20px;
   }
 
-  .book {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: start;
-    width: 100%;
-  }
 </style>
