@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import { convertFileSrc } from "@tauri-apps/api/tauri";
   import { onMount } from "svelte";
-  import { derived } from "svelte/store";
+  import { derived, writable } from "svelte/store";
   import * as bindings from "../bindings";
   import BookTable from "../components/molecules/BookTable.svelte";
   import CoverView from "../components/molecules/CoverView.svelte";
@@ -14,6 +14,7 @@
   import { settings, waitForSettings } from "../stores/settings";
   import { joinSync } from "$lib/path";
   import { books } from "../stores/books";
+  import { any } from "$lib/any";
 
   const coverImageAbsPath = (book: bindings.CalibreBook) => {
     return joinSync(
@@ -44,13 +45,19 @@
   });
 
   let view: "table" | "cover" = "cover";
-  const range = derived(books, ($books) => {
-    if ($books.length === 0) {
-      return "0";
-    } else {
-      return `1-${$books.length}`;
-    }
-  });
+  let search = writable("");
+  let selectedBooks = derived([books, search], ([$books, search]) =>
+    $books.filter((book) =>
+      search.length === 0
+        ? $books
+        : any(book.authors, (item) =>
+            item.toLowerCase().includes(search.toLowerCase())
+          ) || book.title.toLowerCase().includes(search.toLowerCase())
+    )
+  );
+  let range = derived(selectedBooks, ($selectedBooks) =>
+    $selectedBooks.length === 0 ? "0" : `1-${$selectedBooks.length}`
+  );
 
   // ensure app setup
   onMount(async () => {
@@ -79,16 +86,17 @@
       <button on:click={() => (view = "table")}>Table</button>
       <button on:click={() => (view = "cover")}>Covers</button>
     </div>
-    <span>Showing {$range} of {$books.length} items</span>
+    <span>Showing {$range} of {$selectedBooks.length} items</span>
+    <input type="text" bind:value={$search} placeholder="Search" />
     {#if view === "cover"}
       <CoverView
-        bookList={$books}
-        bookAbsPath={bookAbsPath}
+        bookList={$selectedBooks}
+        {bookAbsPath}
         coverPathForBook={coverImageUrl}
         dragHandler={x}
       />
     {:else if view === "table"}
-      <BookTable bookList={$books} coverPathForBook={coverImageUrl} />
+      <BookTable bookList={$selectedBooks} coverPathForBook={coverImageUrl} />
     {/if}
   </div>
 </section>
