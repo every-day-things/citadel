@@ -11,6 +11,7 @@ pub struct DeviceBook {
 
 pub trait Device {
   fn list_books(&self) -> Vec<DeviceBook>;
+  fn add_book(&self, book: DeviceBook);
 }
 
 pub fn list_books_on_external_drive(path: String) -> Vec<DeviceBook> {
@@ -18,4 +19,11 @@ pub fn list_books_on_external_drive(path: String) -> Vec<DeviceBook> {
       path,
     };
     device.list_books()
+}
+
+pub fn add_book_to_external_drive(path: String, book: DeviceBook) {
+    let device = external_drive::ExternalDrive {
+      path,
+    };
+    device.add_book(book)
 }
