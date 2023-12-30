@@ -95,3 +95,38 @@ pub fn device_book_from_item(item: &Item) -> DeviceBook {
         uuid: item.uuid.clone(),
     }
 }
+
+pub fn item_from_device_book(book: &DeviceBook) -> Item {
+  Item {
+    thumbnail: None,
+    publication_type: None,
+    application_id: book.id.parse::<i32>().unwrap(),
+    db_id: None,
+    series_index: None,
+    pubdate: "None".to_string(),
+    rights: None,
+    book_producer: None,
+    user_metadata: UserMetadata::default(),
+    title: book.title.clone(),
+    title_sort: None,
+    timestamp: "None".to_string(),
+    lpath: String::new(),
+    last_modified: String::new(),
+    tags: Vec::new(),
+    size: 0,
+    cover: None,
+    link_maps: HashMap::new(),
+    mime: None,
+    uuid: book.uuid.clone(),
+    languages: Vec::new(),
+    identifiers: HashMap::new(),
+    rating: None,
+    user_categories: HashMap::new(),
+    author_sort_map: HashMap::new(),
+    authors: book.authors.clone(),
+    author_sort: String::new(),
+    series: None,
+    publisher: None,
+    comments: None,
+  }
+}
