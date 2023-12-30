@@ -11,8 +11,11 @@ pub fn hello_world(my_name: String) -> String {
 
 #[derive(Serialize, specta::Type)]
 pub struct LibraryBook {
-    // Define the fields of LibraryBook struct here
     pub title: String,
+    pub author_list: Vec<String>,
+    pub id: String,
+    pub uuid: Option<String>,
+    pub sortable_title: Option<String>,
 }
 
 #[derive(Serialize, specta::Type)]

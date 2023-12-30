@@ -1,3 +1,5 @@
+use crate::book::LibraryBook;
+
 mod external_drive;
 mod calibre_ext_cache;
 
@@ -11,7 +13,7 @@ pub struct DeviceBook {
 
 pub trait Device {
   fn list_books(&self) -> Vec<DeviceBook>;
-  fn add_book(&self, book: DeviceBook);
+  fn add_book(&self, book: LibraryBook);
 }
 
 pub fn list_books_on_external_drive(path: String) -> Vec<DeviceBook> {
@@ -21,7 +23,7 @@ pub fn list_books_on_external_drive(path: String) -> Vec<DeviceBook> {
     device.list_books()
 }
 
-pub fn add_book_to_external_drive(path: String, book: DeviceBook) {
+pub fn add_book_to_external_drive(path: String, book: LibraryBook) {
     let device = external_drive::ExternalDrive {
       path,
     };

@@ -1,7 +1,12 @@
-use super::{Device, DeviceBook, calibre_ext_cache::{MetadataRoot, device_book_from_item, item_from_device_book}};
+use crate::book::LibraryBook;
+
+use super::{
+    calibre_ext_cache::{device_book_from_item, item_from_library_book, MetadataRoot},
+    Device, DeviceBook,
+};
 
 pub struct ExternalDrive {
-  pub(crate) path: String,
+    pub(crate) path: String,
 }
 
 impl Device for ExternalDrive {
@@ -13,16 +18,32 @@ impl Device for ExternalDrive {
         books
     }
 
-    fn add_book(&self, book: DeviceBook) {
-        let mut cache = std::fs::read_to_string(format!("{}/metadata.calibre", self.path)).unwrap();
+    fn add_book(&self, book: LibraryBook) {
+        let cache = std::fs::read_to_string(format!("{}/metadata.calibre", self.path)).unwrap();
         let mut p: MetadataRoot = serde_json::from_str(&cache).unwrap();
+        let item_result = item_from_library_book(&book);
 
-        let new_item = item_from_device_book(&book);
-
-        p.push(new_item);
-
-        cache = serde_json::to_string(&p).unwrap(); 
-        std::fs::write(format!("{}/metadata.calibre", self.path), cache).unwrap();
-        
+        match item_result {
+            Ok(item) => {
+                // Remove all items with the same UUID
+                p.retain(|x| x.uuid != item.uuid);
+                
+                p.push(item);
+                let new_cache = serde_json::to_string(&p);
+                match new_cache {
+                    Ok(cache) => {
+                        std::fs::write(format!("{}/metadata.calibre", self.path), cache);
+                    }
+                    Err(e) => {
+                        println!("Error adding book to external drive: {:?}", e);
+                        return;
+                    }
+                }
+            }
+            Err(e) => {
+                println!("Error adding book to external drive: {:?}", e);
+                return;
+            }
+        }
     }
 }

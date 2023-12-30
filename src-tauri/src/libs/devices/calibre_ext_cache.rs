@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use serde::{Serialize, Deserialize, Deserializer, de, Serializer};
 use serde_json::Value;
 
+use crate::book::LibraryBook;
+
 use super::DeviceBook;
 
 pub type MetadataRoot = Vec<Item>;
@@ -96,11 +98,16 @@ pub fn device_book_from_item(item: &Item) -> DeviceBook {
     }
 }
 
-pub fn item_from_device_book(book: &DeviceBook) -> Item {
-  Item {
+type ConverionError = Box<dyn std::error::Error>;
+
+pub fn item_from_library_book(book: &LibraryBook) -> Result<Item, ConverionError> {
+  let id = book.id.parse::<i32>()?;
+  let uuid = book.uuid.clone().ok_or(ConverionError::from("uuid missing"))?;
+
+  Ok(Item {
     thumbnail: None,
     publication_type: None,
-    application_id: book.id.parse::<i32>().unwrap(),
+    application_id: id,
     db_id: None,
     series_index: None,
     pubdate: "None".to_string(),
@@ -117,16 +124,16 @@ pub fn item_from_device_book(book: &DeviceBook) -> Item {
     cover: None,
     link_maps: HashMap::new(),
     mime: None,
-    uuid: book.uuid.clone(),
+    uuid,
     languages: Vec::new(),
     identifiers: HashMap::new(),
     rating: None,
     user_categories: HashMap::new(),
     author_sort_map: HashMap::new(),
-    authors: book.authors.clone(),
+    authors: book.author_list.clone(),
     author_sort: String::new(),
     series: None,
     publisher: None,
     comments: None,
-  }
+  })
 }

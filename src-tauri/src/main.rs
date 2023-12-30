@@ -3,12 +3,12 @@
 
 use libs::devices::list_books_on_external_drive;
 
-use crate::libs::devices::{add_book_to_external_drive, DeviceBook};
+use crate::{libs::devices::add_book_to_external_drive, book::LibraryBook};
 
 pub mod libs {
     pub mod calibre;
-    pub mod file_formats;
     pub mod devices;
+    pub mod file_formats;
 }
 mod book;
 mod templates;
@@ -20,13 +20,22 @@ fn greet(name: &str) -> String {
 
 fn main() {
     // print output from list_books_on_external_drive() to console
-    add_book_to_external_drive(String::from("/Users/phil/dev/macos-book-app/External Drive"), DeviceBook {
-        title: String::from("Test Book"),
-        authors: vec![String::from("Test Author")],
-        id: String::from("1234"),
-        uuid: String::from("1234"),
-    });
-    println!("books on ext drive: {:?}", list_books_on_external_drive(String::from("/Users/phil/dev/macos-book-app/External Drive")));
+    add_book_to_external_drive(
+        String::from("/Users/phil/dev/macos-book-app/External Drive"),
+        LibraryBook {
+            title: String::from("Test Book"),
+            author_list: vec![String::from("Test Author")],
+            id: String::from("1234"),
+            uuid: Some(String::from("1-2-3-4")),
+            sortable_title: None,
+        },
+    );
+    println!(
+        "books on ext drive: {:?}",
+        list_books_on_external_drive(String::from(
+            "/Users/phil/dev/macos-book-app/External Drive"
+        ))
+    );
     let specta_builder = {
         let specta_builder = tauri_specta::ts::builder().commands(tauri_specta::collect_commands![
             book::hello_world,
