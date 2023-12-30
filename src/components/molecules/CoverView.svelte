@@ -5,13 +5,21 @@
   export let bookList: CalibreBook[];
   export let coverPathForBook: (book: CalibreBook) => string;
   export let dragHandler: (event: DragEvent, book: CalibreBook) => void;
+
+  let selectedItem: CalibreBook | undefined;
 </script>
 
 <div class="covers">
   {#each bookList as book}
     <div class="book">
       {#if book.has_cover}
-        <BookAsCover {book} {coverPathForBook} {dragHandler} />
+        <BookAsCover
+          {book}
+          {coverPathForBook}
+          {dragHandler}
+          isSelected={selectedItem?.id === book.id}
+          onClickHandler={() => (selectedItem = book)}
+        />
       {/if}
     </div>
   {/each}
