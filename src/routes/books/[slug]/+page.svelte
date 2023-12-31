@@ -35,7 +35,7 @@
   <form on:submit={save}>
     <fieldset>
       <label for="title">Title</label>
-      <input type="text" id="title" name="title" value={book.title} />
+      <input type="text" id="title" name="title" value={book?.title} />
 
       <label for="sortable_title">Sort title</label>
       <input
@@ -43,7 +43,7 @@
         type="text"
         id="sortable_title"
         name="sortable_title"
-        value={book.sortable_title}
+        value={book?.sortable_title}
       />
       <span class="text-label-small">Sort fields are set automatically.</span>
     </fieldset>
@@ -54,7 +54,7 @@
         type="text"
         id="authors"
         name="authors"
-        value={book.authors}
+        value={book?.authors}
       />
 
       <label for="sortable_authors">Sort authors</label>
@@ -63,7 +63,7 @@
         type="text"
         id="sortable_authors"
         name="sortable_authors"
-        value={book.sortable_author_list}
+        value={book?.sortable_author_list}
       >
       <span class="text-label-small">Sort fields are set automatically.</span>
     </fieldset>
