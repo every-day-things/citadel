@@ -12,11 +12,6 @@ mod book;
 mod http;
 mod templates;
 
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}!", name)
-}
-
 const SERVER_FLAG: &str = "--server";
 
 fn is_server(args: &Vec<String>) -> bool {
