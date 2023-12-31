@@ -33,9 +33,7 @@ struct Items<T> {
 #[get("/books")]
 async fn list_books(data: web::Data<AppState>) -> impl Responder {
     let books = calibre_load_books_from_db(data.library_path.clone());
-    HttpResponse::Ok().json(Items {
-        items: books,
-    })
+    HttpResponse::Ok().json(Items { items: books })
 }
 
 const SERVER_FLAG: &str = "--server";
@@ -46,28 +44,32 @@ fn is_server(args: &Vec<String>) -> bool {
     args.iter().any(|x| x == SERVER_FLAG)
 }
 
+async fn run_http_server(args: &Vec<String>) -> std::io::Result<()> {
+    let calibre_library_path = args
+        .iter()
+        .find(|x| x.starts_with("--calibre-library="))
+        .unwrap()
+        .split("=")
+        .collect::<Vec<&str>>()[1]
+        .to_string();
+    println!("Running in server mode.");
+    HttpServer::new(move || {
+        App::new()
+            .app_data(web::Data::new(AppState {
+                library_path: calibre_library_path.to_string(),
+            }))
+            .service(list_books)
+    })
+    .bind((HOST, PORT))?
+    .run()
+    .await
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
     if is_server(&args) {
-        let calibre_library_path = args
-            .iter()
-            .find(|x| x.starts_with("--calibre-library="))
-            .unwrap()
-            .split("=")
-            .collect::<Vec<&str>>()[1]
-            .to_string();
-        println!("Running in server mode.");
-        HttpServer::new(move || {
-            App::new()
-                .app_data(web::Data::new(AppState {
-                    library_path: calibre_library_path.to_string(),
-                }))
-                .service(list_books)
-        })
-        .bind((HOST, PORT))?
-        .run()
-        .await
+        run_http_server(&args).await
     } else {
         let specta_builder = {
             let specta_builder =
