@@ -47,6 +47,7 @@ fn main() {
             libs::calibre::check_file_importable,
             libs::calibre::add_book_to_db_by_metadata,
             libs::calibre::update_book,
+            libs::devices::add_book_to_external_drive,
         ]);
 
         #[cfg(debug_assertions)] // <- Only export on non-release builds

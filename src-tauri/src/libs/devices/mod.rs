@@ -23,6 +23,8 @@ pub fn list_books_on_external_drive(path: String) -> Vec<DeviceBook> {
     device.list_books()
 }
 
+#[tauri::command]
+#[specta::specta]
 pub fn add_book_to_external_drive(path: String, book: LibraryBook) {
     let device = external_drive::ExternalDrive {
       path,

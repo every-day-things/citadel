@@ -18,6 +18,9 @@ return await TAURI_INVOKE("plugin:tauri-specta|add_book_to_db_by_metadata", { li
 },
 async updateBook(libraryPath: string, bookId: string, newTitle: string) : Promise<CalibreBook[]> {
 return await TAURI_INVOKE("plugin:tauri-specta|update_book", { libraryPath, bookId, newTitle });
+},
+async addBookToExternalDrive(path: string, book: LibraryBook) : Promise<null> {
+return await TAURI_INVOKE("plugin:tauri-specta|add_book_to_external_drive", { path, book });
 }
 }
 
@@ -44,6 +47,7 @@ path: string; publication_date: string | null;
 file_contains_cover: boolean }
 export type ImportableBookType = "EPUB" | "PDF" | "MOBI"
 export type ImportableFile = { path: string }
+export type LibraryBook = { title: string; author_list: string[]; id: string; uuid: string | null; sortable_title: string | null; filename: string; absolute_path: string }
 
 /** tauri-specta globals **/
 

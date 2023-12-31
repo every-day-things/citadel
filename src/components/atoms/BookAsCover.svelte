@@ -1,6 +1,6 @@
 <script lang="ts">
   import { open } from "@tauri-apps/api/shell";
-  import type { CalibreBook } from "../../bindings";
+  import { commands, type CalibreBook, type LibraryBook } from "../../bindings";
 
   export let coverPathForBook: (book: CalibreBook) => string;
   export let dragHandler: (event: DragEvent, book: CalibreBook) => void;
@@ -9,8 +9,25 @@
   export let book: CalibreBook;
   export let isSelected = false;
 
+  let isSendingToDevice = false;
+  let devicePath = "";
+
   const shortenToXChars = (str: string, x: number) =>
     str.length > x ? str.slice(0, x) + "..." : str;
+
+  const sendToDevice = (devicePath: string, book: CalibreBook) => {
+    const bookAsLibraryBook: LibraryBook = {
+      title: book.title,
+      sortable_title: book.title,
+      author_list: book.authors,
+      absolute_path: bookAbsPath(book),
+      filename: book.filename,
+      id: book.id.toString(),
+      uuid: book.id.toString(),
+    };
+    const result = commands.addBookToExternalDrive(devicePath, bookAsLibraryBook);
+    console.log(result);
+  }
 </script>
 
 <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
@@ -18,15 +35,34 @@
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <div class="container">
   {#if isSelected}
-    <div class="controls">
-      <a href="/books/{book.id}"><button>Edit</button></a>
-      <button on:click={() => open(bookAbsPath(book))}>Read ↗</button>
-      <button disabled>Info</button>
-      <button disabled>Send</button>
-      <button disabled>Convert</button>
-      <hr />
-      <button disabled>Delete</button>
-    </div>
+    {#if isSendingToDevice}
+      <div class="controls">
+        <label for="devicePath">Device Path</label>
+        <input
+          id="devicePath"
+          type="text"
+          placeholder="/mnt/MySdCard"
+          bind:value={devicePath}
+        />
+
+        <button
+          on:click={() => {
+            isSendingToDevice = false;
+            sendToDevice(devicePath, book);
+          }}
+          />
+      </div>
+    {:else}
+      <div class="controls">
+        <a href="/books/{book.id}"><button>Edit</button></a>
+        <button on:click={() => open(bookAbsPath(book))}>Read ↗</button>
+        <button disabled>Info</button>
+        <button on:click={() => (isSendingToDevice = true)}>Send</button>
+        <button disabled>Convert</button>
+        <hr />
+        <button disabled>Delete</button>
+      </div>
+    {/if}
   {:else}
     <div class="cover">
       <img
