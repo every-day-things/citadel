@@ -1,10 +1,6 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use libs::devices::list_books_on_external_drive;
-
-use crate::{libs::devices::add_book_to_external_drive, book::LibraryBook};
-
 pub mod libs {
     pub mod calibre;
     pub mod devices;
@@ -19,26 +15,6 @@ fn greet(name: &str) -> String {
 }
 
 fn main() {
-    // print output from list_books_on_external_drive() to console
-    add_book_to_external_drive(
-        String::from("/Users/phil/dev/macos-book-app/External Drive"),
-        LibraryBook {
-            title: String::from("Test Book"),
-            author_list: vec![String::from("Test Author")],
-            id: String::from("1234"),
-            uuid: Some(String::from("1-2-3-4")),
-            sortable_title: None,
-
-            filename: String::from("Test Book – Test Author.epub"),
-            absolute_path: std::path::PathBuf::from("/Users/phil/dev/macos-book-app/Tale of Two Cities Images.epub"),
-        },
-    );
-    println!(
-        "books on ext drive: {:?}",
-        list_books_on_external_drive(String::from(
-            "/Users/phil/dev/macos-book-app/External Drive"
-        ))
-    );
     let specta_builder = {
         let specta_builder = tauri_specta::ts::builder().commands(tauri_specta::collect_commands![
             libs::calibre::calibre_load_books_from_db,

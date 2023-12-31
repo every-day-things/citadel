@@ -4,7 +4,6 @@ use std::str::FromStr;
 
 use crate::book::ImportableBookMetadata;
 use crate::book::ImportableBookType;
-use crate::book::Library;
 use crate::libs::file_formats::cover_data;
 use crate::libs::file_formats::read_epub_metadata;
 use crate::templates::format_calibre_metadata_opf;
