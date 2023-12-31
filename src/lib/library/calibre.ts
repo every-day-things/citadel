@@ -5,18 +5,14 @@ import {
   type ImportableBookMetadata,
   type LibraryBook,
 } from "../../bindings";
-import type { Library, Options } from "./typesLibrary";
+import type { Library, LocalConnectionOptions, Options, RemoteConnectionOptions } from "./typesLibrary";
 
 const genListBooks = (config: CalibreClientConfig) => async () => {
   const results = commands.calibreLoadBooksFromDb(config.library_path);
   return results;
 };
 
-export const initCalibreClient = async (options: Options): Promise<Library> => {
-  if (options.connectionType === "remote") {
-    throw new Error("Remote connection not implemented");
-  }
-
+const genLocalCalibreClient = async (options: LocalConnectionOptions) : Promise<Library> => {
   const config = await commands.initClient(options.libraryPath);
 
   return {
@@ -45,4 +41,37 @@ export const initCalibreClient = async (options: Options): Promise<Library> => {
       return undefined;
     },
   };
+}
+
+const genRemoteCalibreClient = async (options: RemoteConnectionOptions): Promise<Library> => {
+  // All remote clients are really Citadel clients... but for a certain kind of
+  // library. In this case, Calibre.
+  const baseUrl = options.url;
+
+  return {
+    listBooks: () => fetch(`${baseUrl}/books`).then((res) => res.json() as unknown),
+    sendToDevice: () => {
+      throw new Error("Not implemented");
+     },
+    updateBook: () => {
+      throw new Error("Not implemented");
+    },
+    checkFileImportable: () => {
+      throw new Error("Not implemented");
+     },
+    getImportableFileMetadata: () => { 
+      throw new Error("Not implemented");
+    },
+    addImportableFileByMetadata: () => {
+      throw new Error("Not implemented");
+    },
+  }
+}
+
+export const initCalibreClient = async (options: Options): Promise<Library> => {
+  if (options.connectionType === "remote") {
+    return genRemoteCalibreClient(options);
+  } else {
+    return genLocalCalibreClient(options);
+  }
 };
