@@ -16,6 +16,7 @@ tauri-build = { version = "1.5.0", features = [] }
 
 [dependencies]
 actix-web = "4"
+actix-cors = "0.6.4"
 calibre-db = "0.1.0"
 chrono = { version = "0.4.31", features = ["serde"] }
 diesel = { version = "2.1.0", features = ["sqlite", "chrono", "returning_clauses_for_sqlite_3_35"] }
@@ -24,7 +25,7 @@ regex = "1.10.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 specta = { version = "=2.0.0-rc.7", features = ["chrono"] }
-tauri = { version = "1.5.3", features = [ "shell-open", "dialog-open", "fs-create-dir", "fs-read-dir", "path-all", "fs-read-file", "fs-write-file", "protocol-asset"] }
+tauri = { version = "1.5.3", features = [ "http-all", "shell-open", "dialog-open", "fs-create-dir", "fs-read-dir", "path-all", "fs-read-file", "fs-write-file", "protocol-asset"] }
 tauri-plugin-drag = "0.2.0"
 tauri-plugin-persisted-scope = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1", features = ["protocol-asset"] }
 tauri-specta = { version = "=2.0.0-rc.4", features = ["javascript", "typescript"] }
