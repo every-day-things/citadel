@@ -1,6 +1,4 @@
-use std::env::join_paths;
 use std::io::Error;
-use std::path;
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -51,6 +49,17 @@ pub struct CalibreBook {
 #[derive(Serialize, Deserialize, specta::Type, Debug)]
 pub struct ImportableFile {
     path: PathBuf,
+}
+
+fn convert_file_src_to_url(file_path: &Path) -> String {
+    let os_name = std::env::consts::OS;
+    let protocol = "asset";
+    let path = urlencoding::encode(file_path.to_str().unwrap());
+    if os_name == "windows" || os_name == "android" {
+        format!("http://{}.localhost/{}", protocol, path)
+    } else {
+        format!("{}://localhost/{}", protocol, path)
+    }
 }
 
 fn get_supported_extensions() -> Vec<&'static str> {
@@ -108,7 +117,6 @@ pub fn establish_connection(library_path: String) -> diesel::SqliteConnection {
     conn
 }
 
-
 #[derive(Serialize, specta::Type)]
 pub struct CalibreClientConfig {
     library_path: String,
@@ -158,12 +166,12 @@ pub fn calibre_load_books_from_db(library_path: String) -> Vec<CalibreBook> {
                 author_names,
                 format!("{}.{}", book_file_name.0, book_file_name.1.to_lowercase()),
             );
-            calibre_book.cover_url = Some(
-                Path::new(&library_path).join(&calibre_book.dir_rel_path.clone()).join("cover.jpg")
-                    .to_str()
-                    .unwrap()
-                    .to_string()
-            );
+
+            let file_path = Path::new(&library_path)
+                .join(&calibre_book.dir_rel_path.clone())
+                .join("cover.jpg");
+            let url = convert_file_src_to_url(&file_path);
+            calibre_book.cover_url = Some(url);
 
             calibre_book
         })
@@ -217,7 +225,10 @@ pub fn get_importable_file_metadata(file: ImportableFile) -> ImportableBookMetad
     }
 }
 
-pub fn create_folder_for_author(library_path: &String, author_name: String) -> Result<PathBuf, Error> {
+pub fn create_folder_for_author(
+    library_path: &String,
+    author_name: String,
+) -> Result<PathBuf, Error> {
     let author_path = Path::new(&library_path).join(&author_name);
     let author_folder = Path::new(&author_path);
     if !author_folder.exists() {

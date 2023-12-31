@@ -39,7 +39,6 @@
     });
   };
 
-
   let view: "table" | "cover" = "cover";
   let search = writable("");
   let selectedBooks = derived([books, search], ([$books, search]) =>
@@ -58,18 +57,32 @@
   // ensure app setup
   onMount(async () => {
     await waitForSettings();
-    await initLibrary({
-      libraryType: "calibre",
-      connectionType: "remote",
-      // url: "http://localhost:61440"
-      url: "https://carafe.beardie-cloud.ts.net"
-      // libraryPath: $settings.calibreLibraryPath
-    });
+    if (window.__TAURI__) {
+      console.log("Running in Tauri");
+      await initLibrary({
+        libraryType: "calibre",
+        connectionType: "local",
+        libraryPath: $settings.calibreLibraryPath,
+      });
+    } else {
+      console.log("Running in browser");
+      await initLibrary({
+        libraryType: "calibre",
+        connectionType: "remote",
+        // url: "http://localhost:61440"
+        url: "https://carafe.beardie-cloud.ts.net",
+      });
+    }
     await waitForLibrary();
 
-    if (window.__TAURI_IPC__ && $settings.calibreLibraryPath === "") {
+    if (window.__TAURI__ && $settings.calibreLibraryPath === "") {
+      console.log("No library path set, redirecting to setup");
       goto("/setup");
     } else {
+      console.log({
+        "tauri": window.__TAURI__,
+        "clp": $settings.calibreLibraryPath,
+      });
       books.set(await libraryClient().listBooks());
     }
   });

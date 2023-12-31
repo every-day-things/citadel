@@ -28,7 +28,7 @@ return await TAURI_INVOKE("plugin:tauri-specta|add_book_to_external_drive", { pa
 
 /** user-defined types **/
 
-export type CalibreBook = { id: number; title: string; sortable_title: string; sortable_author_list: string; dir_rel_path: string; filename: string; has_cover: boolean; order_in_series: string; authors: string[] }
+export type CalibreBook = { id: number; title: string; sortable_title: string; sortable_author_list: string; dir_rel_path: string; filename: string; has_cover: boolean; order_in_series: string; authors: string[]; cover_url: string | null }
 export type CalibreClientConfig = { library_path: string }
 /**
  * Represents metadata for pre-import books, which have a very loose structure.

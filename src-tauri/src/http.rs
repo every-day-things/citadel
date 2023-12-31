@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use actix_cors::Cors;
-use actix_web::{get, http, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 use serde::Serialize;
 use tauri::api::file;
 
