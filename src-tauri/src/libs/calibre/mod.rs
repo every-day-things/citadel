@@ -190,7 +190,7 @@ pub fn get_importable_file_metadata(file: ImportableFile) -> ImportableBookMetad
     }
 }
 
-fn create_folder_for_author(library_path: String, author_name: String) -> Result<PathBuf, Error> {
+pub fn create_folder_for_author(library_path: &String, author_name: String) -> Result<PathBuf, Error> {
     let author_path = Path::new(&library_path).join(&author_name);
     let author_folder = Path::new(&author_path);
     if !author_folder.exists() {
@@ -216,7 +216,7 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
 
     // 5. Create Author folder
     let author_str = md.author.clone().unwrap();
-    let author_path = create_folder_for_author(library_path.clone(), author_str.clone()).unwrap();
+    let author_path = create_folder_for_author(&library_path, author_str.clone()).unwrap();
 
     // 7. Add metadata to database
     let conn = &mut establish_connection(library_path.clone());

@@ -16,6 +16,9 @@ pub struct LibraryBook {
     pub id: String,
     pub uuid: Option<String>,
     pub sortable_title: Option<String>,
+    
+    pub filename: String,
+    pub absolute_path: PathBuf
 }
 
 #[derive(Serialize, specta::Type)]

@@ -28,6 +28,9 @@ fn main() {
             id: String::from("1234"),
             uuid: Some(String::from("1-2-3-4")),
             sortable_title: None,
+
+            filename: String::from("Test Book – Test Author.epub"),
+            absolute_path: std::path::PathBuf::from("/Users/phil/dev/macos-book-app/Tale of Two Cities Images.epub"),
         },
     );
     println!(

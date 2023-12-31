@@ -1,4 +1,6 @@
-use crate::book::LibraryBook;
+use std::path::Path;
+
+use crate::{book::LibraryBook, libs::calibre::create_folder_for_author};
 
 use super::{
     calibre_ext_cache::{device_book_from_item, item_from_library_book, MetadataRoot},
@@ -24,7 +26,18 @@ impl Device for ExternalDrive {
         let mut p: MetadataRoot = serde_json::from_str(&cache).or(Err("Error parsing JSON"))?;
 
         match item_from_library_book(&book) {
-            Ok(item) => {
+            Ok(mut item) => {
+                // Create folder for book's author on drive, copy book to folder
+                let author_path = create_folder_for_author(&self.path, book.author_list[0].clone())
+                    .or(Err("Failed to create author folder on external drive"))?;
+                let file_path_on_drive = Path::new(&author_path).join(&book.filename);
+                std::fs::copy(book.absolute_path, file_path_on_drive.clone())
+                    .expect("Could not copy file to library folder");
+                
+                // Relative to the root of the drive
+                let file_rel_path = Path::new(&book.author_list[0].clone()).join(&book.filename);
+                item.lpath = file_rel_path.to_str().unwrap().to_string();
+
                 // Remove all items with the same UUID
                 p.retain(|x| x.uuid != item.uuid);
                 p.push(item);
