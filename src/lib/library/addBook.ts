@@ -1,7 +1,8 @@
 import { dialog } from "@tauri-apps/api";
 import { commands } from "../../bindings";
+import type { Library } from "./typesLibrary";
 
-export const addBook = async (libraryPath: string) => {
+export const addBook = async (library: Library) => {
   let filePath = await dialog.open({
     multiple: false,
     directory: false,
@@ -18,8 +19,13 @@ export const addBook = async (libraryPath: string) => {
   if (typeof filePath === "object") {
     filePath = filePath[0];
   }
-  const importableFile = await commands.checkFileImportable(filePath);
-  const metadata = await commands.getImportableFileMetadata(importableFile);
-
-  await commands.addBookToDbByMetadata(libraryPath, metadata);
+  const importableFile = await library.checkFileImportable(filePath);
+  if (!importableFile) {
+    return;
+  }
+  const metadata = await library.getImportableFileMetadata(importableFile);
+  if (!metadata) {
+    return;
+  }
+  await library.addImportableFileByMetadata(metadata);
 };

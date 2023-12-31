@@ -305,7 +305,7 @@ pub fn update_book(library_path: String, book_id: String, new_title: String) -> 
         .get_result(conn)
         .unwrap();
 
-    calibre__load_books_from_db(library_path)
+    calibre_load_books_from_db(library_path)
         .iter()
         .filter(|b| b.id == updated.id.unwrap())
         .cloned()

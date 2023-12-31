@@ -8,7 +8,7 @@
   let sidebarOpen = false;
 
   const addBookHandler = async () => {
-    await addBook(await settings.get("calibreLibraryPath"));
+    await addBook(libraryClient());
     // side effects: update in-cache book list when Library updated
     books.set(await libraryClient().listBooks());
   };

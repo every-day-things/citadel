@@ -2,7 +2,7 @@
 
          export const commands = {
 async calibreLoadBooksFromDb(libraryPath: string) : Promise<CalibreBook[]> {
-return await TAURI_INVOKE("plugin:tauri-specta|calibre__load_books_from_db", { libraryPath });
+return await TAURI_INVOKE("plugin:tauri-specta|calibre_load_books_from_db", { libraryPath });
 },
 async getImportableFileMetadata(file: ImportableFile) : Promise<ImportableBookMetadata> {
 return await TAURI_INVOKE("plugin:tauri-specta|get_importable_file_metadata", { file });

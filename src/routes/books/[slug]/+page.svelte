@@ -1,22 +1,17 @@
 <script lang="ts">
-  import { invalidate, invalidateAll } from "$app/navigation";
-  import { commands } from "../../../bindings";
-  import { settings } from "../../../stores/settings";
+  import { invalidateAll } from "$app/navigation";
+  import { libraryClient } from "../../../stores/library";
   import type { PageData } from "./$types";
 
   export let data: PageData;
 
   const save = async (event: SubmitEvent) => {
     event.preventDefault();
-    const libPath = $settings.calibreLibraryPath;
-
     const formData = new FormData(event.currentTarget as HTMLFormElement);
 
-    const new_book = await commands.updateBook(
-      libPath,
-      data.id.toString(),
-      (formData.get("title") as string | undefined) ?? data.title ?? ""
-    );
+    libraryClient().updateBook(data.id.toString(), {
+      title: (formData.get("title") as string | undefined) ?? data.title ?? "",
+    });
     invalidateAll();
   };
 </script>

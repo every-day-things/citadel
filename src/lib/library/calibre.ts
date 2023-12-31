@@ -1,4 +1,10 @@
-import { commands, type CalibreClientConfig } from "../../bindings";
+import {
+  commands,
+  type CalibreClientConfig,
+  type ImportableFile,
+  type ImportableBookMetadata,
+  type LibraryBook,
+} from "../../bindings";
 import type { Library, Options } from "./typesLibrary";
 
 const genListBooks = (config: CalibreClientConfig) => async () => {
@@ -15,5 +21,28 @@ export const initCalibreClient = async (options: Options): Promise<Library> => {
 
   return {
     listBooks: genListBooks(config),
+    sendToDevice: async (book, deviceOptions) => {
+      await commands.addBookToExternalDrive(deviceOptions.path, book);
+    },
+    updateBook: async (bookId, updates) => {
+      await commands.updateBook(
+        options.libraryPath,
+        bookId,
+        updates.title ?? ""
+      );
+    },
+
+    checkFileImportable: async (filePath: string) => {
+      const result = await commands.checkFileImportable(filePath);
+      return result;
+    },
+    getImportableFileMetadata: async (importableFile: ImportableFile) => {
+      const result = await commands.getImportableFileMetadata(importableFile);
+      return result;
+    },
+    addImportableFileByMetadata: async (metadata: ImportableBookMetadata) => {
+      await commands.addBookToDbByMetadata(options.libraryPath, metadata);
+      return undefined;
+    },
   };
 };

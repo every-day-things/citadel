@@ -1,6 +1,8 @@
 <script lang="ts">
   import { open } from "@tauri-apps/api/shell";
-  import { commands, type CalibreBook, type LibraryBook } from "../../bindings";
+  import { type CalibreBook, type LibraryBook } from "../../bindings";
+  import { libraryClient } from "../../stores/library";
+  import {DeviceType} from "$lib/library/typesLibrary";
 
   export let coverPathForBook: (book: CalibreBook) => string;
   export let dragHandler: (event: DragEvent, book: CalibreBook) => void;
@@ -25,8 +27,10 @@
       id: book.id.toString(),
       uuid: book.id.toString(),
     };
-    const result = commands.addBookToExternalDrive(devicePath, bookAsLibraryBook);
-    console.log(result);
+    libraryClient().sendToDevice(bookAsLibraryBook, {
+      type: DeviceType.externalDrive,
+      path: devicePath
+    });
   }
 </script>
 
