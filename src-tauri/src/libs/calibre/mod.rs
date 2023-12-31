@@ -1,4 +1,6 @@
+use std::env::join_paths;
 use std::io::Error;
+use std::path;
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -34,15 +36,16 @@ use std::path::Path;
 
 #[derive(Serialize, specta::Type, Debug, Clone)]
 pub struct CalibreBook {
-    id: i32,
+    pub id: i32,
     title: String,
     sortable_title: String,
     sortable_author_list: String,
-    dir_rel_path: String,
+    pub dir_rel_path: String,
     filename: String,
     has_cover: bool,
     order_in_series: String,
     authors: Vec<String>,
+    pub cover_url: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, specta::Type, Debug)]
@@ -69,6 +72,7 @@ fn book_to_calibre_book(
         has_cover: book.has_cover.unwrap_or(false),
         order_in_series: "".to_string(),
         authors: author_names,
+        cover_url: None,
     }
 }
 pub fn establish_connection(library_path: String) -> diesel::SqliteConnection {
@@ -121,7 +125,7 @@ pub fn init_client(library_path: String) -> CalibreClientConfig {
 #[tauri::command]
 #[specta::specta]
 pub fn calibre_load_books_from_db(library_path: String) -> Vec<CalibreBook> {
-    let conn = &mut establish_connection(library_path);
+    let conn = &mut establish_connection(library_path.clone());
     let results = books::dsl::books
         .select(Book::as_select())
         .load::<Book>(conn)
@@ -148,11 +152,20 @@ pub fn calibre_load_books_from_db(library_path: String) -> Vec<CalibreBook> {
                 .filter(data::dsl::book.eq(b.id.unwrap()))
                 .first::<(String, String)>(conn)
                 .expect("Error loading book file name");
-            book_to_calibre_book(
+
+            let mut calibre_book = book_to_calibre_book(
                 b,
                 author_names,
                 format!("{}.{}", book_file_name.0, book_file_name.1.to_lowercase()),
-            )
+            );
+            calibre_book.cover_url = Some(
+                Path::new(&library_path).join(&calibre_book.dir_rel_path.clone()).join("cover.jpg")
+                    .to_str()
+                    .unwrap()
+                    .to_string()
+            );
+
+            calibre_book
         })
         .collect()
 }

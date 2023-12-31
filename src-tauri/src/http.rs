@@ -1,6 +1,9 @@
+use std::path::Path;
+
 use actix_cors::Cors;
 use actix_web::{get, http, web, App, HttpResponse, HttpServer, Responder};
 use serde::Serialize;
+use tauri::api::file;
 
 use crate::libs::calibre::calibre_load_books_from_db;
 
@@ -16,9 +19,35 @@ struct Items<T> {
     items: Vec<T>,
 }
 
+#[get("/covers/{book_id}.jpg")]
+async fn get_asset(data: web::Data<AppState>, book_id: web::Path<String>) -> impl Responder {
+    let book_id_val = book_id.into_inner();
+
+    let books = calibre_load_books_from_db(data.library_path.clone());
+    let book_cover_path = format!(
+        "{}/{}/cover.jpg",
+        data.library_path,
+        books
+            .iter()
+            .find(|x| x.id.to_string() == book_id_val)
+            .unwrap()
+            .dir_rel_path
+            .clone()
+    );
+
+    let file_path = Path::new(&book_cover_path);
+    HttpResponse::Ok()
+        .content_type("image/jpeg")
+        .body(file::read_binary(file_path).unwrap())
+}
+
 #[get("/books")]
 async fn list_books(data: web::Data<AppState>) -> impl Responder {
-    let books = calibre_load_books_from_db(data.library_path.clone());
+    let books = calibre_load_books_from_db(data.library_path.clone()).iter().map(|x| {
+        let mut x = x.clone();
+        x.cover_url = Some(format!("https://carafe.beardie-cloud.ts.net/covers/{}.jpg", x.id));
+        x
+    }).collect::<Vec<_>>();
     HttpResponse::Ok().json(Items { items: books })
 }
 
@@ -40,6 +69,7 @@ pub async fn run_http_server(args: &Vec<String>) -> std::io::Result<()> {
                 library_path: calibre_library_path.to_string(),
             }))
             .service(list_books)
+            .service(get_asset)
     })
     .bind((HOST, PORT))?
     .run()

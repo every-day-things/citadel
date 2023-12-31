@@ -62,7 +62,10 @@ const genRemoteCalibreClient = async (
     listBooks: () =>
       fetch(`${baseUrl}/books`)
         .then((res) => res.json() as unknown as { items: CalibreBook[] })
-        .then((res) => res.items),
+        .then((res) => res.items).then((res) => {
+          console.log(res);
+          return res;
+        }),
     sendToDevice: () => {
       throw new Error("Not implemented");
     },

@@ -60,12 +60,14 @@
     await waitForSettings();
     await initLibrary({
       libraryType: "calibre",
-      connectionType: "local",
-      libraryPath: $settings.calibreLibraryPath
+      connectionType: "remote",
+      // url: "http://localhost:61440"
+      url: "https://carafe.beardie-cloud.ts.net"
+      // libraryPath: $settings.calibreLibraryPath
     });
     await waitForLibrary();
 
-    if ($settings.calibreLibraryPath === "") {
+    if (window.__TAURI_IPC__ && $settings.calibreLibraryPath === "") {
       goto("/setup");
     } else {
       books.set(await libraryClient().listBooks());
@@ -73,7 +75,8 @@
   });
 
   const coverImageUrl = (book: bindings.CalibreBook) => {
-    return convertFileSrc(coverImageAbsPath(book));
+    return book.cover_url;
+    // return convertFileSrc(coverImageAbsPath(book));
   };
 </script>
 
