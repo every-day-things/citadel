@@ -1,6 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { convertFileSrc } from "@tauri-apps/api/tauri";
   import { onMount } from "svelte";
   import { derived, writable } from "svelte/store";
   import * as bindings from "../bindings";
@@ -80,17 +79,12 @@
       goto("/setup");
     } else {
       console.log({
-        "tauri": window.__TAURI__,
-        "clp": $settings.calibreLibraryPath,
+        tauri: window.__TAURI__,
+        clp: $settings.calibreLibraryPath,
       });
       books.set(await libraryClient().listBooks());
     }
   });
-
-  const coverImageUrl = (book: bindings.CalibreBook) => {
-    return book.cover_url;
-    // return convertFileSrc(coverImageAbsPath(book));
-  };
 </script>
 
 <svelte:head>
@@ -106,14 +100,9 @@
     <span>Showing {$range} of {$selectedBooks.length} items</span>
     <input type="text" bind:value={$search} placeholder="Search" />
     {#if view === "cover"}
-      <CoverView
-        bookList={$selectedBooks}
-        {bookAbsPath}
-        coverPathForBook={coverImageUrl}
-        dragHandler={x}
-      />
+      <CoverView bookList={$selectedBooks} {bookAbsPath} dragHandler={x} />
     {:else if view === "table"}
-      <BookTable bookList={$selectedBooks} coverPathForBook={coverImageUrl} />
+      <BookTable bookList={$selectedBooks} />
     {/if}
   </div>
 </section>

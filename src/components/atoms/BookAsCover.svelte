@@ -4,7 +4,6 @@
   import { libraryClient } from "../../stores/library";
   import {DeviceType} from "$lib/library/typesLibrary";
 
-  export let coverPathForBook: (book: CalibreBook) => string;
   export let dragHandler: (event: DragEvent, book: CalibreBook) => void;
   export let bookAbsPath: (book: CalibreBook) => string;
   export let onClickHandler: () => void;
@@ -72,9 +71,9 @@
   {:else}
     <div class="cover">
       <img
-        src={coverPathForBook(book)}
-        on:dragstart={(e) => dragHandler(e, book)}
+        src={book.cover_url}
         on:click={onClickHandler}
+        on:dragstart={(e) => dragHandler(e, book)}
         class:selected={isSelected}
       />
       <span class="title">{shortenToXChars(book.title, 50)}</span>

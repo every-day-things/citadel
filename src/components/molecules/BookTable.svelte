@@ -2,7 +2,6 @@
   import type { CalibreBook } from "../../bindings";
 
   export let bookList: CalibreBook[];
-  export let coverPathForBook: (book: CalibreBook) => string;
 </script>
 
 <div class="book header">
@@ -14,7 +13,7 @@
   <div class="book">
     {#if book.has_cover}
       <!-- svelte-ignore a11y-missing-attribute -->
-      <img src={coverPathForBook(book)} />
+      <img src={book.cover_url} />
     {/if}
     <p>{book.title}</p>
     <p>{book.authors.join(", ")}</p>

@@ -3,7 +3,6 @@
   import BookAsCover from "../atoms/BookAsCover.svelte";
 
   export let bookList: CalibreBook[];
-  export let coverPathForBook: (book: CalibreBook) => string;
   export let dragHandler: (event: DragEvent, book: CalibreBook) => void;
   export let bookAbsPath: (book: CalibreBook) => string;
 
@@ -16,7 +15,6 @@
       {#if book.has_cover}
         <BookAsCover
           {book}
-          {coverPathForBook}
           {dragHandler}
           {bookAbsPath}
           isSelected={selectedItem?.id === book.id}
