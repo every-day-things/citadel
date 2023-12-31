@@ -18,32 +18,31 @@ impl Device for ExternalDrive {
         books
     }
 
-    fn add_book(&self, book: LibraryBook) {
-        let cache = std::fs::read_to_string(format!("{}/metadata.calibre", self.path)).unwrap();
-        let mut p: MetadataRoot = serde_json::from_str(&cache).unwrap();
-        let item_result = item_from_library_book(&book);
+    fn add_book(&self, book: LibraryBook) -> Result<(), String> {
+        let cache = std::fs::read_to_string(format!("{}/metadata.calibre", self.path))
+            .or(Err("Could not find Calibre metadata for disk"))?;
+        let mut p: MetadataRoot = serde_json::from_str(&cache).or(Err("Error parsing JSON"))?;
 
-        match item_result {
+        match item_from_library_book(&book) {
             Ok(item) => {
                 // Remove all items with the same UUID
                 p.retain(|x| x.uuid != item.uuid);
-                
                 p.push(item);
-                let new_cache = serde_json::to_string(&p);
-                match new_cache {
+
+                match serde_json::to_string(&p) {
                     Ok(cache) => {
-                        std::fs::write(format!("{}/metadata.calibre", self.path), cache);
+                        if let Err(e) =
+                            std::fs::write(format!("{}/metadata.calibre", self.path), cache)
+                        {
+                            Err(format!("Error writing to external drive: {:?}", e).to_owned())
+                        } else {
+                            Ok(())
+                        }
                     }
-                    Err(e) => {
-                        println!("Error adding book to external drive: {:?}", e);
-                        return;
-                    }
+                    Err(_) => Err("Error serializing metadata to JSON".to_owned()),
                 }
             }
-            Err(e) => {
-                println!("Error adding book to external drive: {:?}", e);
-                return;
-            }
+            Err(_) => Err("Error converting library book to device item".to_owned()),
         }
     }
 }

@@ -13,7 +13,7 @@ pub struct DeviceBook {
 
 pub trait Device {
   fn list_books(&self) -> Vec<DeviceBook>;
-  fn add_book(&self, book: LibraryBook);
+  fn add_book(&self, book: LibraryBook) -> Result<(), String>;
 }
 
 pub fn list_books_on_external_drive(path: String) -> Vec<DeviceBook> {
@@ -27,5 +27,8 @@ pub fn add_book_to_external_drive(path: String, book: LibraryBook) {
     let device = external_drive::ExternalDrive {
       path,
     };
-    device.add_book(book)
+    match device.add_book(book) {
+      Ok(_) => println!("Book added to external drive"),
+      Err(e) => println!("Error adding book to external drive: {:?}", e),
+    }
 }
