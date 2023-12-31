@@ -31,6 +31,18 @@ To view the app without Tauri, which will have errors as the Rust backend is mis
 bun dev:app
 ```
 
+To run the backend in server mode for development, run 
+```fish
+bun dev -- -- -- -- --server --calibre-library=/path/to/calibre/library
+```
+
+Yes, that is 4 pairs of `--`s. This is because Bun will pass the first pair to another bun run command, the second will go to tauri dev, the third will go to vite dev, and finally the last set will go to Cargo when running the backend. It's a mess!
+
+To run the backend in server mode for production, run
+```fish
+/Applications/Citadel.app/Contents/MacOS/Citadel --server --calibre-library=/path/to/calibre/library
+```
+
 ## Building
 
 To create a production version of Citadel:
