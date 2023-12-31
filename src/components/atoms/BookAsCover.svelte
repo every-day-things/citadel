@@ -37,6 +37,7 @@
   {#if isSelected}
     {#if isSendingToDevice}
       <div class="controls">
+        <button on:click={() => (isSendingToDevice = false)}>← Cancel</button>
         <label for="devicePath">Device Path</label>
         <input
           id="devicePath"
@@ -50,7 +51,8 @@
             isSendingToDevice = false;
             sendToDevice(devicePath, book);
           }}
-          />
+          >
+          Send to Device</button>
       </div>
     {:else}
       <div class="controls">
