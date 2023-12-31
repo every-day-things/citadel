@@ -15,13 +15,14 @@
     const new_book = await commands.updateBook(
       libPath,
       data.id.toString(),
-      formData.get("title") as string | undefined ?? data.title ?? "",
+      (formData.get("title") as string | undefined) ?? data.title ?? ""
     );
     invalidateAll();
   };
 </script>
 
 <div class="safeAreaView">
+  <button on:click={() => history.back()}>X</button>
   <h1>Editing {data.pageTitle}</h1>
 
   <form on:submit={save}>
@@ -31,11 +32,13 @@
 
       <label for="sortable_title">Sort title</label>
       <input
+        disabled
         type="text"
         id="sortable_title"
         name="sortable_title"
         value={data.sortable_title}
       />
+      <span class="text-label-small">Sort fields are set automatically.</span>
     </fieldset>
     <fieldset>
       <label for="authors">Authors</label>
@@ -55,6 +58,7 @@
         name="sortable_authors"
         value={data.sortable_author_list}
       />
+      <span class="text-label-small">Sort fields are set automatically.</span>
     </fieldset>
 
     <button type="submit">Save</button>
@@ -73,5 +77,12 @@
   fieldset {
     display: flex;
     flex-direction: column;
+  }
+
+  .text-label-small {
+    font-size: 0.8rem;
+    font-style: italic;
+    margin-top: 4px;
+    margin-left: 4px;
   }
 </style>
