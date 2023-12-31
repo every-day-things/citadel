@@ -17,6 +17,7 @@ fn greet(name: &str) -> String {
 }
 
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
+use serde::Serialize;
 
 use crate::libs::calibre::calibre_load_books_from_db;
 
@@ -24,17 +25,22 @@ struct AppState {
     library_path: String,
 }
 
+#[derive(Serialize)]
+struct Items<T> {
+    items: Vec<T>,
+}
+
 #[get("/books")]
 async fn list_books(data: web::Data<AppState>) -> impl Responder {
     let books = calibre_load_books_from_db(data.library_path.clone());
-    println!("Got {} books", books.len());
-    HttpResponse::Ok().body(serde_json::to_string(&books).unwrap())
-}
-async fn manual_hello() -> impl Responder {
-    HttpResponse::Ok().body("Hey there!")
+    HttpResponse::Ok().json(Items {
+        items: books,
+    })
 }
 
 const SERVER_FLAG: &str = "--server";
+const PORT: u16 = 61440;
+const HOST: &str = "127.0.0.1";
 
 fn is_server(args: &Vec<String>) -> bool {
     args.iter().any(|x| x == SERVER_FLAG)
@@ -58,9 +64,8 @@ async fn main() -> std::io::Result<()> {
                     library_path: calibre_library_path.to_string(),
                 }))
                 .service(list_books)
-                .route("/hey", web::get().to(manual_hello))
         })
-        .bind(("127.0.0.1", 8080))?
+        .bind((HOST, PORT))?
         .run()
         .await
     } else {
