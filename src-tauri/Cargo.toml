@@ -1,11 +1,11 @@
 [package]
-name = "app"
+name = "citadel-rs"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
-license = ""
-repository = ""
-default-run = "app"
+description = "Backend for Citadel, embedded into the Tauri app or run stand-alone."
+authors = ["Phil Denhoff"]
+license = "MIT"
+repository = "https://github.com/every-day-things/citadel"
+default-run = "citadel-rs"
 edition = "2021"
 rust-version = "1.60"
 
@@ -20,14 +20,14 @@ chrono = { version = "0.4.31", features = ["serde"] }
 diesel = { version = "2.1.0", features = ["sqlite", "chrono", "returning_clauses_for_sqlite_3_35"] }
 epub = "2.1.1"
 regex = "1.10.2"
-serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 specta = { version = "=2.0.0-rc.7", features = ["chrono"] }
 tauri = { version = "1.5.3", features = [ "shell-open", "dialog-open", "fs-create-dir", "fs-read-dir", "path-all", "fs-read-file", "fs-write-file", "protocol-asset"] }
+tauri-plugin-drag = "0.2.0"
 tauri-plugin-persisted-scope = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1", features = ["protocol-asset"] }
 tauri-specta = { version = "=2.0.0-rc.4", features = ["javascript", "typescript"] }
 uuid = { version = "1.6.1", features = [ "v4", "fast-rng", ] }
-tauri-plugin-drag = "0.2.0"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.

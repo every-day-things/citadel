@@ -69,26 +69,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4668cab20f66d8d020e1fbc0ebe47217433c1b6c8f2040faf858554e394ace6"
 
 [[package]]
-name = "app"
-version = "0.1.0"
-dependencies = [
- "calibre-db",
- "chrono",
- "diesel 2.1.4",
- "epub",
- "regex",
- "serde",
- "serde_json",
- "specta",
- "tauri",
- "tauri-build",
- "tauri-plugin-drag",
- "tauri-plugin-persisted-scope",
- "tauri-specta",
- "uuid",
-]
-
-[[package]]
 name = "atk"
 version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -344,6 +324,26 @@ dependencies = [
  "serde",
  "wasm-bindgen",
  "windows-targets 0.48.5",
+]
+
+[[package]]
+name = "citadel-rs"
+version = "0.1.0"
+dependencies = [
+ "calibre-db",
+ "chrono",
+ "diesel 2.1.4",
+ "epub",
+ "regex",
+ "serde",
+ "serde_json",
+ "specta",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-drag",
+ "tauri-plugin-persisted-scope",
+ "tauri-specta",
+ "uuid",
 ]
 
 [[package]]
