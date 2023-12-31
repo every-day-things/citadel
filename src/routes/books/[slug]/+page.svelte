@@ -1,16 +1,28 @@
 <script lang="ts">
   import { invalidateAll } from "$app/navigation";
+  import { onMount } from "svelte";
   import { libraryClient } from "../../../stores/library";
   import type { PageData } from "./$types";
+  import type { CalibreBook } from "../../../bindings";
 
   export let data: PageData;
+  let book: CalibreBook;
+  let pageTitle: string;
+
+  onMount(async () => {
+    book = (await libraryClient().listBooks()).filter(
+      (book) => book.id.toString() === data?.id
+    )[0];
+
+    pageTitle = `"${book?.title}" by ${book?.authors.join(", ")}`;
+  });
 
   const save = async (event: SubmitEvent) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget as HTMLFormElement);
 
-    libraryClient().updateBook(data.id.toString(), {
-      title: (formData.get("title") as string | undefined) ?? data.title ?? "",
+    libraryClient().updateBook(book!.id.toString(), {
+      title: (formData.get("title") as string | undefined) ?? book.title ?? "",
     });
     invalidateAll();
   };
@@ -18,12 +30,12 @@
 
 <div class="safeAreaView">
   <button on:click={() => history.back()}>X</button>
-  <h1>Editing {data.pageTitle}</h1>
+  <h1>Editing {pageTitle}</h1>
 
   <form on:submit={save}>
     <fieldset>
       <label for="title">Title</label>
-      <input type="text" id="title" name="title" value={data.title} />
+      <input type="text" id="title" name="title" value={book.title} />
 
       <label for="sortable_title">Sort title</label>
       <input
@@ -31,7 +43,7 @@
         type="text"
         id="sortable_title"
         name="sortable_title"
-        value={data.sortable_title}
+        value={book.sortable_title}
       />
       <span class="text-label-small">Sort fields are set automatically.</span>
     </fieldset>
@@ -42,7 +54,7 @@
         type="text"
         id="authors"
         name="authors"
-        value={data.authors}
+        value={book.authors}
       />
 
       <label for="sortable_authors">Sort authors</label>
@@ -51,8 +63,8 @@
         type="text"
         id="sortable_authors"
         name="sortable_authors"
-        value={data.sortable_author_list}
-      />
+        value={book.sortable_author_list}
+      >
       <span class="text-label-small">Sort fields are set automatically.</span>
     </fieldset>
 
