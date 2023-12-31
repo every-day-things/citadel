@@ -4,6 +4,7 @@ use std::str::FromStr;
 
 use crate::book::ImportableBookMetadata;
 use crate::book::ImportableBookType;
+use crate::book::Library;
 use crate::libs::file_formats::cover_data;
 use crate::libs::file_formats::read_epub_metadata;
 use crate::templates::format_calibre_metadata_opf;
@@ -104,9 +105,23 @@ pub fn establish_connection(library_path: String) -> diesel::SqliteConnection {
     conn
 }
 
+
+#[derive(Serialize, specta::Type)]
+pub struct CalibreClientConfig {
+    library_path: String,
+}
+
 #[tauri::command]
 #[specta::specta]
-pub fn load_books_from_db(library_path: String) -> Vec<CalibreBook> {
+pub fn init_client(library_path: String) -> CalibreClientConfig {
+    CalibreClientConfig {
+        library_path: library_path.clone(),
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn calibre_load_books_from_db(library_path: String) -> Vec<CalibreBook> {
     let conn = &mut establish_connection(library_path);
     let results = books::dsl::books
         .select(Book::as_select())
@@ -290,7 +305,7 @@ pub fn update_book(library_path: String, book_id: String, new_title: String) -> 
         .get_result(conn)
         .unwrap();
 
-    load_books_from_db(library_path)
+    calibre__load_books_from_db(library_path)
         .iter()
         .filter(|b| b.id == updated.id.unwrap())
         .cloned()

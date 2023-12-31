@@ -39,10 +39,6 @@
     });
   };
 
-  initLibrary({
-    libraryType: "calibre",
-    connectionType: "local",
-  });
 
   let view: "table" | "cover" = "cover";
   let search = writable("");
@@ -61,8 +57,13 @@
 
   // ensure app setup
   onMount(async () => {
-    await waitForLibrary();
     await waitForSettings();
+    await initLibrary({
+      libraryType: "calibre",
+      connectionType: "local",
+      libraryPath: $settings.calibreLibraryPath
+    });
+    await waitForLibrary();
 
     if ($settings.calibreLibraryPath === "") {
       goto("/setup");

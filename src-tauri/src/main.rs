@@ -41,12 +41,12 @@ fn main() {
     );
     let specta_builder = {
         let specta_builder = tauri_specta::ts::builder().commands(tauri_specta::collect_commands![
-            book::hello_world,
-            libs::calibre::load_books_from_db,
+            libs::calibre::calibre_load_books_from_db,
             libs::calibre::get_importable_file_metadata,
             libs::calibre::check_file_importable,
             libs::calibre::add_book_to_db_by_metadata,
             libs::calibre::update_book,
+            libs::calibre::init_client,
             libs::devices::add_book_to_external_drive,
         ]);
 

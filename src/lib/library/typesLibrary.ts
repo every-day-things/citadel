@@ -6,6 +6,7 @@ export type Library = {
 
 export type LocalConnectionOptions = {
   connectionType: "local";
+  libraryPath: string;
 };
 export type RemoteConnectionOptions = {
   connectionType: "remote";

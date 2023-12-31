@@ -27,9 +27,14 @@ export const libraryClient = (): Library => {
 };
 
 export const initLibrary = async (options: Options) => {
-  const client = initClient({
+  if (options.connectionType === "remote") {
+    return;
+  }
+
+  const client = await initClient({
     libraryType: "calibre",
     connectionType: "local",
+    "libraryPath": options.libraryPath
   });
 
   libraryClientStore.set(client);
