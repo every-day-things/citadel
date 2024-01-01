@@ -3,6 +3,8 @@
 
 use std::env;
 
+use specta::ts::{BigIntExportBehavior, ExportConfig};
+
 pub mod libs {
     pub mod calibre;
     pub mod devices;
@@ -20,15 +22,17 @@ fn is_server(args: &Vec<String>) -> bool {
 
 fn run_tauri_backend() -> std::io::Result<()> {
     let specta_builder = {
-        let specta_builder = tauri_specta::ts::builder().commands(tauri_specta::collect_commands![
-            libs::calibre::calibre_load_books_from_db,
-            libs::calibre::get_importable_file_metadata,
-            libs::calibre::check_file_importable,
-            libs::calibre::add_book_to_db_by_metadata,
-            libs::calibre::update_book,
-            libs::calibre::init_client,
-            libs::devices::add_book_to_external_drive,
-        ]);
+        let specta_builder = tauri_specta::ts::builder()
+            .commands(tauri_specta::collect_commands![
+                libs::calibre::calibre_load_books_from_db,
+                libs::calibre::get_importable_file_metadata,
+                libs::calibre::check_file_importable,
+                libs::calibre::add_book_to_db_by_metadata,
+                libs::calibre::update_book,
+                libs::calibre::init_client,
+                libs::devices::add_book_to_external_drive,
+            ])
+            .config(ExportConfig::default().bigint(BigIntExportBehavior::BigInt));
 
         #[cfg(debug_assertions)] // <- Only export on non-release builds
         let specta_builder = specta_builder.path("../src/bindings.ts");
