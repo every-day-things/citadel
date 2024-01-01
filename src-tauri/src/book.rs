@@ -7,8 +7,6 @@ use serde::{Deserialize, Serialize};
 pub struct BookFile {
     /// The absolute path to the file, including extension.
     pub path: PathBuf,
-    /// File size in bytes.
-    pub size_bytes: i64,
     /// The MIME type of the file. Common values are `application/pdf` and `application/epub+zip`.
     pub mime_type: String,
 }

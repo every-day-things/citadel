@@ -77,7 +77,6 @@ const genLocalCalibreClient = async (
           file_list: [
             {
               path: bookAbsPath,
-              size_bytes: BigInt(0),
               mime_type: "",
             }
           ]

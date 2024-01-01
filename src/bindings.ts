@@ -34,10 +34,6 @@ export type BookFile = {
  */
 path: string; 
 /**
- * File size in bytes.
- */
-size_bytes: bigint; 
-/**
  * The MIME type of the file. Common values are `application/pdf` and `application/epub+zip`.
  */
 mime_type: string }
