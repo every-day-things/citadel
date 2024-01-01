@@ -2,11 +2,9 @@ import { joinSync } from "$lib/path";
 import { convertFileSrc } from "@tauri-apps/api/tauri";
 import {
   commands,
-  type CalibreClientConfig,
   type ImportableFile,
   type ImportableBookMetadata,
   type LibraryBook,
-  type CalibreBook,
 } from "../../bindings";
 import type {
   Library,
@@ -19,20 +17,28 @@ const genLocalCalibreClient = async (
   options: LocalConnectionOptions
 ): Promise<Library> => {
   const config = await commands.initClient(options.libraryPath);
-  const bookCoverCache = new Map<LibraryBook["id"], {
-    localPath: string;
-    url: string;
-  }>();
-  const bookFilePath = new Map<LibraryBook["id"], {
-    localPath: string;
-    url: undefined;
-  }>();
+  const bookCoverCache = new Map<
+    LibraryBook["id"],
+    {
+      localPath: string;
+      url: string;
+    }
+  >();
+  const bookFilePath = new Map<
+    LibraryBook["id"],
+    {
+      localPath: string;
+      url: undefined;
+    }
+  >();
 
   return {
     listBooks: async () => {
-      const results = commands.calibreLoadBooksFromDb(config.library_path);
+      const results = await commands.calibreLoadBooksFromDb(
+        config.library_path
+      );
 
-      (await results).forEach((book) => {
+      results.forEach((book) => {
         bookCoverCache.set(book.id.toString(), {
           localPath: joinSync(
             config.library_path,
@@ -53,7 +59,35 @@ const genLocalCalibreClient = async (
         });
       });
 
-      return results;
+      const resultsAsLibraryBook = results.map((book): LibraryBook | Error => {
+        const bookAbsPath = bookFilePath.get(book.id.toString())?.localPath
+        if (bookAbsPath === undefined) {
+          return new Error("Book path not found");
+        };
+
+        const bookAsLibraryBook: LibraryBook = {
+          title: book.title,
+          sortable_title: book.title,
+          author_list: book.authors,
+          absolute_path: bookAbsPath,
+          filename: book.filename,
+          id: book.id.toString(),
+          uuid: book.id.toString(),
+
+          file_list: [
+            {
+              path: bookAbsPath,
+              size_bytes: BigInt(0),
+              mime_type: "",
+            }
+          ]
+        };
+        return bookAsLibraryBook
+      }).filter((book): book is LibraryBook => {
+        return !(book instanceof Error);
+      });
+
+      return resultsAsLibraryBook;
     },
     sendToDevice: async (book, deviceOptions) => {
       await commands.addBookToExternalDrive(deviceOptions.path, book);
@@ -100,8 +134,9 @@ const genRemoteCalibreClient = async (
   return {
     listBooks: () =>
       fetch(`${baseUrl}/books`)
-        .then((res) => res.json() as unknown as { items: CalibreBook[] })
-        .then((res) => res.items).then((res) => {
+        .then((res) => res.json() as unknown as { items: LibraryBook[] })
+        .then((res) => res.items)
+        .then((res) => {
           console.log(res);
           return res;
         }),

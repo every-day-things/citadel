@@ -1,7 +1,8 @@
 <script lang="ts">
-  import type { CalibreBook } from "../../bindings";
+  import type { LibraryBook } from "../../bindings";
+  import { libraryClientStore } from "../../stores/library";
 
-  export let bookList: CalibreBook[];
+  export let bookList: LibraryBook[];
 </script>
 
 <div class="book header">
@@ -11,12 +12,10 @@
 </div>
 {#each bookList as book}
   <div class="book">
-    {#if book.has_cover}
-      <!-- svelte-ignore a11y-missing-attribute -->
-      <img src={book.cover_url} />
-    {/if}
+    <!-- svelte-ignore a11y-missing-attribute -->
+    <img src={$libraryClientStore.getCoverUrlForBook(book.id)} />
     <p>{book.title}</p>
-    <p>{book.authors.join(", ")}</p>
+    <p>{book.author_list.join(", ")}</p>
   </div>
 {/each}
 

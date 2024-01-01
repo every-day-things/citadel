@@ -14,7 +14,7 @@
   import { books } from "../stores/books";
   import { any } from "$lib/any";
 
-  const x = (event: DragEvent, book: bindings.CalibreBook) => {
+  const x = (event: DragEvent, book: bindings.LibraryBook) => {
     event.preventDefault();
     const coverImageAbsPath = $libraryClient.getCoverPathForBook(
       book.id.toString()
@@ -36,7 +36,7 @@
     $books.filter((book) =>
       search.length === 0
         ? $books
-        : any(book.authors, (item) =>
+        : any(book.author_list, (item) =>
             item.toLowerCase().includes(search.toLowerCase())
           ) || book.title.toLowerCase().includes(search.toLowerCase())
     )

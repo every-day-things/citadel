@@ -1,5 +1,4 @@
 import type {
-  CalibreBook,
   ImportableBookMetadata,
   ImportableFile,
   LibraryBook,
@@ -11,7 +10,7 @@ export const DeviceType = {
 export type TDeviceType = (typeof DeviceType)[keyof typeof DeviceType];
 
 export type Library = {
-  listBooks(): Promise<CalibreBook[]>;
+  listBooks(): Promise<LibraryBook[]>;
   sendToDevice(
     book: LibraryBook,
     deviceOptions: {

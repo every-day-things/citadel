@@ -1,4 +1,4 @@
-import type { CalibreBook } from "../bindings";
+import type { LibraryBook } from "../bindings";
 import { writable } from "svelte/store";
 
-export const books = writable([] as CalibreBook[]);
+export const books = writable([] as LibraryBook[]);

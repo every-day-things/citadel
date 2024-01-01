@@ -1,12 +1,12 @@
 <script lang="ts">
   import { open } from "@tauri-apps/api/shell";
-  import { type CalibreBook, type LibraryBook } from "../../bindings";
-  import { libraryClient } from "../../stores/library";
+  import { type LibraryBook } from "../../bindings";
+  import { libraryClient, libraryClientStore } from "../../stores/library";
   import {DeviceType} from "$lib/library/typesLibrary";
 
-  export let dragHandler: (event: DragEvent, book: CalibreBook) => void;
+  export let dragHandler: (event: DragEvent, book: LibraryBook) => void;
   export let onClickHandler: () => void;
-  export let book: CalibreBook;
+  export let book: LibraryBook;
   export let isSelected = false;
 
   let isSendingToDevice = false;
@@ -29,34 +29,8 @@
     open(bookAbsPath);
   };
 
-  const sendToDevice = (devicePath: string, book: CalibreBook) => {
-    const bookAbsPath = libraryClient().getDefaultFilePathForBook(
-      book.id.toString()
-    );
-
-    if (!bookAbsPath) {
-      console.error("Book path not found");
-      return;
-    }
-
-    const bookAsLibraryBook: LibraryBook = {
-      title: book.title,
-      sortable_title: book.title,
-      author_list: book.authors,
-      absolute_path: bookAbsPath,
-      filename: book.filename,
-      id: book.id.toString(),
-      uuid: book.id.toString(),
-
-      file_list: [
-        {
-          path: bookAbsPath,
-          size_bytes: BigInt(0),
-          mime_type: "",
-        }
-      ]
-    };
-    libraryClient().sendToDevice(bookAsLibraryBook, {
+  const sendToDevice = (devicePath: string, book: LibraryBook) => {
+    libraryClient().sendToDevice(book, {
       type: DeviceType.externalDrive,
       path: devicePath
     });
@@ -101,13 +75,13 @@
   {:else}
     <div class="cover">
       <img
-        src={book.cover_url}
+        src={$libraryClientStore.getCoverUrlForBook(book.id)}
         on:click={onClickHandler}
         on:dragstart={(e) => dragHandler(e, book)}
         class:selected={isSelected}
       />
       <span class="title">{shortenToXChars(book.title, 50)}</span>
-      <span class="authors">{book.authors.join(", ")}</span>
+      <span class="authors">{book.author_list.join(", ")}</span>
     </div>
   {/if}
 </div>

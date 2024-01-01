@@ -1,24 +1,22 @@
 <script lang="ts">
-  import type { CalibreBook } from "../../bindings";
+  import type { LibraryBook } from "../../bindings";
   import BookAsCover from "../atoms/BookAsCover.svelte";
 
-  export let bookList: CalibreBook[];
-  export let dragHandler: (event: DragEvent, book: CalibreBook) => void;
+  export let bookList: LibraryBook[];
+  export let dragHandler: (event: DragEvent, book: LibraryBook) => void;
 
-  let selectedItem: CalibreBook | undefined;
+  let selectedItem: LibraryBook | undefined;
 </script>
 
 <div class="covers">
   {#each bookList as book}
     <div class="book">
-      {#if book.has_cover}
-        <BookAsCover
-          {book}
-          {dragHandler}
-          isSelected={selectedItem?.id === book.id}
-          onClickHandler={() => (selectedItem = book)}
-        />
-      {/if}
+      <BookAsCover
+        {book}
+        {dragHandler}
+        isSelected={selectedItem?.id === book.id}
+        onClickHandler={() => (selectedItem = book)}
+      />
     </div>
   {/each}
 </div>
