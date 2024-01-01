@@ -1,3 +1,5 @@
+import { joinSync } from "$lib/path";
+import { convertFileSrc } from "@tauri-apps/api/tauri";
 import {
   commands,
   type CalibreClientConfig,
@@ -13,18 +15,46 @@ import type {
   RemoteConnectionOptions,
 } from "./typesLibrary";
 
-const genListBooks = (config: CalibreClientConfig) => async () => {
-  const results = commands.calibreLoadBooksFromDb(config.library_path);
-  return results;
-};
-
 const genLocalCalibreClient = async (
   options: LocalConnectionOptions
 ): Promise<Library> => {
   const config = await commands.initClient(options.libraryPath);
+  const bookCoverCache = new Map<LibraryBook["id"], {
+    localPath: string;
+    url: string;
+  }>();
+  const bookFilePath = new Map<LibraryBook["id"], {
+    localPath: string;
+    url: undefined;
+  }>();
 
   return {
-    listBooks: genListBooks(config),
+    listBooks: async () => {
+      const results = commands.calibreLoadBooksFromDb(config.library_path);
+
+      (await results).forEach((book) => {
+        bookCoverCache.set(book.id.toString(), {
+          localPath: joinSync(
+            config.library_path,
+            book.dir_rel_path,
+            "cover.jpg"
+          ),
+          url: convertFileSrc(
+            joinSync(config.library_path, book.dir_rel_path, "cover.jpg")
+          ),
+        });
+        bookFilePath.set(book.id.toString(), {
+          localPath: joinSync(
+            config.library_path,
+            book.dir_rel_path,
+            book.filename
+          ),
+          url: undefined,
+        });
+      });
+
+      return results;
+    },
     sendToDevice: async (book, deviceOptions) => {
       await commands.addBookToExternalDrive(deviceOptions.path, book);
     },
@@ -34,6 +64,15 @@ const genLocalCalibreClient = async (
         bookId,
         updates.title ?? ""
       );
+    },
+    getCoverPathForBook: (bookId) => {
+      return bookCoverCache.get(bookId)?.localPath;
+    },
+    getCoverUrlForBook: (bookId) => {
+      return bookCoverCache.get(bookId)?.url;
+    },
+    getDefaultFilePathForBook: (bookId) => {
+      return bookFilePath.get(bookId)?.localPath;
     },
 
     checkFileImportable: async (filePath: string) => {
@@ -70,6 +109,15 @@ const genRemoteCalibreClient = async (
       throw new Error("Not implemented");
     },
     updateBook: () => {
+      throw new Error("Not implemented");
+    },
+    getCoverPathForBook: () => {
+      throw new Error("Not implemented");
+    },
+    getCoverUrlForBook() {
+      throw new Error("Not implemented");
+    },
+    getDefaultFilePathForBook: () => {
       throw new Error("Not implemented");
     },
     checkFileImportable: () => {

@@ -7,34 +7,26 @@
   import CoverView from "../components/molecules/CoverView.svelte";
   import {
     initLibrary,
-    libraryClient,
+    libraryClientStore as libraryClient,
     waitForLibrary,
   } from "../stores/library";
   import { settings, waitForSettings } from "../stores/settings";
-  import { joinSync } from "$lib/path";
   import { books } from "../stores/books";
   import { any } from "$lib/any";
 
-  const coverImageAbsPath = (book: bindings.CalibreBook) => {
-    return joinSync(
-      $settings.calibreLibraryPath,
-      book.dir_rel_path,
-      "cover.jpg"
-    );
-  };
-  const bookAbsPath = (book: bindings.CalibreBook) => {
-    return joinSync(
-      $settings.calibreLibraryPath,
-      book.dir_rel_path,
-      book.filename
-    );
-  };
   const x = (event: DragEvent, book: bindings.CalibreBook) => {
     event.preventDefault();
+    const coverImageAbsPath = $libraryClient.getCoverPathForBook(
+      book.id.toString()
+    );
+    const bookFilePath = $libraryClient.getDefaultFilePathForBook(
+      book.id.toString()
+    );
+
     // @ts-ignore
     window.__TAURI__.drag.startDrag({
-      item: [bookAbsPath(book)],
-      icon: coverImageAbsPath(book),
+      item: [bookFilePath],
+      icon: coverImageAbsPath,
     });
   };
 
@@ -82,7 +74,7 @@
         tauri: window.__TAURI__,
         clp: $settings.calibreLibraryPath,
       });
-      books.set(await libraryClient().listBooks());
+      books.set(await $libraryClient.listBooks());
     }
   });
 </script>
@@ -100,7 +92,7 @@
     <span>Showing {$range} of {$selectedBooks.length} items</span>
     <input type="text" bind:value={$search} placeholder="Search" />
     {#if view === "cover"}
-      <CoverView bookList={$selectedBooks} {bookAbsPath} dragHandler={x} />
+      <CoverView bookList={$selectedBooks} dragHandler={x} />
     {:else if view === "table"}
       <BookTable bookList={$selectedBooks} />
     {/if}

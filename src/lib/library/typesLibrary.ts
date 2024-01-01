@@ -24,6 +24,31 @@ export type Library = {
   updateBook(bookId: string, updates: Partial<LibraryBook>): Promise<void>;
 
   /**
+   * Returns the path to the cover image for the book with the given ID.
+   *
+   * Only useful for Local libraries, required to be sync so that it can be
+   * used in the `src` attribute of an `<img>` tag or as the icon in a
+   * `startDrag` call.
+   * @param book_id Book to retrieve the cover for.
+   */
+  getCoverPathForBook(book_id: LibraryBook["id"]): string | undefined;
+  /**
+   * Returns an asset URL for the cover image for the book with the given ID.
+   *
+   * @param book_id Book to retrieve the cover for.
+   */
+  getCoverUrlForBook(book_id: LibraryBook["id"]): string | undefined;
+
+  /**
+   * Returns the absolute path for the default file for ID'ed book.
+   * 
+   * Only useful for Local Libraries, required to be sync so that it can be
+   * used in the `startDrag` call.
+   * @param book_id Book to retrieve the file for.
+   */
+  getDefaultFilePathForBook(book_id: LibraryBook["id"]): string | undefined;
+
+  /**
    * Return an ImportableFile if the file at `filePath` can be added to the library.
    * @param filePath
    */
@@ -47,7 +72,7 @@ export type Library = {
    *
    * `ImportableBookMetadata` is used to ensure that the file can be imported:
    * see {@link Library#getImportableFileMetadata} for more details.
-   * 
+   *
    * @param metadata
    */
   addImportableFileByMetadata(

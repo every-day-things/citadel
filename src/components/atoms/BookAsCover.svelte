@@ -5,7 +5,6 @@
   import {DeviceType} from "$lib/library/typesLibrary";
 
   export let dragHandler: (event: DragEvent, book: CalibreBook) => void;
-  export let bookAbsPath: (book: CalibreBook) => string;
   export let onClickHandler: () => void;
   export let book: CalibreBook;
   export let isSelected = false;
@@ -16,15 +15,46 @@
   const shortenToXChars = (str: string, x: number) =>
     str.length > x ? str.slice(0, x) + "..." : str;
 
+  const openBookInDefaultApp = () => {
+    const bookAbsPath = libraryClient().getDefaultFilePathForBook(
+      book.id.toString()
+    );
+    console.log(bookAbsPath);
+
+    if (!bookAbsPath) {
+      console.error("Book path not found");
+      return;
+    }
+
+    open(bookAbsPath);
+  };
+
   const sendToDevice = (devicePath: string, book: CalibreBook) => {
+    const bookAbsPath = libraryClient().getDefaultFilePathForBook(
+      book.id.toString()
+    );
+
+    if (!bookAbsPath) {
+      console.error("Book path not found");
+      return;
+    }
+
     const bookAsLibraryBook: LibraryBook = {
       title: book.title,
       sortable_title: book.title,
       author_list: book.authors,
-      absolute_path: bookAbsPath(book),
+      absolute_path: bookAbsPath,
       filename: book.filename,
       id: book.id.toString(),
       uuid: book.id.toString(),
+
+      file_list: [
+        {
+          path: bookAbsPath,
+          size_bytes: BigInt(0),
+          mime_type: "",
+        }
+      ]
     };
     libraryClient().sendToDevice(bookAsLibraryBook, {
       type: DeviceType.externalDrive,
@@ -60,7 +90,7 @@
     {:else}
       <div class="controls">
         <a href="/books/{book.id}"><button>Edit</button></a>
-        <button on:click={() => open(bookAbsPath(book))}>Read ↗</button>
+        <button on:click={() => openBookInDefaultApp()}>Read ↗</button>
         <button disabled>Info</button>
         <button on:click={() => (isSendingToDevice = true)}>Send</button>
         <button disabled>Convert</button>
