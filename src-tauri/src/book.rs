@@ -4,15 +4,27 @@ use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, specta::Type, Deserialize)]
+pub struct BookFile {
+    /// The absolute path to the file, including extension.
+    pub path: PathBuf,
+    /// File size in bytes.
+    pub size_bytes: i64,
+    /// The MIME type of the file. Common values are `application/pdf` and `application/epub+zip`.
+    pub mime_type: String,
+}
+
+#[derive(Serialize, specta::Type, Deserialize)]
 pub struct LibraryBook {
     pub title: String,
     pub author_list: Vec<String>,
     pub id: String,
     pub uuid: Option<String>,
     pub sortable_title: Option<String>,
-    
+
     pub filename: String,
-    pub absolute_path: PathBuf
+    pub absolute_path: PathBuf,
+
+    pub file_list: Vec<BookFile>,
 }
 
 #[derive(Serialize, specta::Type)]

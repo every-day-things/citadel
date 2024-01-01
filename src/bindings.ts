@@ -28,6 +28,19 @@ return await TAURI_INVOKE("plugin:tauri-specta|add_book_to_external_drive", { pa
 
 /** user-defined types **/
 
+export type BookFile = { 
+/**
+ * The absolute path to the file, including extension.
+ */
+path: string; 
+/**
+ * File size in bytes.
+ */
+size_bytes: bigint; 
+/**
+ * The MIME type of the file. Common values are `application/pdf` and `application/epub+zip`.
+ */
+mime_type: string }
 export type CalibreBook = { id: number; title: string; sortable_title: string; sortable_author_list: string; dir_rel_path: string; filename: string; has_cover: boolean; order_in_series: string; authors: string[]; cover_url: string | null }
 export type CalibreClientConfig = { library_path: string }
 /**
@@ -48,7 +61,7 @@ path: string; publication_date: string | null;
 file_contains_cover: boolean }
 export type ImportableBookType = "EPUB" | "PDF" | "MOBI"
 export type ImportableFile = { path: string }
-export type LibraryBook = { title: string; author_list: string[]; id: string; uuid: string | null; sortable_title: string | null; filename: string; absolute_path: string }
+export type LibraryBook = { title: string; author_list: string[]; id: string; uuid: string | null; sortable_title: string | null; filename: string; absolute_path: string; file_list: BookFile[] }
 
 /** tauri-specta globals **/
 
