@@ -1,0 +1,12 @@
+[package]
+name = "libcalibre"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+chrono = { version = "0.4.31", features = ["serde"] }
+diesel = { version = "2.1.0", features = ["sqlite", "chrono", "returning_clauses_for_sqlite_3_35"] }
+regex = "1.10.2"
+uuid = { version = "1.6.1", features = [ "v4", "fast-rng", ] }
