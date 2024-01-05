@@ -23,4 +23,12 @@ where
 
         Ok(book)
     }
+
+    pub fn find_by_id(&mut self, id: i32) -> Result<Book, ()> {
+        self.book_repository.find_by_id(id)
+    }
+
+    pub fn all(&mut self) -> Result<Vec<Book>, ()> {
+        self.book_repository.all()
+    }
 }
