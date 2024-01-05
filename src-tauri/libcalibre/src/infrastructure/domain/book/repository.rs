@@ -1,4 +1,6 @@
 use diesel::prelude::*;
+use diesel::sqlite::SqliteConnection;
+use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 
 use crate::domain::book::{
     entity::{Book, NewBook},
@@ -6,8 +8,9 @@ use crate::domain::book::{
 };
 use crate::persistence::establish_connection;
 
+const MIGRATIONS: EmbeddedMigrations = embed_migrations!("../../migrations");
+
 pub struct BookRepository {
-    pub connection_url: String,
     pub connection: SqliteConnection,
 }
 
@@ -15,8 +18,15 @@ impl BookRepository {
     pub fn new(connection_url: String) -> Self {
         Self {
             connection: establish_connection(connection_url.clone()).unwrap(),
-            connection_url,
         }
+    }
+
+    /// Run all pending migrations.
+    pub fn run_migrations(&mut self) {
+        diesel::sql_query("PRAGMA foreign_keys = ON;")
+            .execute(&mut self.connection)
+            .unwrap();
+        self.connection.run_pending_migrations(MIGRATIONS).unwrap();
     }
 }
 

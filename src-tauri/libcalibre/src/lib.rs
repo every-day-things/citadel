@@ -17,18 +17,16 @@ mod tests {
         infrastructure::domain::book::repository::BookRepository,
     };
 
-    use super::*;
+    fn setup() -> BookRepository {
+        let mut book_repo = BookRepository::new(":memory:".to_string());
+        book_repo.run_migrations();
+        book_repo
+    }
 
-    #[test]
-    fn add_book() {
-        let book_repo = BookRepository::new(
-            "/Users/phil/dev/macos-book-app/sample-library/metadata.db".to_string(),
-        );
-        let mut book_service = BookService::new(book_repo);
-
-        let result = book_service.create(NewBookDto {
-            title: "Test Book".to_string(),
-            author_list: vec!["Phil".to_string()],
+    fn new_book_dto_factory(title: String) -> NewBookDto {
+        NewBookDto {
+            title: title,
+            author_list: vec!["Logic".to_string()],
             timestamp: None,
             pubdate: None,
             series_index: 0.0,
@@ -36,14 +34,18 @@ mod tests {
             lccn: None,
             flags: 0,
             has_cover: Some(false),
-        });
-
-        println!("Result: {:?}", result.unwrap());
+        }
     }
 
     #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+    fn add_book() {
+        let mut book_repo = setup();
+        book_repo.run_migrations();
+        let mut book_service = BookService::new(book_repo);
+
+        let result = book_service.create(new_book_dto_factory("Test Book 1".to_string()));
+
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().title, "Test Book 1");
     }
 }
