@@ -1,5 +1,5 @@
-use crate::application::services::domain::book::dto::NewBookDto;
-use crate::domain::book::entity::{Book, NewBook};
+use crate::application::services::domain::book::dto::{NewBookDto, UpdateBookDto};
+use crate::domain::book::entity::{Book, NewBook, UpdateBookData};
 use crate::domain::book::repository::Repository as BookRepository;
 
 pub struct BookService<Repo>
@@ -30,5 +30,12 @@ where
 
     pub fn all(&mut self) -> Result<Vec<Book>, ()> {
         self.book_repository.all()
+    }
+
+    pub fn update(&mut self, id: i32, dto: UpdateBookDto) -> Result<Book, ()> {
+        let updatable = UpdateBookData::try_from(dto)?;
+        let book = self.book_repository.update(id, &updatable);
+
+        book
     }
 }

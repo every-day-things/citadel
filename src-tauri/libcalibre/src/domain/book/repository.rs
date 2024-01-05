@@ -8,5 +8,5 @@ pub trait Repository {
   /// Find one book by ID.
   fn find_by_id(&mut self, id: i32) -> Result<Book, ()>;
   /// Update a book
-  fn update(&self, id: i32, book: &UpdateBookData) -> Result<Book, ()>;
+  fn update(&mut self, id: i32, book: &UpdateBookData) -> Result<Book, ()>;
 }

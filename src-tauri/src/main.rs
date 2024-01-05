@@ -3,7 +3,10 @@
 
 use std::env;
 
-use libcalibre::{infrastructure::domain::book::repository::BookRepository, application::services::domain::book::{service::BookService, dto::NewBookDto}};
+use libcalibre::{
+    application::services::domain::book::{dto::UpdateBookDto, service::BookService},
+    infrastructure::domain::book::repository::BookRepository,
+};
 use specta::ts::{BigIntExportBehavior, ExportConfig};
 
 pub mod libs {
@@ -58,6 +61,22 @@ async fn main() -> std::io::Result<()> {
     );
     let mut book_service = BookService::new(book_repo);
     let book_list = book_service.all();
+    let updated = book_service.update(
+        317,
+        UpdateBookDto {
+            title: Some("Test Book 1".to_string()),
+            author_list: None,
+            timestamp: None,
+            pubdate: None,
+            series_index: None,
+            isbn: None,
+            lccn: None,
+            flags: None,
+            has_cover: None,
+        },
+    );
+
+    println!("{:?}", updated);
     println!("{:?}", book_list);
     // let new_book = book_service.create(NewBookDto {
     //     title: "Test Book 2".to_string(),

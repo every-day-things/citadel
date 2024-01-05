@@ -72,11 +72,11 @@ impl Repository for BookRepository {
         Ok(book_generated)
     }
 
-    fn find_by_id(&mut self, id: i32) -> Result<Book, ()> {
+    fn find_by_id(&mut self, search_id: i32) -> Result<Book, ()> {
         use crate::schema::books::dsl::*;
 
         let book = books
-            .filter(id.eq(id))
+            .filter(id.eq(search_id))
             .select(Book::as_select())
             .get_result::<Book>(&mut self.connection)
             .optional();
@@ -89,13 +89,20 @@ impl Repository for BookRepository {
     }
 
     fn update(
-        &self,
-        id: i32,
+        &mut self,
+        book_id: i32,
         book: &crate::domain::book::entity::UpdateBookData,
     ) -> Result<Book, ()> {
         use crate::schema::books::dsl::*;
 
-        Err(())
+        let updated = diesel::update(books)
+            .filter(id.eq(book_id))
+            .set(book)
+            .returning(Book::as_returning())
+            .get_result(&mut self.connection)
+            .or(Err(()));
+
+        updated
     }
 
     fn all(&mut self) -> Result<Vec<Book>, ()> {
