@@ -1,6 +1,6 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, collections::HashMap};
 
-use chrono::NaiveDate;
+use chrono::{NaiveDate, format::StrftimeItems};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, specta::Type, Deserialize, Clone)]
@@ -30,7 +30,9 @@ pub struct LibraryBook {
     pub author_list: Vec<String>,
     pub id: String,
     pub uuid: Option<String>,
+
     pub sortable_title: Option<String>,
+    pub author_sort_lookup: Option<HashMap<String, String>>,
 
     pub filename: String,
     pub absolute_path: PathBuf,

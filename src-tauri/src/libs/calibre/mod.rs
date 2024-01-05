@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::io::Error;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -63,19 +64,28 @@ fn book_to_library_book(
 ) -> LibraryBook {
     LibraryBook {
         title: book.title.clone(),
-        author_list: author_names,
+        author_list: author_names.clone(),
         id: book.id().unwrap().to_string(),
         uuid: book.uuid.clone(),
+
         sortable_title: book.sort.clone(),
+        author_sort_lookup: Some(
+            author_names
+                .iter()
+                .map(|a| (a.clone(), a.clone()))
+                .collect::<HashMap<_, _>>()),
+
         filename: "".to_string(),
         absolute_path: PathBuf::new(),
-        cover_image: None,
+
         file_list: vec![
             BookFile {
                 path: PathBuf::from(book.path.clone()).join(book_file_name),
                 mime_type: "EPUB".to_string(),
             }
-        ]
+        ],
+
+        cover_image: None,
     }
 }
 

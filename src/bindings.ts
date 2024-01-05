@@ -56,7 +56,7 @@ path: string; publication_date: string | null;
 file_contains_cover: boolean }
 export type ImportableBookType = "EPUB" | "PDF" | "MOBI"
 export type ImportableFile = { path: string }
-export type LibraryBook = { title: string; author_list: string[]; id: string; uuid: string | null; sortable_title: string | null; filename: string; absolute_path: string; file_list: BookFile[]; cover_image: LocalOrRemoteUrl | null }
+export type LibraryBook = { title: string; author_list: string[]; id: string; uuid: string | null; sortable_title: string | null; author_sort_lookup: { [key in string]: string } | null; filename: string; absolute_path: string; file_list: BookFile[]; cover_image: LocalOrRemoteUrl | null }
 export type LocalOrRemote = "Local" | "Remote"
 export type LocalOrRemoteUrl = { kind: LocalOrRemote; url: string; local_path: string | null }
 

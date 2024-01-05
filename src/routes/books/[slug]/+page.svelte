@@ -4,6 +4,7 @@
   import { libraryClient } from "../../../stores/library";
   import type { PageData } from "./$types";
   import type { LibraryBook } from "../../../bindings";
+  import { join } from "@tauri-apps/api/path";
 
   export let data: PageData;
   let book: LibraryBook;
@@ -54,7 +55,7 @@
         type="text"
         id="authors"
         name="authors"
-        value={book?.author_list}
+        value={book?.author_list.join(", ")}
       />
 
       <label for="sortable_authors">Sort authors</label>
@@ -63,7 +64,7 @@
         type="text"
         id="sortable_authors"
         name="sortable_authors"
-        value={book?.author_sort_lookup.map(lookup => Object.values(lookup))}
+        value={Object.entries(book?.author_sort_lookup ?? {}).map(([author, sorted]) => sorted).join(", ")}
       >
       <span class="text-label-small">Sort fields are set automatically.</span>
     </fieldset>
