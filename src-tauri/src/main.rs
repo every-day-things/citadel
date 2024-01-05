@@ -60,11 +60,10 @@ async fn main() -> std::io::Result<()> {
         "/Users/phil/dev/macos-book-app/sample-library/metadata.db".to_string(),
     );
     let mut book_service = BookService::new(book_repo);
-    let book_list = book_service.all();
     let updated = book_service.update(
         317,
         UpdateBookDto {
-            title: Some("Test Book 1".to_string()),
+            title: Some("Test Book 3".to_string()),
             author_list: None,
             timestamp: None,
             pubdate: None,
@@ -75,8 +74,9 @@ async fn main() -> std::io::Result<()> {
             has_cover: None,
         },
     );
-
     println!("{:?}", updated);
+
+    let book_list = book_service.all();
     println!("{:?}", book_list);
     // let new_book = book_service.create(NewBookDto {
     //     title: "Test Book 2".to_string(),
