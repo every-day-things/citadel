@@ -166,12 +166,6 @@ pub fn calibre_load_books_from_db(library_path: String) -> Vec<LibraryBook> {
                 .first::<(String, String)>(conn)
                 .expect("Error loading book file name");
 
-            // let mut calibre_book = book_to_calibre_book(
-            //     b,
-            //     author_names,
-            //     format!("{}.{}", book_file_name.0, book_file_name.1.to_lowercase()),
-            // );
-
             let mut calibre_book = book_to_library_book(
                 b,
                 author_names,
