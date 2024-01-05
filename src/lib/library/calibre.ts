@@ -1,5 +1,3 @@
-import { joinSync } from "$lib/path";
-import { convertFileSrc } from "@tauri-apps/api/tauri";
 import {
   commands,
   type ImportableFile,
@@ -40,53 +38,16 @@ const genLocalCalibreClient = async (
 
       results.forEach((book) => {
         bookCoverCache.set(book.id.toString(), {
-          localPath: joinSync(
-            config.library_path,
-            book.dir_rel_path,
-            "cover.jpg"
-          ),
-          url: convertFileSrc(
-            joinSync(config.library_path, book.dir_rel_path, "cover.jpg")
-          ),
+          localPath: book.cover_image?.local_path ?? '',
+          url: book.cover_image?.url ?? '',
         });
         bookFilePath.set(book.id.toString(), {
-          localPath: joinSync(
-            config.library_path,
-            book.dir_rel_path,
-            book.filename
-          ),
+          localPath: book.file_list[0].path,
           url: undefined,
         });
       });
 
-      const resultsAsLibraryBook = results.map((book): LibraryBook | Error => {
-        const bookAbsPath = bookFilePath.get(book.id.toString())?.localPath
-        if (bookAbsPath === undefined) {
-          return new Error("Book path not found");
-        };
-
-        const bookAsLibraryBook: LibraryBook = {
-          title: book.title,
-          sortable_title: book.title,
-          author_list: book.authors,
-          absolute_path: bookAbsPath,
-          filename: book.filename,
-          id: book.id.toString(),
-          uuid: book.id.toString(),
-
-          file_list: [
-            {
-              path: bookAbsPath,
-              mime_type: "",
-            }
-          ]
-        };
-        return bookAsLibraryBook
-      }).filter((book): book is LibraryBook => {
-        return !(book instanceof Error);
-      });
-
-      return resultsAsLibraryBook;
+      return results;
     },
     sendToDevice: async (book, deviceOptions) => {
       await commands.addBookToExternalDrive(deviceOptions.path, book);

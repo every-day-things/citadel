@@ -5,7 +5,10 @@ use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 use serde::Serialize;
 use tauri::api::file;
 
-use crate::libs::calibre::calibre_load_books_from_db;
+use crate::{
+    book::{LocalOrRemote, LocalOrRemoteUrl},
+    libs::calibre::calibre_load_books_from_db,
+};
 
 const PORT: u16 = 61440;
 const HOST: &str = "127.0.0.1";
@@ -31,7 +34,10 @@ async fn get_asset(data: web::Data<AppState>, book_id: web::Path<String>) -> imp
             .iter()
             .find(|x| x.id.to_string() == book_id_val)
             .unwrap()
-            .dir_rel_path
+            .cover_image
+            .clone()
+            .unwrap()
+            .url
             .clone()
     );
 
@@ -43,11 +49,18 @@ async fn get_asset(data: web::Data<AppState>, book_id: web::Path<String>) -> imp
 
 #[get("/books")]
 async fn list_books(data: web::Data<AppState>) -> impl Responder {
-    let books = calibre_load_books_from_db(data.library_path.clone()).iter().map(|x| {
-        let mut x = x.clone();
-        x.cover_url = Some(format!("https://carafe.beardie-cloud.ts.net/covers/{}.jpg", x.id));
-        x
-    }).collect::<Vec<_>>();
+    let books = calibre_load_books_from_db(data.library_path.clone())
+        .iter()
+        .map(|x| {
+            let mut x = x.clone();
+            x.cover_image = Some(LocalOrRemoteUrl {
+                kind: LocalOrRemote::Remote,
+                url: format!("https://carafe.beardie-cloud.ts.net/covers/{}.jpg", x.id),
+                local_path: None,
+            });
+            x
+        })
+        .collect::<Vec<_>>();
     HttpResponse::Ok().json(Items { items: books })
 }
 

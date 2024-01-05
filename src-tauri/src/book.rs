@@ -3,7 +3,20 @@ use std::path::PathBuf;
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, specta::Type, Deserialize)]
+#[derive(Serialize, specta::Type, Deserialize, Clone)]
+pub enum LocalOrRemote {
+    Local,
+    Remote
+}
+
+#[derive(Serialize, specta::Type, Deserialize, Clone)]
+pub struct LocalOrRemoteUrl {
+    pub kind: LocalOrRemote,
+    pub url: String,
+    pub local_path: Option<PathBuf>,
+}
+
+#[derive(Serialize, specta::Type, Deserialize, Clone)]
 pub struct BookFile {
     /// The absolute path to the file, including extension.
     pub path: PathBuf,
@@ -11,7 +24,7 @@ pub struct BookFile {
     pub mime_type: String,
 }
 
-#[derive(Serialize, specta::Type, Deserialize)]
+#[derive(Serialize, specta::Type, Deserialize, Clone)]
 pub struct LibraryBook {
     pub title: String,
     pub author_list: Vec<String>,
@@ -23,6 +36,8 @@ pub struct LibraryBook {
     pub absolute_path: PathBuf,
 
     pub file_list: Vec<BookFile>,
+
+    pub cover_image: Option<LocalOrRemoteUrl>,
 }
 
 #[derive(Serialize, specta::Type)]

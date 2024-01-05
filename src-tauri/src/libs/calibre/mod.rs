@@ -2,8 +2,12 @@ use std::io::Error;
 use std::path::PathBuf;
 use std::str::FromStr;
 
+use crate::book::BookFile;
 use crate::book::ImportableBookMetadata;
 use crate::book::ImportableBookType;
+use crate::book::LibraryBook;
+use crate::book::LocalOrRemote;
+use crate::book::LocalOrRemoteUrl;
 use crate::libs::file_formats::cover_data;
 use crate::libs::file_formats::read_epub_metadata;
 use crate::templates::format_calibre_metadata_opf;
@@ -32,20 +36,6 @@ use schema::books_authors_link;
 use schema::data;
 use std::path::Path;
 
-#[derive(Serialize, specta::Type, Debug, Clone)]
-pub struct CalibreBook {
-    pub id: i32,
-    title: String,
-    sortable_title: String,
-    sortable_author_list: String,
-    pub dir_rel_path: String,
-    filename: String,
-    has_cover: bool,
-    order_in_series: String,
-    authors: Vec<String>,
-    pub cover_url: Option<String>,
-}
-
 #[derive(Serialize, Deserialize, specta::Type, Debug)]
 pub struct ImportableFile {
     path: PathBuf,
@@ -66,24 +56,29 @@ fn get_supported_extensions() -> Vec<&'static str> {
     vec!["epub", "mobi", "pdf"]
 }
 
-fn book_to_calibre_book(
+fn book_to_library_book(
     book: &Book,
     author_names: Vec<String>,
     book_file_name: String,
-) -> CalibreBook {
-    CalibreBook {
-        id: book.id.unwrap(),
+) -> LibraryBook {
+    LibraryBook {
         title: book.title.clone(),
-        sortable_title: book.sort.clone().unwrap_or(book.title.clone()),
-        sortable_author_list: book.author_sort.clone().unwrap_or("".to_string()),
-        dir_rel_path: book.path.clone(),
-        filename: book_file_name.clone(),
-        has_cover: book.has_cover.unwrap_or(false),
-        order_in_series: "".to_string(),
-        authors: author_names,
-        cover_url: None,
+        author_list: author_names,
+        id: book.id().unwrap().to_string(),
+        uuid: book.uuid.clone(),
+        sortable_title: book.sort.clone(),
+        filename: "".to_string(),
+        absolute_path: PathBuf::new(),
+        cover_image: None,
+        file_list: vec![
+            BookFile {
+                path: PathBuf::from(book.path.clone()).join(book_file_name),
+                mime_type: "EPUB".to_string(),
+            }
+        ]
     }
 }
+
 pub fn establish_connection(library_path: String) -> diesel::SqliteConnection {
     let database_url = library_path + "/metadata.db";
 
@@ -132,7 +127,7 @@ pub fn init_client(library_path: String) -> CalibreClientConfig {
 
 #[tauri::command]
 #[specta::specta]
-pub fn calibre_load_books_from_db(library_path: String) -> Vec<CalibreBook> {
+pub fn calibre_load_books_from_db(library_path: String) -> Vec<LibraryBook> {
     let conn = &mut establish_connection(library_path.clone());
     let results = books::dsl::books
         .select(Book::as_select())
@@ -161,17 +156,27 @@ pub fn calibre_load_books_from_db(library_path: String) -> Vec<CalibreBook> {
                 .first::<(String, String)>(conn)
                 .expect("Error loading book file name");
 
-            let mut calibre_book = book_to_calibre_book(
+            // let mut calibre_book = book_to_calibre_book(
+            //     b,
+            //     author_names,
+            //     format!("{}.{}", book_file_name.0, book_file_name.1.to_lowercase()),
+            // );
+
+            let mut calibre_book = book_to_library_book(
                 b,
                 author_names,
                 format!("{}.{}", book_file_name.0, book_file_name.1.to_lowercase()),
             );
 
             let file_path = Path::new(&library_path)
-                .join(&calibre_book.dir_rel_path.clone())
+                .join(&b.path.clone())
                 .join("cover.jpg");
             let url = convert_file_src_to_url(&file_path);
-            calibre_book.cover_url = Some(url);
+            calibre_book.cover_image = Some(LocalOrRemoteUrl {
+                kind: LocalOrRemote::Local,
+                local_path: Some(file_path),
+                url,
+            });
 
             calibre_book
         })
@@ -318,7 +323,7 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
 
 #[tauri::command]
 #[specta::specta]
-pub fn update_book(library_path: String, book_id: String, new_title: String) -> Vec<CalibreBook> {
+pub fn update_book(library_path: String, book_id: String, new_title: String) -> Vec<LibraryBook> {
     let conn = &mut establish_connection(library_path.clone());
     let book_id_int = book_id.parse::<i32>().unwrap();
 
@@ -330,7 +335,7 @@ pub fn update_book(library_path: String, book_id: String, new_title: String) -> 
 
     calibre_load_books_from_db(library_path)
         .iter()
-        .filter(|b| b.id == updated.id.unwrap())
+        .filter(|b| b.id == updated.id.unwrap().to_string())
         .cloned()
         .collect()
 }
