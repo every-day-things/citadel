@@ -1,14 +1,10 @@
-mod application;
+pub mod application;
 mod domain;
-mod infrastructure;
+pub mod infrastructure;
 mod models;
 mod operations;
 mod persistence;
 mod schema;
-
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
 
 #[cfg(test)]
 mod tests {

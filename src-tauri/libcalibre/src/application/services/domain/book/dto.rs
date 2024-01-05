@@ -3,7 +3,7 @@ use chrono::NaiveDateTime;
 use crate::domain::book::entity::NewBook;
 
 pub struct NewBookDto {
-  pub(crate) title: String,
+  pub title: String,
   pub author_list: Vec<String>,
   pub timestamp: Option<NaiveDateTime>,
   pub pubdate: Option<NaiveDateTime>,
