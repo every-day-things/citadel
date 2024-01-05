@@ -15,7 +15,6 @@ pub fn create_book(library_folder_path: &Path, book: NewBook) -> Result<Book, ()
         author_sort: book.author_sort,
         isbn: book.isbn,
         lccn: book.lccn,
-        path: book.path,
         flags: book.flags,
         has_cover: book.has_cover,
     };
@@ -23,11 +22,20 @@ pub fn create_book(library_folder_path: &Path, book: NewBook) -> Result<Book, ()
     match conn {
         Err(_) => Err(()),
         Ok(connection) => {
-            Ok(diesel::insert_into(books)
+            let inserted_book = diesel::insert_into(books)
                 .values(user_to_create)
                 .returning(Book::as_returning())
                 .get_result(connection)
-                .expect("Error saving new book"))
+                .expect("Error saving new book");
+
+            // SQLite doesn't add the UUID until after our `insert_into` call,
+            // so we need to fetch it from the DB to provide it to the caller.
+            let mut book_generated = inserted_book.clone();
+            let book_uuid = uuid_for_book(connection, inserted_book.id);
+            book_generated.uuid = book_uuid;
+
+            println!("Saved new book: {:?}", book_generated);
+            Ok(book_generated)
         }
     }
 }
@@ -47,4 +55,16 @@ pub fn update_book(library_folder_path: &Path, updates: &Book) -> Result<Book, (
             Ok(updated)
         }
     }
+}
+
+fn uuid_for_book(conn: &mut SqliteConnection, book_id: i32) -> Option<String> {
+    use crate::schema::books::dsl::*;
+
+    let book_uuid = books
+        .select(uuid)
+        .filter(id.eq(book_id))
+        .first::<Option<String>>(conn)
+        .expect("Error getting book UUID");
+
+    book_uuid
 }

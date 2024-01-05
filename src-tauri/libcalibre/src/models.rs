@@ -30,7 +30,7 @@ pub struct Author {
     pub link: String,
 }
 
-/// All the fields of `Book` that can be updated.
+/// All the fields of `Book` that can be chosen on insert.
 #[derive(Insertable)]
 #[diesel(table_name = books)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
@@ -42,14 +42,13 @@ pub struct NewBook {
     pub author_sort: Option<String>,
     pub isbn: Option<String>,
     pub lccn: Option<String>,
-    pub path: String,
     pub flags: i32,
     pub has_cover: Option<bool>,
 }
 
 /// A Book record in the database.
 /// For new books, see `NewBook`.
-#[derive(Queryable, Selectable, Identifiable, AsChangeset)]
+#[derive(Clone, Debug, Queryable, Selectable, Identifiable, AsChangeset)]
 #[diesel(table_name = books)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Book {
