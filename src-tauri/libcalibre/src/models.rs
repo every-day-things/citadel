@@ -1,6 +1,6 @@
-use chrono::NaiveDateTime;
-
 use diesel::prelude::*;
+
+use crate::domain::book::entity::Book;
 
 use super::schema::*;
 
@@ -28,44 +28,6 @@ pub struct Author {
     pub name: String,
     pub sort: Option<String>,
     pub link: String,
-}
-
-/// All the fields of `Book` that can be chosen on insert.
-#[derive(Insertable)]
-#[diesel(table_name = books)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
-pub struct NewBook {
-    pub title: String,
-    pub timestamp: Option<NaiveDateTime>,
-    pub pubdate: Option<NaiveDateTime>,
-    pub series_index: f32,
-    pub author_sort: Option<String>,
-    pub isbn: Option<String>,
-    pub lccn: Option<String>,
-    pub flags: i32,
-    pub has_cover: Option<bool>,
-}
-
-/// A Book record in the database.
-/// For new books, see `NewBook`.
-#[derive(Clone, Debug, Queryable, Selectable, Identifiable, AsChangeset)]
-#[diesel(table_name = books)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
-pub struct Book {
-    pub id: i32,
-    pub uuid: Option<String>,
-    pub title: String,
-    pub sort: Option<String>,
-    pub timestamp: Option<NaiveDateTime>,
-    pub pubdate: Option<NaiveDateTime>,
-    pub series_index: f32,
-    pub author_sort: Option<String>,
-    pub isbn: Option<String>,
-    pub lccn: Option<String>,
-    pub path: String,
-    pub flags: i32,
-    pub has_cover: Option<bool>,
-    pub last_modified: NaiveDateTime,
 }
 
 #[derive(Queryable, Selectable)]

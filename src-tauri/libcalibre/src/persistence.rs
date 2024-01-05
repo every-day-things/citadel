@@ -25,8 +25,8 @@ fn sort_book_title(title: String) -> String {
     title.clone()
 }
 
-pub fn establish_connection(library_folder_path: &Path) -> Result<diesel::SqliteConnection, ()> {
-    let db_path = library_folder_path.join("metadata.db");
+pub fn establish_connection(db_path: String) -> Result<diesel::SqliteConnection, ()> {
+    // let db_path = db_path.join("metadata.db");
 
     // Setup custom SQL functions. Required because Calibre does this.
     // See: https://github.com/kovidgoyal/calibre/blob/7f3ccb333d906f5867636dd0dc4700b495e5ae6f/src/calibre/library/database.py#L55-L70
@@ -34,7 +34,7 @@ pub fn establish_connection(library_folder_path: &Path) -> Result<diesel::Sqlite
     sql_function!(fn uuid4() -> Text);
 
     let mut connection =
-        diesel::SqliteConnection::establish(db_path.to_str().unwrap()).or(Err(()))?;
+        diesel::SqliteConnection::establish(db_path.as_str()).or(Err(()))?;
 
     // Register SQL function implementations. Ignore any errors.
     let _ = title_sort::register_impl(&mut connection, sort_book_title);
