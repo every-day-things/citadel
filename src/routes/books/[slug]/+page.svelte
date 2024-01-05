@@ -3,10 +3,10 @@
   import { onMount } from "svelte";
   import { libraryClient } from "../../../stores/library";
   import type { PageData } from "./$types";
-  import type { CalibreBook } from "../../../bindings";
+  import type { LibraryBook } from "../../../bindings";
 
   export let data: PageData;
-  let book: CalibreBook;
+  let book: LibraryBook;
   let pageTitle: string;
 
   onMount(async () => {
@@ -14,7 +14,7 @@
       (book) => book.id.toString() === data?.id
     )[0];
 
-    pageTitle = `"${book?.title}" by ${book?.authors.join(", ")}`;
+    pageTitle = `"${book?.title}" by ${book?.author_list.join(", ")}`;
   });
 
   const save = async (event: SubmitEvent) => {
@@ -54,7 +54,7 @@
         type="text"
         id="authors"
         name="authors"
-        value={book?.authors}
+        value={book?.author_list}
       />
 
       <label for="sortable_authors">Sort authors</label>
@@ -63,7 +63,7 @@
         type="text"
         id="sortable_authors"
         name="sortable_authors"
-        value={book?.sortable_author_list}
+        value={book?.author_sort_lookup.map(lookup => Object.values(lookup))}
       >
       <span class="text-label-small">Sort fields are set automatically.</span>
     </fieldset>
