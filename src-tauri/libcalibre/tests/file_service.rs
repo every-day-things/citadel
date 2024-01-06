@@ -18,7 +18,7 @@ mod file_service_tests {
     fn setup() -> (Arc<Mutex<FileRepository>>, BookRepository) {
         let connection_url = "file::memory:?cache=shared";
         let mut book_repo = BookRepository::new(connection_url);
-        let mut file_repo = Arc::new(Mutex::new(FileRepository::new(connection_url)));
+        let file_repo = Arc::new(Mutex::new(FileRepository::new(connection_url)));
 
         // Run migrations for the schema: affects all Repos
         book_repo.run_migrations();

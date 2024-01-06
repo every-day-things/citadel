@@ -33,8 +33,6 @@ impl BookRepository {
 fn uuid_for_book(conn: &mut SqliteConnection, book_id: i32) -> Option<String> {
     use crate::schema::books::dsl::*;
 
-    
-
     books
         .select(uuid)
         .filter(id.eq(book_id))
@@ -121,8 +119,6 @@ impl Repository for BookRepository {
         book: &crate::domain::book::entity::UpdateBookData,
     ) -> Result<Book, ()> {
         use crate::schema::books::dsl::*;
-
-        
 
         diesel::update(books)
             .filter(id.eq(book_id))
