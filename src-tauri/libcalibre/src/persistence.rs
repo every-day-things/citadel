@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use diesel::prelude::*;
 use diesel::sql_types::Text;
 use regex::Regex;
@@ -33,8 +31,7 @@ pub fn establish_connection(db_path: String) -> Result<diesel::SqliteConnection,
     sql_function!(fn title_sort(title: Text) -> Text);
     sql_function!(fn uuid4() -> Text);
 
-    let mut connection =
-        diesel::SqliteConnection::establish(db_path.as_str()).or(Err(()))?;
+    let mut connection = diesel::SqliteConnection::establish(db_path.as_str()).or(Err(()))?;
 
     // Register SQL function implementations. Ignore any errors.
     let _ = title_sort::register_impl(&mut connection, sort_book_title);
