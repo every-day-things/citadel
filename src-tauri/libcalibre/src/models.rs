@@ -24,7 +24,7 @@ pub struct Annotation {
 #[diesel(table_name = authors)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Author {
-    pub id: Option<i32>,
+    pub id: i32,
     pub name: String,
     pub sort: Option<String>,
     pub link: String,

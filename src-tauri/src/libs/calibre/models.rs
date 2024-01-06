@@ -20,6 +20,7 @@ pub struct Annotation {
     pub searchable_text: String,
 }
 
+// Added to libcalibre
 #[derive(Queryable, Selectable, Identifiable, Insertable)]
 #[diesel(table_name = authors)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
@@ -30,6 +31,7 @@ pub struct Author {
     pub link: String,
 }
 
+// Added to libcalibre
 #[derive(Queryable, Selectable, Identifiable, Insertable)]
 #[diesel(table_name = books)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]

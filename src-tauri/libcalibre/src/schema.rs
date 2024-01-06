@@ -15,7 +15,7 @@ diesel::table! {
 
 diesel::table! {
     authors (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         name -> Text,
         sort -> Nullable<Text>,
         link -> Text,
