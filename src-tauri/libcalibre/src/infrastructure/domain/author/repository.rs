@@ -66,14 +66,14 @@ impl Repository for AuthorRepository {
     ) -> Result<Author, ()> {
         use crate::schema::authors::dsl::*;
 
-        let updated = diesel::update(authors)
+        
+
+        diesel::update(authors)
             .filter(id.eq(author_id))
             .set(author)
             .returning(Author::as_returning())
             .get_result(&mut self.connection)
-            .or(Err(()));
-
-        updated
+            .or(Err(()))
     }
 
     fn all(&mut self) -> Result<Vec<Author>, ()> {

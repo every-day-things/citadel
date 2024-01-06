@@ -34,8 +34,8 @@ where
 
     pub fn update(&mut self, id: i32, dto: UpdateBookDto) -> Result<Book, ()> {
         let updatable = UpdateBookData::try_from(dto)?;
-        let book = self.book_repository.update(id, &updatable);
+        
 
-        book
+        self.book_repository.update(id, &updatable)
     }
 }

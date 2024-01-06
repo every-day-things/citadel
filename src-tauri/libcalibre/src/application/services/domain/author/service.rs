@@ -34,8 +34,8 @@ where
 
     pub fn update(&mut self, id: i32, dto: UpdateAuthorDto) -> Result<Author, ()> {
         let updatable = UpdateAuthorData::try_from(dto)?;
-        let author = self.author_repository.update(id, &updatable);
+        
 
-        author
+        self.author_repository.update(id, &updatable)
     }
 }

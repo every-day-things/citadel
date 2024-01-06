@@ -61,10 +61,10 @@ where
             .file_repository
             .lock()
             .map_err(|_| "File repository cannot be used by this thread")?;
-        let file = file_repo_guard
-            .update(id, &updatable)
-            .map_err(|_| "Could not update file".into());
+        
 
-        file
+        file_repo_guard
+            .update(id, &updatable)
+            .map_err(|_| "Could not update file".into())
     }
 }

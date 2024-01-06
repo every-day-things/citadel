@@ -82,13 +82,13 @@ impl Repository for FileRepository {
     ) -> Result<File, ()> {
         use crate::schema::data::dsl::*;
 
-        let updated = diesel::update(data)
+        
+
+        diesel::update(data)
             .filter(id.eq(file_id))
             .set(file)
             .returning(File::as_returning())
             .get_result(&mut self.connection)
-            .or(Err(()));
-
-        updated
+            .or(Err(()))
     }
 }

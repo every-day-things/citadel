@@ -33,13 +33,13 @@ impl BookRepository {
 fn uuid_for_book(conn: &mut SqliteConnection, book_id: i32) -> Option<String> {
     use crate::schema::books::dsl::*;
 
-    let book_uuid = books
+    
+
+    books
         .select(uuid)
         .filter(id.eq(book_id))
         .first::<Option<String>>(conn)
-        .expect("Error getting book UUID");
-
-    book_uuid
+        .expect("Error getting book UUID")
 }
 
 impl Repository for BookRepository {
@@ -122,14 +122,14 @@ impl Repository for BookRepository {
     ) -> Result<Book, ()> {
         use crate::schema::books::dsl::*;
 
-        let updated = diesel::update(books)
+        
+
+        diesel::update(books)
             .filter(id.eq(book_id))
             .set(book)
             .returning(Book::as_returning())
             .get_result(&mut self.connection)
-            .or(Err(()));
-
-        updated
+            .or(Err(()))
     }
 
     fn all(&mut self) -> Result<Vec<Book>, ()> {
