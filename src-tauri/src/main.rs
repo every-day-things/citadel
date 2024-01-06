@@ -56,9 +56,8 @@ fn run_tauri_backend() -> std::io::Result<()> {
 async fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
 
-    let book_repo = BookRepository::new(
-        "/Users/phil/dev/macos-book-app/sample-library/metadata.db".to_string(),
-    );
+    let book_repo =
+        BookRepository::new("/Users/phil/dev/macos-book-app/sample-library/metadata.db");
     let mut book_service = BookService::new(book_repo);
     let updated = book_service.update(
         317,

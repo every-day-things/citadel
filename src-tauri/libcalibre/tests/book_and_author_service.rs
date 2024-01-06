@@ -11,8 +11,8 @@ mod book_and_author_service_tests {
     };
 
     fn setup() -> (BookRepository, AuthorRepository) {
-        let connection_url = "file::memory:?cache=shared".to_string();
-        let mut book_repo = BookRepository::new(connection_url.clone());
+        let connection_url = "file::memory:?cache=shared";
+        let mut book_repo = BookRepository::new(connection_url);
         let mut author_repo = AuthorRepository::new(connection_url);
         book_repo.run_migrations();
         author_repo.run_migrations();

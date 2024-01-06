@@ -9,7 +9,7 @@ mod author_service_tests {
     };
 
     fn setup() -> AuthorRepository {
-        let mut author_repo = AuthorRepository::new(":memory:".to_string());
+        let mut author_repo = AuthorRepository::new(":memory:");
         author_repo.run_migrations();
         author_repo
     }

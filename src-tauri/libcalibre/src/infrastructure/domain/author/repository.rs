@@ -15,9 +15,9 @@ pub struct AuthorRepository {
 }
 
 impl AuthorRepository {
-    pub fn new(connection_url: String) -> Self {
+    pub fn new(connection_url: &str) -> Self {
         Self {
-            connection: establish_connection(connection_url.clone()).unwrap(),
+            connection: establish_connection(connection_url).unwrap(),
         }
     }
 

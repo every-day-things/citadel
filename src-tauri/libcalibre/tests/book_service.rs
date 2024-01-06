@@ -9,7 +9,7 @@ mod book_service_tests {
     };
 
     fn setup() -> BookRepository {
-        let mut book_repo = BookRepository::new(":memory:".to_string());
+        let mut book_repo = BookRepository::new(":memory:");
         book_repo.run_migrations();
         book_repo
     }
