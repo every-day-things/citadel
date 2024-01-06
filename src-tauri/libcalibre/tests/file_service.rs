@@ -1,5 +1,7 @@
 #[cfg(test)]
 mod file_service_tests {
+    use std::sync::{Arc, Mutex};
+
     use libcalibre::{
         application::services::domain::{
             book::{dto::NewBookDto, service::BookService},
@@ -13,11 +15,12 @@ mod file_service_tests {
         },
     };
 
-    fn setup() -> (FileRepository, BookRepository) {
+    fn setup() -> (Arc<Mutex<FileRepository>>, BookRepository) {
         let connection_url = "file::memory:?cache=shared";
         let mut book_repo = BookRepository::new(connection_url);
-        let mut file_repo = FileRepository::new(connection_url);
-        file_repo.run_migrations();
+        let mut file_repo = Arc::new(Mutex::new(FileRepository::new(connection_url)));
+
+        // Run migrations for the schema: affects all Repos
         book_repo.run_migrations();
 
         (file_repo, book_repo)
@@ -49,8 +52,9 @@ mod file_service_tests {
     #[test]
     fn add_file() {
         let (file_repo, book_repo) = setup();
+
         let mut book_service = BookService::new(book_repo);
-        let mut file_service = FileService::new(file_repo);
+        let file_service = FileService::new(file_repo);
 
         let book = book_service
             .create(new_book_dto_factory("Book for File Test".to_string()))
