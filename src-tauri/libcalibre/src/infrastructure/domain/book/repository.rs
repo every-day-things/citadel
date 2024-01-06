@@ -88,6 +88,33 @@ impl Repository for BookRepository {
         }
     }
 
+    fn create_book_author_link(&mut self, book_id: i32, author_id: i32) -> Result<(), ()> {
+        use crate::schema::books_authors_link::dsl::*;
+
+        let link = diesel::insert_into(books_authors_link)
+            .values((book.eq(book_id), author.eq(author_id)))
+            .execute(&mut self.connection);
+
+        match link {
+            Ok(_) => Ok(()),
+            Err(_) => Err(()),
+        }
+    }
+
+    fn find_author_ids_by_book_id(&mut self, book_id: i32) -> Result<Vec<i32>, ()> {
+        use crate::schema::books_authors_link::dsl::*;
+
+        let author_ids = books_authors_link
+            .filter(book.eq(book_id))
+            .select(author)
+            .load::<i32>(&mut self.connection);
+
+        match author_ids {
+            Ok(ids) => Ok(ids),
+            Err(_) => Err(()),
+        }
+    }
+
     fn update(
         &mut self,
         book_id: i32,
