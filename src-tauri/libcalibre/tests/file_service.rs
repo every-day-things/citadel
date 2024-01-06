@@ -23,10 +23,10 @@ mod file_service_tests {
         (file_repo, book_repo)
     }
 
-    fn new_file_dto_factory(filename: String, book_id: i32) -> NewFileDto {
+    fn new_file_dto_factory(filename: String, book_id: i32, format: String) -> NewFileDto {
         NewFileDto {
             book_id,
-            file_format: "EPUB".to_string(),
+            file_format: format,
             file_size_bytes: 250374,
             name_without_extension: filename,
         }
@@ -56,7 +56,11 @@ mod file_service_tests {
             .create(new_book_dto_factory("Book for File Test".to_string()))
             .unwrap();
         let result = file_service
-            .create(new_file_dto_factory("Filename1".to_string(), book.id))
+            .create(new_file_dto_factory(
+                "Filename1".to_string(),
+                book.id,
+                "EPUB".to_string(),
+            ))
             .unwrap();
 
         // Verify file we got back
@@ -77,7 +81,11 @@ mod file_service_tests {
             .create(new_book_dto_factory("Book for File Test".to_string()))
             .unwrap();
         let original_file = file_service
-            .create(new_file_dto_factory("Filename1".to_string(), book.id))
+            .create(new_file_dto_factory(
+                "Filename1".to_string(),
+                book.id,
+                "EPUB".to_string(),
+            ))
             .unwrap();
 
         let updated = file_service.update(
@@ -100,29 +108,37 @@ mod file_service_tests {
         assert_eq!(updated.format, "MOBI");
     }
 
-    // #[test]
-    // fn find_all_for_book_id() {
-    //     let (file_repo, book_repo) = setup();
-    //     let mut book_service = BookService::new(book_repo);
-    //     let mut file_service = FileService::new(file_repo);
+    #[test]
+    fn find_all_for_book_id() {
+        let (file_repo, book_repo) = setup();
+        let mut book_service = BookService::new(book_repo);
+        let mut file_service = FileService::new(file_repo);
 
-    //     let book = book_service
-    //         .create(new_book_dto_factory("Book for File Test".to_string()))
-    //         .unwrap();
-    //     let _ = file_service
-    //         .create(new_file_dto_factory("Filename1".to_string(), book.id))
-    //         .unwrap();
-    //     let _ = file_service
-    //         .create(new_file_dto_factory("Filename2".to_string(), book.id))
-    //         .unwrap();
+        let book = book_service
+            .create(new_book_dto_factory("Book for File Test".to_string()))
+            .unwrap();
+        let _ = file_service
+            .create(new_file_dto_factory(
+                "Filename1".to_string(),
+                book.id,
+                "EPUB".to_string(),
+            ))
+            .unwrap();
+        let _ = file_service
+            .create(new_file_dto_factory(
+                "Filename2".to_string(),
+                book.id,
+                "MOBI".to_string(),
+            ))
+            .unwrap();
 
-    //     let book_in_db = file_service.find_all_for_book_id(book.id).unwrap();
-    //     assert_eq!(book_in_db.len(), 2);
-    //     if let [item1, item2] = &book_in_db[..] {
-    //         assert_eq!(item1.name, "Filename1");
-    //         assert_eq!(item2.name, "Filename2");
-    //     } else {
-    //         panic!("Expected two items");
-    //     }
-    // }
+        let book_in_db = file_service.find_all_for_book_id(book.id).unwrap();
+        assert_eq!(book_in_db.len(), 2);
+        if let [item1, item2] = &book_in_db[..] {
+            assert_eq!(item1.name, "Filename1");
+            assert_eq!(item2.name, "Filename2");
+        } else {
+            panic!("Expected two items");
+        }
+    }
 }
