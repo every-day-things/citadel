@@ -64,17 +64,6 @@ pub struct CustomColumn {
     pub normalized: bool,
 }
 
-#[derive(Queryable, Selectable, Insertable)]
-#[diesel(table_name = data)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
-pub struct Data {
-    pub id: Option<i32>,
-    pub book: i32,
-    pub format: String,
-    pub uncompressed_size: i32,
-    pub name: String,
-}
-
 #[derive(Queryable, Selectable)]
 #[diesel(table_name = feeds)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]

@@ -74,7 +74,7 @@ diesel::table! {
 
 diesel::table! {
     data (id) {
-        id -> Nullable<Integer>,
+        id -> Integer,
         book -> Integer,
         format -> Text,
         uncompressed_size -> Integer,
