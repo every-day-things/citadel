@@ -1,8 +1,11 @@
 use diesel::prelude::*;
 
-use crate::{persistence::establish_connection, domain::book::entity::{Book, NewBook}};
+use crate::{
+    domain::book::entity::{Book, NewBook},
+    persistence::establish_connection,
+};
 
-pub fn create_book(library_folder_path: String, book: NewBook) -> Result<Book, ()>{
+pub fn create_book(library_folder_path: String, book: NewBook) -> Result<Book, ()> {
     use crate::schema::books::dsl::*;
     let conn = &mut establish_connection(library_folder_path);
     let user_to_create = NewBook {
@@ -55,13 +58,13 @@ pub fn update_book(library_folder_path: String, updates: &Book) -> Result<Book, 
 }
 
 fn uuid_for_book(conn: &mut SqliteConnection, book_id: i32) -> Option<String> {
-  use crate::schema::books::dsl::*;
+    use crate::schema::books::dsl::*;
 
-  let book_uuid = books
-      .select(uuid)
-      .filter(id.eq(book_id))
-      .first::<Option<String>>(conn)
-      .expect("Error getting book UUID");
+    let book_uuid = books
+        .select(uuid)
+        .filter(id.eq(book_id))
+        .first::<Option<String>>(conn)
+        .expect("Error getting book UUID");
 
-  book_uuid
+    book_uuid
 }

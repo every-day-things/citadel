@@ -26,7 +26,7 @@ pub struct NewAuthor {
 #[derive(Deserialize, AsChangeset, Default, Debug)]
 #[diesel(table_name = authors)]
 pub struct UpdateAuthorData {
-  pub(crate) name: Option<String>,
-  pub(crate) sort: Option<String>,
-  pub(crate) link: Option<String>,
+    pub(crate) name: Option<String>,
+    pub(crate) sort: Option<String>,
+    pub(crate) link: Option<String>,
 }

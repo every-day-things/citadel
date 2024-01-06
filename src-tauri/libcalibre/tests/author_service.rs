@@ -46,7 +46,7 @@ mod author_service_tests {
             UpdateAuthorDto {
                 full_name: None,
                 sortable_name: Some("Last Name, First Name Middle".to_string()),
-                external_url: Some("https://github.com/every-day-things/citadel".to_string())
+                external_url: Some("https://github.com/every-day-things/citadel".to_string()),
             },
         );
 
@@ -55,8 +55,14 @@ mod author_service_tests {
         // Not updated
         assert_eq!(&updated.name, "Test Author 1");
         // Was updated
-        assert_eq!(updated.sort, Some("Last Name, First Name Middle".to_string()));
-        assert_eq!(updated.link, "https://github.com/every-day-things/citadel".to_string());
+        assert_eq!(
+            updated.sort,
+            Some("Last Name, First Name Middle".to_string())
+        );
+        assert_eq!(
+            updated.link,
+            "https://github.com/every-day-things/citadel".to_string()
+        );
     }
 
     #[test]

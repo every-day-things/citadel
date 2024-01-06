@@ -42,12 +42,12 @@ pub struct NewBook {
 #[derive(Deserialize, AsChangeset, Default, Debug)]
 #[diesel(table_name = books)]
 pub struct UpdateBookData {
-  pub(crate) title: Option<String>,
-  pub(crate) timestamp: Option<NaiveDateTime>,
-  pub(crate) pubdate: Option<NaiveDateTime>,
-  pub(crate) series_index: Option<f32>,
-  pub(crate) isbn: Option<String>,
-  pub(crate) lccn: Option<String>,
-  pub(crate) flags: Option<i32>,
-  pub(crate) has_cover: Option<bool>,
+    pub(crate) title: Option<String>,
+    pub(crate) timestamp: Option<NaiveDateTime>,
+    pub(crate) pubdate: Option<NaiveDateTime>,
+    pub(crate) series_index: Option<f32>,
+    pub(crate) isbn: Option<String>,
+    pub(crate) lccn: Option<String>,
+    pub(crate) flags: Option<i32>,
+    pub(crate) has_cover: Option<bool>,
 }
