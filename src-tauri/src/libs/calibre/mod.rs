@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::io::Error;
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 use crate::book::BookFile;
 use crate::book::ImportableBookMetadata;
@@ -19,6 +21,10 @@ use diesel::prelude::*;
 use diesel::query_dsl::RunQueryDsl;
 use diesel::sql_types::Text;
 use diesel::Connection;
+use libcalibre::application::services::domain::book_and_author::service::BookAndAuthorService;
+use libcalibre::infrastructure::domain::author::repository::AuthorRepository;
+use libcalibre::infrastructure::domain::book::repository::BookRepository;
+use libcalibre::infrastructure::domain::file::repository::FileRepository;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -58,14 +64,15 @@ fn get_supported_extensions() -> Vec<&'static str> {
 }
 
 fn book_to_library_book(
-    book: &Book,
+    library_path: &String,
+    book: &libcalibre::domain::book::entity::Book,
     author_names: Vec<String>,
-    book_file_name: String,
+    file_list: Vec<libcalibre::domain::file::entity::File>,
 ) -> LibraryBook {
     LibraryBook {
         title: book.title.clone(),
         author_list: author_names.clone(),
-        id: book.id().unwrap().to_string(),
+        id: book.id().to_string(),
         uuid: book.uuid.clone(),
 
         sortable_title: book.sort.clone(),
@@ -73,17 +80,22 @@ fn book_to_library_book(
             author_names
                 .iter()
                 .map(|a| (a.clone(), a.clone()))
-                .collect::<HashMap<_, _>>()),
+                .collect::<HashMap<_, _>>(),
+        ),
 
         filename: "".to_string(),
         absolute_path: PathBuf::new(),
 
-        file_list: vec![
-            BookFile {
-                path: PathBuf::from(book.path.clone()).join(book_file_name),
-                mime_type: "EPUB".to_string(),
-            }
-        ],
+        file_list: file_list
+            .iter()
+            .map(|f| {
+                let file_name_with_ext = format!("{}.{}", f.name, f.format.to_lowercase());
+                BookFile {
+                    path: PathBuf::from(library_path).join(book.path.clone()).join(file_name_with_ext),
+                    mime_type: f.format.clone(),
+                }
+            })
+            .collect(),
 
         cover_image: None,
     }
@@ -137,43 +149,32 @@ pub fn init_client(library_path: String) -> CalibreClientConfig {
 
 #[tauri::command]
 #[specta::specta]
-pub fn calibre_load_books_from_db(library_path: String) -> Vec<LibraryBook> {
-    let conn = &mut establish_connection(library_path.clone());
-    let results = books::dsl::books
-        .select(Book::as_select())
-        .load::<Book>(conn)
-        .expect("error loading books");
+pub fn calibre_load_books_from_db(library_root: String) -> Vec<LibraryBook> {
+    println!("Loading books from {}", library_root);
+    let database_path = library_root.clone() + "/metadata.db";
+
+    let book_repo = Arc::new(Mutex::new(BookRepository::new(&database_path)));
+    let author_repo = Arc::new(Mutex::new(AuthorRepository::new(&database_path)));
+    let file_repo = Arc::new(Mutex::new(FileRepository::new(&database_path)));
+
+    let mut book_and_author_service = BookAndAuthorService::new(book_repo, author_repo, file_repo);
+
+    let results = book_and_author_service
+        .find_all()
+        .expect("Could not load books from DB");
 
     results
         .iter()
         .map(|b| {
-            if b.id.is_none() {
-                panic!("Book has no ID");
-            }
-            let book_authors = books_authors_link::dsl::books_authors_link
-                .filter(books_authors_link::dsl::book.is(b.id.unwrap()))
-                .inner_join(authors::dsl::authors)
-                .select(Author::as_select())
-                .load::<Author>(conn)
-                .expect("error loading books and authors");
-            let author_names = book_authors
-                .iter()
-                .map(|a| a.name.clone())
-                .collect::<Vec<String>>();
-            let book_file_name = data::table
-                .select((data::name, data::format))
-                .filter(data::dsl::book.eq(b.id.unwrap()))
-                .first::<(String, String)>(conn)
-                .expect("Error loading book file name");
-
             let mut calibre_book = book_to_library_book(
-                b,
-                author_names,
-                format!("{}.{}", book_file_name.0, book_file_name.1.to_lowercase()),
+                &library_root,
+                &b.book,
+                b.authors.iter().map(|a| a.name.clone()).collect(),
+                b.files.clone()
             );
 
-            let file_path = Path::new(&library_path)
-                .join(&b.path.clone())
+            let file_path = Path::new(&library_root)
+                .join(b.book.path.clone())
                 .join("cover.jpg");
             let url = convert_file_src_to_url(&file_path);
             calibre_book.cover_image = Some(LocalOrRemoteUrl {

@@ -41,6 +41,10 @@ const genLocalCalibreClient = async (
           localPath: book.cover_image?.local_path ?? '',
           url: book.cover_image?.url ?? '',
         });
+        if (book.file_list.length === 0) {
+          return;
+        }
+
         bookFilePath.set(book.id.toString(), {
           localPath: book.file_list[0].path,
           url: undefined,

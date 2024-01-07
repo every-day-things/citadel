@@ -138,4 +138,51 @@ where
             files,
         })
     }
+
+    pub fn find_all(&mut self) -> Result<Vec<BookWithAuthorsAndFiles>, Box<dyn Error>> {
+        let mut book_repo_guard = self
+            .book_repository
+            .lock()
+            .map_err(|_| "Book Repository cannot be used by this thread")?;
+        let books = book_repo_guard
+            .all()
+            .map_err(|_| "Could not read database to find books")?;
+
+        let mut book_list = Vec::new();
+        for book in books {
+            let author_ids = book_repo_guard
+                .find_author_ids_by_book_id(book.id)
+                .map_err(|_| "Author not found")?;
+
+            let authors: Vec<Author> = author_ids
+                .into_iter()
+                .map(|author_id| {
+                    let mut author_repo_guard = self
+                        .author_repository
+                        .lock()
+                        .map_err(|_| "Author Repository cannot be used by this thread")?;
+                    author_repo_guard
+                        .find_by_id(author_id)
+                        .map_err(|_| "Author not found")
+                })
+                .map(|item| item.map_err(|e| e.into()))
+                .collect::<Result<Vec<Author>, Box<dyn Error>>>()?;
+
+            let mut file_repo_guard = self
+                .file_repository
+                .lock()
+                .map_err(|_| "File Repository cannot be used by this thread")?;
+            let files = file_repo_guard
+                .find_all_for_book_id(book.id)
+                .map_err(|_| "Could not find files for book")?;
+
+            book_list.push(BookWithAuthorsAndFiles {
+                book,
+                authors,
+                files,
+            });
+        }
+
+        Ok(book_list)
+    }
 }
