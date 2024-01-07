@@ -1,6 +1,9 @@
 pub mod application;
-pub mod domain;
+mod domain;
 pub mod infrastructure;
 mod models;
 mod persistence;
 mod schema;
+
+pub use domain::book::entity::Book;
+pub use domain::file::entity::File;

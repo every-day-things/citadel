@@ -34,13 +34,9 @@ pub mod names;
 pub mod schema;
 
 use self::add_book::insert_book_metadata;
-use self::models::Author;
 use self::models::Book;
 use regex::Regex;
-use schema::authors;
 use schema::books;
-use schema::books_authors_link;
-use schema::data;
 use std::path::Path;
 
 #[derive(Serialize, Deserialize, specta::Type, Debug)]
@@ -65,9 +61,9 @@ fn get_supported_extensions() -> Vec<&'static str> {
 
 fn book_to_library_book(
     library_path: &String,
-    book: &libcalibre::domain::book::entity::Book,
+    book: &libcalibre::Book,
     author_names: Vec<String>,
-    file_list: Vec<libcalibre::domain::file::entity::File>,
+    file_list: Vec<libcalibre::File>,
 ) -> LibraryBook {
     LibraryBook {
         title: book.title.clone(),
@@ -150,7 +146,6 @@ pub fn init_client(library_path: String) -> CalibreClientConfig {
 #[tauri::command]
 #[specta::specta]
 pub fn calibre_load_books_from_db(library_root: String) -> Vec<LibraryBook> {
-    println!("Loading books from {}", library_root);
     let database_path = library_root.clone() + "/metadata.db";
 
     let book_repo = Arc::new(Mutex::new(BookRepository::new(&database_path)));
