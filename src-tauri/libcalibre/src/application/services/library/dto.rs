@@ -4,9 +4,9 @@ use crate::application::services::domain::{author::dto::NewAuthorDto, book::dto:
 
 pub struct NewLibraryFileDto {
     pub path: PathBuf,
-    pub name: String,
-    pub size: i64,
-    pub mime_type: String,
+    //pub name: String,
+    //pub size: i64,
+    //pub mime_type: String,
 }
 
 pub struct NewLibraryEntryDto {

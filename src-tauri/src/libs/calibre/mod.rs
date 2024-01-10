@@ -220,9 +220,9 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
                 }],
                 files: Some(vec![NewLibraryFileDto {
                     path: md.path,
-                    name: md.title.clone(),
-                    size: 0,
-                    mime_type: md.file_type.to_string(),
+                    //name: md.title.clone(),
+                    //size: 0,
+                    //mime_type: md.file_type.to_string(),
                 }]),
             });
 
