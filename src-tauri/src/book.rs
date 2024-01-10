@@ -1,6 +1,6 @@
 use std::{path::PathBuf, collections::HashMap};
 
-use chrono::{NaiveDate, format::StrftimeItems};
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, specta::Type, Deserialize, Clone)]

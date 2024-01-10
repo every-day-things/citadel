@@ -1,16 +1,10 @@
-use std::collections::HashMap;
 use std::io::Error;
 use std::path::PathBuf;
 use std::str::FromStr;
-use std::sync::Arc;
-use std::sync::Mutex;
 
-use crate::book::BookFile;
 use crate::book::ImportableBookMetadata;
 use crate::book::ImportableBookType;
 use crate::book::LibraryBook;
-use crate::book::LocalOrRemote;
-use crate::book::LocalOrRemoteUrl;
 use crate::libs::file_formats::cover_data;
 use crate::libs::file_formats::read_epub_metadata;
 use crate::templates::format_calibre_metadata_opf;
@@ -21,14 +15,12 @@ use diesel::prelude::*;
 use diesel::query_dsl::RunQueryDsl;
 use diesel::sql_types::Text;
 use diesel::Connection;
-use libcalibre::application::services::domain::book_and_author::service::BookAndAuthorService;
-use libcalibre::infrastructure::domain::author::repository::AuthorRepository;
-use libcalibre::infrastructure::domain::book::repository::BookRepository;
-use libcalibre::infrastructure::domain::file::repository::FileRepository;
 use serde::Deserialize;
 use serde::Serialize;
 
 pub mod add_book;
+mod book;
+mod library;
 pub mod models;
 pub mod names;
 pub mod schema;
@@ -44,57 +36,8 @@ pub struct ImportableFile {
     path: PathBuf,
 }
 
-fn convert_file_src_to_url(file_path: &Path) -> String {
-    let os_name = std::env::consts::OS;
-    let protocol = "asset";
-    let path = urlencoding::encode(file_path.to_str().unwrap());
-    if os_name == "windows" || os_name == "android" {
-        format!("http://{}.localhost/{}", protocol, path)
-    } else {
-        format!("{}://localhost/{}", protocol, path)
-    }
-}
-
 fn get_supported_extensions() -> Vec<&'static str> {
     vec!["epub", "mobi", "pdf"]
-}
-
-fn book_to_library_book(
-    library_path: &String,
-    book: &libcalibre::Book,
-    author_names: Vec<String>,
-    file_list: Vec<libcalibre::File>,
-) -> LibraryBook {
-    LibraryBook {
-        title: book.title.clone(),
-        author_list: author_names.clone(),
-        id: book.id().to_string(),
-        uuid: book.uuid.clone(),
-
-        sortable_title: book.sort.clone(),
-        author_sort_lookup: Some(
-            author_names
-                .iter()
-                .map(|a| (a.clone(), a.clone()))
-                .collect::<HashMap<_, _>>(),
-        ),
-
-        filename: "".to_string(),
-        absolute_path: PathBuf::new(),
-
-        file_list: file_list
-            .iter()
-            .map(|f| {
-                let file_name_with_ext = format!("{}.{}", f.name, f.format.to_lowercase());
-                BookFile {
-                    path: PathBuf::from(library_path).join(book.path.clone()).join(file_name_with_ext),
-                    mime_type: f.format.clone(),
-                }
-            })
-            .collect(),
-
-        cover_image: None,
-    }
 }
 
 pub fn establish_connection(library_path: String) -> diesel::SqliteConnection {
@@ -146,41 +89,7 @@ pub fn init_client(library_path: String) -> CalibreClientConfig {
 #[tauri::command]
 #[specta::specta]
 pub fn calibre_load_books_from_db(library_root: String) -> Vec<LibraryBook> {
-    let database_path = library_root.clone() + "/metadata.db";
-
-    let book_repo = Arc::new(Mutex::new(BookRepository::new(&database_path)));
-    let author_repo = Arc::new(Mutex::new(AuthorRepository::new(&database_path)));
-    let file_repo = Arc::new(Mutex::new(FileRepository::new(&database_path)));
-
-    let mut book_and_author_service = BookAndAuthorService::new(book_repo, author_repo, file_repo);
-
-    let results = book_and_author_service
-        .find_all()
-        .expect("Could not load books from DB");
-
-    results
-        .iter()
-        .map(|b| {
-            let mut calibre_book = book_to_library_book(
-                &library_root,
-                &b.book,
-                b.authors.iter().map(|a| a.name.clone()).collect(),
-                b.files.clone()
-            );
-
-            let file_path = Path::new(&library_root)
-                .join(b.book.path.clone())
-                .join("cover.jpg");
-            let url = convert_file_src_to_url(&file_path);
-            calibre_book.cover_image = Some(LocalOrRemoteUrl {
-                kind: LocalOrRemote::Local,
-                local_path: Some(file_path),
-                url,
-            });
-
-            calibre_book
-        })
-        .collect()
+    book::list_all(library_root)
 }
 
 #[tauri::command]

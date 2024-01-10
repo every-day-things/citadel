@@ -3,16 +3,13 @@
 
 use std::env;
 
-use libcalibre::{
-    application::services::domain::book::{dto::UpdateBookDto, service::BookService},
-    infrastructure::domain::book::repository::BookRepository,
-};
 use specta::ts::{BigIntExportBehavior, ExportConfig};
 
 pub mod libs {
     pub mod calibre;
     pub mod devices;
     pub mod file_formats;
+    mod util;
 }
 mod book;
 mod http;
@@ -55,24 +52,6 @@ fn run_tauri_backend() -> std::io::Result<()> {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
-
-    let book_repo =
-        BookRepository::new("/Users/phil/dev/macos-book-app/sample-library/metadata.db");
-    let mut book_service = BookService::new(book_repo);
-
-    let book_list = book_service.all();
-    // println!("{:?}", book_list);
-    // let new_book = book_service.create(NewBookDto {
-    //     title: "Test Book 2".to_string(),
-    //     author_list: vec!["Logic".to_string()],
-    //     timestamp: None,
-    //     pubdate: None,
-    //     series_index: 0.0,
-    //     isbn: None,
-    //     lccn: None,
-    //     flags: 0,
-    //     has_cover: Some(false),
-    // });
 
     if is_server(&args) {
         http::run_http_server(&args).await
