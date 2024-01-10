@@ -2,40 +2,52 @@ use crate::application::services::domain::book::dto::{NewBookDto, UpdateBookDto}
 use crate::domain::book::entity::{Book, NewBook, UpdateBookData};
 use crate::domain::book::repository::Repository as BookRepository;
 
-pub struct BookService<Repo>
-where
-    Repo: BookRepository,
-{
-    book_repository: Repo,
+pub trait BookServiceTrait {
+    fn new(book_repository: Box<dyn BookRepository>) -> Self;
+    fn create(&mut self, dto: NewBookDto) -> Result<Book, ()>;
+    fn find_by_id(&mut self, id: i32) -> Result<Book, ()>;
+    fn all(&mut self) -> Result<Vec<Book>, ()>;
+    fn update(&mut self, id: i32, dto: UpdateBookDto) -> Result<Book, ()>;
+    fn find_author_ids_by_book_id(&mut self, book_id: i32) -> Result<Vec<i32>, ()>;
+    fn link_book_to_author(&mut self, book_id: i32, author_id: i32) -> Result<(), ()>;
 }
 
-impl<Repo> BookService<Repo>
-where
-    Repo: BookRepository,
-{
-    pub fn new(book_repository: Repo) -> Self {
+pub struct BookService {
+    book_repository: Box<dyn BookRepository>,
+}
+
+impl BookServiceTrait for BookService {
+    fn new(book_repository: Box<dyn BookRepository>) -> Self {
         Self { book_repository }
     }
 
-    pub fn create(&mut self, dto: NewBookDto) -> Result<Book, ()> {
+    fn create(&mut self, dto: NewBookDto) -> Result<Book, ()> {
         let book = NewBook::try_from(dto)?;
         let book = self.book_repository.create(&book)?;
 
         Ok(book)
     }
 
-    pub fn find_by_id(&mut self, id: i32) -> Result<Book, ()> {
+    fn find_by_id(&mut self, id: i32) -> Result<Book, ()> {
         self.book_repository.find_by_id(id)
     }
 
-    pub fn all(&mut self) -> Result<Vec<Book>, ()> {
+    fn all(&mut self) -> Result<Vec<Book>, ()> {
         self.book_repository.all()
     }
 
-    pub fn update(&mut self, id: i32, dto: UpdateBookDto) -> Result<Book, ()> {
+    fn update(&mut self, id: i32, dto: UpdateBookDto) -> Result<Book, ()> {
         let updatable = UpdateBookData::try_from(dto)?;
-        
 
         self.book_repository.update(id, &updatable)
+    }
+
+    fn find_author_ids_by_book_id(&mut self, book_id: i32) -> Result<Vec<i32>, ()> {
+        self.book_repository.find_author_ids_by_book_id(book_id)
+    }
+
+    fn link_book_to_author(&mut self, book_id: i32, author_id: i32) -> Result<(), ()> {
+        self.book_repository
+            .create_book_author_link(book_id, author_id)
     }
 }

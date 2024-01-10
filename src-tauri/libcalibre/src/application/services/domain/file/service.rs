@@ -33,38 +33,43 @@ where
         Ok(file)
     }
 
-    pub fn find_by_id(&self, id: i32) -> Result<BookFile, Box<dyn Error>> {
+    pub fn find_by_id(&self, id: i32) -> Result<NewBookFile, Box<dyn Error>> {
         let mut file_repo_guard = self
             .file_repository
             .lock()
             .map_err(|_| "File repository cannot be used by this thread")?;
+        Err("Not implemented".into())
 
-        file_repo_guard
-            .find_by_id(id)
-            .map_err(|_| "Could not find file".into())
+        // file_repo_guard
+        //     .find_by_id(id)
+        //     .map_err(|_| "Could not find file".into())
     }
 
-    pub fn find_all_for_book_id(&mut self, book_id: i32) -> Result<Vec<BookFile>, Box<dyn Error>> {
+    pub fn find_all_for_book_id(
+        &mut self,
+        book_id: i32,
+    ) -> Result<Vec<NewBookFile>, Box<dyn Error>> {
         let mut file_repo_guard = self
             .file_repository
             .lock()
             .map_err(|_| "File repository cannot be used by this thread")?;
+        Err("Not implemented".into())
 
-        file_repo_guard
-            .find_all_for_book_id(book_id)
-            .map_err(|_| "Could not find files".into())
+        // file_repo_guard
+        //     .find_all_for_book_id(book_id)
+        //     .map_err(|_| "Could not find files".into())
     }
 
-    pub fn update(&mut self, id: i32, dto: UpdateFileDto) -> Result<BookFile, Box<dyn Error>> {
+    pub fn update(&mut self, id: i32, dto: UpdateFileDto) -> Result<NewBookFile, Box<dyn Error>> {
         let updatable = UpdateBookFile::try_from(dto).map_err(|_| "File not valid for database")?;
         let mut file_repo_guard = self
             .file_repository
             .lock()
             .map_err(|_| "File repository cannot be used by this thread")?;
-        
 
-        file_repo_guard
-            .update(id, &updatable)
-            .map_err(|_| "Could not update file".into())
+        Err("Not implemented".into())
+        // file_repo_guard
+        //     .update(id, &updatable)
+        //     .map_err(|_| "Could not update file".into())
     }
 }

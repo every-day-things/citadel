@@ -7,7 +7,7 @@ mod file_service_tests {
             book::{dto::NewBookDto, service::BookService},
             file::{
                 dto::{NewFileDto, UpdateFileDto},
-                service::FileService,
+                service::BookFileService,
             },
         },
         infrastructure::domain::{
@@ -54,7 +54,7 @@ mod file_service_tests {
         let (file_repo, book_repo) = setup();
 
         let mut book_service = BookService::new(book_repo);
-        let file_service = FileService::new(file_repo);
+        let file_service = BookFileService::new(file_repo);
 
         let book = book_service
             .create(new_book_dto_factory("Book for File Test".to_string()))
@@ -79,7 +79,7 @@ mod file_service_tests {
     fn update_file() {
         let (file_repo, book_repo) = setup();
         let mut book_service = BookService::new(book_repo);
-        let mut file_service = FileService::new(file_repo);
+        let mut file_service = BookFileService::new(file_repo);
 
         let book = book_service
             .create(new_book_dto_factory("Book for File Test".to_string()))
@@ -116,7 +116,7 @@ mod file_service_tests {
     fn find_all_for_book_id() {
         let (file_repo, book_repo) = setup();
         let mut book_service = BookService::new(book_repo);
-        let mut file_service = FileService::new(file_repo);
+        let mut file_service = BookFileService::new(file_repo);
 
         let book = book_service
             .create(new_book_dto_factory("Book for File Test".to_string()))

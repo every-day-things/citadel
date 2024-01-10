@@ -6,8 +6,8 @@ mod book_and_author_service_tests {
         application::services::domain::{
             author::dto::NewAuthorDto,
             book::dto::NewBookDto,
-            book_and_author::service::BookAndAuthorService,
-            file::{dto::NewFileDto, service::FileService},
+            library::service::LibraryService,
+            file::{dto::NewFileDto, service::BookFileService},
         },
         infrastructure::domain::{
             author::repository::AuthorRepository, book::repository::BookRepository,
@@ -68,8 +68,8 @@ mod book_and_author_service_tests {
     fn add_book_with_authors() {
         let (book_repo, author_repo, file_repo) = setup();
         let mut book_and_author_service =
-            BookAndAuthorService::new(book_repo, author_repo, file_repo.clone());
-        let file_service = FileService::new(file_repo);
+            LibraryService::new(book_repo, author_repo, file_repo.clone());
+        let file_service = BookFileService::new(file_repo);
 
         let ex_book = new_book_dto_factory("Test Book 1".to_string());
         let ex_author = new_author_dto_factory("Porter Robinson".to_string());

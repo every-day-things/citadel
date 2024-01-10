@@ -1,5 +1,6 @@
 use crate::domain::author::entity::{NewAuthor, UpdateAuthorData};
 
+#[derive(Clone)]
 pub struct NewAuthorDto {
     pub full_name: String,
     pub sortable_name: String,

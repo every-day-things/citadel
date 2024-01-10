@@ -2,6 +2,7 @@ use chrono::NaiveDateTime;
 
 use crate::domain::book::entity::{NewBook, UpdateBookData};
 
+#[derive(Clone)]
 pub struct NewBookDto {
     pub title: String,
     pub author_list: Vec<String>,

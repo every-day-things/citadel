@@ -5,10 +5,19 @@ use std::{
 };
 
 use libcalibre::{
-    application::services::domain::book_and_author::service::BookAndAuthorService,
-    infrastructure::domain::{
-        author::repository::AuthorRepository, book::repository::BookRepository,
-        book_file::repository::BookFileRepository,
+    application::services::{
+        domain::{
+            author::service::{AuthorService, AuthorServiceTrait},
+            book::service::{BookService, BookServiceTrait},
+        },
+        library::service::LibraryService,
+    },
+    infrastructure::{
+        domain::{
+            author::repository::AuthorRepository, book::repository::BookRepository,
+            book_file::repository::BookFileRepository,
+        },
+        file_service::FileServiceTrait,
     },
 };
 
@@ -84,12 +93,18 @@ pub fn list_all(library_root: String) -> Vec<LibraryBook> {
             vec![]
         }
         Some(database_path) => {
-            let book_repo = Arc::new(Mutex::new(BookRepository::new(&database_path)));
-            let author_repo = Arc::new(Mutex::new(AuthorRepository::new(&database_path)));
+            let book_repo = Box::new(BookRepository::new(&database_path));
+            let author_repo = Box::new(AuthorRepository::new(&database_path));
             let file_repo = Arc::new(Mutex::new(BookFileRepository::new(&database_path)));
 
+            let book_service = Arc::new(Mutex::new(BookService::new(book_repo)));
+            let author_service = Arc::new(Mutex::new(AuthorService::new(author_repo)));
+            let file_service = Arc::new(Mutex::new(
+                libcalibre::infrastructure::file_service::FileService::new(&library_root),
+            ));
+
             let mut book_and_author_service =
-                BookAndAuthorService::new(book_repo, author_repo, file_repo);
+                LibraryService::new(book_service, author_service, file_service, file_repo);
 
             let results = book_and_author_service
                 .find_all()
