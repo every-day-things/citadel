@@ -4,6 +4,7 @@ pub mod infrastructure;
 mod models;
 mod persistence;
 mod schema;
+pub mod util;
 
 pub use domain::book::entity::Book;
 pub use domain::file::entity::File;

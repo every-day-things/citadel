@@ -20,7 +20,6 @@ use serde::Serialize;
 
 pub mod add_book;
 mod book;
-mod library;
 pub mod models;
 pub mod names;
 pub mod schema;

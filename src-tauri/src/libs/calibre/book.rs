@@ -9,12 +9,13 @@ use libcalibre::{
     infrastructure::domain::{
         author::repository::AuthorRepository, book::repository::BookRepository,
         file::repository::FileRepository,
-    }
+    },
 };
 
-use crate::{book::{BookFile, LibraryBook, LocalOrRemote, LocalOrRemoteUrl}, libs::util};
-
-use super::library;
+use crate::{
+    book::{BookFile, LibraryBook, LocalOrRemote, LocalOrRemoteUrl},
+    libs::util,
+};
 
 fn to_library_book(
     library_path: &String,
@@ -76,30 +77,38 @@ fn book_cover_image(library_root: &String, book: &libcalibre::Book) -> Option<Lo
 }
 
 pub fn list_all(library_root: String) -> Vec<LibraryBook> {
-    let database_path = library::gen_database_path(&library_root);
+    let database_path = libcalibre::util::get_db_path(&library_root);
+    match database_path {
+        None => {
+            // No database file → no books.
+            vec![]
+        }
+        Some(database_path) => {
+            let book_repo = Arc::new(Mutex::new(BookRepository::new(&database_path)));
+            let author_repo = Arc::new(Mutex::new(AuthorRepository::new(&database_path)));
+            let file_repo = Arc::new(Mutex::new(FileRepository::new(&database_path)));
 
-    let book_repo = Arc::new(Mutex::new(BookRepository::new(&database_path)));
-    let author_repo = Arc::new(Mutex::new(AuthorRepository::new(&database_path)));
-    let file_repo = Arc::new(Mutex::new(FileRepository::new(&database_path)));
+            let mut book_and_author_service =
+                BookAndAuthorService::new(book_repo, author_repo, file_repo);
 
-    let mut book_and_author_service = BookAndAuthorService::new(book_repo, author_repo, file_repo);
+            let results = book_and_author_service
+                .find_all()
+                .expect("Could not load books from DB");
 
-    let results = book_and_author_service
-        .find_all()
-        .expect("Could not load books from DB");
+            results
+                .iter()
+                .map(|b| {
+                    let mut calibre_book = to_library_book(
+                        &library_root,
+                        &b.book,
+                        b.authors.iter().map(|a| a.name.clone()).collect(),
+                        b.files.clone(),
+                    );
+                    calibre_book.cover_image = book_cover_image(&library_root, &b.book);
 
-    results
-        .iter()
-        .map(|b| {
-            let mut calibre_book = to_library_book(
-                &library_root,
-                &b.book,
-                b.authors.iter().map(|a| a.name.clone()).collect(),
-                b.files.clone(),
-            );
-            calibre_book.cover_image = book_cover_image(&library_root, &b.book);
-
-            calibre_book
-        })
-        .collect()
+                    calibre_book
+                })
+                .collect()
+        }
+    }
 }
