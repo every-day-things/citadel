@@ -23,6 +23,7 @@ pub struct UpdateBookDto {
     pub series_index: Option<f32>,
     pub isbn: Option<String>,
     pub lccn: Option<String>,
+    pub path: Option<String>,
     pub flags: Option<i32>,
     pub has_cover: Option<bool>,
 }
@@ -55,6 +56,7 @@ impl TryFrom<UpdateBookDto> for UpdateBookData {
             series_index: dto.series_index,
             isbn: dto.isbn,
             lccn: dto.lccn,
+            path: dto.path,
             flags: dto.flags,
             has_cover: dto.has_cover,
         })

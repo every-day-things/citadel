@@ -88,4 +88,8 @@ impl Repository for AuthorRepository {
             Err(_) => Err(()),
         }
     }
+
+    fn name_author_dir(&mut self, author: &Author) -> String {
+        author.name.clone()
+    }
 }

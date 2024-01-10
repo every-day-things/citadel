@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::application::services::domain::author::dto::NewAuthorDto;
 use crate::application::services::domain::author::service::AuthorServiceTrait;
-use crate::application::services::domain::book::dto::NewBookDto;
+use crate::application::services::domain::book::dto::{NewBookDto, UpdateBookDto};
 use crate::application::services::domain::book::service::BookServiceTrait;
 use crate::domain::author::entity::Author;
 use crate::domain::book::aggregate::BookWithAuthorsAndFiles;
@@ -18,7 +18,7 @@ use super::dto::{NewLibraryEntryDto, NewLibraryFileDto};
 #[derive(Debug)]
 pub enum BAASError {
     InvalidDto,
-    DatabaseBookWriteFaild,
+    DatabaseBookWriteFailed,
     DatabaseAuthorWriteFailed,
     BookAuthorLinkFailed,
     DatabaseLocked,
@@ -71,10 +71,6 @@ fn gen_book_file_name(book_title: &String, author_name: &String, mimetype: MIMET
         .replace("{title}", book_title)
         .replace("{author}", author_name)
         .replace("{extension}", mimetype.to_file_extension())
-}
-
-fn gen_author_dir_name(author: &Author) -> String {
-    author.name.clone()
 }
 
 pub struct LibraryService<BS, AS, FS, FR>
@@ -130,16 +126,23 @@ where
 
         // 2. Create Directories for Author & Book
         // ======================================
-        let author_dir_name = gen_author_dir_name(&primary_author);
-        let file_service = self.file_service.lock().unwrap();
-        file_service.create_directory(Path::new(&author_dir_name).to_path_buf());
+        let author_dir_name = {
+            let mut author_service = self.author_service.lock().unwrap();
+            author_service.name_author_dir(&primary_author)
+        };
 
         let book_dir_name = gen_book_folder_name(&dto.book.title, book.id);
         let book_dir_relative_path = Path::new(&author_dir_name).join(&book_dir_name);
-        file_service.create_directory(book_dir_relative_path.clone());
+
+        {
+            let file_service = self.file_service.lock().unwrap();
+            file_service.create_directory(Path::new(&author_dir_name).to_path_buf())?;
+            file_service.create_directory(book_dir_relative_path.clone())?;
+        }
 
         // 3. Copy Book files & cover image to library
         // ===========================
+        self.set_book_path(book.id, book_dir_relative_path.clone());
         if let Some(files) = dto.files {
             self.copy_book_files_to_library(
                 &files,
@@ -270,9 +273,30 @@ where
         Ok(author_list)
     }
 
-    fn create_book(&mut self, book: NewBookDto) -> Result<Book, BAASError> {
+    fn create_book(&self, book: NewBookDto) -> Result<Book, BAASError> {
         let mut book_service = self.book_service.lock().unwrap();
         book_service.create(book).map_err(|_| BAASError::InvalidDto)
+    }
+
+    fn set_book_path(&self, book_id: i32, book_dir_rel_path: PathBuf) -> Result<Book, BAASError> {
+        let mut book_service = self.book_service.lock().unwrap();
+        book_service
+            .update(
+                book_id,
+                UpdateBookDto {
+                    path: Some(book_dir_rel_path.to_str().unwrap().to_string()),
+                    title: None,
+                    author_list: None,
+                    timestamp: None,
+                    pubdate: None,
+                    series_index: None,
+                    isbn: None,
+                    lccn: None,
+                    flags: None,
+                    has_cover: None,
+                },
+            )
+            .map_err(|_| BAASError::DatabaseBookWriteFailed)
     }
 
     fn copy_book_files_to_library(
@@ -290,8 +314,16 @@ where
                 MIMETYPE::EPUB,
             );
             let book_rel_path = Path::new(&book_dir_rel_path).join(&book_file_name);
-            let file_service = self.file_service.lock().unwrap();
-            file_service.copy_file_to_directory(file.path.as_path(), book_rel_path.as_path());
+            match self.file_service.lock() {
+                Ok(file_service_guard) => {
+                    file_service_guard
+                        .copy_file_to_directory(file.path.as_path(), book_rel_path.as_path());
+                }
+                Err(_) => {
+                    println!("Failed to acquire lock");
+                    return Err(BAASError::DatabaseLocked);
+                }
+            }
         }
 
         Ok(())

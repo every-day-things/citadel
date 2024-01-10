@@ -8,6 +8,7 @@ pub trait AuthorServiceTrait {
     fn find_by_id(&mut self, id: i32) -> Result<Author, ()>;
     fn all(&mut self) -> Result<Vec<Author>, ()>;
     fn update(&mut self, id: i32, dto: UpdateAuthorDto) -> Result<Author, ()>;
+    fn name_author_dir(&mut self, author: &Author) -> String;
 }
 
 pub struct AuthorService {
@@ -38,5 +39,9 @@ impl AuthorServiceTrait for AuthorService {
         let updatable = UpdateAuthorData::try_from(dto)?;
 
         self.author_repository.update(id, &updatable)
+    }
+
+    fn name_author_dir(&mut self, author: &Author) -> String {
+        self.author_repository.name_author_dir(author)
     }
 }

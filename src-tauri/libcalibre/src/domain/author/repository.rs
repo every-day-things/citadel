@@ -5,4 +5,5 @@ pub trait Repository {
     fn create(&mut self, book: &NewAuthor) -> Result<Author, ()>;
     fn find_by_id(&mut self, id: i32) -> Result<Author, ()>;
     fn update(&mut self, id: i32, book: &UpdateAuthorData) -> Result<Author, ()>;
+    fn name_author_dir(&mut self, author: &Author) -> String;
 }

@@ -48,6 +48,7 @@ pub struct UpdateBookData {
     pub(crate) series_index: Option<f32>,
     pub(crate) isbn: Option<String>,
     pub(crate) lccn: Option<String>,
+    pub(crate) path: Option<String>,
     pub(crate) flags: Option<i32>,
     pub(crate) has_cover: Option<bool>,
 }
