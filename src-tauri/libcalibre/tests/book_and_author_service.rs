@@ -11,19 +11,19 @@ mod book_and_author_service_tests {
         },
         infrastructure::domain::{
             author::repository::AuthorRepository, book::repository::BookRepository,
-            file::repository::FileRepository,
+            book_file::repository::BookFileRepository,
         },
     };
 
     fn setup() -> (
         Arc<Mutex<BookRepository>>,
         Arc<Mutex<AuthorRepository>>,
-        Arc<Mutex<FileRepository>>,
+        Arc<Mutex<BookFileRepository>>,
     ) {
         let connection_url = "file::memory:?cache=shared";
         let book_repo = Arc::new(Mutex::new(BookRepository::new(connection_url)));
         let author_repo = Arc::new(Mutex::new(AuthorRepository::new(connection_url)));
-        let file_repo = Arc::new(Mutex::new(FileRepository::new(connection_url)));
+        let file_repo = Arc::new(Mutex::new(BookFileRepository::new(connection_url)));
         // Run migrations for the schema: affects all Repos
         let book_repo_clone = book_repo.clone();
         let mut book_repo_guard = book_repo_clone.lock().unwrap();

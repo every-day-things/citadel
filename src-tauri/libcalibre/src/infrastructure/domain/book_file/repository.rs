@@ -1,42 +1,31 @@
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
-use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 
-use crate::domain::file::{
-    entity::{File, NewFile, UpdateFile},
+use crate::domain::book_file::{
+    entity::{BookFile, NewBookFile, UpdateBookFile},
     repository::Repository,
 };
 use crate::persistence::establish_connection;
 
-const MIGRATIONS: EmbeddedMigrations = embed_migrations!("../../migrations");
-
-pub struct FileRepository {
+pub struct BookFileRepository {
     pub connection: SqliteConnection,
 }
 
-impl FileRepository {
+impl BookFileRepository {
     pub fn new(connection_url: &str) -> Self {
         Self {
             connection: establish_connection(connection_url).unwrap(),
         }
     }
-
-    /// Run all pending migrations.
-    pub fn run_migrations(&mut self) {
-        diesel::sql_query("PRAGMA foreign_keys = ON;")
-            .execute(&mut self.connection)
-            .unwrap();
-        self.connection.run_pending_migrations(MIGRATIONS).unwrap();
-    }
 }
 
-impl Repository for FileRepository {
-    fn create(&mut self, new_file: &NewFile) -> Result<File, ()> {
+impl Repository for BookFileRepository {
+    fn create(&mut self, new_file: &NewBookFile) -> Result<BookFile, ()> {
         use crate::schema::data::dsl::*;
 
         let created = diesel::insert_into(data)
             .values(new_file)
-            .returning(File::as_returning())
+            .returning(BookFile::as_returning())
             .get_result(&mut self.connection);
 
         match created {
@@ -45,13 +34,13 @@ impl Repository for FileRepository {
         }
     }
 
-    fn find_by_id(&mut self, search_id: i32) -> Result<File, ()> {
+    fn find_by_id(&mut self, search_id: i32) -> Result<BookFile, ()> {
         use crate::schema::data::dsl::*;
 
         let file = data
             .filter(id.eq(search_id))
-            .select(File::as_select())
-            .get_result::<File>(&mut self.connection)
+            .select(BookFile::as_select())
+            .get_result::<BookFile>(&mut self.connection)
             .optional();
 
         match file {
@@ -61,13 +50,13 @@ impl Repository for FileRepository {
         }
     }
 
-    fn find_all_for_book_id(&mut self, book_id: i32) -> Result<Vec<File>, ()> {
+    fn find_all_for_book_id(&mut self, book_id: i32) -> Result<Vec<BookFile>, ()> {
         use crate::schema::data::dsl::*;
 
         let files = data
             .filter(book.eq(book_id))
-            .select(File::as_select())
-            .get_results::<File>(&mut self.connection);
+            .select(BookFile::as_select())
+            .get_results::<BookFile>(&mut self.connection);
 
         match files {
             Ok(b) => Ok(b),
@@ -78,8 +67,8 @@ impl Repository for FileRepository {
     fn update(
         &mut self,
         file_id: i32,
-        file: &UpdateFile
-    ) -> Result<File, ()> {
+        file: &UpdateBookFile
+    ) -> Result<BookFile, ()> {
         use crate::schema::data::dsl::*;
 
         
@@ -87,7 +76,7 @@ impl Repository for FileRepository {
         diesel::update(data)
             .filter(id.eq(file_id))
             .set(file)
-            .returning(File::as_returning())
+            .returning(BookFile::as_returning())
             .get_result(&mut self.connection)
             .or(Err(()))
     }

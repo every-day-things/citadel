@@ -9,7 +9,7 @@ use crate::domain::author::repository::Repository as AuthorRepository;
 use crate::domain::book::aggregate::BookWithAuthorsAndFiles;
 use crate::domain::book::entity::NewBook;
 use crate::domain::book::repository::Repository as BookRepository;
-use crate::domain::file::repository::Repository as FileRepository;
+use crate::domain::book_file::repository::Repository as FileRepository;
 
 use super::dto::NewBookWithAuthorsAndFilesDto;
 

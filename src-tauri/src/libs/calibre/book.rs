@@ -8,7 +8,7 @@ use libcalibre::{
     application::services::domain::book_and_author::service::BookAndAuthorService,
     infrastructure::domain::{
         author::repository::AuthorRepository, book::repository::BookRepository,
-        file::repository::FileRepository,
+        book_file::repository::BookFileRepository,
     },
 };
 
@@ -21,7 +21,7 @@ fn to_library_book(
     library_path: &String,
     book: &libcalibre::Book,
     author_names: Vec<String>,
-    file_list: Vec<libcalibre::File>,
+    file_list: Vec<libcalibre::BookFile>,
 ) -> LibraryBook {
     LibraryBook {
         title: book.title.clone(),
@@ -86,7 +86,7 @@ pub fn list_all(library_root: String) -> Vec<LibraryBook> {
         Some(database_path) => {
             let book_repo = Arc::new(Mutex::new(BookRepository::new(&database_path)));
             let author_repo = Arc::new(Mutex::new(AuthorRepository::new(&database_path)));
-            let file_repo = Arc::new(Mutex::new(FileRepository::new(&database_path)));
+            let file_repo = Arc::new(Mutex::new(BookFileRepository::new(&database_path)));
 
             let mut book_and_author_service =
                 BookAndAuthorService::new(book_repo, author_repo, file_repo);

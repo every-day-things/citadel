@@ -7,7 +7,7 @@ use crate::schema::data;
 #[derive(Clone, Debug, Queryable, Selectable, Identifiable, AsChangeset)]
 #[diesel(table_name = data)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
-pub struct File {
+pub struct BookFile {
     pub id: i32,
     pub book: i32,
     pub format: String,
@@ -18,7 +18,7 @@ pub struct File {
 #[derive(Insertable)]
 #[diesel(table_name = data)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
-pub struct NewFile {
+pub struct NewBookFile {
     pub book: i32,
     pub format: String,
     pub uncompressed_size: i32,
@@ -27,7 +27,7 @@ pub struct NewFile {
 
 #[derive(Deserialize, AsChangeset, Default, Debug)]
 #[diesel(table_name = data)]
-pub struct UpdateFile {
+pub struct UpdateBookFile {
     pub(crate) book: Option<i32>,
     pub(crate) format: Option<String>,
     pub(crate) uncompressed_size: Option<i32>,

@@ -11,14 +11,14 @@ mod file_service_tests {
             },
         },
         infrastructure::domain::{
-            book::repository::BookRepository, file::repository::FileRepository,
+            book::repository::BookRepository, book_file::repository::BookFileRepository,
         },
     };
 
-    fn setup() -> (Arc<Mutex<FileRepository>>, BookRepository) {
+    fn setup() -> (Arc<Mutex<BookFileRepository>>, BookRepository) {
         let connection_url = "file::memory:?cache=shared";
         let mut book_repo = BookRepository::new(connection_url);
-        let file_repo = Arc::new(Mutex::new(FileRepository::new(connection_url)));
+        let file_repo = Arc::new(Mutex::new(BookFileRepository::new(connection_url)));
 
         // Run migrations for the schema: affects all Repos
         book_repo.run_migrations();

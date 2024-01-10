@@ -1,4 +1,4 @@
-use crate::domain::file::entity::{NewFile, UpdateFile};
+use crate::domain::book_file::entity::{NewBookFile, UpdateBookFile};
 
 pub struct NewFileDto {
     pub book_id: i32,
@@ -17,7 +17,7 @@ pub struct UpdateFileDto {
     pub name_without_extension: Option<String>,
 }
 
-impl TryFrom<NewFileDto> for NewFile {
+impl TryFrom<NewFileDto> for NewBookFile {
     type Error = ();
 
     fn try_from(dto: NewFileDto) -> Result<Self, Self::Error> {
@@ -30,7 +30,7 @@ impl TryFrom<NewFileDto> for NewFile {
     }
 }
 
-impl TryFrom<UpdateFileDto> for UpdateFile {
+impl TryFrom<UpdateFileDto> for UpdateBookFile {
     type Error = ();
 
     fn try_from(dto: UpdateFileDto) -> Result<Self, Self::Error> {

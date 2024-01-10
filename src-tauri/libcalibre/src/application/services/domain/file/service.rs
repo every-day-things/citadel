@@ -2,8 +2,8 @@ use std::error::Error;
 use std::sync::{Arc, Mutex};
 
 use crate::application::services::domain::file::dto::{NewFileDto, UpdateFileDto};
-use crate::domain::file::entity::{File, NewFile, UpdateFile};
-use crate::domain::file::repository::Repository as FileRepository;
+use crate::domain::book_file::entity::{BookFile, NewBookFile, UpdateBookFile};
+use crate::domain::book_file::repository::Repository as FileRepository;
 
 pub struct FileService<Repo>
 where
@@ -20,8 +20,8 @@ where
         Self { file_repository }
     }
 
-    pub fn create(&self, dto: NewFileDto) -> Result<File, Box<dyn Error>> {
-        let new_file = NewFile::try_from(dto).map_err(|_| "File not valid for database")?;
+    pub fn create(&self, dto: NewFileDto) -> Result<BookFile, Box<dyn Error>> {
+        let new_file = NewBookFile::try_from(dto).map_err(|_| "File not valid for database")?;
         let mut file_repo_guard = self
             .file_repository
             .lock()
@@ -33,7 +33,7 @@ where
         Ok(file)
     }
 
-    pub fn find_by_id(&self, id: i32) -> Result<File, Box<dyn Error>> {
+    pub fn find_by_id(&self, id: i32) -> Result<BookFile, Box<dyn Error>> {
         let mut file_repo_guard = self
             .file_repository
             .lock()
@@ -44,7 +44,7 @@ where
             .map_err(|_| "Could not find file".into())
     }
 
-    pub fn find_all_for_book_id(&mut self, book_id: i32) -> Result<Vec<File>, Box<dyn Error>> {
+    pub fn find_all_for_book_id(&mut self, book_id: i32) -> Result<Vec<BookFile>, Box<dyn Error>> {
         let mut file_repo_guard = self
             .file_repository
             .lock()
@@ -55,8 +55,8 @@ where
             .map_err(|_| "Could not find files".into())
     }
 
-    pub fn update(&mut self, id: i32, dto: UpdateFileDto) -> Result<File, Box<dyn Error>> {
-        let updatable = UpdateFile::try_from(dto).map_err(|_| "File not valid for database")?;
+    pub fn update(&mut self, id: i32, dto: UpdateFileDto) -> Result<BookFile, Box<dyn Error>> {
+        let updatable = UpdateBookFile::try_from(dto).map_err(|_| "File not valid for database")?;
         let mut file_repo_guard = self
             .file_repository
             .lock()
