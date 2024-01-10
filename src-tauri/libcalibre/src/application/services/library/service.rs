@@ -7,6 +7,7 @@ use crate::application::services::domain::author::dto::NewAuthorDto;
 use crate::application::services::domain::author::service::AuthorServiceTrait;
 use crate::application::services::domain::book::dto::{NewBookDto, UpdateBookDto};
 use crate::application::services::domain::book::service::BookServiceTrait;
+use crate::application::services::domain::file::service::BookFileServiceTrait;
 use crate::domain::author::entity::Author;
 use crate::domain::book::aggregate::BookWithAuthorsAndFiles;
 use crate::domain::book_file::repository::Repository as BookFileRepository;
@@ -73,37 +74,37 @@ fn gen_book_file_name(book_title: &String, author_name: &String, mimetype: MIMET
         .replace("{extension}", mimetype.to_file_extension())
 }
 
-pub struct LibraryService<BS, AS, FS, FR>
+pub struct LibraryService<BS, AS, FS, BFS>
 where
     BS: BookServiceTrait,
     AS: AuthorServiceTrait,
     FS: FileServiceTrait,
-    FR: BookFileRepository,
+    BFS: BookFileServiceTrait,
 {
     book_service: Arc<Mutex<BS>>,
     author_service: Arc<Mutex<AS>>,
     file_service: Arc<Mutex<FS>>,
-    file_repository: Arc<Mutex<FR>>,
+    book_file_service: Arc<Mutex<BFS>>,
 }
 
-impl<BS, AS, FS, FR> LibraryService<BS, AS, FS, FR>
+impl<BS, AS, FS, BFS> LibraryService<BS, AS, FS, BFS>
 where
     BS: BookServiceTrait + 'static,
     AS: AuthorServiceTrait + 'static,
     FS: FileServiceTrait + 'static,
-    FR: BookFileRepository + 'static,
+    BFS: BookFileServiceTrait + 'static,
 {
     pub fn new(
         book_service: Arc<Mutex<BS>>,
         author_service: Arc<Mutex<AS>>,
         file_service: Arc<Mutex<FS>>,
-        file_repository: Arc<Mutex<FR>>,
+        book_file_service: Arc<Mutex<BFS>>,
     ) -> Self {
         Self {
             book_service,
             author_service,
             file_service,
-            file_repository,
+            book_file_service,
         }
     }
 
@@ -200,7 +201,7 @@ where
             .collect::<Result<Vec<Author>, Box<dyn Error>>>()?;
 
         let mut file_repo_guard = self
-            .file_repository
+            .book_file_service
             .lock()
             .map_err(|_| "File Repository cannot be used by this thread")?;
         let files = file_repo_guard
@@ -238,7 +239,7 @@ where
                 .collect::<Result<Vec<Author>, Box<dyn Error>>>()?;
 
             let mut file_repo_guard = self
-                .file_repository
+                .book_file_service
                 .lock()
                 .map_err(|_| "File Repository cannot be used by this thread")?;
             let files = file_repo_guard

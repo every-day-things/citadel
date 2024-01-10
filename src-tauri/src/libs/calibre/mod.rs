@@ -24,6 +24,8 @@ use libcalibre::application::services::domain::book::dto::NewBookDto;
 use libcalibre::application::services::domain::book::service::BookService;
 use libcalibre::application::services::domain::book::service::BookServiceTrait;
 use libcalibre::application::services::domain::file::dto::NewFileDto;
+use libcalibre::application::services::domain::file::service::BookFileService;
+use libcalibre::application::services::domain::file::service::BookFileServiceTrait;
 use libcalibre::application::services::library::dto::NewLibraryEntryDto;
 use libcalibre::application::services::library::dto::NewLibraryFileDto;
 use libcalibre::application::services::library::service::LibraryService;
@@ -186,16 +188,21 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
         Some(database_path) => {
             let book_repo = Box::new(BookRepository::new(&database_path));
             let author_repo = Box::new(AuthorRepository::new(&database_path));
-            let file_repo = Arc::new(Mutex::new(BookFileRepository::new(&database_path)));
+            let book_file_repo = Box::new(BookFileRepository::new(&database_path));
 
             let book_service = Arc::new(Mutex::new(BookService::new(book_repo)));
             let author_service = Arc::new(Mutex::new(AuthorService::new(author_repo)));
+            let book_file_service = Arc::new(Mutex::new(BookFileService::new(book_file_repo)));
             let file_service = Arc::new(Mutex::new(
                 libcalibre::infrastructure::file_service::FileService::new(&library_path),
             ));
 
-            let mut library_service =
-                LibraryService::new(book_service, author_service, file_service, file_repo);
+            let mut library_service = LibraryService::new(
+                book_service,
+                author_service,
+                file_service,
+                book_file_service,
+            );
 
             let result = library_service.create(NewLibraryEntryDto {
                 book: NewBookDto {
@@ -220,9 +227,6 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
                 }],
                 files: Some(vec![NewLibraryFileDto {
                     path: md.path,
-                    //name: md.title.clone(),
-                    //size: 0,
-                    //mime_type: md.file_type.to_string(),
                 }]),
             });
 
