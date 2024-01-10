@@ -11,6 +11,28 @@ use crate::domain::book::entity::NewBook;
 use crate::domain::book::repository::Repository as BookRepository;
 use crate::domain::file::repository::Repository as FileRepository;
 
+use super::dto::NewBookWithAuthorsAndFilesDto;
+
+#[derive(Debug)]
+pub enum BAASError {
+    InvalidDto,
+    DatabaseBookWriteFaild,
+    DatabaseAuthorWriteFailed,
+    BookAuthorLinkFailed,
+    DatabaseLocked,
+    NotFoundBookFiles,
+    NotFoundBook,
+    NotFoundAuthor,
+}
+
+impl std::fmt::Display for BAASError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl std::error::Error for BAASError {}
+
 pub struct BookAndAuthorService<BR, AR, FR>
 where
     BR: BookRepository,
@@ -42,29 +64,28 @@ where
 
     pub fn create(
         &self,
-        book_dto: NewBookDto,
-        author_dto_list: Vec<NewAuthorDto>,
+        dto: NewBookWithAuthorsAndFilesDto,
     ) -> Result<BookWithAuthorsAndFiles, Box<dyn Error>> {
-        let new_book = NewBook::try_from(book_dto).map_err(|_| "Book not valid for database")?;
+        let new_book = NewBook::try_from(dto.book).map_err(|_| BAASError::InvalidDto)?;
         let mut book_repo_guard = self
             .book_repository
             .lock()
-            .map_err(|_| "Book Repository cannot be used by this thread")?;
+            .map_err(|_| BAASError::DatabaseLocked)?;
         let book = book_repo_guard
             .create(&new_book)
-            .map_err(|_| "Database failed to create book")?;
+            .map_err(|_| BAASError::DatabaseBookWriteFaild)?;
 
-        let author_list = author_dto_list
+        let author_list = dto.authors
             .into_iter()
             .map(|dto| {
-                let new_author = NewAuthor::try_from(dto).map_err(|_| "Failed to create author")?;
+                let new_author = NewAuthor::try_from(dto).map_err(|_| BAASError::InvalidDto)?;
                 let mut author_repo_guard = self
                     .author_repository
                     .lock()
-                    .map_err(|_| "Author Repository cannot be used by this thread")?;
+                    .map_err(|_| BAASError::DatabaseLocked)?;
                 author_repo_guard
                     .create(&new_author)
-                    .map_err(|_| "Database failed to create author")
+                    .map_err(|_| BAASError::DatabaseAuthorWriteFailed)
             })
             .map(|res| res.map_err(|e| e.into()))
             .collect::<Result<Vec<Author>, Box<dyn Error>>>()?;
@@ -73,18 +94,18 @@ where
         for author in &author_list {
             book_repo_guard
                 .create_book_author_link(book.id, author.id)
-                .map_err(|_| "Could not link Author & Book")?;
+                .map_err(|_| BAASError::BookAuthorLinkFailed)?;
         }
 
         let files = {
             let mut file_repo_guard = self
                 .file_repository
                 .lock()
-                .map_err(|_| "File Repository cannot be used by this thread")?;
+                .map_err(|_| BAASError::DatabaseLocked)?;
 
             file_repo_guard
                 .find_all_for_book_id(book.id)
-                .map_err(|_| "Could not read database to find files for book")?
+                .map_err(|_| BAASError::NotFoundBookFiles)?
         };
 
         Ok(BookWithAuthorsAndFiles {
