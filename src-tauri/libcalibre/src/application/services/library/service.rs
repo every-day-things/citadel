@@ -210,7 +210,7 @@ where
         Ok(BookWithAuthorsAndFiles {
             book,
             authors: author_list,
-            files: created_files
+            files: created_files,
         })
     }
 
@@ -382,41 +382,57 @@ where
     }
 
     fn metadata_opf_for_book_id(&mut self, id: i32, now: DateTime<Utc>) -> Result<String, ()> {
-        // Get Book
         let mut book_service = self.book_service.lock().unwrap();
         let book = book_service.find_by_id(id).map_err(|_| ())?;
-        let tags: Vec<String> = Vec::new();
 
-        // Get Authors
         let author_ids = book_service
             .find_author_ids_by_book_id(id)
             .map_err(|_| ())?;
-        // TODO: oh lord, fix this.
-        let author_list = author_ids
-            .iter()
-            .map(|&author_id| {
-                let mut author_service = self.author_service.lock().unwrap();
-                author_service.find_by_id(author_id).map_err(|_| ())
-            })
-            .filter(|author| author.is_ok())
-            .map(|author| author.unwrap())
-            .filter(|author| author.is_some())
-            .map(|author| author.unwrap())
-            .collect::<Vec<Author>>();
+        let author_list = self.get_author_list(author_ids)?;
 
-        let book_custom_author_sort = book.author_sort.unwrap_or(
-            author_list
-                .iter()
-                .map(|author| author.name.clone())
-                .collect::<Vec<String>>()
-                .join(", "),
-        );
+        let book_custom_author_sort = book
+            .author_sort
+            .clone()
+            .unwrap_or_else(|| self.get_author_sort_string(&author_list));
 
-        let tags_string = tags
+        let tags_string = self.get_tags_string(Vec::new());
+        let authors_string = self.get_authors_string(&author_list, &book_custom_author_sort);
+
+        Ok(self.format_metadata_opf(&book.clone(), &authors_string, &tags_string, &now))
+    }
+
+    fn get_author_list(&self, author_ids: Vec<i32>) -> Result<Vec<Author>, ()> {
+        let mut author_service = self.author_service.lock().unwrap();
+        let mut author_list = Vec::new();
+        for author_id in author_ids {
+            match author_service.find_by_id(author_id) {
+                Ok(Some(author)) => author_list.push(author),
+                _ => return Err(()),
+            }
+        }
+        Ok(author_list)
+    }
+
+    fn get_author_sort_string(&self, author_list: &Vec<Author>) -> String {
+        author_list
             .iter()
+            .map(|author| author.name.clone())
+            .collect::<Vec<String>>()
+            .join(", ")
+    }
+
+    fn get_tags_string(&self, tags: Vec<String>) -> String {
+        tags.iter()
             .map(|tag| format!("<dc:subject>{}</dc:subject>", tag))
-            .collect::<String>();
-        let authors_string = author_list
+            .collect::<String>()
+    }
+
+    fn get_authors_string(
+        &self,
+        author_list: &Vec<Author>,
+        book_custom_author_sort: &String,
+    ) -> String {
+        author_list
             .iter()
             .map(|author| {
                 format!(
@@ -425,9 +441,17 @@ where
                     author = author.name
                 )
             })
-            .collect::<String>();
+            .collect::<String>()
+    }
 
-        Ok(format!(
+    fn format_metadata_opf(
+        &self,
+        book: &Book,
+        authors_string: &String,
+        tags_string: &String,
+        now: &DateTime<Utc>,
+    ) -> String {
+        format!(
             r#"<?xml version='1.0' encoding='utf-8'?>
     <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="uuid_id" version="2.0">
       <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
@@ -447,7 +471,7 @@ where
       </guide>
     </package>"#,
             calibre_id = book.id,
-            calibre_uuid = book.uuid.unwrap_or("".to_string()).as_str(),
+            calibre_uuid = &book.uuid.clone().unwrap_or("".to_string()).as_str(),
             book_title = book.title,
             authors = authors_string,
             pub_date = book
@@ -458,7 +482,7 @@ where
             language_iso_639_2 = "en",
             tags = tags_string,
             now = now.to_string(),
-            book_title_sortable = book.sort.unwrap_or("".to_string()).as_str()
-        ))
+            book_title_sortable = &book.sort.clone().unwrap_or("".to_string()).as_str()
+        )
     }
 }
