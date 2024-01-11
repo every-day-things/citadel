@@ -132,9 +132,8 @@ where
                 &primary_author.name,
                 book_dir_relative_path.clone(),
             );
-            match result {
-                Ok(files) => created_files = files,
-                Err(_) => {}
+            if let Ok(files) = result {
+                created_files = files;
             }
 
             // If a Cover Image exists, copy it to library
@@ -144,12 +143,9 @@ where
                 let fs = self.file_service.lock().map_err(|_| LibSrvcError::DatabaseLocked)?;
 
                 let cover_data = bfs.cover_img_data_from_path(primary_file.path.as_path())?;
-                match cover_data {
-                    None => {}
-                    Some(cover_data) => {
-                        let cover_path = Path::new(&book_dir_relative_path).join("cover.jpg");
-                        let write_res = fs.write_to_file(&cover_path, cover_data);
-                    }
+                if let Some(cover_data) = cover_data {
+                    let cover_path = Path::new(&book_dir_relative_path).join("cover.jpg");
+                    let _ = fs.write_to_file(&cover_path, cover_data);
                 }
             }
         }
@@ -157,16 +153,13 @@ where
         // 4. Create Calibre metadata file
         // ===============================
         let metadata_opf_contents = self.metadata_opf_for_book_id(book.id, Utc::now());
-        match metadata_opf_contents {
-            Ok(contents) => {
-                let metadata_opf_path = Path::new(&book_dir_relative_path).join("metadata.opf");
-                let write_res = self
-                    .file_service
-                    .lock()
-                    .map_err(|_| LibSrvcError::DatabaseLocked)?
-                    .write_to_file(&metadata_opf_path, contents.as_bytes().to_vec());
-            }
-            Err(_) => {}
+        if let Ok(contents) = metadata_opf_contents {
+            let metadata_opf_path = Path::new(&book_dir_relative_path).join("metadata.opf");
+            let _ = self
+                .file_service
+                .lock()
+                .map_err(|_| LibSrvcError::DatabaseLocked)?
+                .write_to_file(&metadata_opf_path, contents.as_bytes().to_vec());
         }
 
         Ok(BookWithAuthorsAndFiles {
