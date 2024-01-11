@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import { addBook } from "$lib/library/addBook";
   import { pickLibrary } from "$lib/library/pickLibrary";
   import { books } from "../../stores/books";
@@ -37,18 +38,23 @@
         /><path d="M9 4v16" /><path d="M15 10l-2 2l2 2" /></svg
       >
     </button>
-    <a href="/setup"> Do setup</a>
     <div class="group">
       <p>My Library</p>
       <button on:click={addBookHandler}>⊕ Add book</button>
-      <a>Configure library</a>
       <button on:click={switchLibraryHandler}>Switch Library</button>
+      <a
+        href="/setup"
+        aria-current={$page.url.pathname === "/setup" ? "page" : undefined}
+      >
+        Do setup</a
+      >
+      <a>Configure library</a>
     </div>
     <div class="group">
       <p>My Shelves</p>
-      <a>Add books</a>
-      <a>Configure library</a>
-      <a>Switch library</a>
+      <a href="/" aria-current={$page.url.pathname === "/" ? "page" : undefined}
+        >All books</a
+      >
     </div>
     <div class="group">
       <p>Devices</p>
@@ -111,7 +117,15 @@
   .group {
     display: flex;
     flex-direction: column;
+    border-top: 1px solid #444;
+    gap: 8px;
+    margin-bottom: 8px;
   }
+  .group p {
+    margin: 8px 0;
+    font-weight: bold;
+  }
+
   nav {
     position: sticky;
     display: flex;
@@ -133,5 +147,9 @@
     padding: 8px;
     margin-top: auto;
     transform: translateY(-100%);
+  }
+
+  a[aria-current="page"] {
+    color: var(--text-brand);
   }
 </style>
