@@ -1,7 +1,6 @@
 use std::error::Error;
 use std::ffi::OsStr;
-use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
+use std::path::Path;
 
 use crate::application::services::domain::file::dto::{NewFileDto, UpdateFileDto};
 use crate::domain::book_file::entity::{BookFile, NewBookFile, UpdateBookFile};
