@@ -9,6 +9,7 @@ use libcalibre::{
         domain::{
             author::service::{AuthorService, AuthorServiceTrait},
             book::service::{BookService, BookServiceTrait},
+            file::service::{BookFileService, BookFileServiceTrait},
         },
         library::service::LibraryService,
     },
@@ -95,16 +96,21 @@ pub fn list_all(library_root: String) -> Vec<LibraryBook> {
         Some(database_path) => {
             let book_repo = Box::new(BookRepository::new(&database_path));
             let author_repo = Box::new(AuthorRepository::new(&database_path));
-            let file_repo = Arc::new(Mutex::new(BookFileRepository::new(&database_path)));
+            let book_file_repo = Box::new(BookFileRepository::new(&database_path));
 
             let book_service = Arc::new(Mutex::new(BookService::new(book_repo)));
             let author_service = Arc::new(Mutex::new(AuthorService::new(author_repo)));
+            let book_file_service = Arc::new(Mutex::new(BookFileService::new(book_file_repo)));
             let file_service = Arc::new(Mutex::new(
                 libcalibre::infrastructure::file_service::FileService::new(&library_root),
             ));
 
-            let mut book_and_author_service =
-                LibraryService::new(book_service, author_service, file_service, file_repo);
+            let mut book_and_author_service = LibraryService::new(
+                book_service,
+                author_service,
+                file_service,
+                book_file_service,
+            );
 
             let results = book_and_author_service
                 .find_all()
