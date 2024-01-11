@@ -95,7 +95,7 @@ where
         let primary_author = author_list[0].clone();
 
         for author in &author_list {
-            let mut book_service = self.book_service.lock().unwrap();
+            let mut book_service = self.book_service.lock().map_err(|_| LibSrvcError::DatabaseLocked)?;
             book_service
                 .link_book_to_author(book.id, author.id)
                 .map_err(|_| LibSrvcError::BookAuthorLinkFailed)?;
@@ -104,7 +104,7 @@ where
         // 2. Create Directories for Author & Book
         // ======================================
         let author_dir_name = {
-            let mut author_service = self.author_service.lock().unwrap();
+            let mut author_service = self.author_service.lock().map_err(|_| LibSrvcError::DatabaseLocked)?;
             author_service.name_author_dir(&primary_author)
         };
 
@@ -112,7 +112,7 @@ where
         let book_dir_relative_path = Path::new(&author_dir_name).join(&book_dir_name);
 
         {
-            let file_service = self.file_service.lock().unwrap();
+            let file_service = self.file_service.lock().map_err(|_| LibSrvcError::DatabaseLocked)?;
             file_service.create_directory(Path::new(&author_dir_name).to_path_buf())?;
             file_service.create_directory(book_dir_relative_path.clone())?;
         }
@@ -140,8 +140,8 @@ where
             // If a Cover Image exists, copy it to library
             let primary_file = &files[0];
             {
-                let mut bfs = self.book_file_service.lock().unwrap();
-                let fs = self.file_service.lock().unwrap();
+                let mut bfs = self.book_file_service.lock().map_err(|_| LibSrvcError::DatabaseLocked)?;
+                let fs = self.file_service.lock().map_err(|_| LibSrvcError::DatabaseLocked)?;
 
                 let cover_data = bfs.cover_img_data_from_path(primary_file.path.as_path())?;
                 match cover_data {
@@ -163,7 +163,7 @@ where
                 let write_res = self
                     .file_service
                     .lock()
-                    .unwrap()
+                    .map_err(|_| LibSrvcError::DatabaseLocked)?
                     .write_to_file(&metadata_opf_path, contents.as_bytes().to_vec());
             }
             Err(_) => {}
@@ -180,17 +180,17 @@ where
         &mut self,
         id: i32,
     ) -> Result<BookWithAuthorsAndFiles, Box<dyn Error>> {
-        let mut book_service = self.book_service.lock().unwrap();
-        let book = book_service.find_by_id(id).map_err(|_| "Book not found")?;
+        let mut book_service = self.book_service.lock().map_err(|_| LibSrvcError::DatabaseLocked)?;
+        let book = book_service.find_by_id(id).map_err(|_| LibSrvcError::NotFoundBook)?;
 
         let author_ids = book_service
             .find_author_ids_by_book_id(id)
-            .map_err(|_| "Author not found")?;
+            .map_err(|_| LibSrvcError::NotFoundAuthor)?;
 
         let authors: Vec<Author> = author_ids
             .into_iter()
             .map(|author_id| {
-                let mut author_service = self.author_service.lock().unwrap();
+                let mut author_service = self.author_service.lock().map_err(|_| LibSrvcError::DatabaseLocked)?;
                 match author_service.find_by_id(author_id) {
                     Ok(Some(author)) => Ok(author),
                     _ => Err(LibSrvcError::NotFoundAuthor),
@@ -202,10 +202,10 @@ where
         let mut file_repo_guard = self
             .book_file_service
             .lock()
-            .map_err(|_| "File Repository cannot be used by this thread")?;
+            .map_err(|_| LibSrvcError::DatabaseLocked)?;
         let files = file_repo_guard
             .find_all_for_book_id(book.id)
-            .map_err(|_| "Could not find files for book")?;
+            .map_err(|_| LibSrvcError::NotFoundBookFiles)?;
 
         Ok(BookWithAuthorsAndFiles {
             book,
@@ -215,21 +215,21 @@ where
     }
 
     pub fn find_all(&mut self) -> Result<Vec<BookWithAuthorsAndFiles>, Box<dyn Error>> {
-        let mut book_service = self.book_service.lock().unwrap();
+        let mut book_service = self.book_service.lock().map_err(|_| LibSrvcError::DatabaseLocked)?;
         let books = book_service
             .all()
-            .map_err(|_| "Could not read database to find books")?;
+            .map_err(|_| LibSrvcError::DatabaseBookWriteFailed)?;
 
         let mut book_list = Vec::new();
         for book in books {
             let author_ids = book_service
                 .find_author_ids_by_book_id(book.id)
-                .map_err(|_| "Author not found")?;
+                .map_err(|_| LibSrvcError::NotFoundAuthor)?;
 
             let authors: Vec<Author> = author_ids
                 .into_iter()
                 .map(|author_id| {
-                    let mut author_service = self.author_service.lock().unwrap();
+                    let mut author_service = self.author_service.lock().map_err(|_| LibSrvcError::DatabaseLocked)?;
                     match author_service.find_by_id(author_id) {
                         Ok(Some(author)) => Ok(author),
                         _ => Err(LibSrvcError::NotFoundAuthor),
@@ -241,10 +241,10 @@ where
             let mut file_repo_guard = self
                 .book_file_service
                 .lock()
-                .map_err(|_| "File Repository cannot be used by this thread")?;
+                .map_err(|_| LibSrvcError::DatabaseLocked)?;
             let files = file_repo_guard
                 .find_all_for_book_id(book.id)
-                .map_err(|_| "Could not find files for book")?;
+                .map_err(|_| LibSrvcError::NotFoundBookFiles)?;
 
             book_list.push(BookWithAuthorsAndFiles {
                 book,
@@ -263,7 +263,7 @@ where
         let author_list = authors
             .into_iter()
             .map(|dto| {
-                let mut author_service = self.author_service.lock().unwrap();
+                let mut author_service = self.author_service.lock().map_err(|_| LibSrvcError::DatabaseLocked)?;
                 author_service
                     .create(dto)
                     .map_err(|_| LibSrvcError::DatabaseAuthorWriteFailed)
@@ -275,12 +275,12 @@ where
     }
 
     fn create_book(&self, book: NewBookDto) -> Result<Book, LibSrvcError> {
-        let mut book_service = self.book_service.lock().unwrap();
+        let mut book_service = self.book_service.lock().map_err(|_| LibSrvcError::DatabaseLocked)?;
         book_service.create(book).map_err(|_| LibSrvcError::InvalidDto)
     }
 
     fn set_book_path(&self, book_id: i32, book_dir_rel_path: PathBuf) -> Result<Book, LibSrvcError> {
-        let mut book_service = self.book_service.lock().unwrap();
+        let mut book_service = self.book_service.lock().map_err(|_| LibSrvcError::DatabaseLocked)?;
         book_service
             .update(
                 book_id,
@@ -342,7 +342,7 @@ where
     }
 
     fn metadata_opf_for_book_id(&mut self, id: i32, now: DateTime<Utc>) -> Result<String, ()> {
-        let mut book_service = self.book_service.lock().unwrap();
+        let mut book_service = self.book_service.lock().map_err(|_| ())?;
         let book = book_service.find_by_id(id).map_err(|_| ())?;
 
         let author_ids = book_service
@@ -362,7 +362,7 @@ where
     }
 
     fn get_author_list(&self, author_ids: Vec<i32>) -> Result<Vec<Author>, ()> {
-        let mut author_service = self.author_service.lock().unwrap();
+        let mut author_service = self.author_service.lock().map_err(|_| ())?;
         let mut author_list = Vec::new();
         for author_id in author_ids {
             match author_service.find_by_id(author_id) {
