@@ -149,7 +149,6 @@ where
                     Some(cover_data) => {
                         let cover_path = Path::new(&book_dir_relative_path).join("cover.jpg");
                         let write_res = fs.write_to_file(&cover_path, cover_data);
-                        println!("{:?}", write_res)
                     }
                 }
             }
@@ -166,7 +165,6 @@ where
                     .lock()
                     .unwrap()
                     .write_to_file(&metadata_opf_path, contents.as_bytes().to_vec());
-                println!("{:?}", write_res)
             }
             Err(_) => {}
         }
@@ -324,7 +322,6 @@ where
                         })
                         .map_err(|_| LibSrvcError::InvalidDto),
                     Err(_) => {
-                        println!("Failed to acquire lock");
                         return Err(LibSrvcError::DatabaseLocked);
                     }
                 }?;
@@ -335,7 +332,6 @@ where
                         .copy_file_to_directory(file.path.as_path(), book_rel_path.as_path())
                         .map_err(|_| LibSrvcError::InvalidDto),
                     Err(_) => {
-                        println!("Failed to acquire lock");
                         return Err(LibSrvcError::DatabaseLocked);
                     }
                 };
