@@ -3,6 +3,8 @@ use std::path::{Path, PathBuf};
 use std::result::Result;
 use std::sync::{Arc, Mutex};
 
+use chrono::{DateTime, NaiveDateTime, Utc};
+
 use crate::application::services::domain::author::dto::NewAuthorDto;
 use crate::application::services::domain::author::service::AuthorServiceTrait;
 use crate::application::services::domain::book::dto::{NewBookDto, UpdateBookDto};
@@ -150,19 +152,26 @@ where
             file_service.create_directory(Path::new(&author_dir_name).to_path_buf())?;
             file_service.create_directory(book_dir_relative_path.clone())?;
         }
+        // Update Book with relative path to book folder
+        let _ = self.set_book_path(book.id, book_dir_relative_path.clone());
 
         // 3. Copy Book files & cover image to library
         // ===========================
-        let _ = self.set_book_path(book.id, book_dir_relative_path.clone());
+
+        let mut created_files: Vec<BookFile> = Vec::new();
         if let Some(files) = dto.files {
             // Copy files to library
-            let _ = self.add_book_files(
+            let result = self.add_book_files(
                 &files,
                 &dto.book.title.clone(),
                 book.id,
                 &primary_author.name,
                 book_dir_relative_path.clone(),
             );
+            match result {
+                Ok(files) => created_files = files,
+                Err(_) => {}
+            }
 
             // If a Cover Image exists, copy it to library
             let primary_file = &files[0];
@@ -181,26 +190,27 @@ where
                 }
             }
         }
+
         // 4. Create Calibre metadata file
         // ===============================
-        // Create metadata.opf in Book Directory
-        // TODO
-
-        // let files = {
-        //     let mut file_repo_guard = self
-        //         .file_repository
-        //         .lock()
-        //         .map_err(|_| BAASError::DatabaseLocked)?;
-
-        //     file_repo_guard
-        //         .find_all_for_book_id(book.id)
-        //         .map_err(|_| BAASError::NotFoundBookFiles)?
-        // };
+        let metadata_opf_contents = self.metadata_opf_for_book_id(book.id, Utc::now());
+        match metadata_opf_contents {
+            Ok(contents) => {
+                let metadata_opf_path = Path::new(&book_dir_relative_path).join("metadata.opf");
+                let write_res = self
+                    .file_service
+                    .lock()
+                    .unwrap()
+                    .write_to_file(&metadata_opf_path, contents.as_bytes().to_vec());
+                println!("{:?}", write_res)
+            }
+            Err(_) => {}
+        }
 
         Ok(BookWithAuthorsAndFiles {
             book,
             authors: author_list,
-            files: Vec::new(),
+            files: created_files
         })
     }
 
@@ -369,5 +379,86 @@ where
                 Ok(added_book)
             })
             .collect::<Result<Vec<BookFile>, BAASError>>()
+    }
+
+    fn metadata_opf_for_book_id(&mut self, id: i32, now: DateTime<Utc>) -> Result<String, ()> {
+        // Get Book
+        let mut book_service = self.book_service.lock().unwrap();
+        let book = book_service.find_by_id(id).map_err(|_| ())?;
+        let tags: Vec<String> = Vec::new();
+
+        // Get Authors
+        let author_ids = book_service
+            .find_author_ids_by_book_id(id)
+            .map_err(|_| ())?;
+        // TODO: oh lord, fix this.
+        let author_list = author_ids
+            .iter()
+            .map(|&author_id| {
+                let mut author_service = self.author_service.lock().unwrap();
+                author_service.find_by_id(author_id).map_err(|_| ())
+            })
+            .filter(|author| author.is_ok())
+            .map(|author| author.unwrap())
+            .filter(|author| author.is_some())
+            .map(|author| author.unwrap())
+            .collect::<Vec<Author>>();
+
+        let book_custom_author_sort = book.author_sort.unwrap_or(
+            author_list
+                .iter()
+                .map(|author| author.name.clone())
+                .collect::<Vec<String>>()
+                .join(", "),
+        );
+
+        let tags_string = tags
+            .iter()
+            .map(|tag| format!("<dc:subject>{}</dc:subject>", tag))
+            .collect::<String>();
+        let authors_string = author_list
+            .iter()
+            .map(|author| {
+                format!(
+                    "<dc:creator opf:file-as=\"{sortable}\" opf:role=\"aut\">{author}</dc:creator>",
+                    sortable = book_custom_author_sort.as_str(),
+                    author = author.name
+                )
+            })
+            .collect::<String>();
+
+        Ok(format!(
+            r#"<?xml version='1.0' encoding='utf-8'?>
+    <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="uuid_id" version="2.0">
+      <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
+        <dc:identifier opf:scheme="calibre" id="calibre_id">{calibre_id}</dc:identifier>
+        <dc:identifier opf:scheme="uuid" id="uuid_id">{calibre_uuid}</dc:identifier>
+        <dc:title>{book_title}</dc:title>
+        {authors}
+        <dc:contributor opf:file-as="calibre" opf:role="bkp">citadel (1.0.0) [https://github.com/every-day-things/citadel]</dc:contributor>
+        <dc:date>{pub_date}</dc:date>
+        <dc:language>{language_iso_639_2}</dc:language>
+        {tags}
+        <meta name="calibre:timestamp" content="{now}"/>
+        <meta name="calibre:title_sort" content="{book_title_sortable}"/>
+      </metadata>
+      <guide>
+        <reference type="cover" title="Cover" href="cover.jpg"/>
+      </guide>
+    </package>"#,
+            calibre_id = book.id,
+            calibre_uuid = book.uuid.unwrap_or("".to_string()).as_str(),
+            book_title = book.title,
+            authors = authors_string,
+            pub_date = book
+                .pubdate
+                .unwrap_or(NaiveDateTime::from_timestamp_millis(0).unwrap())
+                .to_string()
+                .as_str(),
+            language_iso_639_2 = "en",
+            tags = tags_string,
+            now = now.to_string(),
+            book_title_sortable = book.sort.unwrap_or("".to_string()).as_str()
+        ))
     }
 }
