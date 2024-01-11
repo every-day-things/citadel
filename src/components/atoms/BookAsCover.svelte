@@ -75,6 +75,7 @@
   {:else}
     <div class="cover">
       <img
+        id="cover"
         src={$libraryClientStore.getCoverUrlForBook(book.id)}
         on:click={onClickHandler}
         on:dragstart={(e) => dragHandler(e, book)}
@@ -82,6 +83,10 @@
       />
       <span class="title">{shortenToXChars(book.title, 50)}</span>
       <span class="authors">{book.author_list.join(", ")}</span>
+      <img
+        src={$libraryClientStore.getCoverUrlForBook(book.id)}
+        class="cover-blur"
+      />
     </div>
   {/if}
 </div>
@@ -99,6 +104,7 @@
     align-items: center;
     justify-content: start;
     width: 100%;
+    position: relative;
   }
 
   img {
@@ -107,14 +113,29 @@
     max-height: 400px;
     transition: all 0.2s ease-in-out;
     border: 2px solid transparent;
+    position: relative;
+    z-index: 1;
   }
 
   img:hover {
     transform: scale(1.02);
-    box-shadow:
-      0 0 10px 0 rgba(0, 0, 0, 0.2),
-      0 0 20px 0 rgba(0, 0, 0, 0.19),
-      0 0 30px 0 rgba(0, 0, 0, 0.18);
+  }
+
+  .cover-blur {
+    opacity: 0;
+    position: absolute;
+    top: 10px;
+    left: 0px;
+    max-width: 100%;
+    max-height: 400px;
+    transform: scale(1.02);
+    filter: blur(5px) opacity(0.3);
+    z-index: 0;
+    border-radius: 64px;
+  }
+
+  #cover:hover ~ .cover-blur {
+    opacity: 1;
   }
 
   .selected {
