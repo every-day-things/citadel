@@ -19,7 +19,7 @@ use crate::{Book, BookFile};
 use super::dto::{NewLibraryEntryDto, NewLibraryFileDto};
 
 #[derive(Debug)]
-pub enum BAASError {
+pub enum LibSrvcError {
     InvalidDto,
     DatabaseBookWriteFailed,
     DatabaseAuthorWriteFailed,
@@ -30,13 +30,13 @@ pub enum BAASError {
     NotFoundAuthor,
 }
 
-impl std::fmt::Display for BAASError {
+impl std::fmt::Display for LibSrvcError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{:?}", self)
     }
 }
 
-impl std::error::Error for BAASError {}
+impl std::error::Error for LibSrvcError {}
 
 fn gen_book_folder_name(book_name: &String, book_id: i32) -> String {
     "{title} ({id})"
@@ -98,7 +98,7 @@ where
             let mut book_service = self.book_service.lock().unwrap();
             book_service
                 .link_book_to_author(book.id, author.id)
-                .map_err(|_| BAASError::BookAuthorLinkFailed)?;
+                .map_err(|_| LibSrvcError::BookAuthorLinkFailed)?;
         }
 
         // 2. Create Directories for Author & Book
@@ -195,7 +195,7 @@ where
                 let mut author_service = self.author_service.lock().unwrap();
                 match author_service.find_by_id(author_id) {
                     Ok(Some(author)) => Ok(author),
-                    _ => Err(BAASError::NotFoundAuthor),
+                    _ => Err(LibSrvcError::NotFoundAuthor),
                 }
             })
             .map(|item| item.map_err(|e| e.into()))
@@ -234,7 +234,7 @@ where
                     let mut author_service = self.author_service.lock().unwrap();
                     match author_service.find_by_id(author_id) {
                         Ok(Some(author)) => Ok(author),
-                        _ => Err(BAASError::NotFoundAuthor),
+                        _ => Err(LibSrvcError::NotFoundAuthor),
                     }
                 })
                 .map(|item| item.map_err(|e| e.into()))
@@ -268,7 +268,7 @@ where
                 let mut author_service = self.author_service.lock().unwrap();
                 author_service
                     .create(dto)
-                    .map_err(|_| BAASError::DatabaseAuthorWriteFailed)
+                    .map_err(|_| LibSrvcError::DatabaseAuthorWriteFailed)
             })
             .map(|res| res.map_err(|e| e.into()))
             .collect::<Result<Vec<Author>, Box<dyn Error>>>()?;
@@ -276,12 +276,12 @@ where
         Ok(author_list)
     }
 
-    fn create_book(&self, book: NewBookDto) -> Result<Book, BAASError> {
+    fn create_book(&self, book: NewBookDto) -> Result<Book, LibSrvcError> {
         let mut book_service = self.book_service.lock().unwrap();
-        book_service.create(book).map_err(|_| BAASError::InvalidDto)
+        book_service.create(book).map_err(|_| LibSrvcError::InvalidDto)
     }
 
-    fn set_book_path(&self, book_id: i32, book_dir_rel_path: PathBuf) -> Result<Book, BAASError> {
+    fn set_book_path(&self, book_id: i32, book_dir_rel_path: PathBuf) -> Result<Book, LibSrvcError> {
         let mut book_service = self.book_service.lock().unwrap();
         book_service
             .update(
@@ -299,7 +299,7 @@ where
                     has_cover: None,
                 },
             )
-            .map_err(|_| BAASError::DatabaseBookWriteFailed)
+            .map_err(|_| LibSrvcError::DatabaseBookWriteFailed)
     }
 
     fn add_book_files(
@@ -309,7 +309,7 @@ where
         book_id: i32,
         primary_author_name: &String,
         book_dir_rel_path: PathBuf,
-    ) -> Result<Vec<BookFile>, BAASError> {
+    ) -> Result<Vec<BookFile>, LibSrvcError> {
         files
             .iter()
             .map(|file| {
@@ -322,10 +322,10 @@ where
                             book_id,
                             name: book_file_name,
                         })
-                        .map_err(|_| BAASError::InvalidDto),
+                        .map_err(|_| LibSrvcError::InvalidDto),
                     Err(_) => {
                         println!("Failed to acquire lock");
-                        return Err(BAASError::DatabaseLocked);
+                        return Err(LibSrvcError::DatabaseLocked);
                     }
                 }?;
 
@@ -333,16 +333,16 @@ where
                 match self.file_service.lock() {
                     Ok(file_service_guard) => file_service_guard
                         .copy_file_to_directory(file.path.as_path(), book_rel_path.as_path())
-                        .map_err(|_| BAASError::InvalidDto),
+                        .map_err(|_| LibSrvcError::InvalidDto),
                     Err(_) => {
                         println!("Failed to acquire lock");
-                        return Err(BAASError::DatabaseLocked);
+                        return Err(LibSrvcError::DatabaseLocked);
                     }
                 };
 
                 Ok(added_book)
             })
-            .collect::<Result<Vec<BookFile>, BAASError>>()
+            .collect::<Result<Vec<BookFile>, LibSrvcError>>()
     }
 
     fn metadata_opf_for_book_id(&mut self, id: i32, now: DateTime<Utc>) -> Result<String, ()> {
