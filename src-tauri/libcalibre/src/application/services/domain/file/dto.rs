@@ -1,8 +1,8 @@
 use std::{fs::File, path::PathBuf};
 
 use crate::{
-    application::services::library::service::MIMETYPE,
     domain::book_file::entity::{NewBookFile, UpdateBookFile},
+    mime_type::MIMETYPE,
 };
 
 pub struct NewFileDto {

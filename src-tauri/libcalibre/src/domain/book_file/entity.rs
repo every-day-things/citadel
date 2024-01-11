@@ -2,7 +2,7 @@ use diesel::prelude::*;
 use diesel::query_builder::AsChangeset;
 use serde::Deserialize;
 
-use crate::application::services::library::service::MIMETYPE;
+use crate::mime_type::MIMETYPE;
 use crate::schema::data;
 
 #[derive(Clone, Debug, Queryable, Selectable, Identifiable, AsChangeset)]

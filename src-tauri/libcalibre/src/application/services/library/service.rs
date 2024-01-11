@@ -38,42 +38,6 @@ impl std::fmt::Display for BAASError {
 
 impl std::error::Error for BAASError {}
 
-pub enum MIMETYPE {
-    EPUB,
-    UNKNOWN,
-}
-
-impl MIMETYPE {
-    pub fn as_str(&self) -> &'static str {
-        match *self {
-            MIMETYPE::EPUB => "application/epub+zip",
-            MIMETYPE::UNKNOWN => "application/octet-stream",
-        }
-    }
-
-    pub fn from_str(mimetype: &str) -> Option<Self> {
-        match mimetype {
-            "application/epub+zip" => Some(MIMETYPE::EPUB),
-            "application/octet-stream" => Some(MIMETYPE::UNKNOWN),
-            _ => None,
-        }
-    }
-
-    pub fn to_file_extension(&self) -> &'static str {
-        match *self {
-            MIMETYPE::EPUB => "epub",
-            MIMETYPE::UNKNOWN => "",
-        }
-    }
-
-    pub fn from_file_extension(extension: &str) -> Option<Self> {
-        match extension.to_lowercase().as_str() {
-            "epub" => Some(MIMETYPE::EPUB),
-            _ => None,
-        }
-    }
-}
-
 fn gen_book_folder_name(book_name: &String, book_id: i32) -> String {
     "{title} ({id})"
         .replace("{title}", book_name)

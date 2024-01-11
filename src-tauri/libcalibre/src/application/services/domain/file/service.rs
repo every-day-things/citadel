@@ -1,12 +1,12 @@
 use std::error::Error;
 use std::ffi::OsStr;
-use std::path::{PathBuf, Path};
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use crate::application::services::domain::file::dto::{NewFileDto, UpdateFileDto};
-use crate::application::services::library::service::MIMETYPE;
 use crate::domain::book_file::entity::{BookFile, NewBookFile, UpdateBookFile};
 use crate::domain::book_file::repository::Repository as BookFileRepository;
+use crate::mime_type::MIMETYPE;
 
 pub trait BookFileServiceTrait {
     fn new(file_repository: Box<dyn BookFileRepository>) -> Self;
@@ -27,7 +27,7 @@ fn cover_data(path: &Path) -> Result<Option<Vec<u8>>, Box<dyn Error>> {
         Some(MIMETYPE::EPUB) => {
             let mut doc = epub::doc::EpubDoc::new(path)?;
             Ok(doc.get_cover().map(|(data, _id)| data))
-        },
+        }
         _ => Ok(None),
     }
 }
