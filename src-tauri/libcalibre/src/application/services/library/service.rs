@@ -90,9 +90,9 @@ where
     ) -> Result<BookWithAuthorsAndFiles, Box<dyn Error>> {
         // 1. Create Authors & Books and link them
         // ========================
-        let author_list = self.create_authors(dto.authors.clone())?;
+        let author_list = self.create_authors(dto.authors)?;
         let book = self.create_book(dto.book.clone())?;
-        let primary_author = author_list[0].clone();
+        let primary_author = &author_list[0];
 
         for author in &author_list {
             let mut book_service = self.book_service.lock().map_err(|_| LibSrvcError::DatabaseLocked)?;
@@ -105,7 +105,7 @@ where
         // ======================================
         let author_dir_name = {
             let mut author_service = self.author_service.lock().map_err(|_| LibSrvcError::DatabaseLocked)?;
-            author_service.name_author_dir(&primary_author)
+            author_service.name_author_dir(primary_author)
         };
 
         let book_dir_name = gen_book_folder_name(&dto.book.title, book.id);
@@ -127,7 +127,7 @@ where
             // Copy files to library
             let result = self.add_book_files(
                 &files,
-                &dto.book.title.clone(),
+                &dto.book.title,
                 book.id,
                 &primary_author.name,
                 book_dir_relative_path.clone(),
@@ -351,7 +351,7 @@ where
         let tags_string = self.get_tags_string(Vec::new());
         let authors_string = self.get_authors_string(&author_list, &book_custom_author_sort);
 
-        Ok(self.format_metadata_opf(&book.clone(), &authors_string, &tags_string, &now))
+        Ok(self.format_metadata_opf(&book, &authors_string, &tags_string, &now))
     }
 
     fn get_author_list(&self, author_ids: Vec<i32>) -> Result<Vec<Author>, ()> {
