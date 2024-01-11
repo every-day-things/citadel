@@ -233,69 +233,6 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
             println!("Result: {:?}", result)
         }
     }
-
-    // 5. Create Author folder
-    // let author_str = md.author.clone().unwrap();
-    // let author_path = create_folder_for_author(&library_path, author_str.clone()).unwrap();
-
-    // // 7. Add metadata to database
-    // let conn = &mut establish_connection(library_path.clone());
-
-    // let now = Utc::now();
-    // let inserted_book = insert_book_metadata(conn, &md, now).unwrap();
-
-    // // Create Book folder, using ID of book
-    // let book_id = inserted_book.book_id;
-
-    // let book_folder_name = names::gen_book_folder_name(md.title.clone(), book_id);
-    // let book_folder_path = Path::new(&author_path).join(&book_folder_name);
-    // if !book_folder_path.exists() {
-    //     std::fs::create_dir_all(book_folder_path).expect("Could not create book folder");
-    // }
-
-    // // Relative path to the Book's folder, from the Library root
-    // let book_dir_rel_path = Path::new(&author_str).join(&book_folder_name);
-    // let book_dir_abs_path = Path::new(&library_path).join(&book_dir_rel_path);
-
-    // // 6. Copy file to library folder
-    // let book_file_name = names::gen_book_file_name(&md.title, &author_str);
-    // let filename_with_ext = "{name}.{extension}"
-    //     .replace("{name}", &book_file_name)
-    //     .replace(
-    //         "{extension}",
-    //         &md.path.extension().unwrap().to_str().unwrap(),
-    //     );
-    // let new_file_path = book_dir_abs_path.join(filename_with_ext);
-    // std::fs::copy(md.path.clone(), new_file_path.clone())
-    //     .expect("Could not copy file to library folder");
-
-    // // 6a. Copy cover to library folder
-    // let cover_data = cover_data(&md.path.clone()).unwrap(); // Unwrap the Option<Vec<u8>> value
-    // let cover_path = book_dir_abs_path.join("cover.jpg");
-    // std::fs::write(cover_path, &cover_data).expect("Could not write cover data to file");
-
-    // // 6b. Copy metadata.opf to library folder
-    // let metadata_opf = format_calibre_metadata_opf(
-    //     format!("{}", book_id).as_str(),
-    //     inserted_book.book_uuid.as_str(),
-    //     &md.title.as_str(),
-    //     &author_str,
-    //     &author_str,
-    //     "2021-01-01",
-    //     "eng",
-    //     &["tag1", "tag2", "tag3"],
-    //     "2021-01-01T00:00:00+00:00",
-    //     &md.title.as_str(),
-    // );
-    // let metadata_opf_path = book_dir_abs_path.join("metadata.opf");
-    // std::fs::write(metadata_opf_path, &metadata_opf).expect("Could not write metadata.opf");
-
-    // // 7. Update Book with relative path to book folder
-    // diesel::update(books::dsl::books.filter(books::id.eq(book_id)))
-    //     .set(books::path.eq(book_dir_rel_path.to_str().unwrap()))
-    //     .returning(Book::as_returning())
-    //     .get_result(conn)
-    //     .unwrap();
 }
 
 #[tauri::command]
