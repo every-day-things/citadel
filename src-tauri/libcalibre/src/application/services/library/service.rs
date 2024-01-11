@@ -153,19 +153,34 @@ where
 
         // 3. Copy Book files & cover image to library
         // ===========================
-        self.set_book_path(book.id, book_dir_relative_path.clone());
+        let _ = self.set_book_path(book.id, book_dir_relative_path.clone());
         if let Some(files) = dto.files {
-            self.add_book_files(
+            // Copy files to library
+            let _ = self.add_book_files(
                 &files,
                 &dto.book.title.clone(),
                 book.id,
                 &primary_author.name,
-                book_dir_relative_path,
+                book_dir_relative_path.clone(),
             );
-        }
-        // Copy Cover image to library
-        // TODO
 
+            // If a Cover Image exists, copy it to library
+            let primary_file = &files[0];
+            {
+                let mut bfs = self.book_file_service.lock().unwrap();
+                let fs = self.file_service.lock().unwrap();
+
+                let cover_data = bfs.cover_img_data_from_path(primary_file.path.as_path())?;
+                match cover_data {
+                    None => {}
+                    Some(cover_data) => {
+                        let cover_path = Path::new(&book_dir_relative_path).join("cover.jpg");
+                        let write_res = fs.write_to_file(&cover_path, cover_data);
+                        println!("{:?}", write_res)
+                    }
+                }
+            }
+        }
         // 4. Create Calibre metadata file
         // ===============================
         // Create metadata.opf in Book Directory

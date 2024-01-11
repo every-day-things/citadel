@@ -9,6 +9,7 @@ edition = "2021"
 chrono = { version = "0.4.31", features = ["serde"] }
 diesel = { version = "2.1.0", features = ["sqlite", "chrono", "returning_clauses_for_sqlite_3_35"] }
 diesel_migrations = { version = "2.1.0", features = ["sqlite"] }
+epub = "2.1.1"
 regex = "1.10.2"
 serde = { version = "1.0", features = ["derive"] }
 uuid = { version = "1.6.1", features = [ "v4", "fast-rng", ] }

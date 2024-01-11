@@ -1,7 +1,10 @@
 use std::error::Error;
+use std::ffi::OsStr;
+use std::path::{PathBuf, Path};
 use std::sync::{Arc, Mutex};
 
 use crate::application::services::domain::file::dto::{NewFileDto, UpdateFileDto};
+use crate::application::services::library::service::MIMETYPE;
 use crate::domain::book_file::entity::{BookFile, NewBookFile, UpdateBookFile};
 use crate::domain::book_file::repository::Repository as BookFileRepository;
 
@@ -11,6 +14,22 @@ pub trait BookFileServiceTrait {
     fn find_by_id(&mut self, id: i32) -> Result<BookFile, Box<dyn Error>>;
     fn find_all_for_book_id(&mut self, book_id: i32) -> Result<Vec<BookFile>, Box<dyn Error>>;
     fn update(&mut self, id: i32, dto: UpdateFileDto) -> Result<BookFile, Box<dyn Error>>;
+    fn cover_img_data_from_path(&mut self, path: &Path) -> Result<Option<Vec<u8>>, Box<dyn Error>>;
+}
+
+fn cover_data(path: &Path) -> Result<Option<Vec<u8>>, Box<dyn Error>> {
+    let extension = path
+        .extension()
+        .and_then(OsStr::to_str)
+        .ok_or("Failed to read file extension")?;
+
+    match MIMETYPE::from_file_extension(extension) {
+        Some(MIMETYPE::EPUB) => {
+            let mut doc = epub::doc::EpubDoc::new(path)?;
+            Ok(doc.get_cover().map(|(data, _id)| data))
+        },
+        _ => Ok(None),
+    }
 }
 
 pub struct BookFileService {
@@ -49,5 +68,9 @@ impl BookFileServiceTrait for BookFileService {
         self.file_repository
             .update(id, &updatable)
             .map_err(|_| "Could not update file".into())
+    }
+
+    fn cover_img_data_from_path(&mut self, path: &Path) -> Result<Option<Vec<u8>>, Box<dyn Error>> {
+        cover_data(&path)
     }
 }

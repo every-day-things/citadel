@@ -9,6 +9,8 @@ pub trait FileServiceTrait {
     fn create_directory(&self, path: PathBuf) -> io::Result<()>;
     /// Copy a file to a directory within the Library Root.
     fn copy_file_to_directory(&self, source: &Path, destination: &Path) -> io::Result<()>;
+    /// Write data to a file within the Library Root.
+    fn write_to_file(&self, path: &Path, data: Vec<u8>) -> io::Result<()>;
 }
 
 pub struct FileService {
@@ -17,7 +19,9 @@ pub struct FileService {
 
 impl FileServiceTrait for FileService {
     fn new(library_root: &String) -> Self {
-        Self { library_root: library_root.clone() }
+        Self {
+            library_root: library_root.clone(),
+        }
     }
 
     fn create_directory(&self, library_relative_path: PathBuf) -> io::Result<()> {
@@ -40,5 +44,12 @@ impl FileServiceTrait for FileService {
         let complete_destination = Path::new(&self.library_root).join(destination_rel);
         fs::copy(source_abs, complete_destination)?;
         Ok(())
+    }
+
+    fn write_to_file(&self, path: &Path, contents: Vec<u8>) -> io::Result<()> {
+        let complete_path = Path::new(&self.library_root).join(path);
+        let write_res = std::fs::write(complete_path, &contents);
+
+        write_res
     }
 }

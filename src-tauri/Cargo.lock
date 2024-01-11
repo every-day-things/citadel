@@ -2000,6 +2000,7 @@ dependencies = [
  "chrono",
  "diesel 2.1.4",
  "diesel_migrations",
+ "epub",
  "regex",
  "serde",
  "uuid",
