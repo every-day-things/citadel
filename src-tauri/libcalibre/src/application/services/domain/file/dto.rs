@@ -1,13 +1,14 @@
-use crate::domain::book_file::entity::{NewBookFile, UpdateBookFile};
+use std::{fs::File, path::PathBuf};
+
+use crate::{
+    application::services::library::service::MIMETYPE,
+    domain::book_file::entity::{NewBookFile, UpdateBookFile},
+};
 
 pub struct NewFileDto {
     pub book_id: i32,
-    // TODO: Convert this to an Enum of MIME types
-    pub file_format: String,
-    /// File sizes must be positive numbers. i32 type is required by SQLite.
-    pub file_size_bytes: i32,
-    /// The name of the file on disk, without the file extension
-    pub name_without_extension: String
+    pub path: PathBuf,
+    pub name: String,
 }
 
 pub struct UpdateFileDto {
@@ -21,12 +22,25 @@ impl TryFrom<NewFileDto> for NewBookFile {
     type Error = ();
 
     fn try_from(dto: NewFileDto) -> Result<Self, Self::Error> {
-        Ok(Self {
-            book: dto.book_id,
-            format: dto.file_format,
-            uncompressed_size: dto.file_size_bytes,
-            name: dto.name_without_extension
-        })
+        match dto.path.exists() {
+            true => {
+                let file = File::open(&dto.path).unwrap();
+                let size_bytes = file.metadata().unwrap().len() as i32;
+                let ext = match dto.path.extension() {
+                    Some(ext) => ext.to_str().unwrap_or(""),
+                    None => "",
+                };
+                let format = MIMETYPE::from_file_extension(ext).ok_or(())?;
+
+                Ok(Self {
+                    book: dto.book_id,
+                    format: format.to_file_extension().to_uppercase(),
+                    uncompressed_size: size_bytes,
+                    name: dto.name,
+                })
+            }
+            false => Err(()),
+        }
     }
 }
 
@@ -38,7 +52,7 @@ impl TryFrom<UpdateFileDto> for UpdateBookFile {
             book: dto.book_id,
             format: dto.file_format,
             uncompressed_size: dto.file_size_bytes,
-            name: dto.name_without_extension
+            name: dto.name_without_extension,
         })
     }
 }
