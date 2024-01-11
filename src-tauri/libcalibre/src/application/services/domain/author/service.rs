@@ -5,7 +5,8 @@ use crate::domain::author::repository::Repository as AuthorRepository;
 pub trait AuthorServiceTrait {
     fn new(author_repository: Box<dyn AuthorRepository>) -> Self;
     fn create(&mut self, dto: NewAuthorDto) -> Result<Author, ()>;
-    fn find_by_id(&mut self, id: i32) -> Result<Author, ()>;
+    fn find_by_id(&mut self, id: i32) -> Result<Option<Author>, ()>;
+    fn find_by_name(&mut self, name: &str) -> Result<Option<Author>, ()>;
     fn all(&mut self) -> Result<Vec<Author>, ()>;
     fn update(&mut self, id: i32, dto: UpdateAuthorDto) -> Result<Author, ()>;
     fn name_author_dir(&mut self, author: &Author) -> String;
@@ -22,13 +23,18 @@ impl AuthorServiceTrait for AuthorService {
 
     fn create(&mut self, dto: NewAuthorDto) -> Result<Author, ()> {
         let author = NewAuthor::try_from(dto)?;
-        let author = self.author_repository.create(&author)?;
-
-        Ok(author)
+        match self.author_repository.find_by_name(&author.name)? {
+            Some(author) => Ok(author),
+            _ => self.author_repository.create(&author),
+        }
     }
 
-    fn find_by_id(&mut self, id: i32) -> Result<Author, ()> {
+    fn find_by_id(&mut self, id: i32) -> Result<Option<Author>, ()> {
         self.author_repository.find_by_id(id)
+    }
+
+    fn find_by_name(&mut self, name: &str) -> Result<Option<Author>, ()> {
+        self.author_repository.find_by_name(name)
     }
 
     fn all(&mut self) -> Result<Vec<Author>, ()> {

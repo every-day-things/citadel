@@ -34,29 +34,33 @@ impl Repository for AuthorRepository {
     fn create(&mut self, new_author: &NewAuthor) -> Result<Author, ()> {
         use crate::schema::authors::dsl::*;
 
-        let b = diesel::insert_into(authors)
+        diesel::insert_into(authors)
             .values(new_author)
             .returning(Author::as_returning())
-            .get_result(&mut self.connection)
-            .expect("Could not create author");
-
-        Ok(b)
+            .get_result::<Author>(&mut self.connection)
+            .map_err(|_| ())
     }
 
-    fn find_by_id(&mut self, search_id: i32) -> Result<Author, ()> {
+    fn find_by_id(&mut self, search_id: i32) -> Result<Option<Author>, ()> {
         use crate::schema::authors::dsl::*;
 
-        let author = authors
+        authors
             .filter(id.eq(search_id))
             .select(Author::as_select())
             .get_result::<Author>(&mut self.connection)
-            .optional();
+            .optional()
+            .map_err(|_| ())
+    }
 
-        match author {
-            Ok(Some(b)) => Ok(b),
-            Ok(None) => Err(()),
-            Err(_) => Err(()),
-        }
+    fn find_by_name(&mut self, search_name: &str) -> Result<Option<Author>, ()> {
+        use crate::schema::authors::dsl::*;
+
+        authors
+            .filter(name.eq(search_name))
+            .select(Author::as_select())
+            .get_result::<Author>(&mut self.connection)
+            .optional()
+            .map_err(|_| ())
     }
 
     fn update(
@@ -65,8 +69,6 @@ impl Repository for AuthorRepository {
         author: &crate::domain::author::entity::UpdateAuthorData,
     ) -> Result<Author, ()> {
         use crate::schema::authors::dsl::*;
-
-        
 
         diesel::update(authors)
             .filter(id.eq(author_id))
