@@ -85,12 +85,20 @@
 
 <section class="scrollable-section">
   <div class="books">
-    <div class="view-control">
-      <button on:click={() => (view = "table")}>Table</button>
-      <button on:click={() => (view = "cover")}>Covers</button>
+    <div class="controls">
+      <input type="text" bind:value={$search} placeholder="Search book titles and authors" />
+      <div class="switch">
+        <button
+          on:click={() => (view = "table")}
+          class={view === "table" ? "selected" : ""}>Table</button
+        >
+        <button
+          on:click={() => (view = "cover")}
+          class={view === "cover" ? "selected" : ""}>Covers</button
+        >
+      </div>
     </div>
-    <span>Showing {$range} of {$selectedBooks.length} items</span>
-    <input type="text" bind:value={$search} placeholder="Search" />
+    <span class="num_items">Showing {$range} of {$selectedBooks.length} items</span>
     {#if view === "cover"}
       <CoverView bookList={$selectedBooks} dragHandler={x} />
     {:else if view === "table"}
@@ -100,6 +108,49 @@
 </section>
 
 <style>
+  .controls {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .switch {
+    display: flex;
+    flex-direction: row;
+  }
+
+  .switch button:first-child {
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+  }
+  .switch button:last-child {
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+  }
+
+  .switch button {
+    background: var(--bg-secondary);
+    color: var(--text--onsecondary);
+    border: none;
+    padding: 8px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    margin: 0;
+  }
+
+  .switch button.selected {
+    background: var(--bg-primary);
+    color: var(--text-onprimary);
+  }
+
+  input {
+    color: var(--text--onsecondary);
+    background-color: var(--bg-secondary);
+    min-width: 64ch;
+    max-width: 84ch;
+    padding: 4px;
+  }
+
   section {
     margin-top: 64px;
     display: flex;
@@ -108,7 +159,12 @@
     align-items: center;
     overscroll-behavior: contain;
     padding: 16px;
-    width: fit-content;
+    width: calc(100% - 32px);
+  }
+
+  .num_items {
+    color: var(--text-secondary);
+    margin-bottom: 8px;
   }
 
   .books {

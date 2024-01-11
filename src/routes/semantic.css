@@ -16,7 +16,6 @@
   --diva: #bda3f3;
   --macchiato-overlay0: #6e738d;
   /* catppuccin latte*/
-  /* catppuccin latte*/
   --latte-base: #eff1f5;
   --latte-mantle: #e6e9ef;
   --latte-crust: #dce0e8;
@@ -54,11 +53,12 @@
   /* #region text */
   --text-primary: var(--latte-base);
   --text-secondary: var(--macchiato-overlay0);
+  --text-onprimary: var(--dark);
   --text-onsecondary: var(--latte-base);
   /* #endregion text */
 
   --icon-brand: var(--diva);
-  --bg-primary: var(--midnight-express);
+  --bg-primary: var(--diva);
   --bg-secondary: var(--eigengrau);
   --background-gradient-image: var(--gradient--back-2);
 
@@ -75,12 +75,13 @@
     /* #region text */
     --text-primary: var(--latte-text);
     --text-secondary: var(--latte-overlay0);
+    --text-onprimary: var(--latte-text);
     --text-onsecondary: var(--latte-base);
     /* #endregion text */
 
     --icon-brand: var(--latte-mauve);
 
-    --bg-primary: var(--latte-base);
+    --bg-primary: var(--latte-mauve);
     --bg-secondary: var(--midnight-express);
     --background-gradient-image: var(--gradient--back-1);
   }
