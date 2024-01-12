@@ -15,6 +15,7 @@
   import { any } from "$lib/any";
   import * as Select from "$lib/components/ui/select";
   import { Input } from "$lib/components/ui/input";
+  import * as ToggleGroup from "$lib/components/ui/toggle-group";
   import type { Selected } from "bits-ui";
 
   const LibraryBookSortOrder = {
@@ -151,16 +152,10 @@
         bind:value={$search}
         placeholder="Search book titles and authors"
       />
-      <div class="switch">
-        <button
-          on:click={() => (view = "table")}
-          class={view === "table" ? "selected" : ""}>Table</button
-        >
-        <button
-          on:click={() => (view = "cover")}
-          class={view === "cover" ? "selected" : ""}>Covers</button
-        >
-      </div>
+      <ToggleGroup.Root type="single" bind:value={view}>
+        <ToggleGroup.Item value="table">Table</ToggleGroup.Item>
+        <ToggleGroup.Item value="cover">Cover</ToggleGroup.Item>
+      </ToggleGroup.Root>
       <Select.Root bind:selected={sortOrderElement}>
         <Select.Trigger class="w-[180px]">
           <Select.Value placeholder="Sort Order" />
