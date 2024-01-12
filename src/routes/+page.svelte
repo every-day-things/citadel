@@ -13,6 +13,7 @@
   import { settings, waitForSettings } from "../stores/settings";
   import { books } from "../stores/books";
   import { any } from "$lib/any";
+  import * as Select from "$lib/components/ui/select";
 
   const LibraryBookSortOrder = {
     nameAz: "name-asc",
@@ -20,7 +21,21 @@
     authorAz: "author-asc",
     authorZa: "author-desc",
   } as const;
-  type LibraryBookSortOrder =
+  const LibraryBookSortOrderStrings: Record<
+    keyof typeof LibraryBookSortOrder,
+    string
+  > = {
+    nameAz: "Name (A-Z)",
+    nameZa: "Name (Z-A)",
+    authorAz: "Author (A-Z)",
+    authorZa: "Author (Z-A)",
+  } as const;
+  const LBSOSEntries: Array<[keyof typeof LibraryBookSortOrder, string]> =
+    Object.entries(LibraryBookSortOrder) as Array<
+      [keyof typeof LibraryBookSortOrder, string]
+    >;
+
+  type LibraryBookSortOrderKinds =
     | "name-asc"
     | "name-desc"
     | "author-asc"
@@ -43,7 +58,14 @@
   };
 
   let view: "table" | "cover" = "cover";
-  let sortOrder = writable<LibraryBookSortOrder>(LibraryBookSortOrder.authorAz);
+  $: sortOrderElement = null as HTMLOptionElement | null;
+  let sortOrder = writable<LibraryBookSortOrderKinds>(
+    LibraryBookSortOrder.authorAz
+  );
+  $: sortOrder.set(
+    (sortOrderElement?.value as LibraryBookSortOrderKinds) ??
+      LibraryBookSortOrder.authorAz
+  );
   let search = writable("");
   let selectedBooks = derived(
     [books, search, sortOrder],
@@ -135,12 +157,18 @@
           class={view === "cover" ? "selected" : ""}>Covers</button
         >
       </div>
-      <select bind:value={$sortOrder}>
-        <option value={LibraryBookSortOrder.nameAz}>Name (A-Z)</option>
-        <option value={LibraryBookSortOrder.nameZa}>Name (Z-A)</option>
-        <option value={LibraryBookSortOrder.authorAz}>Author (A-Z)</option>
-        <option value={LibraryBookSortOrder.authorZa}>Author (Z-A)</option>
-      </select>
+      <Select.Root bind:selected={sortOrderElement}>
+        <Select.Trigger class="w-[180px]">
+          <Select.Value placeholder="Sort Order" />
+        </Select.Trigger>
+        <Select.Content>
+          {#each LBSOSEntries as [sortOrderKey, sortOrderItem]}
+            <Select.Item value={sortOrderItem}>
+              {LibraryBookSortOrderStrings[sortOrderKey]}
+            </Select.Item>
+          {/each}
+        </Select.Content>
+      </Select.Root>
     </div>
     <span class="num_items"
       >Showing {$range} of {$selectedBooks.length} items</span
