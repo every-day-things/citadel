@@ -14,6 +14,8 @@
   import { books } from "../stores/books";
   import { any } from "$lib/any";
   import * as Select from "$lib/components/ui/select";
+  import { Input } from "$lib/components/ui/input";
+  import type { Selected } from "bits-ui";
 
   const LibraryBookSortOrder = {
     nameAz: "name-asc",
@@ -58,7 +60,7 @@
   };
 
   let view: "table" | "cover" = "cover";
-  $: sortOrderElement = null as HTMLOptionElement | null;
+  $: sortOrderElement = undefined as Selected<string> | undefined;
   let sortOrder = writable<LibraryBookSortOrderKinds>(
     LibraryBookSortOrder.authorAz
   );
@@ -66,6 +68,7 @@
     (sortOrderElement?.value as LibraryBookSortOrderKinds) ??
       LibraryBookSortOrder.authorAz
   );
+
   let search = writable("");
   let selectedBooks = derived(
     [books, search, sortOrder],
@@ -142,7 +145,8 @@
 <section class="scrollable-section">
   <div class="books">
     <div class="controls">
-      <input
+      <Input
+        class="searchBox"
         type="text"
         bind:value={$search}
         placeholder="Search book titles and authors"
@@ -217,13 +221,11 @@
     color: var(--text-onprimary);
   }
 
-  input {
-    color: var(--text--onsecondary);
-    background-color: var(--bg-secondary);
-    min-width: 64ch;
-    max-width: 84ch;
-    padding: 4px;
-  }
+    :global(.searchBox) {
+      min-width: 40ch;
+      max-width: 72ch;
+      margin-right: 8px;
+    }
 
   section {
     margin-top: 16px;
