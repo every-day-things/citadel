@@ -1,4 +1,5 @@
 <script>
+  import "../app.pcss";
   import Sidebar from "../components/organisms/Sidebar.svelte";
   import "./semantic.css";
   import "./styles.css";
@@ -6,9 +7,9 @@
 
 <div class="app">
   <main>
-    <Sidebar />
+    <Sidebar></Sidebar>
     <div class="scrollable">
-      <slot />
+      <slot></slot>
     </div>
   </main>
 </div>
