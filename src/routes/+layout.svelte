@@ -1,13 +1,10 @@
 <script>
   import Sidebar from "../components/organisms/Sidebar.svelte";
-  import Header from "./Header.svelte";
   import "./semantic.css";
   import "./styles.css";
 </script>
 
 <div class="app">
-  <Header />
-
   <main>
     <Sidebar />
     <div class="scrollable">

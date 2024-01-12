@@ -198,7 +198,7 @@
   }
 
   section {
-    margin-top: 64px;
+    margin-top: 16px;
     display: flex;
     flex-direction: column;
     justify-content: center;

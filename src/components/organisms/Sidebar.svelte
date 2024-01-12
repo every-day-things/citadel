@@ -112,6 +112,9 @@
     top: 0;
     left: 0;
     padding: 8px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 0 0 8px 0;
+    z-index: 100;
   }
 
   .group {
