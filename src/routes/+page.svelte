@@ -152,7 +152,7 @@
         bind:value={$search}
         placeholder="Search book titles and authors"
       />
-      <ToggleGroup.Root type="single" bind:value={view}>
+      <ToggleGroup.Root type="single" variant="outline" bind:value={view}>
         <ToggleGroup.Item value="table">Table</ToggleGroup.Item>
         <ToggleGroup.Item value="cover">Cover</ToggleGroup.Item>
       </ToggleGroup.Root>
