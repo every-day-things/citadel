@@ -2,6 +2,9 @@
 
 Manage your ebook library with Citadel. Backwards compatible with Calibre.
 
+https://github.com/every-day-things/citadel/assets/17505728/84a0c9dd-f14e-411a-8947-1d599f3ad85a
+
+
 ## Project goals
 
 - **Backwards compatible with Calibre**: Calibre must be able to read any library that Citadel has edited.
