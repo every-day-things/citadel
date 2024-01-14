@@ -5,6 +5,7 @@
   import { books } from "../../stores/books";
   import { libraryClient } from "../../stores/library";
   import { settings } from "../../stores/settings";
+  import { Button } from "$lib/components/ui/button";
 
   let sidebarOpen = false;
 
@@ -40,8 +41,8 @@
     </button>
     <div class="group">
       <p>My Library</p>
-      <button on:click={addBookHandler}>⊕ Add book</button>
-      <button on:click={switchLibraryHandler}>Switch Library</button>
+      <Button variant="secondary" on:click={addBookHandler}>⊕ Add book</Button>
+      <Button variant="secondary" on:click={switchLibraryHandler}>Switch Library</Button>
       <a
         href="/setup"
         aria-current={$page.url.pathname === "/setup" ? "page" : undefined}
