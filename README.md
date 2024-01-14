@@ -53,3 +53,7 @@ To create a production version of Citadel:
 ```bash
 bun run build
 ```
+
+## Additional Credit
+
+Huge thanks to [Kemie Guaida](https://kemielikes.design/), who created an excellent [Calibre redesign Figma prototype](https://old.reddit.com/r/Calibre/comments/udzumn/testing_a_new_interface_for_calibre/). Thank you, Kemie!
