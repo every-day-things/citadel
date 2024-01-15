@@ -82,9 +82,9 @@
     position: relative;
   }
 
-  img {
+  img, .cover-blur {
     max-width: 100%;
-    max-height: 400px;
+    max-height: 240px;
     transition: all 0.2s ease-in-out;
     border: 2px solid transparent;
     position: relative;
@@ -99,9 +99,6 @@
     opacity: 0;
     position: absolute;
     top: 10px;
-    left: 0px;
-    max-width: 100%;
-    max-height: 400px;
     transform: scale(1.02);
     filter: blur(5px) opacity(0.3);
     z-index: 0;
