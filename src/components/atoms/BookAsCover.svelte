@@ -1,6 +1,6 @@
 <script lang="ts">
   import { type LibraryBook } from "../../bindings";
-  import { onMount } from "svelte";
+  import { libraryClientStore } from "../../stores/library";
   import { openBookInDefaultApp, sendToDevice, shortenToChars } from "./BookAsCover";
 
   export let dragHandler: (event: DragEvent, book: LibraryBook) => void;
@@ -51,7 +51,7 @@
     <div class="cover">
       <img
         id="cover"
-        src={""}
+        src={$libraryClientStore.getCoverUrlForBook(book.id)}
         on:click={onClickHandler}
         on:dragstart={(e) => dragHandler(e, book)}
         class:selected={isSelected}
@@ -59,7 +59,7 @@
       <span class="title">{shortenToChars(book.title, 50)}</span>
       <span class="authors">{book.author_list.join(", ")}</span>
       <img
-        src={""}
+        src={$libraryClientStore.getCoverUrlForBook(book.id)}
         class="cover-blur"
       />
     </div>
@@ -83,7 +83,6 @@
   }
 
   img {
-    grid-area: "cover";
     max-width: 100%;
     max-height: 400px;
     transition: all 0.2s ease-in-out;
