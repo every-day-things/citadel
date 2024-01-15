@@ -1,37 +1,42 @@
 <script lang="ts">
   import type { LibraryBook } from "../../bindings";
   import BookAsCover from "../atoms/BookAsCover.svelte";
+  import { Grid } from "svelte-virtual";
+  import { onMount, onDestroy } from "svelte";
 
   export let bookList: LibraryBook[];
   export let dragHandler: (event: DragEvent, book: LibraryBook) => void;
 
   let selectedItem: LibraryBook | undefined;
+
+  let itemHeight = 320;
+  let itemMarginTotal = 40;
+  let totalHeight = itemHeight + itemMarginTotal;
+
+  let gridHeight = 700;
 </script>
 
-<div class="covers">
-  {#each bookList as book}
-    <div class="book">
+<div id="grid-container">
+  <Grid
+    itemCount={bookList.length}
+    itemHeight={totalHeight}
+    itemWidth={220}
+    bind:height={gridHeight}
+  >
+    <div slot="item" let:index let:style {style}>
       <BookAsCover
-        {book}
+        book={bookList[index]}
         {dragHandler}
-        isSelected={selectedItem?.id === book.id}
-        onClickHandler={() => (selectedItem = book)}
+        isSelected={selectedItem?.id === bookList[index].id}
+        onClickHandler={() => (selectedItem = bookList[index])}
       />
     </div>
-  {/each}
+  </Grid>
 </div>
 
 <style>
-  .covers {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
-    gap: 20px;
+  #grid-container {
+    display: flex;
+    height: 100%;
   }
-
-  @media (max-width: 1200px) {
-    .covers {
-      grid-template-columns: 1fr 1fr 1fr 1fr;
-    }
-  }
-
 </style>
