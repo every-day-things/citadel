@@ -61,6 +61,12 @@
   };
 
   let view: "table" | "cover" = "cover";
+  let resolveBooksPromise: () => void;
+  const booksPromise = new Promise<void>((resolve) => {
+    resolveBooksPromise = resolve;
+  });
+  const waitForBooksPromise = () => booksPromise;
+
   $: sortOrderElement = undefined as Selected<string> | undefined;
   let sortOrder = writable<LibraryBookSortOrderKinds>(
     LibraryBookSortOrder.authorAz
@@ -135,6 +141,7 @@
         clp: $settings.calibreLibraryPath,
       });
       books.set(await $libraryClient.listBooks());
+      resolveBooksPromise();
     }
   });
 </script>
@@ -172,11 +179,15 @@
     <span class="num_items"
       >Showing {$range} of {$selectedBooks.length} items</span
     >
-    {#if view === "cover"}
-      <CoverView bookList={$selectedBooks} dragHandler={x} />
-    {:else if view === "table"}
-      <BookTable bookList={$selectedBooks} />
-    {/if}
+    {#await waitForBooksPromise() }
+      <p>Loading books...</p>
+    {:then _}
+      {#if view === "cover"}
+        <CoverView bookList={$selectedBooks} dragHandler={x} />
+      {:else if view === "table"}
+        <BookTable bookList={$selectedBooks} />
+      {/if}
+    {/await}
   </div>
 </section>
 
