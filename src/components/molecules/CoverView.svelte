@@ -3,6 +3,7 @@
   import BookAsCover from "../atoms/BookAsCover.svelte";
   import { Grid } from "svelte-virtual";
   import { onMount, onDestroy } from "svelte";
+  import { writable } from "svelte/store";
 
   export let bookList: LibraryBook[];
   export let dragHandler: (event: DragEvent, book: LibraryBook) => void;
@@ -13,28 +14,100 @@
   let itemMarginTotal = 40;
   let totalHeight = itemHeight + itemMarginTotal;
 
-  let gridHeight = 700;
+  const groupBySize = <T,>(groupSize: number, array: Array<T>) => {
+    const groups: T[][] = [];
+    for (let i = 0; i < array.length; i += groupSize) {
+      groups.push(array.slice(i, i + groupSize));
+    }
+    return groups;
+  };
+
+  $: bookGroups = groupBySize(5, bookList);
+  let visibleGroups = writable<Record<string, boolean>>({});
+
+  let callback: IntersectionObserverCallback = (entries) => {
+    visibleGroups.update((currentVisibleGroups) => {
+      let updatedVisibleGroups = { ...currentVisibleGroups }; // Create a new object for reactivity
+      entries.forEach((change) => {
+        if (change.isIntersecting) {
+          updatedVisibleGroups[change.target.id] = true;
+        } else {
+          updatedVisibleGroups[change.target.id] = false;
+        }
+      });
+      return updatedVisibleGroups; // Return the updated object
+    });
+  };
+
+  let options = {
+    rootMargin: "200px 0px 200px 0px",
+    threshold: 0,
+  };
+  let unsubscribes: Array<(...args: any) => void> = [];
+
+  let scrollableDivHeight = "80vh";
+
+  function updateHeight() {
+    const scrollableDiv = document.getElementById('scrollable-div');
+    if (scrollableDiv) {
+      const rect = scrollableDiv.getBoundingClientRect();
+      const offsetTop = rect.top;
+      scrollableDivHeight = `calc(100vh - ${offsetTop}px)`;
+    }
+  }
+
+  onMount(() => {
+    window.addEventListener('resize', updateHeight);
+    updateHeight(); // Set initial height
+    for (const groupId in bookGroups) {
+      let observer = new IntersectionObserver(callback, options);
+      const element = document.querySelector(`#group-${groupId}`);
+      if (element) {
+        observer.observe(element);
+        unsubscribes.push(observer.unobserve);
+      }
+    }
+    visibleGroups.set(
+      Object.fromEntries(
+        bookGroups.map((_, index) => [`group-${index}`, false])
+      )
+    );
+  });
+
+  onDestroy(() => {
+    window.removeEventListener('resize', updateHeight);
+    for (const unsub of unsubscribes) {
+      try {
+        unsub();
+      } catch (e) {
+      }
+    }
+  });
 </script>
 
-<div id="grid-container">
-  <Grid
-    itemCount={bookList.length}
-    itemHeight={totalHeight}
-    itemWidth={220}
-    bind:height={gridHeight}
-  >
-    <div slot="item" let:index let:style {style}>
-      <BookAsCover
-        book={bookList[index]}
-        {dragHandler}
-        isSelected={selectedItem?.id === bookList[index].id}
-        onClickHandler={() => (selectedItem = bookList[index])}
-      />
+<div id="scrollable-div" style="overflow:auto; max-height: {scrollableDivHeight};">
+  {#each bookGroups as group, index}
+    <div id={`group-${index}`} style="height: {totalHeight}px;" class="group">
+      {#if $visibleGroups[`group-${index}`]}
+        {#each group as book}
+          <BookAsCover
+            book={book}
+            {dragHandler}
+            isSelected={selectedItem?.id === book.id}
+            onClickHandler={() => (selectedItem = book)}
+          />
+        {/each}
+      {/if}
     </div>
-  </Grid>
+  {/each}
 </div>
 
 <style>
+  .group {
+    display: flex;
+    justify-content: space-between;
+  }
+
   #grid-container {
     display: flex;
     height: 100%;
