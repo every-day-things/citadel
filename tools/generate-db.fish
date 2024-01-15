@@ -6,13 +6,13 @@
 set totalAuthors 1000
 set totalBooks 20000
 set batchSize 100
-set dbPath perf.db
+set dbPath test-library/metadata.db
 set overrwiteDb false
 
 # Override defaults with CLI args
 for i in $argv
     if string match -r -- '--help' $i > /dev/null
-        echo "Usage: fish tools/generate-db.fish [--authors=1000] [--books=20000] [--batch=100] [--db=perf.db] [--overwrite]"
+        echo "Usage: fish tools/generate-db.fish [--authors=1000] [--books=20000] [--batch=100] [--db=test-library/metadata.db] [--overwrite]"
         exit 0
     end
 
@@ -109,14 +109,15 @@ function newBooksBulk -a batchSize -a totalAuthors
   for i in (seq 1 $batchSize)
       set randomBookName (randomBookName)
       set randomAuthorId (random 1 $totalAuthors)
-      set sqlStatements "$sqlStatements INSERT INTO books (title, series_index, path, flags, last_modified) VALUES ('$randomBookName', 1, '/tmp', 0, datetime('now')); INSERT INTO books_authors_link (book, author) VALUES (LAST_INSERT_ROWID(), $randomAuthorId);"
+      set sqlStatements "$sqlStatements INSERT INTO books (title, series_index, path, flags, last_modified) VALUES ('$randomBookName', 1, 'default', 0, datetime('now')); INSERT INTO books_authors_link (book, author) VALUES (LAST_INSERT_ROWID(), $randomAuthorId);"
   end
   set sqlStatements "$sqlStatements COMMIT;"
 
   sqlite3 $dbPath $sqlStatements
 end
 
-echo "Inserting authors"
+echo "Inserting $totalAuthors authors"
+echo "(. = 10%)"
 set numberOfBatches (math $totalAuthors / $batchSize)
 
 for i in (seq 1 $numberOfBatches)
@@ -125,7 +126,7 @@ for i in (seq 1 $numberOfBatches)
 end
 printf "\n"
 
-echo "Inserting books"
+echo "Inserting $totalBooks books"
 set numberOfBatches (math $totalBooks / $batchSize)
 set progressStep (math $numberOfBatches / 10) # Calculate 10% of the total
 
@@ -138,6 +139,6 @@ end
 printf "\n"
 
 # Reset SQLite settings
-sqlite3 perf.db "PRAGMA synchronous = ON; PRAGMA journal_mode = DELETE;" > /dev/null
+sqlite3 $dbPath "PRAGMA synchronous = ON; PRAGMA journal_mode = DELETE;" > /dev/null
 
-printf "Database seeded with $(sqlite3 perf.db 'select count(*) from books;') books\n"
+printf "Database seeded with $(sqlite3 $dbPath 'select count(*) from books;') books\n"
