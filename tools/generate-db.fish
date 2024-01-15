@@ -65,7 +65,14 @@ diesel migration run --database-url $dbPath
 
 # Drop some unneeded triggers that would make creating this data harder
 # (We need to define a title_sort fn, but that can't be done by the CLI, it needs a native extension lib)
-sqlite3 $dbPath "drop trigger books_insert_trg;"
+sqlite3 $dbPath "DROP TRIGGER IF EXISTS books_insert_trg;"
+sqlite3 $dbPath "DROP TRIGGER IF EXISTS books_delete_trg;"
+
+# Instead of deleting & migrating, we'll use an old DB, clear out the data, and reset the settings
+# sqlite3 $dbPath "BEGIN; DELETE FROM books_authors_link; DELETE FROM books; DELETE FROM authors; DELETE FROM data; COMMIT;"
+# sqlite3 $dbPath "UPDATE sqlite_sequence SET seq = 0 WHERE name = 'books';"
+# sqlite3 $dbPath "SELECT count(*) FROM books;"
+
 
 # Optimize SQLite settings for bulk inserts
 sqlite3 $dbPath "PRAGMA synchronous = OFF; PRAGMA journal_mode = MEMORY;" > /dev/null
@@ -104,15 +111,26 @@ function newAuthorsBulk -a batchSize -a batchId
   sqlite3 $dbPath $sqlStatements
 end
 
-function newBooksBulk -a batchSize -a totalAuthors
+function newBooksBulk -a batchSize -a totalAuthors -a batchNum
   set sqlStatements "BEGIN;"
   for i in (seq 1 $batchSize)
+      set bookIndex (math "($batchNum * $batchSize) + $i")
       set randomBookName (randomBookName)
       set randomAuthorId (random 1 $totalAuthors)
-      set sqlStatements "$sqlStatements INSERT INTO books (title, series_index, path, flags, last_modified) VALUES ('$randomBookName', 1, 'default', 0, datetime('now')); INSERT INTO books_authors_link (book, author) VALUES (LAST_INSERT_ROWID(), $randomAuthorId);"
+      # Generating real UUIDs is slow; instead, we use the index of this in the overall job, padded with zeroes
+      set uuid (printf "%032x" $ookIndex)
+      # set uuid (uuidgen)
+      set sqlStatements "$sqlStatements INSERT INTO books (title, series_index, author_sort, path, flags, uuid, has_cover, last_modified, timestamp) VALUES ('$randomBookName', 1, 't1', 'default', 1, '$uuid', 1, '2000-01-29 10:00:00+00:00', '2000-1-29 10:00:00+00:00'); INSERT INTO books_authors_link (book, author) VALUES (LAST_INSERT_ROWID(), $randomAuthorId);"
   end
   set sqlStatements "$sqlStatements COMMIT;"
+  sqlite3 $dbPath $sqlStatements
 
+  set sqlStatements "BEGIN;"
+  for i in (seq 1 $batchSize)
+      set bookIndex (math "($batchNum * $batchSize) + $i")
+      set sqlStatements "$sqlStatements INSERT INTO data (book, format, uncompressed_size, name) VALUES ($bookIndex, 'TXT', '123456', 't1');"
+  end
+  set sqlStatements "$sqlStatements COMMIT;"
   sqlite3 $dbPath $sqlStatements
 end
 
@@ -130,13 +148,15 @@ echo "Inserting $totalBooks books"
 set numberOfBatches (math $totalBooks / $batchSize)
 set progressStep (math $numberOfBatches / 10) # Calculate 10% of the total
 
-for i in (seq 1 $numberOfBatches)
-    newBooksBulk $batchSize $totalAuthors
+for i in (seq 0 (math $numberOfBatches - 1))
+    newBooksBulk $batchSize $totalAuthors $i
     if test (math $i % $progressStep) -eq 0
         printf "."
     end
 end
 printf "\n"
+
+#sqlite3 $dbPath "INSERT INTO library_id (uuid) VALUES ('"(uuidgen)"');"
 
 # Reset SQLite settings
 sqlite3 $dbPath "PRAGMA synchronous = ON; PRAGMA journal_mode = DELETE;" > /dev/null
