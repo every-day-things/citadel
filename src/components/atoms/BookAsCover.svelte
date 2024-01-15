@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { open } from "@tauri-apps/api/shell";
   import { type LibraryBook } from "../../bindings";
-  import { libraryClient, libraryClientStore } from "../../stores/library";
-  import {DeviceType} from "$lib/library/typesLibrary";
+  import { onMount } from "svelte";
+  import { openBookInDefaultApp, sendToDevice, shortenToChars } from "./BookAsCover";
 
   export let dragHandler: (event: DragEvent, book: LibraryBook) => void;
   export let onClickHandler: () => void;
@@ -11,30 +10,6 @@
 
   let isSendingToDevice = false;
   let devicePath = "";
-
-  const shortenToXChars = (str: string, x: number) =>
-    str.length > x ? str.slice(0, x) + "..." : str;
-
-  const openBookInDefaultApp = () => {
-    const bookAbsPath = libraryClient().getDefaultFilePathForBook(
-      book.id.toString()
-    );
-    console.log(bookAbsPath);
-
-    if (!bookAbsPath) {
-      console.error("Book path not found");
-      return;
-    }
-
-    open(bookAbsPath);
-  };
-
-  const sendToDevice = (devicePath: string, book: LibraryBook) => {
-    libraryClient().sendToDevice(book, {
-      type: DeviceType.externalDrive,
-      path: devicePath
-    });
-  }
 </script>
 
 <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
@@ -56,7 +31,7 @@
         <button
           on:click={() => {
             isSendingToDevice = false;
-            sendToDevice(devicePath, book);
+            sendToDevice(book, devicePath);
           }}
           >
           Send to Device</button>
@@ -64,7 +39,7 @@
     {:else}
       <div class="controls">
         <a href="/books/{book.id}"><button>Edit</button></a>
-        <button on:click={() => openBookInDefaultApp()}>Read ↗</button>
+        <button on:click={() => openBookInDefaultApp(book)}>Read ↗</button>
         <button disabled>Info</button>
         <button on:click={() => (isSendingToDevice = true)}>Send</button>
         <button disabled>Convert</button>
@@ -76,15 +51,15 @@
     <div class="cover">
       <img
         id="cover"
-        src={$libraryClientStore.getCoverUrlForBook(book.id)}
+        src={""}
         on:click={onClickHandler}
         on:dragstart={(e) => dragHandler(e, book)}
         class:selected={isSelected}
       />
-      <span class="title">{shortenToXChars(book.title, 50)}</span>
+      <span class="title">{shortenToChars(book.title, 50)}</span>
       <span class="authors">{book.author_list.join(", ")}</span>
       <img
-        src={$libraryClientStore.getCoverUrlForBook(book.id)}
+        src={""}
         class="cover-blur"
       />
     </div>
