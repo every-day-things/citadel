@@ -37,7 +37,6 @@
     flex-direction: column;
     overflow-y: scroll;
     width: 100%;
-    height: 100vh;
     box-sizing: border-box;
   }
   .scrollable::-webkit-scrollbar {
