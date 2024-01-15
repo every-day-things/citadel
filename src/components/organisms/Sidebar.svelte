@@ -4,7 +4,6 @@
   import { pickLibrary } from "$lib/library/pickLibrary";
   import { books } from "../../stores/books";
   import { libraryClient } from "../../stores/library";
-  import { settings } from "../../stores/settings";
   import { Button } from "$lib/components/ui/button";
 
   let sidebarOpen = false;
@@ -40,31 +39,34 @@
       >
     </button>
     <div class="group">
-      <p>My Library</p>
+      <p class="label">My Library</p>
       <Button variant="secondary" on:click={addBookHandler}>⊕ Add book</Button>
-      <Button variant="secondary" on:click={switchLibraryHandler}>Switch Library</Button>
+      <Button variant="secondary" on:click={switchLibraryHandler}
+        >Switch Library</Button
+      >
       <a
         href="/setup"
         aria-current={$page.url.pathname === "/setup" ? "page" : undefined}
       >
-        Do setup</a
-      >
-      <a>Configure library</a>
+        First-time setup
+      </a>
+      <a aria-disabled="true" disabled>Configure library</a>
     </div>
     <div class="group">
-      <p>My Shelves</p>
+      <p class="label">My Shelves</p>
       <a href="/" aria-current={$page.url.pathname === "/" ? "page" : undefined}
         >All books</a
       >
     </div>
     <div class="group">
-      <p>Devices</p>
-      <a href="">Kobo Glo (2015)</a>
+      <p class="label">Devices</p>
+      <!-- <a aria-disabled="true">Kobo Glo (2015)</a> -->
+      <p class="note">Devices are coming soon.</p>
     </div>
 
     <div class="bottom">
       <div>
-        <a href=""> ⚙️ Settings </a>
+        <a aria-disabled="true"> ⚙️ Settings </a>
       </div>
     </div>
   </nav>
@@ -125,9 +127,12 @@
     gap: 8px;
     margin-bottom: 8px;
   }
-  .group p {
+  .group .label {
     margin: 8px 0;
     font-weight: bold;
+  }
+  .note {
+    font-style: italic;
   }
 
   nav {
@@ -145,6 +150,13 @@
   p,
   a {
     color: var(--text-onsecondary);
+  }
+  a[aria-disabled="true"] {
+    color: var(--text-secondary);
+    cursor: not-allowed;
+  }
+  a[aria-disabled="true"]:hover {
+    text-decoration: none;
   }
 
   .bottom {
