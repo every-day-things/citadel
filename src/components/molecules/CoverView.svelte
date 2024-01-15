@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { LibraryBook } from "../../bindings";
   import BookAsCover from "../atoms/BookAsCover.svelte";
-  import { Grid } from "svelte-virtual";
   import { onMount, onDestroy } from "svelte";
   import { writable } from "svelte/store";
 

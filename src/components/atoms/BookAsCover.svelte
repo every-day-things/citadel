@@ -2,6 +2,7 @@
   import { type LibraryBook } from "../../bindings";
   import { libraryClientStore } from "../../stores/library";
   import { openBookInDefaultApp, sendToDevice, shortenToChars } from "./BookAsCover";
+  import { Button } from "$lib/components/ui/button";
 
   export let dragHandler: (event: DragEvent, book: LibraryBook) => void;
   export let onClickHandler: () => void;
@@ -38,13 +39,13 @@
       </div>
     {:else}
       <div class="controls">
-        <a href="/books/{book.id}"><button>Edit</button></a>
-        <button on:click={() => openBookInDefaultApp(book)}>Read ↗</button>
-        <button disabled>Info</button>
-        <button on:click={() => (isSendingToDevice = true)}>Send</button>
-        <button disabled>Convert</button>
+        <a href="/books/{book.id}"><Button>Edit</Button></a>
+        <Button on:click={() => openBookInDefaultApp(book)}>Read ↗</Button>
+        <Button disabled>Info</Button>
+        <Button on:click={() => (isSendingToDevice = true)}>Send</Button>
+        <Button disabled>Convert</Button>
         <hr />
-        <button disabled>Delete</button>
+        <Button disabled>Delete</Button>
       </div>
     {/if}
   {:else}
