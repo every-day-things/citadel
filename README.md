@@ -4,6 +4,7 @@ Manage your ebook library with Citadel. Backwards compatible with Calibre.
 
 https://github.com/every-day-things/citadel/assets/17505728/84a0c9dd-f14e-411a-8947-1d599f3ad85a
 
+**Citadel is very early software, and as such is full of bugs and lacking features.**
 
 ## Project goals
 
@@ -16,6 +17,16 @@ https://github.com/every-day-things/citadel/assets/17505728/84a0c9dd-f14e-411a-8
 - **Ebook reader**: Citadel is not an ebook reader. There are many other tools that do a much better job than we could do.
 - **...or editor**: If you're editing ebook _content_ (not metadata like titles), Citadel will not be a replacement for you.
 - **100% feature parity**: Primarily around Plugins, but there are some advanced features of Calibre we'll likely never build.
+
+## Downloading
+
+> [!WARNING]
+> Citadel is _very_ early in development. It will crash. A lot. It may corrupt your ebook library.
+> 
+> **Back up your Calibre library regularly if you use Citadel on it.**
+
+Citadel builds are available from [GitHub actions](https://github.com/every-day-things/citadel/actions/runs/7536243753).
+There is no guarantee these builds work.
 
 ## Developing
 
