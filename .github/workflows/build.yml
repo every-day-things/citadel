@@ -80,11 +80,11 @@ jobs:
           tauriScript: bun tauri
           releaseId: ${{ needs.create_release.outputs.release_id }}
 
-      - name: Upload build artifacts (Ubuntu)
+      - name: Upload build artifacts (Linux)
         if: matrix.platform == 'ubuntu-22.04'
         uses: actions/upload-artifact@v2
         with:
-          name: tauri-build-ubuntu
+          name: linux-build-artifacts
           path: |
             src-tauri/target/release/bundle/deb/citadel_0.1.0_amd64.deb
             src-tauri/target/release/bundle/appimage/citadel_0.1.0_amd64.AppImage
@@ -93,7 +93,7 @@ jobs:
         if: matrix.platform == 'macos-12'
         uses: actions/upload-artifact@v2
         with:
-          name: tauri-build-macos
+          name: macos-build-artifacts
           path: |
             src-tauri/target/release/bundle/macos/Citadel.app.tar.gz
             src-tauri/target/release/bundle/dmg/Citadel_0.1.0_x64.dmg
