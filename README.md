@@ -8,27 +8,34 @@ https://github.com/every-day-things/citadel/assets/17505728/84a0c9dd-f14e-411a-8
 ## Project goals
 
 - **Backwards compatible with Calibre**: Calibre must be able to read any library that Citadel has edited.
-- **Good UX**: Citadel should be easy to use and look good.
-- **Performant**: Citadel should feel just as fast as Calibre.
+- **Good UX**: Citadel must be easy to use and look good.
+- **Performant**: Citadel must feel much faster than Calibre, and never slower.
 
 ### Non-goals
 
-- **E-book reader**: Citadel is not an e-book reader, there are many other tools that do a much better job than we could do.
-- **...or editor**: If you're using Calibre's CLI tools to edit your ebooks, open a discussion. Let's see if we can build a better solution.
+- **Ebook reader**: Citadel is not an ebook reader. There are many other tools that do a much better job than we could do.
+- **...or editor**: If you're editing ebook _content_ (not metadata like titles), Citadel will not be a replacement for you.
 - **100% feature parity**: Primarily around Plugins, but there are some advanced features of Calibre we'll likely never build.
 
 ## Developing
 
-As a prerequisite, you'll need to install [Bun](https://bun.sh).
+As a prerequisite, you'll need to install [Bun](https://bun.sh) and [Rust](https://www.rust-lang.org/tools/install).
+
+Then, you can install the packages.
 
 ```fish
 bun install
+```
 
+and start up the app like so:
+
+```
 bun run dev
 # or just bun dev
 ```
+### App preview without backend
 
-To view the app without Tauri, which will have errors as the Rust backend is missing, run:
+You can run just the frontend with this command, although you WILL see errors as the Rust backend will be missing but is assumed to exist:
 
 ```fish
 bun dev:app
@@ -51,6 +58,7 @@ To run the backend in server mode for production, run
 To create a production version of Citadel:
 
 ```bash
+bun install
 bun run build
 ```
 
