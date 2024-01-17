@@ -8,42 +8,7 @@ on:
       - main
 
 jobs:
-  create_release:
-    permissions:
-      contents: write
-    runs-on: ubuntu-20.04
-    outputs:
-      release_id: ${{ steps.create-release.outputs.result }}
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: get version
-        run: echo "PACKAGE_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
-
-      - name: create release
-        id: create-release
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const { data } = await github.rest.repos.createRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag_name: `v${process.env.PACKAGE_VERSION}-${new Date().toISOString().split('T')[0].replace(/-/g, '')}-${process.env.GITHUB_SHA.substring(0,7)}`,
-              name: `Auto build v${process.env.PACKAGE_VERSION}-${new Date().toISOString().split('T')[0].replace(/-/g, '')}-${process.env.GITHUB_SHA.substring(0,7)}`,
-              body: 'This is an auto-generated release for the latest commit on the main branch.',
-              draft: true,
-              prerelease: true
-            })
-            return data.id
-
   build_app:
-    needs: [create_release]
     permissions:
       contents: write
     strategy:
@@ -86,44 +51,21 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tauriScript: bun tauri
-          releaseId: ${{ needs.create_release.outputs.release_id }}
 
-      - name: Upload build artifacts (Linux)
+      - name: (Ubuntu only) Upload build artifacts
         if: matrix.platform == 'ubuntu-22.04'
         uses: actions/upload-artifact@v2
         with:
-          name: linux-build-artifacts
+          name: linux-deb-and-appimage.zip
           path: |
             src-tauri/target/release/bundle/deb/citadel_0.1.0_amd64.deb
             src-tauri/target/release/bundle/appimage/citadel_0.1.0_amd64.AppImage
 
-      - name: Upload build artifacts (macOS)
+      - name: (macOS only) Upload build artifacts
         if: matrix.platform == 'macos-12'
         uses: actions/upload-artifact@v2
         with:
-          name: macos-build-artifacts
+          name: macos-app-and-dmg.zip
           path: |
             src-tauri/target/release/bundle/macos/Citadel.app.tar.gz
             src-tauri/target/release/bundle/dmg/Citadel_0.1.0_x64.dmg
-
-  publish-release:
-    permissions:
-      contents: write
-    runs-on: ubuntu-20.04
-    needs: [create_release, build_app]
-
-    steps:
-      - name: publish release
-        id: publish-release
-        uses: actions/github-script@v6
-        env:
-          release_id: ${{ needs.create_release.outputs.release_id }}
-        with:
-          script: |
-            github.rest.repos.updateRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: process.env.release_id,
-              draft: true,
-              prerelease: true
-            })
