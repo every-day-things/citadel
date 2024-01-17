@@ -12,20 +12,20 @@
   const totalHeight = itemHeight + itemMarginTotal;
   const scrollableDivHeight = "80vh";
 
-  const renderFn = (book: LibraryBook) => ({
+  const renderFn = (bookListIndex: number) => ({
     component: BookAsCover,
     props: {
-      book,
+      book: bookList[bookListIndex],
       dragHandler,
-      isSelected: selectedItem?.id === book.id,
-      onClickHandler: () => (selectedItem = book),
+      isSelected: selectedItem?.id === bookList[bookListIndex].id,
+      onClickHandler: () => (selectedItem = bookList[bookListIndex]),
     },
   });
 </script>
 
 <VirtualRowList
   {scrollableDivHeight}
-  items={bookList}
+  items={bookList.map((_, index) => index)}
   groupSize={5}
   groupHeight={totalHeight}
   {renderFn}
