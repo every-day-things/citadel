@@ -1,7 +1,5 @@
 <script lang="ts">
-  import VirtualList from "./VirtualList.svelte";
-  import VirtualRowListItem from "./VirtualRowListGroup.svelte";
-  import { SvelteComponent } from "svelte";
+  import { List } from "svelte-virtual";
 
   type TGroupRow = $$Generic;
 
@@ -20,20 +18,28 @@
   };
 
   $: itemsGrouped = groupBySize(groupSize, items);
-
-  const renderGroupedItems = (row: TGroupRow, index: number) => ({
-    component: VirtualRowListItem,
-    props: {
-      groupItems: row,
-      index,
-      renderItem: renderFn,
-      groupHeight,
-    },
-  });
 </script>
 
-<VirtualList
-  {scrollableDivHeight}
-  items={itemsGrouped}
-  renderFn={renderGroupedItems}
-/>
+<List
+  itemCount={itemsGrouped.length}
+  itemSize={groupHeight}
+  height={scrollableDivHeight}
+>
+  <div slot="item" let:index let:style {style}>
+    <div id={`group-${index}`} style="height: {groupHeight}px;" class="group">
+      {#each itemsGrouped[index] as item}
+        <svelte:component
+          this={renderFn(item).component}
+          {...renderFn(item, index).props}
+        />
+      {/each}
+    </div>
+  </div>
+</List>
+
+<style>
+  .group {
+    display: flex;
+    flex-direction: row;
+  }
+</style>

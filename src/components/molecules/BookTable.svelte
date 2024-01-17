@@ -1,19 +1,12 @@
 <script lang="ts">
+  import { List } from "svelte-virtual";
   import type { LibraryBook } from "../../bindings";
   import BookTableRow from "../atoms/BookTableRow.svelte";
-  import VirtualList from "$lib/components/ui/virtual-list/VirtualList.svelte";
 
   export let bookList: LibraryBook[];
 
   const scrollableDivHeight = "80vh";
   const itemHeightPx = 220;
-
-  const renderFn = (index: number) => ({
-    component: BookTableRow,
-    props: {
-      book: bookList[index],
-    },
-  });
 </script>
 
 <div class="book header">
@@ -21,7 +14,15 @@
   <p class="title">Title</p>
   <p class="title">Authors</p>
 </div>
-<VirtualList {scrollableDivHeight} items={bookList.map((_, index) => index)} {renderFn} {itemHeightPx} />
+<List
+  itemCount={bookList.length}
+  itemSize={itemHeightPx}
+  height={scrollableDivHeight}
+>
+  <div slot="item" let:index let:style {style}>
+    <BookTableRow book={bookList[index]} />
+  </div>
+</List>
 
 <style>
   .book {
