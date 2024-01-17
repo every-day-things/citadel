@@ -79,15 +79,10 @@
   {#each items as row, index}
     <div id={`group-${index}`} style="height: {itemHeightPx}px;">
       {#if $visibleGroups[`group-${index}`]}
-          {#if renderFn}
-            <svelte:component
-              index={index}
-              this={renderFn(row).component}
-              {...renderFn(row).props}
-            />
-          {:else if skeletonFn}
-            {skeletonFn(row)}
-          {/if}
+          <svelte:component
+            this={renderFn(row).component}
+            {...renderFn(row, index).props}
+          />
       {/if}
     </div>
   {/each}

@@ -8,17 +8,12 @@
 
   const scrollableDivHeight = "80vh";
 
-  const renderFn = (book: LibraryBook) => {
-    return {
-      component: BookTableRow,
-      props: {
-        book,
-        coverUrl: $libraryClientStore.getCoverUrlForBook(book.id),
-        title: book.title,
-        authors: book.author_list.join(", "),
-      },
-    };
-  };
+  const renderFn = (book: LibraryBook) => ({
+    component: BookTableRow,
+    props: {
+      book,
+    },
+  });
 </script>
 
 <div class="book header">
