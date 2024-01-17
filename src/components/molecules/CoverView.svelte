@@ -18,8 +18,8 @@
       book,
       dragHandler,
       isSelected: selectedItem?.id === book.id,
-      onClickHandler: () => (selectedItem = book)
-    }
+      onClickHandler: () => (selectedItem = book),
+    },
   });
 </script>
 

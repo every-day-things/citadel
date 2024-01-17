@@ -21,12 +21,7 @@
   <p class="title">Title</p>
   <p class="title">Authors</p>
 </div>
-<VirtualList
-  {scrollableDivHeight}
-  items={bookList}
-  {renderFn}
-  {itemHeightPx}
-/>
+<VirtualList {scrollableDivHeight} items={bookList} {renderFn} {itemHeightPx} />
 
 <style>
   .book {

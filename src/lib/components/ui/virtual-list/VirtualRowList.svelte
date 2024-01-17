@@ -1,6 +1,6 @@
 <script lang="ts">
-  import VirtualList from './VirtualList.svelte';
-  import VirtualRowListItem from './VirtualRowListGroup.svelte';
+  import VirtualList from "./VirtualList.svelte";
+  import VirtualRowListItem from "./VirtualRowListGroup.svelte";
   import { SvelteComponent } from "svelte";
 
   type TGroupRow = $$Generic;
@@ -10,7 +10,8 @@
   export let groupHeight: number = 320;
   export let renderFn: Function;
   export let scrollableDivHeight = "80vh";
-  export let skeletonFn: ((row: TGroupRow) => SvelteComponent) | undefined = undefined;
+  export let skeletonFn: ((row: TGroupRow) => SvelteComponent) | undefined =
+    undefined;
 
   const groupBySize = <T,>(groupSize: number, array: Array<T>) => {
     const groups: T[][] = [];

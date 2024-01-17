@@ -1,6 +1,6 @@
 <script lang="ts">
   import { writable } from "svelte/store";
-  import {onMount, onDestroy} from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import type { SvelteComponent } from "svelte";
 
   type Row = $$Generic;
@@ -54,7 +54,9 @@
         unsubscribes.push(() => observer.unobserve(element));
       }
     });
-    visibleGroups.set(Object.fromEntries(items.map((_, index) => [`group-${index}`, false])));
+    visibleGroups.set(
+      Object.fromEntries(items.map((_, index) => [`group-${index}`, false]))
+    );
   });
 
   onDestroy(() => {
@@ -62,13 +64,15 @@
     unsubscribes.forEach((unsub) => {
       try {
         unsub();
-      } catch (e) {
-      }
+      } catch (e) {}
     });
   });
 </script>
 
-<div id="vlist-container" style="overflow:auto; max-height: {scrollableDivHeight};">
+<div
+  id="vlist-container"
+  style="overflow:auto; max-height: {scrollableDivHeight};"
+>
   {#each items as row, index}
     <div id={`group-${index}`} style="height: {itemHeightPx}px;">
       {#if $visibleGroups[`group-${index}`]}
