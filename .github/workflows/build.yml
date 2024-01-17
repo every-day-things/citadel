@@ -54,7 +54,7 @@ jobs:
 
       - name: (Ubuntu only) Upload build artifacts
         if: matrix.platform == 'ubuntu-22.04'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: linux-deb-and-appimage.zip
           path: |
@@ -63,7 +63,7 @@ jobs:
 
       - name: (macOS only) Upload build artifacts
         if: matrix.platform == 'macos-12'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: macos-app-and-dmg.zip
           path: |
