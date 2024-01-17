@@ -6,10 +6,9 @@
 </script>
 
 <div class="book">
-  <!-- svelte-ignore a11y-missing-attribute -->
-  <img src={$libraryClientStore.getCoverUrlForBook(book.id)} />
-  <p>{book.title}</p>
-  <p>{book.author_list.join(", ")}</p>
+  <img src={$libraryClientStore.getCoverUrlForBook(book.id)} alt="Book cover" />
+  <p class="title">{book.title}</p>
+  <p class="authors">{book.author_list.join(", ")}</p>
 </div>
 
 <style>
@@ -24,11 +23,14 @@
     grid-template-areas: "cover title authors";
   }
 
-  .book p {
-    grid-area: "title";
+  .book .title {
+    grid-area: title;
+  }
+  .book .authors {
+    grid-area: authors;
   }
   .book img {
-    grid-area: "cover";
+    grid-area: cover;
     max-width: 120px;
   }
 </style>

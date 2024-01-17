@@ -1,12 +1,12 @@
 <script lang="ts">
   import type { LibraryBook } from "../../bindings";
-  import { libraryClientStore } from "../../stores/library";
   import BookTableRow from "../atoms/BookTableRow.svelte";
   import VirtualList from "$lib/components/ui/virtual-list/VirtualList.svelte";
 
   export let bookList: LibraryBook[];
 
   const scrollableDivHeight = "80vh";
+  const itemHeightPx = 220;
 
   const renderFn = (book: LibraryBook) => ({
     component: BookTableRow,
@@ -25,18 +25,17 @@
   {scrollableDivHeight}
   items={bookList}
   {renderFn}
-  itemHeightPx={220}
+  {itemHeightPx}
 />
 
 <style>
   .book {
     display: grid;
     grid-template-columns: 0.3fr 1fr 0.5fr;
-    flex-direction: row;
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    gap: 16px 16px;
+    gap: 16px;
     grid-template-areas: "cover title authors";
   }
   .header {

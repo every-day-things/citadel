@@ -7,23 +7,20 @@
   export let dragHandler: (event: DragEvent, book: LibraryBook) => void;
 
   let selectedItem: LibraryBook | undefined;
+  const itemHeight = 320;
+  const itemMarginTotal = 40;
+  const totalHeight = itemHeight + itemMarginTotal;
+  const scrollableDivHeight = "80vh";
 
-  let itemHeight = 320;
-  let itemMarginTotal = 40;
-  let totalHeight = itemHeight + itemMarginTotal;
-
-  let scrollableDivHeight = "80vh";
-  const renderFn = (book: LibraryBook) => {
-    return {
-      component: BookAsCover,
-      props: {
-        book,
-        dragHandler,
-        isSelected: selectedItem?.id === book.id,
-        onClickHandler: () => (selectedItem = book)
-      }
-    };
-  };
+  const renderFn = (book: LibraryBook) => ({
+    component: BookAsCover,
+    props: {
+      book,
+      dragHandler,
+      isSelected: selectedItem?.id === book.id,
+      onClickHandler: () => (selectedItem = book)
+    }
+  });
 </script>
 
 <VirtualRowList

@@ -1,7 +1,8 @@
 <script lang="ts">
   import { writable } from "svelte/store";
+  import {onMount, onDestroy} from "svelte";
+  import type { SvelteComponent } from "svelte";
 
-  import { SvelteComponent, onDestroy, onMount } from "svelte";
   type Row = $$Generic;
 
   export let scrollableDivHeight = "80vh";
@@ -16,73 +17,69 @@
    */
   export let itemHeightPx: number = 320;
 
-  let options = {
+  const options = {
     rootMargin: "200px 0px 200px 0px",
     threshold: 0,
   };
-  let unsubscribes: Array<(...args: any) => void> = [];
-  let visibleGroups = writable<Record<string, boolean>>({});
 
-  let callback: IntersectionObserverCallback = (entries) => {
+  let visibleGroups = writable<Record<string, boolean>>({});
+  let unsubscribes: Array<(...args: any) => void> = [];
+
+  const callback: IntersectionObserverCallback = (entries) => {
     visibleGroups.update((currentVisibleGroups) => {
       let updatedVisibleGroups = { ...currentVisibleGroups }; // Create a new object for reactivity
       entries.forEach((change) => {
-        if (change.isIntersecting) {
-          updatedVisibleGroups[change.target.id] = true;
-        } else {
-          updatedVisibleGroups[change.target.id] = false;
-        }
+        updatedVisibleGroups[change.target.id] = change.isIntersecting;
       });
-      return updatedVisibleGroups; // Return the updated object
+      return updatedVisibleGroups;
     });
   };
 
   function updateHeight() {
     const scrollableDiv = document.getElementById("vlist-container");
     if (scrollableDiv) {
-      const rect = scrollableDiv.getBoundingClientRect();
-      const offsetTop = rect.top;
+      const offsetTop = scrollableDiv.getBoundingClientRect().top;
       scrollableDivHeight = `calc(100vh - ${offsetTop}px)`;
     }
   }
 
   onMount(() => {
     window.addEventListener("resize", updateHeight);
-    updateHeight(); // Set initial height
-    for (const groupId in items) {
+    updateHeight();
+    items.forEach((_, groupId) => {
       let observer = new IntersectionObserver(callback, options);
       const element = document.querySelector(`#group-${groupId}`);
       if (element) {
         observer.observe(element);
-        unsubscribes.push(observer.unobserve);
+        unsubscribes.push(() => observer.unobserve(element));
       }
-    }
-    visibleGroups.set(
-      Object.fromEntries(items.map((_, index) => [`group-${index}`, false]))
-    );
+    });
+    visibleGroups.set(Object.fromEntries(items.map((_, index) => [`group-${index}`, false])));
   });
 
   onDestroy(() => {
     window.removeEventListener("resize", updateHeight);
-    for (const unsub of unsubscribes) {
+    unsubscribes.forEach((unsub) => {
       try {
         unsub();
-      } catch (e) {}
-    }
+      } catch (e) {
+      }
+    });
   });
 </script>
 
-<div
-  id="vlist-container"
-  style="overflow:auto; max-height: {scrollableDivHeight};"
->
+<div id="vlist-container" style="overflow:auto; max-height: {scrollableDivHeight};">
   {#each items as row, index}
     <div id={`group-${index}`} style="height: {itemHeightPx}px;">
       {#if $visibleGroups[`group-${index}`]}
+        {#if renderFn}
           <svelte:component
             this={renderFn(row).component}
             {...renderFn(row, index).props}
           />
+        {:else if skeletonFn}
+          {skeletonFn(row)}
+        {/if}
       {/if}
     </div>
   {/each}
