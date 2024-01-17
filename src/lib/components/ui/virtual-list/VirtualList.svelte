@@ -88,10 +88,3 @@
     </div>
   {/each}
 </div>
-
-<style>
-  .group {
-    display: flex;
-    flex-direction: row;
-  }
-</style>
