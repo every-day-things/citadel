@@ -4,17 +4,19 @@
   import type { ComponentConstructorOptions, SvelteComponent } from "svelte";
   import type { SVGAttributes, SvelteHTMLElements } from "svelte/elements";
 
-  type $$Props = {
-    value?: CreateRadioGroupProps["defaultValue"];
-    optionList: {
-      label: string;
-      icon: new (
-        options: ComponentConstructorOptions<SVGAttributes<SVGSVGElement>>
-      ) => SvelteComponent<SvelteHTMLElements["svg"]>;
-    }[];
+  type Option = {
+    label: string;
+    icon: new (
+      options: ComponentConstructorOptions<SVGAttributes<SVGSVGElement>>
+    ) => SvelteComponent<SvelteHTMLElements["svg"]>;
   };
 
-  export let optionList: $$Props["optionList"];
+  type $$Props = {
+    value?: CreateRadioGroupProps["defaultValue"];
+    optionList: Option[];
+  };
+
+  export let optionList: Option[];
   export let value: $$Props["value"] = optionList[0].label;
 
   const {
