@@ -34,9 +34,6 @@ pub struct LibraryBook {
     pub sortable_title: Option<String>,
     pub author_sort_lookup: Option<HashMap<String, String>>,
 
-    pub filename: String,
-    pub absolute_path: PathBuf,
-
     pub file_list: Vec<BookFile>,
 
     pub cover_image: Option<LocalOrRemoteUrl>,

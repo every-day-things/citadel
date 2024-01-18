@@ -47,9 +47,6 @@ fn to_library_book(
                 .collect::<HashMap<_, _>>(),
         ),
 
-        filename: "".to_string(),
-        absolute_path: PathBuf::new(),
-
         file_list: file_list
             .iter()
             .map(|f| {
