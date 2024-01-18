@@ -9,7 +9,7 @@ import type {
   LocalConnectionOptions,
   Options,
   RemoteConnectionOptions,
-} from "../typesLibrary";
+} from "../_types";
 
 const genLocalCalibreClient = async (
   options: LocalConnectionOptions

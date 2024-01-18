@@ -1,5 +1,5 @@
 import { dialog } from "@tauri-apps/api";
-import type { Library } from "./typesLibrary";
+import type { Library } from "./_types";
 
 export const addBook = async (library: Library) => {
   let filePath = await dialog.open({

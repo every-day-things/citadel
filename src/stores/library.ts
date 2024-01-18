@@ -3,7 +3,7 @@
  * See {@link initClient} for more details about setting up the client.
  */
 import { initClient } from "$lib/library/libraryCommsManager";
-import { type Library, type Options } from "$lib/library/typesLibrary";
+import { type Library, type Options } from "$lib/library/_types";
 import { get, writable } from "svelte/store";
 
 let resolveClientReady: () => void;
