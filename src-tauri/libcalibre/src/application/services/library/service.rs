@@ -91,7 +91,7 @@ where
         // 1. Create Authors & Books and link them
         // ========================
         let author_list = self.create_authors(dto.authors)?;
-        let book = self.create_book(dto.book.clone())?;
+        let book = self.create_book(dto.book.clone(), &author_list)?;
         let primary_author = &author_list[0];
 
         for author in &author_list {
@@ -267,9 +267,47 @@ where
         Ok(author_list)
     }
 
-    fn create_book(&self, book: NewBookDto) -> Result<Book, LibSrvcError> {
-        let mut book_service = self.book_service.lock().map_err(|_| LibSrvcError::DatabaseLocked)?;
-        book_service.create(book).map_err(|_| LibSrvcError::InvalidDto)
+    fn create_book(
+        &self,
+        book: NewBookDto,
+        author_list: &Vec<Author>,
+    ) -> Result<Book, LibSrvcError> {
+        let mut book_service = self
+            .book_service
+            .lock()
+            .map_err(|_| LibSrvcError::DatabaseLocked)?;
+        let combined_authort_sort = author_list
+            .iter()
+            .map(|author| author.sortable_name())
+            .collect::<Vec<String>>()
+            .join(", ");
+        println!("authors: {:?}", author_list);
+        println!("combined_authort_sort: {}", combined_authort_sort);
+        let added_book = book_service
+            .create(book)
+            .map_err(|_| LibSrvcError::InvalidDto);
+
+        if let Ok(book) = &added_book {
+            book_service
+                .update(
+                    book.id,
+                    UpdateBookDto {
+                        author_sort: Some(combined_authort_sort),
+                        title: None,
+                        timestamp: None,
+                        pubdate: None,
+                        series_index: None,
+                        isbn: None,
+                        lccn: None,
+                        path: None,
+                        flags: None,
+                        has_cover: None,
+                    },
+                )
+                .map_err(|_| LibSrvcError::InvalidDto)?;
+        };
+
+        added_book
     }
 
     fn set_book_path(&self, book_id: i32, book_dir_rel_path: PathBuf) -> Result<Book, LibSrvcError> {
@@ -280,7 +318,7 @@ where
                 UpdateBookDto {
                     path: Some(book_dir_rel_path.to_str().unwrap().to_string()),
                     title: None,
-                    author_list: None,
+                    author_sort: None,
                     timestamp: None,
                     pubdate: None,
                     series_index: None,

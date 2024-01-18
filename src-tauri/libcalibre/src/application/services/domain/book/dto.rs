@@ -5,7 +5,6 @@ use crate::domain::book::entity::{NewBook, UpdateBookData};
 #[derive(Clone)]
 pub struct NewBookDto {
     pub title: String,
-    pub author_list: Vec<String>,
     pub timestamp: Option<NaiveDateTime>,
     pub pubdate: Option<NaiveDateTime>,
     pub series_index: f32,
@@ -16,8 +15,8 @@ pub struct NewBookDto {
 }
 
 pub struct UpdateBookDto {
+    pub author_sort: Option<String>,
     pub title: Option<String>,
-    pub author_list: Option<Vec<String>>,
     pub timestamp: Option<NaiveDateTime>,
     pub pubdate: Option<NaiveDateTime>,
     pub series_index: Option<f32>,
@@ -50,6 +49,7 @@ impl TryFrom<UpdateBookDto> for UpdateBookData {
 
     fn try_from(dto: UpdateBookDto) -> Result<Self, Self::Error> {
         Ok(Self {
+            author_sort: dto.author_sort,
             title: dto.title,
             timestamp: dto.timestamp,
             pubdate: dto.pubdate,

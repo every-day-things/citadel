@@ -7,9 +7,7 @@ use std::sync::Mutex;
 use crate::book::ImportableBookMetadata;
 use crate::book::ImportableBookType;
 use crate::book::LibraryBook;
-use crate::libs::file_formats::cover_data;
 use crate::libs::file_formats::read_epub_metadata;
-use crate::templates::format_calibre_metadata_opf;
 
 use chrono::NaiveDate;
 use chrono::NaiveDateTime;
@@ -23,7 +21,6 @@ use libcalibre::application::services::domain::author::service::AuthorServiceTra
 use libcalibre::application::services::domain::book::dto::NewBookDto;
 use libcalibre::application::services::domain::book::service::BookService;
 use libcalibre::application::services::domain::book::service::BookServiceTrait;
-use libcalibre::application::services::domain::file::dto::NewFileDto;
 use libcalibre::application::services::domain::file::service::BookFileService;
 use libcalibre::application::services::domain::file::service::BookFileServiceTrait;
 use libcalibre::application::services::library::dto::NewLibraryEntryDto;
@@ -42,7 +39,6 @@ pub mod models;
 pub mod names;
 pub mod schema;
 
-use self::add_book::insert_book_metadata;
 use self::models::Book;
 use regex::Regex;
 use schema::books;
@@ -197,10 +193,9 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
                 book_file_service,
             );
 
-            library_service.create(NewLibraryEntryDto {
+            let _ = library_service.create(NewLibraryEntryDto {
                 book: NewBookDto {
                     title: md.title.clone(),
-                    author_list: vec![md.author.clone().unwrap_or("".to_string())],
                     timestamp: None,
                     pubdate: Some(NaiveDateTime::new(
                         md.publication_date

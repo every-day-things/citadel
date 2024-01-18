@@ -13,6 +13,11 @@ pub struct Author {
     pub sort: Option<String>,
     pub link: String,
 }
+impl Author {
+    pub fn sortable_name(&self) -> String {
+        self.name.split(' ').rev().collect::<Vec<&str>>().join(", ")
+    }
+}
 
 #[derive(Insertable)]
 #[diesel(table_name = authors)]
