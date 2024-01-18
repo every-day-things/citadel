@@ -1,4 +1,4 @@
-import { initCalibreClient } from "./calibre";
+import { initCalibreClient } from "./adapters/calibre";
 import type { Library, Options } from "./typesLibrary";
 
 export const initClient = (options: Options): Promise<Library> => {

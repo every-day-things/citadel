@@ -3,13 +3,13 @@ import {
   type ImportableFile,
   type ImportableBookMetadata,
   type LibraryBook,
-} from "../../bindings";
+} from "../../../bindings";
 import type {
   Library,
   LocalConnectionOptions,
   Options,
   RemoteConnectionOptions,
-} from "./typesLibrary";
+} from "../typesLibrary";
 
 const genLocalCalibreClient = async (
   options: LocalConnectionOptions
