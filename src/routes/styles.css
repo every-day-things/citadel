@@ -30,16 +30,27 @@ body {
   overflow: hidden;
 }
 
-/* #region disable-scrollbars */
-/* Disable default scrollbars for Webkit & Gecko browsers */
-html::-webkit-scrollbar {
+/* #region style-scrollbars */
+/* Themed scrollbars */
+*::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+*::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+*::-webkit-scrollbar-thumb {
+  /* Style the control for scrolling up and down */
+  background: var(--text-onprimary);
+  border: 3px solid transparent;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 7px var(--text-onprimary);
+}
+*::-webkit-scrollbar-button {
+  /* Hide buttons that appear at the top and bottom of scrollbars */
   display: none;
 }
-html,
-body {
-  scrollbar-width: none; /* Firefox */
-}
-/* #endregion disable-scrollbars */
+/* #endregion style-scrollbars */
 
 h1,
 h2,

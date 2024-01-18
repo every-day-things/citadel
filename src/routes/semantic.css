@@ -217,6 +217,9 @@
 
   --background-gradient-image: var(--gradient--back-2);
   --focus-ring: var(--ctp-macchiato-blue);
+
+  --shadow-color: rgba(255,255,255,0.17);
+  --shadow-height: 0.5px;
 }
 /* #endregion darkmode */
 

@@ -152,52 +152,56 @@
   <title>Library</title>
 </svelte:head>
 
-<section class="scrollable-section">
+<section class="scrollable-section safe-area">
   <div class="books">
-    <div class="controls">
-      <Input
-        class="searchBox"
-        type="text"
-        bind:value={$search}
-        placeholder="Search book titles and authors"
-      />
-      <Select.Root bind:selected={sortOrderElement}>
-        <Select.Trigger class="w-[180px]">
-          <Select.Value placeholder="Sort Order" />
-        </Select.Trigger>
-        <Select.Content>
-          {#each LBSOSEntries as [sortOrderKey, sortOrderItem]}
-            <Select.Item value={sortOrderItem}>
-              {LibraryBookSortOrderStrings[sortOrderKey]}
-            </Select.Item>
-          {/each}
-        </Select.Content>
-      </Select.Root>
-      <SwitchIcon
-        bind:value={view}
-        optionList={[
-          {
-            label: "cover",
-            icon: GridIcon,
-          },
-          {
-            label: "table",
-            icon: ListIcon,
-          },
-        ]}
-      />
+    <div class="pg-header">
+      <div class="controls">
+        <Input
+          class="searchBox"
+          type="text"
+          bind:value={$search}
+          placeholder="Search book titles and authors"
+        />
+        <Select.Root bind:selected={sortOrderElement}>
+          <Select.Trigger class="w-[180px]">
+            <Select.Value placeholder="Sort Order" />
+          </Select.Trigger>
+          <Select.Content>
+            {#each LBSOSEntries as [sortOrderKey, sortOrderItem]}
+              <Select.Item value={sortOrderItem}>
+                {LibraryBookSortOrderStrings[sortOrderKey]}
+              </Select.Item>
+            {/each}
+          </Select.Content>
+        </Select.Root>
+        <SwitchIcon
+          bind:value={view}
+          optionList={[
+            {
+              label: "cover",
+              icon: GridIcon,
+            },
+            {
+              label: "table",
+              icon: ListIcon,
+            },
+          ]}
+        />
+      </div>
+      <span class="num_items"
+        >Showing {$range} of {$selectedBooks.length} items</span
+      >
     </div>
-    <span class="num_items"
-      >Showing {$range} of {$selectedBooks.length} items</span
-    >
     {#await waitForBooksPromise()}
       <p>Loading books...</p>
     {:then _}
+      <div class="view-container">
       {#if view === "cover"}
         <CoverView bookList={$selectedBooks} dragHandler={x} />
       {:else if view === "table"}
         <BookTable bookList={$selectedBooks} />
       {/if}
+      </div>
     {/await}
   </div>
 </section>
@@ -217,26 +221,31 @@
     margin-right: 8px;
   }
 
-  section {
+  .pg-header {
+    padding: 16px;
+    box-shadow: 0 var(--shadow-height) 0 var(--shadow-color);
+  }
+  .safe-area {
     margin-top: 16px;
+  }
+
+  section {
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     overscroll-behavior: contain;
-    padding: 16px;
-    width: calc(100% - 32px);
   }
 
   .num_items {
+    display: block;
     color: var(--text-secondary);
-    margin-bottom: 8px;
+    margin: 8px 0;
   }
 
   .books {
     display: flex;
     flex-direction: column;
-    gap: 16px;
     width: 100%;
   }
 </style>

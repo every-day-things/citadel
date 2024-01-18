@@ -19,7 +19,7 @@
 <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 <!-- svelte-ignore a11y-missing-attribute -->
 <!-- svelte-ignore a11y-click-events-have-key-events -->
-<div class="container">
+<div class="container p-4">
   {#if isSelected}
     {#if isSendingToDevice}
       <div class="controls">

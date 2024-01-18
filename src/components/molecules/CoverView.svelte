@@ -1,6 +1,6 @@
 <script lang="ts">
   import VirtualRowList from "$lib/components/ui/virtual-list/VirtualRowList.svelte";
-  import { writable } from "svelte/store";
+  import { writable, type Writable } from "svelte/store";
   import type { LibraryBook } from "../../bindings";
   import BookAsCover from "../atoms/BookAsCover.svelte";
   import { onMount } from "svelte";
@@ -12,7 +12,8 @@
   const itemHeight = 320;
   const itemMarginTotal = 40;
   const totalHeight = itemHeight + itemMarginTotal;
-  const scrollableDivHeight = "80vh";
+
+  let scrollableDivHeight: Writable<string> = writable("80vh");
 
   let groupSize = writable(5);
 
@@ -20,6 +21,19 @@
     groupSize.set(window.innerWidth < 1200 ? 4 : 6);
     window.addEventListener("resize", () => {
       groupSize.set(window.innerWidth < 1200 ? 4 : 6);
+    });
+
+    const coverViewDiv = document.getElementById("cover-view");
+
+    if (coverViewDiv) {
+      const coverViewTop = coverViewDiv.getBoundingClientRect().top;
+      scrollableDivHeight.set(`calc(100vh - ${coverViewTop}px)`);
+    }
+
+    window.addEventListener("resize", () => {
+      if (!coverViewDiv) return;
+      const coverViewTop = coverViewDiv.getBoundingClientRect().top;
+      scrollableDivHeight.set(`calc(100vh - ${coverViewTop}px)`);
     });
   });
 
@@ -36,10 +50,12 @@
   });
 </script>
 
-<VirtualRowList
-  {scrollableDivHeight}
-  items={bookList.map((_, index) => index)}
-  {groupSize}
-  groupHeight={totalHeight}
-  {renderFn}
-/>
+<div id="cover-view">
+  <VirtualRowList
+    scrollableDivHeight={$scrollableDivHeight}
+    items={bookList.map((_, index) => index)}
+    {groupSize}
+    groupHeight={totalHeight}
+    {renderFn}
+  />
+</div>
