@@ -30,7 +30,7 @@ There is no guarantee these builds work.
 
 ## Developing
 
-As a prerequisite, you'll need to install [Bun](https://bun.sh) and [Rust](https://www.rust-lang.org/tools/install).
+As a prerequisite, you'll need to install [Bun](https://bun.sh), Node[^1], and [Rust](https://www.rust-lang.org/tools/install).
 
 Then, you can install the packages.
 
@@ -44,6 +44,7 @@ and start up the app like so:
 bun run dev
 # or just bun dev
 ```
+
 ### App preview without backend
 
 You can run just the frontend with this command, although you WILL see errors as the Rust backend will be missing but is assumed to exist:
@@ -66,7 +67,7 @@ To run the backend in server mode for production, run
 
 ## Building
 
-To create a production version of Citadel:
+To create a production version of Citadel, you'll need the development prereqs. Then:
 
 ```bash
 bun install
@@ -76,3 +77,5 @@ bun run build
 ## Additional Credit
 
 Huge thanks to [Kemie Guaida](https://kemielikes.design/), who created an excellent [Calibre redesign Figma prototype](https://old.reddit.com/r/Calibre/comments/udzumn/testing_a_new_interface_for_calibre/). Thank you, Kemie!
+
+[^1]: https://github.com/every-day-things/citadel/issues/9
