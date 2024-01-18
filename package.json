@@ -15,6 +15,7 @@
   },
   "devDependencies": {
     "@fontsource/fira-mono": "^4.5.10",
+    "@iconify-json/f7": "^1.1.0",
     "@melt-ui/pp": "^0.3.0",
     "@melt-ui/svelte": "^0.70.0",
     "@neoconfetti/svelte": "^1.0.0",
@@ -31,6 +32,7 @@
     "tailwindcss": "^3.3.6",
     "tslib": "^2.4.1",
     "typescript": "^5.0.0",
+    "unplugin-icons": "^0.18.2",
     "vite": "^5.0.3",
     "vitest": "^1.0.0"
   },
