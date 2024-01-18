@@ -15,8 +15,10 @@
   import { any } from "$lib/any";
   import * as Select from "$lib/components/ui/select";
   import { Input } from "$lib/components/ui/input";
-  import * as ToggleGroup from "$lib/components/ui/toggle-group";
   import type { Selected } from "bits-ui";
+  import SwitchIcon from "$lib/components/ui/switch-icon/SwitchIcon.svelte";
+  import GridIcon from "virtual:icons/f7/square-grid-2x2";
+  import ListIcon from "virtual:icons/f7/list-bullet";
 
   const LibraryBookSortOrder = {
     nameAz: "name-asc",
@@ -159,10 +161,6 @@
         bind:value={$search}
         placeholder="Search book titles and authors"
       />
-      <ToggleGroup.Root type="single" variant="outline" bind:value={view}>
-        <ToggleGroup.Item value="table">Table</ToggleGroup.Item>
-        <ToggleGroup.Item value="cover">Cover</ToggleGroup.Item>
-      </ToggleGroup.Root>
       <Select.Root bind:selected={sortOrderElement}>
         <Select.Trigger class="w-[180px]">
           <Select.Value placeholder="Sort Order" />
@@ -175,11 +173,24 @@
           {/each}
         </Select.Content>
       </Select.Root>
+      <SwitchIcon
+        bind:value={view}
+        optionList={[
+          {
+            label: "cover",
+            icon: GridIcon,
+          },
+          {
+            label: "table",
+            icon: ListIcon,
+          },
+        ]}
+      />
     </div>
     <span class="num_items"
       >Showing {$range} of {$selectedBooks.length} items</span
     >
-    {#await waitForBooksPromise() }
+    {#await waitForBooksPromise()}
       <p>Loading books...</p>
     {:then _}
       {#if view === "cover"}
@@ -195,43 +206,16 @@
   .controls {
     display: flex;
     justify-content: space-between;
+    align-items: center;
+    gap: 16px;
     width: 100%;
   }
 
-  .switch {
-    display: flex;
-    flex-direction: row;
+  :global(.searchBox) {
+    min-width: 40ch;
+    max-width: 72ch;
+    margin-right: 8px;
   }
-
-  .switch button:first-child {
-    border-top-left-radius: 8px;
-    border-bottom-left-radius: 8px;
-  }
-  .switch button:last-child {
-    border-top-right-radius: 8px;
-    border-bottom-right-radius: 8px;
-  }
-
-  .switch button {
-    background: var(--bg-secondary);
-    color: var(--text--onsecondary);
-    border: none;
-    padding: 8px;
-    font-size: 1.2rem;
-    cursor: pointer;
-    margin: 0;
-  }
-
-  .switch button.selected {
-    background: var(--bg-primary);
-    color: var(--text-onprimary);
-  }
-
-    :global(.searchBox) {
-      min-width: 40ch;
-      max-width: 72ch;
-      margin-right: 8px;
-    }
 
   section {
     margin-top: 16px;
