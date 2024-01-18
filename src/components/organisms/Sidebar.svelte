@@ -104,6 +104,10 @@
     margin: 0;
     cursor: pointer;
     color: var(--text-onsecondary);
+    min-width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   button.open:has(svg) {
@@ -111,13 +115,10 @@
   }
 
   .floating-open {
-    position: fixed;
-    top: 0;
-    left: 0;
-    padding: 8px;
-    background: rgba(0, 0, 0, 0.4);
-    border-radius: 0 0 8px 0;
+    position: sticky;
+    padding: 8px 0;
     z-index: 100;
+    background-color: var(--bg-secondary);
   }
 
   .group {
