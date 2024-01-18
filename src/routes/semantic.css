@@ -216,6 +216,7 @@
   --bg-tertiary-hover: rgb(var(--ctp-macchiato-overlay1-rgb) / 0.5);
 
   --background-gradient-image: var(--gradient--back-2);
+  --focus-ring: var(--ctp-macchiato-blue);
 }
 /* #endregion darkmode */
 
@@ -241,7 +242,9 @@
     --bg-primary: var(--ctp-latte-base);
     --bg-secondary: var(--ctp-latte-crust);
     --bg-tertiary: var(--ctp-latte-overlay0);
+
     --background-gradient-image: var(--gradient--back-1);
+    --focus-ring: var(--ctp-latte-blue);
   }
 }
 /* #endregion lightmode */
