@@ -3,11 +3,14 @@
   import { libraryClientStore } from "../../stores/library";
   import { openBookInDefaultApp, sendToDevice, shortenToChars } from "./BookAsCover";
   import { Button } from "$lib/components/ui/button";
+  import type { Writable } from "svelte/store";
 
   export let dragHandler: (event: DragEvent, book: LibraryBook) => void;
   export let onClickHandler: () => void;
   export let book: LibraryBook;
-  export let isSelected = false;
+  export let selectedItemId: Writable<LibraryBook["id"] | undefined>;
+
+  $: isSelected = $selectedItemId === book.id;
 
   let isSendingToDevice = false;
   let devicePath = "";

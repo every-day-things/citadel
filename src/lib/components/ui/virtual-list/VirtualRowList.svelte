@@ -1,10 +1,12 @@
 <script lang="ts">
+  import { writable, type Writable } from "svelte/store";
+
   import { List } from "svelte-virtual";
 
   type TGroupRow = $$Generic;
 
   export let items: Array<TGroupRow> = [];
-  export let groupSize: number = 5;
+  export let groupSize: Writable<number> = writable(5)
   export let groupHeight: number = 320;
   export let renderFn: Function;
   export let scrollableDivHeight = "80vh";
@@ -17,7 +19,7 @@
     return groups;
   };
 
-  $: itemsGrouped = groupBySize(groupSize, items);
+  $: itemsGrouped = groupBySize($groupSize, items);
 </script>
 
 <List
