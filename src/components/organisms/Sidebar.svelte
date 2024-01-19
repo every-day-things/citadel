@@ -11,19 +11,23 @@
   import { fade } from "svelte/transition";
   import Input from "$lib/components/ui/input/input.svelte";
 
+  type Optional<T> = T | null;
+
   let sidebarOpen = false;
 
-  let bookMetadata = writable<ImportableBookMetadata | null>(null);
+  let bookMetadata = writable<Optional<ImportableBookMetadata>>(null);
   let isMetadataEditorOpen = writable(false);
 
   let authorList = writable<string[]>([]);
 
   $: $authorList = $bookMetadata?.author_names ?? [];
 
-  $: bookMetadata.set({
-    ...$bookMetadata,
-    author_names: $authorList,
-  });
+  $: if ($bookMetadata) {
+    bookMetadata.set({
+      ...$bookMetadata,
+      author_names: $authorList,
+    });
+  }
 
   const beginAddBookHandler = async () => {
     const res = await promptToAddBook(libraryClient());
@@ -79,53 +83,60 @@
         <Dialog.Content transition={fade}>
           <Dialog.Header>
             <Dialog.Title>Add new book</Dialog.Title>
-            <!-- <Dialog.Description>
-                Add a new book to your library.
-              </Dialog.Description> -->
-            <form class="flex flex-col gap-4">
-              <label for="title">Title</label>
-              <Input type="text" bind:value={$bookMetadata.title} id="title" />
-              <label for="authors">Authors</label>
-              <p class="text-sm text-slate-400 dark:text-slate-200">
-                Adding {$authorList.length}
-                {pluralize($authorList.length, "author", "authors")}:
-                {#each $authorList as author}
-                  <span
-                    class="whitespace-nowrap text-sm rounded-lg px-2 py-1 bg-blue-200 m-1"
-                    >{author}</span
-                  >
-                  {" "}
-                {/each}
-              </p>
-              <ul id="authors" class="flex flex-col gap-1">
-                {#each $authorList as author}
-                  <li class="flex flex-row justify-between w-full">
-                    <Input type="text" bind:value={author} class="max-w-72" />
-                    <button
-                      class="ml-2"
-                      on:click={() => {
-                        const newAuthorList = $authorList.filter(
-                          (a) => a !== author
-                        );
-                        authorList.set(newAuthorList);
-                      }}>X</button
+            {#if $bookMetadata === null } 
+              <p>Something went wrong. Probably horribly wrong. If you see this message twice, please report an issue on GitHub.</p>
+            {:else}
+              <form class="flex flex-col gap-4">
+                <label for="title">Title</label>
+                <Input
+                  type="text"
+                  bind:value={$bookMetadata.title}
+                  id="title"
+                />
+                <label for="authors">Authors</label>
+                <p class="text-sm text-slate-400 dark:text-slate-200">
+                  Adding {$authorList.length}
+                  {pluralize($authorList.length, "author", "authors")}:
+                  {#each $authorList as author}
+                    <span
+                      class="whitespace-nowrap text-sm rounded-lg px-2 py-1 bg-blue-200 m-1"
+                      >{author}</span
                     >
-                  </li>
-                {/each}
-                <button
-                  on:click={() => {
-                    authorList.set([...$authorList, ""]);
-                  }}>+ add author</button
+                    {" "}
+                  {/each}
+                </p>
+                <ul id="authors" class="flex flex-col gap-1">
+                  {#each $authorList as author}
+                    <li class="flex flex-row justify-between w-full">
+                      <Input type="text" bind:value={author} class="max-w-72" />
+                      <button
+                        class="ml-2"
+                        on:click={() => {
+                          const newAuthorList = $authorList.filter(
+                            (a) => a !== author
+                          );
+                          authorList.set(newAuthorList);
+                        }}>X</button
+                      >
+                    </li>
+                  {/each}
+                  <button
+                    on:click={() => {
+                      authorList.set([...$authorList, ""]);
+                    }}>+ add author</button
+                  >
+                </ul>
+                <Button
+                  variant="default"
+                  on:click={commitAddBookHandler}
+                  class="mt-6">Add book</Button
                 >
-              </ul>
-              <Button variant="default" on:click={commitAddBookHandler} class="mt-6"
-                >Add book</Button
-              >
-            </form>
+              </form>
+            {/if}
           </Dialog.Header>
         </Dialog.Content>
       </Dialog.Root>
-      <Button variant="secondary" on:click={switchLibraryHandler} 
+      <Button variant="secondary" on:click={switchLibraryHandler}
         >Switch Library</Button
       >
       <a
@@ -134,7 +145,7 @@
       >
         First-time setup
       </a>
-      <a aria-disabled="true" disabled>Configure library</a>
+      <a aria-disabled="true">Configure library</a>
     </div>
     <div class="group">
       <p class="label">My Shelves</p>
