@@ -138,7 +138,7 @@ pub fn get_importable_file_metadata(file: ImportableFile) -> ImportableBookMetad
     ImportableBookMetadata {
         file_type: ImportableBookType::EPUB,
         title: res.title.unwrap_or("".to_string()),
-        author: res.creator,
+        author_names: res.creator_list,
         language: res.language,
         publisher: res.publisher,
         identifier: res.identifier,
@@ -193,6 +193,15 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
                 book_file_service,
             );
 
+            let authors = match md.author_names {
+                Some(authors) => authors.iter().map(|name| NewAuthorDto {
+                    full_name: name.clone(),
+                    sortable_name: "".to_string(),
+                    external_url: None,
+                }).collect(),
+                None => vec![],
+            };
+
             let _ = library_service.create(NewLibraryEntryDto {
                 book: NewBookDto {
                     title: md.title.clone(),
@@ -208,11 +217,7 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
                     flags: 0,
                     has_cover: None,
                 },
-                authors: vec![NewAuthorDto {
-                    full_name: md.author.clone().unwrap_or("".to_string()),
-                    sortable_name: "".to_string(),
-                    external_url: None,
-                }],
+                authors,
                 files: Some(vec![NewLibraryFileDto {
                     path: md.path,
                 }]),

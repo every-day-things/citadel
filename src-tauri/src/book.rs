@@ -67,7 +67,9 @@ pub struct ImportableBookMetadata {
     pub file_type: ImportableBookType,
     /// The title of the book, if one is available, or the name of the file to import.
     pub title: String,
-    pub author: Option<String>,
+    /// The list of authors of the book, if available. Some books may not be formatted correctly,
+    /// and will have no authors, or all author names will be one string separated by "," or ";".
+    pub author_names: Option<Vec<String>>,
     pub identifier: Option<String>,
     pub publisher: Option<String>,
     pub language: Option<String>,

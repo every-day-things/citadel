@@ -1,7 +1,8 @@
 import { dialog } from "@tauri-apps/api";
 import type { Library } from "./_types";
+import type { ImportableBookMetadata } from "../../bindings";
 
-export const addBook = async (library: Library) => {
+export const promptToAddBook = async (library: Library): Promise<ImportableBookMetadata | void> => {
   let filePath = await dialog.open({
     multiple: false,
     directory: false,
@@ -26,5 +27,10 @@ export const addBook = async (library: Library) => {
   if (!metadata) {
     return;
   }
+
+  return metadata;
+}
+
+export const commitAddBook = async (library: Library, metadata: ImportableBookMetadata) => {
   await library.addImportableFileByMetadata(metadata);
 };

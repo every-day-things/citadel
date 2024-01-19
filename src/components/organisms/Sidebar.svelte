@@ -1,22 +1,54 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { addBook } from "$lib/library/addBook";
+  import { promptToAddBook, commitAddBook } from "$lib/library/addBook";
   import { pickLibrary } from "$lib/library/pickLibrary";
   import { books } from "../../stores/books";
   import { libraryClient } from "../../stores/library";
   import { Button } from "$lib/components/ui/button";
+  import { writable } from "svelte/store";
+  import type { ImportableBookMetadata } from "../../bindings";
+  import * as Dialog from "$lib/components/ui/dialog";
+  import { fade } from "svelte/transition";
+  import Input from "$lib/components/ui/input/input.svelte";
 
   let sidebarOpen = false;
 
-  const addBookHandler = async () => {
-    await addBook(libraryClient());
-    // side effects: update in-cache book list when Library updated
-    books.set(await libraryClient().listBooks());
+  let bookMetadata = writable<ImportableBookMetadata | null>(null);
+  let isMetadataEditorOpen = writable(false);
+
+  let authorList = writable<string[]>([]);
+
+  $: $authorList = $bookMetadata?.author_names ?? [];
+
+  $: bookMetadata.set({
+    ...$bookMetadata,
+    author_names: $authorList,
+  });
+
+  const beginAddBookHandler = async () => {
+    const res = await promptToAddBook(libraryClient());
+    if (res) {
+      bookMetadata.set(res);
+      isMetadataEditorOpen.set(true);
+    }
+  };
+
+  const commitAddBookHandler = async () => {
+    if ($bookMetadata) {
+      const result = await commitAddBook(libraryClient(), $bookMetadata);
+      // side effects: update in-cache book list when Library updated
+      books.set(await libraryClient().listBooks());
+      isMetadataEditorOpen.set(false);
+      bookMetadata.set(null);
+    }
   };
 
   const switchLibraryHandler = async () => {
     await pickLibrary();
   };
+
+  const pluralize = (count: number, singular: string, plural: string) =>
+    count === 1 ? singular : plural;
 </script>
 
 {#if sidebarOpen}
@@ -40,8 +72,60 @@
     </button>
     <div class="group">
       <p class="label">My Library</p>
-      <Button variant="secondary" on:click={addBookHandler}>⊕ Add book</Button>
-      <Button variant="secondary" on:click={switchLibraryHandler}
+      <Button variant="secondary" on:click={beginAddBookHandler}
+        >⊕ Add book</Button
+      >
+      <Dialog.Root bind:open={$isMetadataEditorOpen}>
+        <Dialog.Content transition={fade}>
+          <Dialog.Header>
+            <Dialog.Title>Add new book</Dialog.Title>
+            <!-- <Dialog.Description>
+                Add a new book to your library.
+              </Dialog.Description> -->
+            <form class="flex flex-col gap-4">
+              <label for="title">Title</label>
+              <Input type="text" bind:value={$bookMetadata.title} id="title" />
+              <label for="authors">Authors</label>
+              <p class="text-sm text-slate-400 dark:text-slate-200">
+                Adding {$authorList.length}
+                {pluralize($authorList.length, "author", "authors")}:
+                {#each $authorList as author}
+                  <span
+                    class="whitespace-nowrap text-sm rounded-lg px-2 py-1 bg-blue-200 m-1"
+                    >{author}</span
+                  >
+                  {" "}
+                {/each}
+              </p>
+              <ul id="authors" class="flex flex-col gap-1">
+                {#each $authorList as author}
+                  <li class="flex flex-row justify-between w-full">
+                    <Input type="text" bind:value={author} class="max-w-72" />
+                    <button
+                      class="ml-2"
+                      on:click={() => {
+                        const newAuthorList = $authorList.filter(
+                          (a) => a !== author
+                        );
+                        authorList.set(newAuthorList);
+                      }}>X</button
+                    >
+                  </li>
+                {/each}
+                <button
+                  on:click={() => {
+                    authorList.set([...$authorList, ""]);
+                  }}>+ add author</button
+                >
+              </ul>
+              <Button variant="default" on:click={commitAddBookHandler} class="mt-6"
+                >Add book</Button
+              >
+            </form>
+          </Dialog.Header>
+        </Dialog.Content>
+      </Dialog.Root>
+      <Button variant="secondary" on:click={switchLibraryHandler} 
         >Switch Library</Button
       >
       <a

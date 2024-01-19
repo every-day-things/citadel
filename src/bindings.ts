@@ -45,7 +45,12 @@ export type ImportableBookMetadata = { file_type: ImportableBookType;
 /**
  * The title of the book, if one is available, or the name of the file to import.
  */
-title: string; author: string | null; identifier: string | null; publisher: string | null; language: string | null; tags: string[]; 
+title: string; 
+/**
+ * The list of authors of the book, if available. Some books may not be formatted correctly,
+ * and will have no authors, or all author names will be one string separated by "," or ";".
+ */
+author_names: string[] | null; identifier: string | null; publisher: string | null; language: string | null; tags: string[]; 
 /**
  * Path of the file to import.
  */

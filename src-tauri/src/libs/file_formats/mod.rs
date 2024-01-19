@@ -4,7 +4,7 @@ use epub::doc::EpubDoc;
 
 pub struct EpubMetadata {
     pub title: Option<String>,
-    pub creator: Option<String>,
+    pub creator_list: Option<Vec<String>>,
     pub identifier: Option<String>,
     pub publisher: Option<String>,
     pub publication_date: Option<String>,
@@ -25,10 +25,11 @@ pub fn read_epub_metadata(path: &Path) -> EpubMetadata {
     let doc = EpubDoc::new(path);
     assert!(doc.is_ok());
     let mut doc = doc.unwrap();
+    let creators = doc.metadata.get("creator").map(|v| v.to_vec()).unwrap_or(Vec::new());
 
     EpubMetadata {
         title: doc.mdata("title"),
-        creator: doc.mdata("creator"),
+        creator_list: Some(creators),
         identifier: doc.mdata("identifier"),
         publisher: doc.mdata("publisher"),
         language: doc.mdata("language"),
