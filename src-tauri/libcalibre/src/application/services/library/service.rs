@@ -280,7 +280,7 @@ where
             .iter()
             .map(|author| author.sortable_name())
             .collect::<Vec<String>>()
-            .join(", ");
+            .join(" & ");
         println!("authors: {:?}", author_list);
         println!("combined_authort_sort: {}", combined_authort_sort);
         let added_book = book_service
