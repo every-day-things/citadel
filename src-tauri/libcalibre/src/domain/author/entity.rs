@@ -34,11 +34,15 @@ use crate::schema::authors;
 // occur before the surname. So for example, "John von Neumann" would be sorted
 // as "von Neumann, John" and not "Neumann, John von".
 pub static AUTHOR_SORT_COPY_METHOD: &str = "comma";
-pub static AUTHOR_NAME_SUFFIXES: [&str; 13] = [
-    "Jr", "Sr", "Inc", "Ph.D", "Phd", "MD", "M.D", "I", "II", "III", "IV", "Junior", "Senior",
+
+pub static GENERATIONAL_TITLES: [&str; 8] =
+    ["Jr", "Sr", "Junior", "Senior", "I", "II", "III", "IV"];
+pub static POST_NOMINAL_LETTERS: [&str; 25] = [
+    "BA", "B.A", "BSc", "B.Sc", "MA", "M.A", "MSc", "M.Sc", "PhD", "Ph.D", "MD", "M.D", "LLD",
+    "LL.D", "JD", "J.D", "DPhil", "D.Phil", "DSc", "D.Sc", "EdD", "Ed.D", "EngD", "Eng.D", "Esq",
 ];
-pub static AUTHOR_NAME_PREFIXES: [&str; 5] = ["Mr", "Mrs", "Ms", "Dr", "Prof"];
-pub static AUTHOR_NAME_COPYWORDS: [&str; 17] = [
+pub static PREFIX_TITLE: [&str; 5] = ["Mr", "Mrs", "Ms", "Dr", "Prof"];
+pub static VERBATIM_NAME_INDICATORS: [&str; 17] = [
     "Agency",
     "Corporation",
     "Company",
@@ -57,8 +61,10 @@ pub static AUTHOR_NAME_COPYWORDS: [&str; 17] = [
     "Media",
     "Studios",
 ];
-pub static AUTHOR_USE_SURNAME_PREFIXES: bool = false;
-pub static AUTHOR_SURNAME_PREFIXES: [&str; 7] = ["da", "de", "di", "la", "le", "van", "von"];
+pub static USE_FAMILY_NAME_PREFIXES: bool = false;
+// https://en.wikipedia.org/wiki/List_of_family_name_affixes
+// TODO: Expand this list to match Wikipedia
+pub static FAMILY_NAME_PREFIXES: [&str; 7] = ["da", "de", "di", "la", "le", "van", "von"];
 
 #[derive(Clone, Debug, Queryable, Selectable, Identifiable, AsChangeset)]
 #[diesel(table_name = authors)]
@@ -71,7 +77,10 @@ pub struct Author {
 }
 impl Author {
     /// Generate a sortable name for this author.
-    /// 
+    ///
+    /// Based on APA style (see https://blog.apastyle.org/apastyle/2012/03/jr-sr-and-other-suffixes-in-apa-style.html,
+    /// and https://blog.apastyle.org/apastyle/2017/05/whats-in-a-name-names-with-titles-in-them.html)
+    ///
     /// ## Examples
     /// ```
     /// use libcalibre::domain::author::entity::Author;
@@ -85,7 +94,7 @@ impl Author {
     /// assert_eq!(sortable_name, "Doe, John");
     /// ```
     ///
-    /// For a Dr.
+    /// For Dr.'s and other titles, the title is removed.
     /// ```
     /// use libcalibre::domain::author::entity::Author;
     /// let author = Author {
@@ -95,10 +104,11 @@ impl Author {
     ///    link: "".to_string()
     /// };
     /// let sortable_name = author.sortable_name();
-    /// assert_eq!(sortable_name, "Doe, Dr. John");
+    /// assert_eq!(sortable_name, "Doe, John");
     /// ```
-    /// 
-    /// For a Jr. [SKIPPED: FAILING!]
+    ///
+    /// For Jr.'s and other generational titles, the title is moved to the end,
+    /// with a comma before it.
     /// ```
     /// use libcalibre::domain::author::entity::Author;
     /// let author = Author {
@@ -108,10 +118,40 @@ impl Author {
     ///    link: "".to_string()
     /// };
     /// let sortable_name = author.sortable_name();
-    /// /// assert_eq!(sortable_name, "Doe Jr., John");
+    /// assert_eq!(sortable_name, "Doe, John, Jr.");
     /// ```
     pub fn sortable_name(&self) -> String {
         let method = AUTHOR_SORT_COPY_METHOD;
+        let name_suffixes: Vec<String> = {
+            let mut suffixes: Vec<String> = GENERATIONAL_TITLES
+                .to_vec()
+                .iter()
+                .flat_map(|s| {
+                    vec![
+                        s.to_lowercase(),
+                        format!("{title}.", title = s.to_lowercase()),
+                    ]
+                })
+                .collect();
+            suffixes.extend_from_slice(
+                POST_NOMINAL_LETTERS
+                    .to_vec()
+                    .iter()
+                    .map(|s| s.to_string())
+                    .collect::<Vec<String>>()
+                    .as_slice(),
+            );
+            suffixes.iter().map(|s| s.to_lowercase()).collect()
+        };
+        let prefixes: Vec<String> = PREFIX_TITLE
+            .iter()
+            .flat_map(|s| {
+                vec![
+                    s.to_lowercase(),
+                    format!("{title}.", title = s.to_lowercase()),
+                ]
+            })
+            .collect();
 
         if method == "copy" {
             return self.name.clone();
@@ -131,9 +171,9 @@ impl Author {
         if tokens.len() < 2 {
             return self.name.clone();
         }
-
         let ltoks: HashSet<String> = HashSet::from_iter(tokens.iter().map(|s| s.to_lowercase()));
-        let copy_words = AUTHOR_NAME_COPYWORDS
+
+        let copy_words = VERBATIM_NAME_INDICATORS
             .iter()
             .map(|s| s.to_lowercase())
             .collect();
@@ -141,23 +181,17 @@ impl Author {
             return self.name.clone();
         }
 
-        let author_use_surname_prefixes = AUTHOR_USE_SURNAME_PREFIXES;
+        let author_use_surname_prefixes = USE_FAMILY_NAME_PREFIXES;
         if author_use_surname_prefixes {
-            let author_surname_prefixes: Vec<String> = AUTHOR_SURNAME_PREFIXES
+            let author_surname_prefixes: Vec<String> = FAMILY_NAME_PREFIXES
                 .iter()
                 .map(|s| s.to_lowercase())
                 .collect();
-            if tokens.len() == 2
-                && author_surname_prefixes.contains(&tokens[0].to_lowercase())
-            {
+            if tokens.len() == 2 && author_surname_prefixes.contains(&tokens[0].to_lowercase()) {
                 return self.name.clone();
             }
         }
 
-        let prefixes: Vec<String> = AUTHOR_NAME_PREFIXES
-            .iter()
-            .map(|s| s.to_lowercase())
-            .collect();
         let mut first = 0;
         for (i, token) in tokens.iter().enumerate() {
             if !prefixes.contains(&token.to_lowercase()) {
@@ -166,22 +200,26 @@ impl Author {
             }
         }
 
-        let suffixes: Vec<String> = AUTHOR_NAME_SUFFIXES
-            .iter()
-            .map(|s| s.to_lowercase())
-            .collect();
         let mut last = tokens.len() - 1;
         for i in (first..=last).rev() {
-            if !suffixes.contains(&tokens[i].to_lowercase()) {
+            if !name_suffixes.contains(&tokens[i].to_lowercase()) {
                 last = i;
                 break;
             }
         }
 
         let suffix = tokens[(last + 1)..].join(" ");
+
+        dbg!(
+            "first: {}, last: {}, suffix: {}",
+            first.clone(),
+            last.clone(),
+            suffix.clone()
+        );
+
         let token_before_last_is_prefix = author_use_surname_prefixes
             && last > first
-            && AUTHOR_SURNAME_PREFIXES
+            && FAMILY_NAME_PREFIXES
                 .iter()
                 .map(|s| s.to_lowercase())
                 .collect::<Vec<String>>()
@@ -198,15 +236,21 @@ impl Author {
         let mut atokens = vec![tokens[last].clone()];
         atokens.extend_from_slice(&tokens[first..last]);
         let num_toks = atokens.len();
-        if !suffix.is_empty() {
-            atokens.push(suffix);
-        }
+        // if !suffix.is_empty() {
+        //     // Suffices should be prepended with a comma. See APA formatting
+        //     // guidelines for Jr. or III.
+        //     atokens.push(", ".to_string());
+        //     atokens.push(suffix);
+        // }
 
         if method != "nocomma" && num_toks > 1 {
             atokens[0] = atokens[0].to_string() + ",";
         }
 
-        atokens.join(" ")
+        match &suffix.is_empty() {
+            true => atokens.join(" "),
+            false => atokens.join(" ") + ", " + &suffix,
+        }
     }
 }
 
