@@ -179,7 +179,9 @@ impl Author {
             .iter()
             .map(|s| s.to_lowercase())
             .collect::<HashSet<String>>()
-            .is_disjoint(&HashSet::from_iter(name_lower.split_whitespace().map(str::to_string)))
+            .is_disjoint(&HashSet::from_iter(
+                name_lower.split_whitespace().map(str::to_string),
+            ))
             .not()
     }
 
@@ -188,17 +190,14 @@ impl Author {
         let mut tokens: Vec<String> = sauthor.split_whitespace().map(str::to_string).collect();
 
         // Short circuits that indicate we need not format at all
-        if tokens.len() < 2 {
-            return name.to_string();
-        } else if Author::name_contains_verbatim_name_indicator(name) {
+        if tokens.len() < 2 || Author::name_contains_verbatim_name_indicator(name) {
             return name.to_string();
         }
 
         let name_suffixes = Author::gen_name_suffixes();
         let prefixes = Author::gen_name_prefixes();
 
-        let author_use_surname_prefixes = USE_FAMILY_NAME_PREFIXES;
-        if author_use_surname_prefixes {
+        if USE_FAMILY_NAME_PREFIXES {
             let author_surname_prefixes: Vec<String> = FAMILY_NAME_PREFIXES
                 .iter()
                 .map(|s| s.to_lowercase())
@@ -208,51 +207,40 @@ impl Author {
             }
         }
 
-        let mut first = 0;
-        for (i, token) in tokens.iter().enumerate() {
-            if !prefixes.contains(&token.to_lowercase()) {
-                first = i;
-                break;
-            }
-        }
+        let first = tokens
+            .iter()
+            .position(|token| !prefixes.contains(&token.to_lowercase()))
+            .unwrap_or(0);
 
-        let mut last = tokens.len() - 1;
-        for i in (first..=last).rev() {
-            if !name_suffixes.contains(&tokens[i].to_lowercase()) {
-                last = i;
-                break;
-            }
-        }
+        let last = tokens
+            .iter()
+            .rposition(|token| !name_suffixes.contains(&token.to_lowercase()))
+            .unwrap_or_else(|| tokens.len() - 1);
 
         let suffix = tokens[(last + 1)..].join(" ");
 
-        let token_before_last_is_prefix = author_use_surname_prefixes
+        let token_before_last_is_prefix = USE_FAMILY_NAME_PREFIXES
             && last > first
             && FAMILY_NAME_PREFIXES
                 .iter()
                 .map(|s| s.to_lowercase())
-                .collect::<Vec<String>>()
-                .contains(&tokens[last - 1].to_lowercase());
+                .any(|prefix| prefix == tokens[last - 1].to_lowercase());
 
         if token_before_last_is_prefix {
-            let last_token_prefix = tokens[last - 1].to_string();
-            let last_token = tokens[last].to_string();
-            let formatted = format!("{} {}", last_token_prefix, last_token);
-            tokens[last - 1] = formatted;
-            last -= 1;
+            tokens[last - 1] = format!("{} {}", tokens[last - 1], tokens[last]);
+            tokens.remove(last);
         }
 
         let mut atokens = vec![tokens[last].clone()];
         atokens.extend_from_slice(&tokens[first..last]);
-        let num_toks = atokens.len();
-
-        if num_toks > 1 {
-            atokens[0] = atokens[0].to_string() + ",";
+        if atokens.len() > 1 {
+            atokens[0].push(',');
         }
 
-        match &suffix.is_empty() {
-            true => atokens.join(" "),
-            false => atokens.join(" ") + ", " + &suffix,
+        if suffix.is_empty() {
+            atokens.join(" ")
+        } else {
+            format!("{}, {}", atokens.join(" "), suffix)
         }
     }
 }
