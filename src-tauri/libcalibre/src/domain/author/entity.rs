@@ -52,7 +52,6 @@ pub static VERBATIM_NAME_INDICATORS: [&str; 17] = [
     "Media",
     "Studios",
 ];
-pub static USE_FAMILY_NAME_PREFIXES: bool = false;
 // https://en.wikipedia.org/wiki/List_of_family_name_affixes
 // TODO: Expand this list to match Wikipedia
 pub static FAMILY_NAME_PREFIXES: [&str; 7] = ["da", "de", "di", "la", "le", "van", "von"];
@@ -158,7 +157,7 @@ impl Author {
     /// titles and post-nominal letters.
     /// Generational titles are in Jr., Jr and Junior forms.
     fn gen_name_suffixes() -> Vec<String> {
-        let mut suffixes = GENERATIONAL_TITLES.to_vec();
+        let suffixes = GENERATIONAL_TITLES.to_vec();
         suffixes.iter().map(|s| s.to_lowercase()).collect()
     }
 
@@ -197,18 +196,19 @@ impl Author {
         let name_suffixes = Author::gen_name_suffixes();
         let prefixes = Author::gen_name_prefixes();
 
-        if USE_FAMILY_NAME_PREFIXES {
-            let author_surname_prefixes: Vec<String> = FAMILY_NAME_PREFIXES
-                .iter()
-                .map(|s| s.to_lowercase())
-                .collect();
-            if tokens.len() == 2 && author_surname_prefixes.contains(&tokens[0].to_lowercase()) {
-                return name.to_string();
-            }
+        let author_surname_prefixes: Vec<String> = FAMILY_NAME_PREFIXES
+            .iter()
+            .map(|s| s.to_lowercase())
+            .collect();
+        if tokens.len() == 2 && author_surname_prefixes.contains(&tokens[0].to_lowercase()) {
+            return name.to_string();
         }
 
         // Remove all academic degrees, licenses, and professional titles
-        let post_nominal_set: HashSet<String> = POST_NOMINAL_LETTERS.iter().map(|s| s.to_lowercase()).collect();
+        let post_nominal_set: HashSet<String> = POST_NOMINAL_LETTERS
+            .iter()
+            .map(|s| s.to_lowercase())
+            .collect();
         tokens.retain(|token| !post_nominal_set.contains(&token.to_lowercase()));
 
         let first = tokens
@@ -223,8 +223,7 @@ impl Author {
 
         let suffix = tokens[(last + 1)..].join(" ");
 
-        let token_before_last_is_prefix = USE_FAMILY_NAME_PREFIXES
-            && last > first
+        let token_before_last_is_prefix = last > first
             && FAMILY_NAME_PREFIXES
                 .iter()
                 .map(|s| s.to_lowercase())
