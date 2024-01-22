@@ -52,9 +52,96 @@ pub static VERBATIM_NAME_INDICATORS: [&str; 17] = [
     "Media",
     "Studios",
 ];
-// https://en.wikipedia.org/wiki/List_of_family_name_affixes
-// TODO: Expand this list to match Wikipedia
-pub static FAMILY_NAME_PREFIXES: [&str; 7] = ["da", "de", "di", "la", "le", "van", "von"];
+// From https://en.wikipedia.org/wiki/List_of_family_name_affixes Jan 22, 2024
+pub static FAMILY_NAME_PREFIXES: [&str; 87] = [
+    "A",    // Romanian
+    "Ab",   // Welish, Cornish, Breton
+    "Af",   // Danish, Swedish,
+    "Ap",   // Welsh
+    "Av",   // Norwegian
+    "Abu",  // Arabic
+    "Aït",  // Berber
+    "Al",   // Arabic
+    "Ālam", // Persian
+    "At",
+    "Ath", // Berber
+    "Bar", // Aramaic
+    "Bath",
+    "Bat", // Hebrew
+    "Ben",
+    "Bin",
+    "Ibn", // Arabic, Hebre
+    "Bet", // Arabic
+    "Bint",
+    "Binti", // Arabic
+    "Binte", // Malaysian
+    "Chaudhary",
+    "Ch",    // Punjabi
+    "Da",    // Italian, Portuguese
+    "Das",   // Portuguese
+    "De",    // Italian, French, Spanish, Portuguese, Filipino
+    "De la", // Spanish
+    "Degli", // Italian
+    "Del",   // Italian, Spanish
+    "Dele",  // Souther French, Spanish, Filipino, Occitan
+    "Della", // Italian
+    "Der",   // Western Armenian
+    "Di",    // Italian
+    "Dos",   // Portuguese
+    "Du",    // French
+    "E",     // Portuguese
+    "El",    // Arabic
+    "Ferch",
+    "Verch", // Welsh
+    "Fitz",  // Irish
+    "i",     // Catalan
+    "ka",    // Zulu
+    "Kil",
+    "Gil",
+    "Mal",
+    "Mul", // English, Irish, Scottish
+    "La",
+    "Le",
+    "Lu", // Latin and Roman. I hope you have Roman authors in your library!
+    "M'",
+    "Mac",
+    "Mc",
+    "Mck",
+    "Mhic",
+    "Mic",  // Irish, Scottish, and Manx Gaelic
+    "Mala", // Kurdish
+    "Na",
+    "ณ",   // Thai
+    "Ngā", // Te Reo Maori
+    "Nic",
+    "Ní",  // Irish, Scottish
+    "Nin", // Serbian
+    "O",
+    "Ó",
+    "Ua",
+    "Uí",   // Irish, Scottish, and Manx Gaelic
+    "Öz",   // Turkish
+    "Pour", // Persian,
+    "'s", // Dutch NOTE: This is likely not supported correctly. I _think_ it's comonly attached to the last name, not separated by a space.
+    "Setia",
+    "Setya", // Indonesian
+    "'t",    // Dutch
+    "Te",    // Teo Reo Maori,
+    "Ter",   // Dutch, separately Eastern Armenian
+    "Tre",   // Cornish
+    "Van",   // Dutch
+    "Van de",
+    "Van Den",
+    "Van Der",
+    "Van Het",
+    "Vant 't", // Dutch
+    "Verch",
+    "Erch", // Welsh
+    "von",  // German
+    "war",  // Marathi
+    "zu",
+    "von und zu", // German
+];
 
 #[derive(Clone, Debug, Queryable, Selectable, Identifiable, AsChangeset)]
 #[diesel(table_name = authors)]
@@ -149,6 +236,19 @@ impl Author {
     /// let sortable_name = author.sortable_name();
     /// assert_eq!(sortable_name, "Coca Cola Inc.");
     /// ```
+    ///
+    /// Surnames with a prefix keep their prefix.
+    /// ```
+    /// use libcalibre::domain::author::entity::Author;
+    /// let author = Author {
+    ///   id: 1,
+    ///  name: "Example von Cruz".to_string(),
+    ///  sort: None,
+    /// link: "".to_string()
+    /// };
+    /// let sortable_name = author.sortable_name();
+    /// assert_eq!(sortable_name, "von Cruz, Example");
+    /// ```
     pub fn sortable_name(&self) -> String {
         Author::sort_author_name_apa(&self.name)
     }
@@ -216,7 +316,7 @@ impl Author {
             .position(|token| !prefixes.contains(&token.to_lowercase()))
             .unwrap_or(0);
 
-        let last = tokens
+        let mut last = tokens
             .iter()
             .rposition(|token| !name_suffixes.contains(&token.to_lowercase()))
             .unwrap_or_else(|| tokens.len() - 1);
@@ -232,6 +332,7 @@ impl Author {
         if token_before_last_is_prefix {
             tokens[last - 1] = format!("{} {}", tokens[last - 1], tokens[last]);
             tokens.remove(last);
+            last -= 1;
         }
 
         let mut atokens = vec![tokens[last].clone()];
