@@ -208,9 +208,8 @@ impl Author {
         }
 
         // Remove all academic degrees, licenses, and professional titles
-        POST_NOMINAL_LETTERS
-            .iter()
-            .for_each(|s| tokens.retain(|token| token.to_lowercase() != s.to_lowercase()));
+        let post_nominal_set: HashSet<String> = POST_NOMINAL_LETTERS.iter().map(|s| s.to_lowercase()).collect();
+        tokens.retain(|token| !post_nominal_set.contains(&token.to_lowercase()));
 
         let first = tokens
             .iter()
