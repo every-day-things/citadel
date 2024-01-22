@@ -8,43 +8,31 @@ use serde::Deserialize;
 
 use crate::schema::authors;
 
-// Author sort name algorithm
-// The algorithm used to copy author to author_sort.
-// Possible values are:
-//  invert: use "fn ln" -> "ln, fn"
-//  copy  : copy author to author_sort without modification
-//  comma : use 'copy' if there is a ',' in the name, otherwise use 'invert'
-//  nocomma : "fn ln" -> "ln fn" (without the comma)
-// When this tweak is changed, the author_sort values stored with each author
-// must be recomputed by right-clicking on an author in the left-hand tags
-// panel, selecting 'Manage authors', and pressing
-// 'Recalculate all author sort values'.
-//
-// The author_name_suffixes are words that are ignored when they occur at the
-// end of an author name. The case of the suffix is ignored and trailing
-// periods are automatically handled.
-//
-// The same is true for author_name_prefixes.
-//
-// The author_name_copywords are a set of words which, if they occur in an
-// author name, cause the automatically generated author sort string to be
-// identical to the author's name. This means that the sort for a string like
-// "Acme Inc." will be "Acme Inc." instead of "Inc., Acme".
-//
-// If author_use_surname_prefixes is enabled, any of the words in
-// author_surname_prefixes will be treated as a prefix to the surname, if they
-// occur before the surname. So for example, "John von Neumann" would be sorted
-// as "von Neumann, John" and not "Neumann, John von".
+/// These titles are moved to the end of an author's name when sorting.
 pub static GENERATIONAL_TITLES: [&str; 10] = [
     "Jr.", "Sr.", "Jr", "Sr", "Junior", "Senior", "I", "II", "III", "IV",
 ];
-pub static POST_NOMINAL_LETTERS: [&str; 25] = [
-    "BA", "B.A", "BSc", "B.Sc", "MA", "M.A", "MSc", "M.Sc", "PhD", "Ph.D", "MD", "M.D", "LLD",
-    "LL.D", "JD", "J.D", "DPhil", "D.Phil", "DSc", "D.Sc", "EdD", "Ed.D", "EngD", "Eng.D", "Esq",
+/// These letters are removed from the end of an author's name when sorting.
+pub static POST_NOMINAL_LETTERS: [&str; 43] = [
+    "BA", "B.A", // Bachelor of Arts
+    "MA", "M.A", "AM", "A.M.", // Master of Arts
+    "BS", "BSc", "B. sc.", "B.sc", "SB", "ScB", // Bachelor of Science
+    "MS", "M.S.", "MSc", "M.Sc.", "SM", "S.M.", "ScM", "Sc.M.", // Master of Science
+    "PhD", "Ph.D", "DPhil", "D.Phil", // Doctor of Philosophy
+    "MD", "M.D", // Doctor of Medicine
+    "LLD", "LL.D", // Legum Doctor
+    "JD", "J.D", // Juris Doctor
+    "DSc", "D.Sc", "ScD", "Sc.D", // Doctor of Science
+    "EdD", "Ed.D", "D.Ed", // Doctor of Education
+    "EngD", "Eng.D", "D.Eng", "DEng", // Doctor of Engineering
+    "Esq", "Esq.", // Esquire
 ];
+/// These words are removed from the beginning of an author's name when sorting.
 pub static PREFIX_TITLE: [&str; 10] = [
     "Mr", "Mrs", "Ms", "Dr", "Prof", "Mr.", "Mrs.", "Ms.", "Dr.", "Prof.",
 ];
+/// If these words occur in an author name, the generated sort string will be
+/// identical to the author's name.
 pub static VERBATIM_NAME_INDICATORS: [&str; 17] = [
     "Agency",
     "Corporation",
@@ -124,14 +112,27 @@ impl Author {
     /// assert_eq!(sortable_name, "Doe, John, Jr.");
     /// ```
     ///
+    /// Academic degrees, licenses, and professional titles are omitted.
+    /// ```
+    /// use libcalibre::domain::author::entity::Author;
+    /// let author = Author {
+    ///    id: 1,
+    ///    name: "John Doe BA Bsc M.S. PhD Esq".to_string(),
+    ///    sort: None,
+    ///    link: "".to_string()
+    /// };
+    /// let sortable_name = author.sortable_name();
+    /// assert_eq!(sortable_name, "Doe, John");
+    /// ```
+    ///
     /// Anything within brackets is removed.
     /// ```
     /// use libcalibre::domain::author::entity::Author;
     /// let author = Author {
     ///   id: 1,
-    ///  name: "John Doe (Author) [Deceased] {Ed.: fictional character}".to_string(),
-    ///  sort: None,
-    /// link: "".to_string()
+    ///   name: "John Doe (Author) [Deceased] {Ed.: fictional character}".to_string(),
+    ///   sort: None,
+    ///   link: "".to_string()
     /// };
     /// let sortable_name = author.sortable_name();
     /// assert_eq!(sortable_name, "Doe, John");
@@ -158,7 +159,6 @@ impl Author {
     /// Generational titles are in Jr., Jr and Junior forms.
     fn gen_name_suffixes() -> Vec<String> {
         let mut suffixes = GENERATIONAL_TITLES.to_vec();
-        suffixes.extend(POST_NOMINAL_LETTERS);
         suffixes.iter().map(|s| s.to_lowercase()).collect()
     }
 
@@ -206,6 +206,11 @@ impl Author {
                 return name.to_string();
             }
         }
+
+        // Remove all academic degrees, licenses, and professional titles
+        POST_NOMINAL_LETTERS
+            .iter()
+            .for_each(|s| tokens.retain(|token| token.to_lowercase() != s.to_lowercase()));
 
         let first = tokens
             .iter()
