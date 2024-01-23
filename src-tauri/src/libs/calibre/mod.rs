@@ -11,6 +11,7 @@ use crate::libs::file_formats::read_epub_metadata;
 
 use chrono::NaiveDate;
 use chrono::NaiveDateTime;
+use diesel::helper_types::Update;
 use diesel::prelude::*;
 use diesel::query_dsl::RunQueryDsl;
 use diesel::sql_types::Text;
@@ -19,6 +20,7 @@ use libcalibre::application::services::domain::author::dto::NewAuthorDto;
 use libcalibre::application::services::domain::author::service::AuthorService;
 use libcalibre::application::services::domain::author::service::AuthorServiceTrait;
 use libcalibre::application::services::domain::book::dto::NewBookDto;
+use libcalibre::application::services::domain::book::dto::UpdateBookDto;
 use libcalibre::application::services::domain::book::service::BookService;
 use libcalibre::application::services::domain::book::service::BookServiceTrait;
 use libcalibre::application::services::domain::file::service::BookFileService;
@@ -35,9 +37,9 @@ use serde::Serialize;
 
 mod book;
 pub mod models;
-pub mod names;
 pub mod schema;
 
+use self::book::list_all;
 use self::models::Book;
 use regex::Regex;
 use schema::books;
