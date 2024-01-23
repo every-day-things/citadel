@@ -27,6 +27,23 @@ pub struct UpdateBookDto {
     pub has_cover: Option<bool>,
 }
 
+impl UpdateBookDto {
+    pub fn default() -> UpdateBookDto {
+        Self {
+            author_sort: None,
+            title: None,
+            timestamp: None,
+            pubdate: None,
+            series_index: None,
+            isbn: None,
+            lccn: None,
+            path: None,
+            flags: None,
+            has_cover: None,
+        }
+    }
+}
+
 impl TryFrom<NewBookDto> for NewBook {
     type Error = ();
 
