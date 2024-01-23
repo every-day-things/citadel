@@ -33,7 +33,6 @@ use libcalibre::infrastructure::file_service::FileServiceTrait;
 use serde::Deserialize;
 use serde::Serialize;
 
-pub mod add_book;
 mod book;
 pub mod models;
 pub mod names;
