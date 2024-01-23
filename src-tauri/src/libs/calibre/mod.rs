@@ -11,11 +11,6 @@ use crate::libs::file_formats::read_epub_metadata;
 
 use chrono::NaiveDate;
 use chrono::NaiveDateTime;
-use diesel::helper_types::Update;
-use diesel::prelude::*;
-use diesel::query_dsl::RunQueryDsl;
-use diesel::sql_types::Text;
-use diesel::Connection;
 use libcalibre::application::services::domain::author::dto::NewAuthorDto;
 use libcalibre::application::services::domain::author::service::AuthorService;
 use libcalibre::application::services::domain::author::service::AuthorServiceTrait;
@@ -39,10 +34,6 @@ mod book;
 pub mod models;
 pub mod schema;
 
-use self::book::list_all;
-use self::models::Book;
-use regex::Regex;
-use schema::books;
 use std::path::Path;
 
 #[derive(Serialize, Deserialize, specta::Type, Debug)]
@@ -52,39 +43,6 @@ pub struct ImportableFile {
 
 fn get_supported_extensions() -> Vec<&'static str> {
     vec!["epub", "mobi", "pdf"]
-}
-
-pub fn establish_connection(library_path: String) -> diesel::SqliteConnection {
-    let database_url = library_path + "/metadata.db";
-
-    // Register foreign function definitions which Sqlite can call on insert or update.
-    sql_function!(fn title_sort(title: Text) -> Text);
-    sql_function!(fn uuid4() -> Text);
-
-    let mut conn = diesel::SqliteConnection::establish(&database_url)
-        .unwrap_or_else(|_| panic!("Error connecting to {}", database_url));
-    let mutable_conn = &mut conn;
-
-    // Register our implementations of required foreign functions. We MUST do this,
-    // because Calibre does so. These are not available in the Sqlite DB when we
-    // connect.
-    // See: https://github.com/kovidgoyal/calibre/blob/7f3ccb333d906f5867636dd0dc4700b495e5ae6f/src/calibre/library/database.py#L55-L70
-    let _ = title_sort::register_impl(mutable_conn, |title: String| {
-        // Based on Calibre's implementation
-        // https://github.com/kovidgoyal/calibre/blob/7f3ccb333d906f5867636dd0dc4700b495e5ae6f/src/calibre/library/database.py#L61C1-L69C54
-        let title_pat = Regex::new(r"^(A|The|An)\s+").unwrap();
-
-        if let Some(matched) = title_pat.find(&title) {
-            let prep = matched.as_str();
-            let new_title = title.replacen(prep, "", 1) + ", " + prep;
-            return new_title.trim().to_string();
-        }
-
-        title.to_string()
-    });
-    let _ = uuid4::register_impl(mutable_conn, || uuid::Uuid::new_v4().to_string());
-
-    conn
 }
 
 #[derive(Serialize, specta::Type)]
@@ -195,11 +153,14 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
             );
 
             let authors = match md.author_names {
-                Some(authors) => authors.iter().map(|name| NewAuthorDto {
-                    full_name: name.clone(),
-                    sortable_name: "".to_string(),
-                    external_url: None,
-                }).collect(),
+                Some(authors) => authors
+                    .iter()
+                    .map(|name| NewAuthorDto {
+                        full_name: name.clone(),
+                        sortable_name: "".to_string(),
+                        external_url: None,
+                    })
+                    .collect(),
                 None => vec![],
             };
 
@@ -219,9 +180,7 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
                     has_cover: None,
                 },
                 authors,
-                files: Some(vec![NewLibraryFileDto {
-                    path: md.path,
-                }]),
+                files: Some(vec![NewLibraryFileDto { path: md.path }]),
             });
         }
     }
@@ -229,19 +188,32 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
 
 #[tauri::command]
 #[specta::specta]
-pub fn update_book(library_path: String, book_id: String, new_title: String) -> Vec<LibraryBook> {
-    let conn = &mut establish_connection(library_path.clone());
-    let book_id_int = book_id.parse::<i32>().unwrap();
+pub fn update_book(library_path: String, book_id: String, new_title: String) -> Result<i32, ()> {
+    let database_path = libcalibre::util::get_db_path(&library_path);
+    match database_path {
+        None => panic!("Could not find database at {}", library_path),
+        Some(database_path) => {
+            let book_repo = Box::new(BookRepository::new(&database_path));
 
-    let updated = diesel::update(books::dsl::books.filter(books::id.eq(book_id_int)))
-        .set((books::title.eq(new_title),))
-        .returning(Book::as_returning())
-        .get_result(conn)
-        .unwrap();
+            let book_service = Arc::new(Mutex::new(BookService::new(book_repo)));
+            let book_service_guard = book_service.lock();
 
-    calibre_load_books_from_db(library_path)
-        .iter()
-        .filter(|b| b.id == updated.id.unwrap().to_string())
-        .cloned()
-        .collect()
+            match book_service_guard {
+                Ok(mut book_service) => {
+                    let book_id_int = book_id.parse::<i32>().unwrap();
+                    let result = book_service.update(
+                        book_id_int,
+                        UpdateBookDto {
+                            title: Some(new_title.clone()),
+                            ..UpdateBookDto::default()
+                        },
+                    );
+                    result.map(|book| book.id)
+                }
+                Err(e) => {
+                    panic!("Could not lock book service: {}", e);
+                }
+            }
+        }
+    }
 }

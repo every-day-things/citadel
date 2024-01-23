@@ -13,8 +13,13 @@ return await TAURI_INVOKE("plugin:tauri-specta|check_file_importable", { pathToF
 async addBookToDbByMetadata(libraryPath: string, md: ImportableBookMetadata) : Promise<null> {
 return await TAURI_INVOKE("plugin:tauri-specta|add_book_to_db_by_metadata", { libraryPath, md });
 },
-async updateBook(libraryPath: string, bookId: string, newTitle: string) : Promise<LibraryBook[]> {
-return await TAURI_INVOKE("plugin:tauri-specta|update_book", { libraryPath, bookId, newTitle });
+async updateBook(libraryPath: string, bookId: string, newTitle: string) : Promise<__Result__<number, null>> {
+try {
+    return { status: "ok", data: await TAURI_INVOKE("plugin:tauri-specta|update_book", { libraryPath, bookId, newTitle }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 },
 async initClient(libraryPath: string) : Promise<CalibreClientConfig> {
 return await TAURI_INVOKE("plugin:tauri-specta|init_client", { libraryPath });
