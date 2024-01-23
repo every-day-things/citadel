@@ -4,18 +4,31 @@
   import { libraryClient } from "../../../stores/library";
   import type { PageData } from "./$types";
   import type { LibraryBook } from "../../../bindings";
-  import { join } from "@tauri-apps/api/path";
+  import { writable } from "svelte/store";
 
   export let data: PageData;
   let book: LibraryBook;
   let pageTitle: string;
 
-  onMount(async () => {
-    book = (await libraryClient().listBooks()).filter(
-      (book) => book.id.toString() === data?.id
-    )[0];
+  $: pageTitle = `"${book?.title}" by ${book?.author_list.join(", ")}`;
 
-    pageTitle = `"${book?.title}" by ${book?.author_list.join(", ")}`;
+  let metadata = writable<LibraryBook>({} as LibraryBook);
+
+  const getBookMatchingId = async (
+    id: LibraryBook["id"]
+  ): Promise<LibraryBook> => {
+    return (await libraryClient().listBooks()).filter(
+      (book) => book.id.toString() === id
+    )[0];
+  };
+
+  const x = async (id: string) => {
+    book = await getBookMatchingId(id);
+    metadata.set(book);
+  };
+
+  onMount(async () => {
+    await x(data.id);
   });
 
   const save = async (event: SubmitEvent) => {
@@ -26,6 +39,7 @@
       title: (formData.get("title") as string | undefined) ?? book.title ?? "",
     });
     invalidateAll();
+    x(data.id);
   };
 </script>
 
@@ -64,8 +78,10 @@
         type="text"
         id="sortable_authors"
         name="sortable_authors"
-        value={Object.entries(book?.author_sort_lookup ?? {}).map(([author, sorted]) => sorted).join(", ")}
-      >
+        value={Object.entries(book?.author_sort_lookup ?? {})
+          .map(([author, sorted]) => sorted)
+          .join(", ")}
+      />
       <span class="text-label-small">Sort fields are set automatically.</span>
     </fieldset>
 
