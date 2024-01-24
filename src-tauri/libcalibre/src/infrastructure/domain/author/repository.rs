@@ -1,14 +1,11 @@
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
-use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 
 use crate::domain::author::{
     entity::{Author, NewAuthor},
     repository::Repository,
 };
 use crate::persistence::establish_connection;
-
-const MIGRATIONS: EmbeddedMigrations = embed_migrations!("../../migrations");
 
 pub struct AuthorRepository {
     pub connection: SqliteConnection,
@@ -19,14 +16,6 @@ impl AuthorRepository {
         Self {
             connection: establish_connection(connection_url).unwrap(),
         }
-    }
-
-    /// Run all pending migrations.
-    pub fn run_migrations(&mut self) {
-        diesel::sql_query("PRAGMA foreign_keys = ON;")
-            .execute(&mut self.connection)
-            .unwrap();
-        self.connection.run_pending_migrations(MIGRATIONS).unwrap();
     }
 }
 
