@@ -42,7 +42,9 @@
       </div>
     {:else}
       <div class="controls">
-        <a href="/books/{book.id}"><Button>Edit</Button></a>
+        {#if window.__TAURI__}
+          <a href="/books/{book.id}"><Button>Edit</Button></a>
+        {/if}
         <Button on:click={() => openBookInDefaultApp(book)}>Read ↗</Button>
         <Button disabled>Info</Button>
         <Button on:click={() => (isSendingToDevice = true)}>Send</Button>

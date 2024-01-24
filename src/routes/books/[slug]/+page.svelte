@@ -5,6 +5,7 @@
   import type { PageData } from "./$types";
   import type { LibraryBook } from "../../../bindings";
   import { writable } from "svelte/store";
+  import { Button } from "$lib/components/ui/button";
 
   export let data: PageData;
   let book: LibraryBook;
@@ -44,6 +45,7 @@
 </script>
 
 <div class="safeAreaView">
+  {#if window.__TAURI__}
   <button on:click={() => history.back()}>X</button>
   <h1>Editing {pageTitle}</h1>
 
@@ -87,6 +89,11 @@
 
     <button type="submit">Save</button>
   </form>
+  {:else}
+    <p>You cannot edit book metadata outside of the Citadel desktop app. For now!</p>
+
+    <Button><a href="/">go home</a></Button>
+  {/if}
 </div>
 
 <style>
