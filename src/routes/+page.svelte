@@ -128,8 +128,8 @@
       await initLibrary({
         libraryType: "calibre",
         connectionType: "remote",
-        // url: "http://localhost:61440"
-        url: "https://carafe.beardie-cloud.ts.net",
+        // url: "http://localhost:61440
+        url: "https://citadel-backend.fly.dev",
       });
     }
     await waitForLibrary();

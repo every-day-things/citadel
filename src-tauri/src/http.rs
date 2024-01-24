@@ -11,7 +11,7 @@ use crate::{
 };
 
 const PORT: u16 = 61440;
-const HOST: &str = "127.0.0.1";
+const HOST: &str = "0.0.0.0";
 
 struct AppState {
     library_path: String,
@@ -55,7 +55,7 @@ async fn list_books(data: web::Data<AppState>) -> impl Responder {
             let mut x = x.clone();
             x.cover_image = Some(LocalOrRemoteUrl {
                 kind: LocalOrRemote::Remote,
-                url: format!("https://carafe.beardie-cloud.ts.net/covers/{}.jpg", x.id),
+                url: format!("https://citadel-backend.fly.dev/covers/{}.jpg", x.id),
                 local_path: None,
             });
             x
