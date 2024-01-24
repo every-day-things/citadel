@@ -1,6 +1,7 @@
 use std::{path::PathBuf, collections::HashMap};
 
 use chrono::NaiveDate;
+use libcalibre::mime_type::MIMETYPE;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, specta::Type, Deserialize, Clone)]
@@ -15,13 +16,23 @@ pub struct LocalOrRemoteUrl {
     pub url: String,
     pub local_path: Option<PathBuf>,
 }
-
-#[derive(Serialize, specta::Type, Deserialize, Clone)]
-pub struct BookFile {
+#[derive(Serialize, specta::Type, Deserialize, Clone, Debug)]
+pub struct LocalFile {
     /// The absolute path to the file, including extension.
     pub path: PathBuf,
     /// The MIME type of the file. Common values are `application/pdf` and `application/epub+zip`.
     pub mime_type: String,
+}
+
+#[derive(Serialize, specta::Type, Deserialize, Clone, Debug)]
+pub struct RemoteFile {
+    pub url: String,
+}
+
+#[derive(Serialize, specta::Type, Deserialize, Clone, Debug)]
+pub enum BookFile {
+    Local(LocalFile),
+    Remote(RemoteFile),
 }
 
 #[derive(Serialize, specta::Type, Deserialize, Clone)]

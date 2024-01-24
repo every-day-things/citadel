@@ -5,13 +5,16 @@ use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 use serde::Serialize;
 use tauri::api::file;
 
+use libcalibre::mime_type::MIMETYPE;
+
 use crate::{
-    book::{LocalOrRemote, LocalOrRemoteUrl},
+    book::{BookFile, LocalOrRemote, LocalOrRemoteUrl, RemoteFile},
     libs::calibre::calibre_load_books_from_db,
 };
 
 const PORT: u16 = 61440;
 const HOST: &str = "0.0.0.0";
+const URL: &str = "https://citadel-backend.fly.dev";
 
 struct AppState {
     library_path: String,
@@ -27,21 +30,54 @@ async fn get_asset(data: web::Data<AppState>, book_id: web::Path<String>) -> imp
     let book_id_val = book_id.into_inner();
 
     let books = calibre_load_books_from_db(data.library_path.clone());
-    let book_cover_path =
-        books
-            .iter()
-            .find(|x| x.id.to_string() == book_id_val)
-            .unwrap()
-            .cover_image
-            .clone()
-            .unwrap()
-            .local_path
-            .unwrap();
+    let book_cover_path = books
+        .iter()
+        .find(|x| x.id.to_string() == book_id_val)
+        .unwrap()
+        .cover_image
+        .clone()
+        .unwrap()
+        .local_path
+        .unwrap();
 
     let file_path = Path::new(&book_cover_path);
     HttpResponse::Ok()
         .content_type("image/jpeg")
         .body(file::read_binary(file_path).unwrap())
+}
+#[get("/download/{book_id}/{file_name}.{file_type}")]
+async fn get_book_file(
+    data: web::Data<AppState>,
+    path: web::Path<(String, String, String)>,
+) -> impl Responder {
+    let (book_id, _file_name, file_type) = path.into_inner();
+    let books = calibre_load_books_from_db(data.library_path.clone());
+
+    let file_with_mimetype = books
+        .iter()
+        .find(|x| x.id.to_string() == book_id)
+        .unwrap()
+        .file_list
+        .iter()
+        .filter_map(|x| match x {
+            BookFile::Local(local_file) => Some(local_file),
+            _ => None,
+        })
+        .find(|x| {
+            MIMETYPE::from_file_extension(&x.mime_type)
+                .map(|m| m == MIMETYPE::from_file_extension(&file_type).unwrap())
+                .unwrap_or(false)
+        });
+
+    match file_with_mimetype {
+        Some(file) => {
+            let file_path = Path::new(&file.path);
+            HttpResponse::Ok()
+                .content_type(file.mime_type.clone())
+                .body(file::read_binary(file_path).unwrap())
+        }
+        None => HttpResponse::NotFound().body("File not found"),
+    }
 }
 
 #[get("/books")]
@@ -52,10 +88,26 @@ async fn list_books(data: web::Data<AppState>) -> impl Responder {
             let mut x = x.clone();
             x.cover_image = Some(LocalOrRemoteUrl {
                 kind: LocalOrRemote::Remote,
-                url: format!("https://citadel-backend.fly.dev/covers/{}.jpg", x.id),
+                url: format!("{}/covers/{}.jpg", URL, x.id),
                 // url: format!("http://localhost:61440/covers/{}.jpg", x.id),
                 local_path: None,
             });
+            x.file_list = x
+                .file_list
+                .iter()
+                .map(|f| match f {
+                    crate::book::BookFile::Local(f) => crate::book::BookFile::Remote(RemoteFile {
+                        url: format!(
+                            "{}/download/{}/{}.{}",
+                            URL,
+                            x.id,
+                            x.title.replace(" ", "%20"), // TODO: use `urlencoding` crate
+                            &f.mime_type
+                        ),
+                    }),
+                    file => file.clone(),
+                })
+                .collect();
             x
         })
         .collect::<Vec<_>>();
@@ -81,6 +133,7 @@ pub async fn run_http_server(args: &Vec<String>) -> std::io::Result<()> {
             }))
             .service(list_books)
             .service(get_asset)
+            .service(get_book_file)
     })
     .bind((HOST, PORT))?
     .run()

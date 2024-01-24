@@ -23,7 +23,7 @@ use libcalibre::{
 };
 
 use crate::{
-    book::{BookFile, LibraryBook, LocalOrRemote, LocalOrRemoteUrl},
+    book::{BookFile, LibraryBook, LocalFile, LocalOrRemote, LocalOrRemoteUrl},
     libs::util,
 };
 
@@ -51,12 +51,12 @@ fn to_library_book(
             .iter()
             .map(|f| {
                 let file_name_with_ext = format!("{}.{}", f.name, f.format.to_lowercase());
-                BookFile {
+                BookFile::Local( LocalFile {
                     path: PathBuf::from(library_path)
                         .join(book.path.clone())
                         .join(file_name_with_ext),
                     mime_type: f.format.clone(),
-                }
+                })
             })
             .collect(),
 

@@ -35,3 +35,13 @@ impl MIMETYPE {
         }
     }
 }
+
+impl PartialEq for MIMETYPE {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (MIMETYPE::EPUB, MIMETYPE::EPUB) => true,
+            (MIMETYPE::UNKNOWN, MIMETYPE::UNKNOWN) => true,
+            _ => false,
+        }
+    }
+}

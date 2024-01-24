@@ -1,7 +1,7 @@
 pub mod application;
 pub mod domain;
 pub mod infrastructure;
-mod mime_type;
+pub mod mime_type;
 mod models;
 mod persistence;
 mod schema;
