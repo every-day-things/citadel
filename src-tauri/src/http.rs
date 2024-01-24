@@ -27,9 +27,7 @@ async fn get_asset(data: web::Data<AppState>, book_id: web::Path<String>) -> imp
     let book_id_val = book_id.into_inner();
 
     let books = calibre_load_books_from_db(data.library_path.clone());
-    let book_cover_path = format!(
-        "{}/{}/cover.jpg",
-        data.library_path,
+    let book_cover_path =
         books
             .iter()
             .find(|x| x.id.to_string() == book_id_val)
@@ -37,9 +35,8 @@ async fn get_asset(data: web::Data<AppState>, book_id: web::Path<String>) -> imp
             .cover_image
             .clone()
             .unwrap()
-            .url
-            .clone()
-    );
+            .local_path
+            .unwrap();
 
     let file_path = Path::new(&book_cover_path);
     HttpResponse::Ok()
@@ -56,6 +53,7 @@ async fn list_books(data: web::Data<AppState>) -> impl Responder {
             x.cover_image = Some(LocalOrRemoteUrl {
                 kind: LocalOrRemote::Remote,
                 url: format!("https://citadel-backend.fly.dev/covers/{}.jpg", x.id),
+                // url: format!("http://localhost:61440/covers/{}.jpg", x.id),
                 local_path: None,
             });
             x
