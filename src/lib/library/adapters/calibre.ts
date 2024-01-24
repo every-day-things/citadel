@@ -95,26 +95,37 @@ const genRemoteCalibreClient = async (
   // library. In this case, Calibre.
   const baseUrl = options.url;
 
+  let bookCache: LibraryBook[] = [];
+
   return {
-    listBooks: () =>
-      fetch(`${baseUrl}/books`)
+    listBooks: async () => {
+      const res = await fetch(`${baseUrl}/books`)
         .then((res) => res.json() as unknown as { items: LibraryBook[] })
         .then((res) => res.items)
         .then((res) => {
-          console.log(res);
+          console.log("Book list", res);
           return res;
-        }),
+        });
+
+      bookCache = res;
+
+      return res;
+    },
     sendToDevice: () => {
       throw new Error("Not implemented");
     },
     updateBook: () => {
       throw new Error("Not implemented");
     },
-    getCoverPathForBook: () => {
-      throw new Error("Not implemented");
+    getCoverPathForBook: (bookId) => {
+      return "";
     },
-    getCoverUrlForBook() {
-      throw new Error("Not implemented");
+    getCoverUrlForBook(bookId) {
+      const url = bookCache.find(
+        item => item.id === bookId
+      )?.cover_image?.url;
+      console.log(url);
+      return url;
     },
     getDefaultFilePathForBook: () => {
       throw new Error("Not implemented");

@@ -53,6 +53,7 @@
     {/if}
   {:else}
     <div class="cover">
+      {#if $libraryClientStore.getCoverUrlForBook(book.id) }
       <img
         id="cover"
         src={$libraryClientStore.getCoverUrlForBook(book.id)}
@@ -60,6 +61,12 @@
         on:dragstart={(e) => dragHandler(e, book)}
         class:selected={isSelected}
       />
+      {:else}
+        <div class="cover-placeholder"
+             style="background-color: #{Math.floor(Math.random()*16777215).toString(16)};">
+          {shortenToChars(book.title, 50)}
+        </div>
+      {/if}
       <span class="title">{shortenToChars(book.title, 50)}</span>
       <span class="authors">{book.author_list.join(", ")}</span>
       <img
@@ -81,9 +88,20 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: start;
+    justify-content: flex-start;
     width: 100%;
     position: relative;
+  }
+
+  .cover-placeholder {
+    width: 120px;
+    height: 200px;
+    display: flex;
+    flex-direction: row;
+    font: 4em sans-serif;
+    word-wrap: break-all;
+    overflow-wrap: break-word;
+    overflow: hidden;
   }
 
   img, .cover-blur {
