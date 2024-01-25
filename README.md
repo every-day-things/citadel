@@ -4,6 +4,8 @@ Manage your ebook library with Citadel. Backwards compatible with Calibre.
 
 https://github.com/every-day-things/citadel/assets/17505728/84a0c9dd-f14e-411a-8947-1d599f3ad85a
 
+**[Live Demo](https://citadel-demo.everydaythings.software/)** — use an online read-only example library to try out Citadel before installing. The web UI is slightly different from the desktop UI, and not all features work. All books are copyright free and available courtesy of Standard Ebooks.
+
 **Citadel is very early software, and as such is full of bugs and lacking features.**
 
 ## Project goals
@@ -22,7 +24,7 @@ https://github.com/every-day-things/citadel/assets/17505728/84a0c9dd-f14e-411a-8
 
 > [!WARNING]
 > Citadel is _very_ early in development. It will crash. A lot. It may corrupt your ebook library.
-> 
+>
 > **Back up your Calibre library regularly if you use Citadel on it.**
 
 Citadel builds are available from [GitHub actions](https://github.com/every-day-things/citadel/actions/runs/7536243753).
@@ -53,7 +55,7 @@ You can run just the frontend with this command, although you WILL see errors as
 bun dev:app
 ```
 
-To run the backend in server mode for development, run 
+To run the backend in server mode for development, run
 ```fish
 bun dev -- -- -- -- --server --calibre-library=/path/to/calibre/library
 ```
