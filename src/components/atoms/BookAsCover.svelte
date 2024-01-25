@@ -23,7 +23,9 @@
 
   function handleDownload(book: LibraryBook) {
     const url = getBookDownloadUrl(book);
-    downloadFile(url);
+    if (url) {
+      downloadFile(url);
+    }
   }
 </script>
 

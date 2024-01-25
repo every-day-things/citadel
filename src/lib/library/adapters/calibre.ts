@@ -3,6 +3,8 @@ import {
   type ImportableFile,
   type ImportableBookMetadata,
   type LibraryBook,
+  type RemoteFile,
+  type BookFile,
 } from "../../../bindings";
 import type {
   Library,
@@ -45,10 +47,13 @@ const genLocalCalibreClient = async (
           return;
         }
 
-        bookFilePath.set(book.id.toString(), {
-          localPath: book.file_list[0].path,
-          url: undefined,
-        });
+        const primaryFile = book.file_list[0];
+        if ("Local" in primaryFile) {
+          bookFilePath.set(book.id.toString(), {
+            localPath: primaryFile.Local.path,
+            url: undefined,
+          });
+        }
       });
 
       return results;
@@ -128,10 +133,10 @@ const genRemoteCalibreClient = async (
     },
     getDefaultFilePathForBook: (bookId) => {
       const fileList = bookCache.get(bookId)?.file_list ?? [];
-      const remoteFiles: unknown[] = fileList.filter(
-        (file) => "Remote" in file,
-      );
-      const urls = remoteFiles.map((item) => item.Remote.url);
+      const remoteFiles = fileList
+        .map((file) => ("Remote" in file ? file.Remote : undefined))
+        .filter((file): file is RemoteFile => file !== undefined);
+      const urls = remoteFiles.map((file) => file.url);
       return urls.at(0);
     },
     checkFileImportable: () => {

@@ -33,15 +33,7 @@ return await TAURI_INVOKE("plugin:tauri-specta|add_book_to_external_drive", { pa
 
 /** user-defined types **/
 
-export type BookFile = { 
-/**
- * The absolute path to the file, including extension.
- */
-path: string; 
-/**
- * The MIME type of the file. Common values are `application/pdf` and `application/epub+zip`.
- */
-mime_type: string }
+export type BookFile = { Local: LocalFile } | { Remote: RemoteFile }
 export type CalibreClientConfig = { library_path: string }
 /**
  * Represents metadata for pre-import books, which have a very loose structure.
@@ -67,8 +59,18 @@ file_contains_cover: boolean }
 export type ImportableBookType = "EPUB" | "PDF" | "MOBI"
 export type ImportableFile = { path: string }
 export type LibraryBook = { title: string; author_list: string[]; id: string; uuid: string | null; sortable_title: string | null; author_sort_lookup: { [key in string]: string } | null; file_list: BookFile[]; cover_image: LocalOrRemoteUrl | null }
+export type LocalFile = { 
+/**
+ * The absolute path to the file, including extension.
+ */
+path: string; 
+/**
+ * The MIME type of the file. Common values are `application/pdf` and `application/epub+zip`.
+ */
+mime_type: string }
 export type LocalOrRemote = "Local" | "Remote"
 export type LocalOrRemoteUrl = { kind: LocalOrRemote; url: string; local_path: string | null }
+export type RemoteFile = { url: string }
 
 /** tauri-specta globals **/
 
