@@ -61,7 +61,9 @@
           <Button on:click={() => handleDownload(book)}>Download</Button>
         {/if}
         <Button disabled>Info</Button>
-        <Button on:click={() => (isSendingToDevice = true)}>Send</Button>
+        {#if window.__TAURI__}
+          <Button on:click={() => (isSendingToDevice = true)}>Send</Button>
+        {/if}
         <Button disabled>Convert</Button>
         <hr />
         <Button disabled>Delete</Button>

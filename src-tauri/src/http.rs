@@ -14,8 +14,8 @@ use crate::{
 
 const PORT: u16 = 61440;
 const HOST: &str = "0.0.0.0";
-//const URL: &str = "https://citadel-backend.fly.dev";
-const URL: &str = "http://localhost:61440";
+const URL: &str = "https://citadel-backend.fly.dev";
+// const URL: &str = "http://localhost:61440";
 
 struct AppState {
     library_path: String,
@@ -90,7 +90,6 @@ async fn list_books(data: web::Data<AppState>) -> impl Responder {
             x.cover_image = Some(LocalOrRemoteUrl {
                 kind: LocalOrRemote::Remote,
                 url: format!("{}/covers/{}.jpg", URL, x.id),
-                // url: format!("http://localhost:61440/covers/{}.jpg", x.id),
                 local_path: None,
             });
             x.file_list = x

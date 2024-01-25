@@ -28,10 +28,7 @@
         "readDir": true,
         "readFile": true,
         "writeFile": true,
-        "scope": [
-          "$APPCONFIG",
-          "$APPCONFIG/*"
-        ]
+        "scope": ["$APPCONFIG", "$APPCONFIG/*"]
       },
       "protocol": {
         "asset": true,
