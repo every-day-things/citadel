@@ -37,9 +37,4 @@
   label {
     margin-bottom: 1rem;
   }
-
-  button {
-    width: auto;
-    margin: auto;
-  }
 </style>

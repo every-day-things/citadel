@@ -83,8 +83,11 @@
         <Dialog.Content transition={fade}>
           <Dialog.Header>
             <Dialog.Title>Add new book</Dialog.Title>
-            {#if $bookMetadata === null } 
-              <p>Something went wrong. Probably horribly wrong. If you see this message twice, please report an issue on GitHub.</p>
+            {#if $bookMetadata === null}
+              <p>
+                Something went wrong. Probably horribly wrong. If you see this
+                message twice, please report an issue on GitHub.
+              </p>
             {:else}
               <form class="flex flex-col gap-4">
                 <label for="title">Title</label>
@@ -99,7 +102,7 @@
                   {pluralize($authorList.length, "author", "authors")}:
                   {#each $authorList as author}
                     <span
-                      class="whitespace-nowrap text-sm rounded-lg px-2 py-1 bg-blue-200 m-1"
+                      class="m-1 whitespace-nowrap rounded-lg bg-blue-200 px-2 py-1 text-sm"
                       >{author}</span
                     >
                     {" "}
@@ -107,13 +110,13 @@
                 </p>
                 <ul id="authors" class="flex flex-col gap-1">
                   {#each $authorList as author}
-                    <li class="flex flex-row justify-between w-full">
+                    <li class="flex w-full flex-row justify-between">
                       <Input type="text" bind:value={author} class="max-w-72" />
                       <button
                         class="ml-2"
                         on:click={() => {
                           const newAuthorList = $authorList.filter(
-                            (a) => a !== author
+                            (a) => a !== author,
                           );
                           authorList.set(newAuthorList);
                         }}>X</button
@@ -145,7 +148,7 @@
       >
         First-time setup
       </a>
-      <a aria-disabled="true">Configure library</a>
+      <a aria-disabled="true" href="/">Configure library</a>
     </div>
     <div class="group">
       <p class="label">My Shelves</p>
@@ -161,7 +164,7 @@
 
     <div class="bottom">
       <div>
-        <a aria-disabled="true"> ⚙️ Settings </a>
+        <a aria-disabled="true" href="/"> ⚙️ Settings </a>
       </div>
     </div>
   </nav>
