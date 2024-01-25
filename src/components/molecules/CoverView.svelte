@@ -43,14 +43,17 @@
       book: bookList[bookListIndex],
       dragHandler,
       selectedItemId,
-      onClickHandler: () => {
+      onClickHandler: (e: MouseEvent) => {
+        e.stopPropagation();
         selectedItemId.set(bookList[bookListIndex].id);
       },
     },
   });
 </script>
 
-<div id="cover-view">
+<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+<!-- svelte-ignore a11y-click-events-have-key-events -->
+<div id="cover-view" on:click={() => selectedItemId.set(undefined)} role="list">
   <VirtualRowList
     scrollableDivHeight={$scrollableDivHeight}
     items={bookList.map((_, index) => index)}
