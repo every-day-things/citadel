@@ -12,7 +12,7 @@ import type {
 } from "../_types";
 
 const genLocalCalibreClient = async (
-  options: LocalConnectionOptions
+  options: LocalConnectionOptions,
 ): Promise<Library> => {
   const config = await commands.initClient(options.libraryPath);
   const bookCoverCache = new Map<
@@ -33,13 +33,13 @@ const genLocalCalibreClient = async (
   return {
     listBooks: async () => {
       const results = await commands.calibreLoadBooksFromDb(
-        config.library_path
+        config.library_path,
       );
 
       results.forEach((book) => {
         bookCoverCache.set(book.id.toString(), {
-          localPath: book.cover_image?.local_path ?? '',
-          url: book.cover_image?.url ?? '',
+          localPath: book.cover_image?.local_path ?? "",
+          url: book.cover_image?.url ?? "",
         });
         if (book.file_list.length === 0) {
           return;
@@ -60,7 +60,7 @@ const genLocalCalibreClient = async (
       await commands.updateBook(
         options.libraryPath,
         bookId,
-        updates.title ?? ""
+        updates.title ?? "",
       );
     },
     getCoverPathForBook: (bookId) => {
@@ -89,13 +89,13 @@ const genLocalCalibreClient = async (
 };
 
 const genRemoteCalibreClient = async (
-  options: RemoteConnectionOptions
+  options: RemoteConnectionOptions,
 ): Promise<Library> => {
   // All remote clients are really Citadel clients... but for a certain kind of
   // library. In this case, Calibre.
   const baseUrl = options.url;
 
-  let bookCache: LibraryBook[] = [];
+  let bookCache = new Map<LibraryBook["id"], LibraryBook>();
 
   return {
     listBooks: async () => {
@@ -107,7 +107,9 @@ const genRemoteCalibreClient = async (
           return res;
         });
 
-      bookCache = res;
+      res.forEach((book) => {
+        bookCache.set(book.id, book);
+      });
 
       return res;
     },
@@ -121,14 +123,16 @@ const genRemoteCalibreClient = async (
       return "";
     },
     getCoverUrlForBook(bookId) {
-      const url = bookCache.find(
-        item => item.id === bookId
-      )?.cover_image?.url;
-      console.log(url);
+      const url = bookCache.get(bookId)?.cover_image?.url;
       return url;
     },
-    getDefaultFilePathForBook: () => {
-      throw new Error("Not implemented");
+    getDefaultFilePathForBook: (bookId) => {
+      const fileList = bookCache.get(bookId)?.file_list ?? [];
+      const remoteFiles: unknown[] = fileList.filter(
+        (file) => "Remote" in file,
+      );
+      const urls = remoteFiles.map((item) => item.Remote.url);
+      return urls.at(0);
     },
     checkFileImportable: () => {
       throw new Error("Not implemented");

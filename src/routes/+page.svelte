@@ -49,10 +49,10 @@
   const x = (event: DragEvent, book: bindings.LibraryBook) => {
     event.preventDefault();
     const coverImageAbsPath = $libraryClient.getCoverPathForBook(
-      book.id.toString()
+      book.id.toString(),
     );
     const bookFilePath = $libraryClient.getDefaultFilePathForBook(
-      book.id.toString()
+      book.id.toString(),
     );
 
     // @ts-ignore
@@ -71,11 +71,11 @@
 
   $: sortOrderElement = undefined as Selected<string> | undefined;
   let sortOrder = writable<LibraryBookSortOrderKinds>(
-    LibraryBookSortOrder.authorAz
+    LibraryBookSortOrder.authorAz,
   );
   $: sortOrder.set(
     (sortOrderElement?.value as LibraryBookSortOrderKinds) ??
-      LibraryBookSortOrder.authorAz
+      LibraryBookSortOrder.authorAz,
   );
 
   let search = writable("");
@@ -87,8 +87,8 @@
           search.length === 0
             ? $books
             : any(book.author_list, (item) =>
-                item.toLowerCase().includes(search.toLowerCase())
-              ) || book.title.toLowerCase().includes(search.toLowerCase())
+                item.toLowerCase().includes(search.toLowerCase()),
+              ) || book.title.toLowerCase().includes(search.toLowerCase()),
         )
         .filter((book) => book.title !== "" && book.author_list.length > 0)
         .toSorted((a, b) => {
@@ -107,10 +107,10 @@
             default:
               return 0;
           }
-        })
+        }),
   );
   let range = derived(selectedBooks, ($selectedBooks) =>
-    $selectedBooks.length === 0 ? "0" : `1-${$selectedBooks.length}`
+    $selectedBooks.length === 0 ? "0" : `1-${$selectedBooks.length}`,
   );
 
   // ensure app setup
@@ -128,8 +128,8 @@
       await initLibrary({
         libraryType: "calibre",
         connectionType: "remote",
-        // url: "http://localhost:61440",
-        url: "https://citadel-backend.fly.dev",
+        url: "http://localhost:61440",
+        // url: "https://citadel-backend.fly.dev",
       });
     }
     await waitForLibrary();
@@ -196,11 +196,11 @@
       <p>Loading books...</p>
     {:then _}
       <div class="view-container">
-      {#if view === "cover"}
-        <CoverView bookList={$selectedBooks} dragHandler={x} />
-      {:else if view === "table"}
-        <BookTable bookList={$selectedBooks} />
-      {/if}
+        {#if view === "cover"}
+          <CoverView bookList={$selectedBooks} dragHandler={x} />
+        {:else if view === "table"}
+          <BookTable bookList={$selectedBooks} />
+        {/if}
       </div>
     {/await}
   </div>

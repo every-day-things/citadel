@@ -9,7 +9,7 @@
   <main>
     <Sidebar></Sidebar>
     <div class="scrollable">
-      <slot></slot>
+      <slot />
     </div>
   </main>
 </div>

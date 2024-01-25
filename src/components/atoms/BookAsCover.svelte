@@ -1,7 +1,13 @@
 <script lang="ts">
   import { type LibraryBook } from "../../bindings";
   import { libraryClientStore } from "../../stores/library";
-  import { openBookInDefaultApp, sendToDevice, shortenToChars } from "./BookAsCover";
+  import {
+    getBookDownloadUrl,
+    openBookInDefaultApp,
+    sendToDevice,
+    shortenToChars,
+  } from "./BookAsCover";
+  import { downloadFile } from "$lib/download";
   import { Button } from "$lib/components/ui/button";
   import type { Writable } from "svelte/store";
 
@@ -14,6 +20,11 @@
 
   let isSendingToDevice = false;
   let devicePath = "";
+
+  function handleDownload(book: LibraryBook) {
+    const url = getBookDownloadUrl(book);
+    downloadFile(url);
+  }
 </script>
 
 <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
@@ -37,15 +48,18 @@
             isSendingToDevice = false;
             sendToDevice(book, devicePath);
           }}
-          >
-          Send to Device</button>
+        >
+          Send to Device</button
+        >
       </div>
     {:else}
       <div class="controls">
         {#if window.__TAURI__}
           <a href="/books/{book.id}"><Button>Edit</Button></a>
+          <Button on:click={() => openBookInDefaultApp(book)}>Read ↗</Button>
+        {:else}
+          <Button on:click={() => handleDownload(book)}>Download</Button>
         {/if}
-        <Button on:click={() => openBookInDefaultApp(book)}>Read ↗</Button>
         <Button disabled>Info</Button>
         <Button on:click={() => (isSendingToDevice = true)}>Send</Button>
         <Button disabled>Convert</Button>
@@ -55,17 +69,21 @@
     {/if}
   {:else}
     <div class="cover">
-      {#if $libraryClientStore.getCoverUrlForBook(book.id) }
-      <img
-        id="cover"
-        src={$libraryClientStore.getCoverUrlForBook(book.id)}
-        on:click={onClickHandler}
-        on:dragstart={(e) => dragHandler(e, book)}
-        class:selected={isSelected}
-      />
+      {#if $libraryClientStore.getCoverUrlForBook(book.id)}
+        <img
+          id="cover"
+          src={$libraryClientStore.getCoverUrlForBook(book.id)}
+          on:click={onClickHandler}
+          on:dragstart={(e) => dragHandler(e, book)}
+          class:selected={isSelected}
+        />
       {:else}
-        <div class="cover-placeholder"
-             style="background-color: #{Math.floor(Math.random()*16777215).toString(16)};">
+        <div
+          class="cover-placeholder"
+          style="background-color: #{Math.floor(
+            Math.random() * 16777215,
+          ).toString(16)};"
+        >
           {shortenToChars(book.title, 50)}
         </div>
       {/if}
@@ -106,7 +124,8 @@
     overflow: hidden;
   }
 
-  img, .cover-blur {
+  img,
+  .cover-blur {
     max-width: 100%;
     max-height: 240px;
     transition: all 0.2s ease-in-out;

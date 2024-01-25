@@ -14,7 +14,8 @@ use crate::{
 
 const PORT: u16 = 61440;
 const HOST: &str = "0.0.0.0";
-const URL: &str = "https://citadel-backend.fly.dev";
+//const URL: &str = "https://citadel-backend.fly.dev";
+const URL: &str = "http://localhost:61440";
 
 struct AppState {
     library_path: String,
