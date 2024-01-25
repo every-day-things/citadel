@@ -1,11 +1,22 @@
 import { writable } from "svelte/store";
 import type { Path, PathValue } from "tauri-settings/dist/types/dot-notation";
-import { SettingsManager, type ConfigOptions } from "tauri-settings";
+import {
+  SettingsManager as TauriSettingsManager,
+  type ConfigOptions,
+} from "tauri-settings";
 
 export type SettingsSchema = {
   theme: "dark" | "light";
   startFullscreen: boolean;
   calibreLibraryPath: string;
+};
+
+type SettingsManager<T> = {
+  initialize: () => Promise<T>;
+  set: <S extends Path<T>>(key: S, value: PathValue<T, S>) => Promise<T>;
+  get: <S extends Path<T>>(key: S) => Promise<PathValue<T, S>>;
+  syncCache: () => Promise<T>;
+  settings: T;
 };
 
 let resolveSettingsLoaded: () => void;
@@ -15,10 +26,10 @@ const settingsLoadedPromise = new Promise<void>((resolve) => {
 
 const genSettingsManager = <T extends SettingsSchema>(
   defaultSettings: T,
-  config: ConfigOptions
+  config: ConfigOptions,
 ): SettingsManager<T> => {
   if (window.__TAURI__) {
-    return new SettingsManager(defaultSettings, config);
+    return new TauriSettingsManager(defaultSettings, config);
   } else {
     return {
       initialize: () => {
@@ -35,7 +46,7 @@ const genSettingsManager = <T extends SettingsSchema>(
       },
       get: (key) => {
         return Promise.resolve(
-          localStorage.getItem(key.toString()) as PathValue<T, typeof key>
+          localStorage.getItem(key.toString()) as PathValue<T, typeof key>,
         );
       },
       settings: defaultSettings,
@@ -44,15 +55,13 @@ const genSettingsManager = <T extends SettingsSchema>(
 };
 
 const createSettingsStore = () => {
+  const defaultSettings: SettingsSchema = {
+    theme: "light",
+    startFullscreen: false,
+    calibreLibraryPath: "",
+  };
   const settings = writable<SettingsSchema>();
-  const manager = genSettingsManager(
-    {
-      theme: "light",
-      startFullscreen: false,
-      calibreLibraryPath: "",
-    },
-    {}
-  );
+  const manager = genSettingsManager(defaultSettings, {});
   manager.initialize().then(async () => {
     await manager.syncCache();
     for (const [key, value] of Object.entries(manager.settings)) {
@@ -62,9 +71,9 @@ const createSettingsStore = () => {
   });
 
   return {
-    set: async <S extends Path<SettingsSchema>>(
-      key: S,
-      value: PathValue<SettingsSchema, S>
+    set: async <K extends Path<SettingsSchema>>(
+      key: K,
+      value: PathValue<SettingsSchema, K>,
     ) => {
       settings.update((s) => ({ ...s, [key]: value }));
       await manager.set(key, value);
