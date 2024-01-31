@@ -1,7 +1,6 @@
 use std::{path::PathBuf, collections::HashMap};
 
 use chrono::NaiveDate;
-use libcalibre::mime_type::MIMETYPE;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, specta::Type, Deserialize, Clone)]
