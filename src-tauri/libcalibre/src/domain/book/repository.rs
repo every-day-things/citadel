@@ -7,6 +7,8 @@ pub trait Repository {
     fn create(&mut self, book: &NewBook) -> Result<Book, ()>;
     /// Link this book to an author
     fn create_book_author_link(&mut self, book_id: i32, author_id: i32) -> Result<(), ()>;
+    /// Unlink this book from an author
+    fn remove_book_author_link(&mut self, book_id: i32, author_id: i32) -> Result<(), ()>;
     /// Find one book by ID.
     fn find_by_id(&mut self, id: i32) -> Result<Book, ()>;
     /// Find the IDs of all authors for a book

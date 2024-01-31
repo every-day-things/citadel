@@ -1,12 +1,20 @@
 use std::path::PathBuf;
 
-use crate::application::services::domain::{author::dto::NewAuthorDto, book::dto::NewBookDto};
+use crate::application::services::domain::{
+    author::dto::NewAuthorDto,
+    book::dto::{NewBookDto, UpdateBookDto},
+};
 
 pub struct NewLibraryFileDto {
     pub path: PathBuf,
     //pub name: String,
     //pub size: i64,
     //pub mime_type: String,
+}
+
+pub struct UpdateLibraryEntryDto {
+    pub book: UpdateBookDto,
+    pub author_id_list: Option<Vec<String>>,
 }
 
 pub struct NewLibraryEntryDto {

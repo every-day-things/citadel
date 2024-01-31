@@ -14,7 +14,7 @@ import type {
 } from "../_types";
 
 const genLocalCalibreClient = async (
-  options: LocalConnectionOptions,
+  options: LocalConnectionOptions
 ): Promise<Library> => {
   const config = await commands.initClient(options.libraryPath);
   const bookCoverCache = new Map<
@@ -35,7 +35,7 @@ const genLocalCalibreClient = async (
   return {
     listBooks: async () => {
       const results = await commands.calibreLoadBooksFromDb(
-        config.library_path,
+        config.library_path
       );
 
       results.forEach((book) => {
@@ -58,6 +58,9 @@ const genLocalCalibreClient = async (
 
       return results;
     },
+    listAuthors() {
+      return commands.calibreListAllAuthors(config.library_path);
+    },
     sendToDevice: async (book, deviceOptions) => {
       await commands.addBookToExternalDrive(deviceOptions.path, book);
     },
@@ -65,7 +68,7 @@ const genLocalCalibreClient = async (
       await commands.updateBook(
         options.libraryPath,
         bookId,
-        updates.title ?? "",
+        updates
       );
     },
     getCoverPathForBook: (bookId) => {
@@ -94,7 +97,7 @@ const genLocalCalibreClient = async (
 };
 
 const genRemoteCalibreClient = async (
-  options: RemoteConnectionOptions,
+  options: RemoteConnectionOptions
 ): Promise<Library> => {
   // All remote clients are really Citadel clients... but for a certain kind of
   // library. In this case, Calibre.
@@ -117,6 +120,9 @@ const genRemoteCalibreClient = async (
       });
 
       return res;
+    },
+    listAuthors() {
+      throw new Error("Not implemented");
     },
     sendToDevice: () => {
       throw new Error("Not implemented");

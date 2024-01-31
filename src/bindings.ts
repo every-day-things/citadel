@@ -4,6 +4,9 @@
 async calibreLoadBooksFromDb(libraryRoot: string) : Promise<LibraryBook[]> {
 return await TAURI_INVOKE("plugin:tauri-specta|calibre_load_books_from_db", { libraryRoot });
 },
+async calibreListAllAuthors(libraryRoot: string) : Promise<LibraryAuthor[]> {
+return await TAURI_INVOKE("plugin:tauri-specta|calibre_list_all_authors", { libraryRoot });
+},
 async getImportableFileMetadata(file: ImportableFile) : Promise<ImportableBookMetadata> {
 return await TAURI_INVOKE("plugin:tauri-specta|get_importable_file_metadata", { file });
 },
@@ -13,9 +16,9 @@ return await TAURI_INVOKE("plugin:tauri-specta|check_file_importable", { pathToF
 async addBookToDbByMetadata(libraryPath: string, md: ImportableBookMetadata) : Promise<null> {
 return await TAURI_INVOKE("plugin:tauri-specta|add_book_to_db_by_metadata", { libraryPath, md });
 },
-async updateBook(libraryPath: string, bookId: string, newTitle: string) : Promise<__Result__<number, null>> {
+async updateBook(libraryPath: string, bookId: string, updates: BookUpdate) : Promise<__Result__<number, null>> {
 try {
-    return { status: "ok", data: await TAURI_INVOKE("plugin:tauri-specta|update_book", { libraryPath, bookId, newTitle }) };
+    return { status: "ok", data: await TAURI_INVOKE("plugin:tauri-specta|update_book", { libraryPath, bookId, updates }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -34,6 +37,7 @@ return await TAURI_INVOKE("plugin:tauri-specta|add_book_to_external_drive", { pa
 /** user-defined types **/
 
 export type BookFile = { Local: LocalFile } | { Remote: RemoteFile }
+export type BookUpdate = { author_id_list: string[] | null; title: string | null; timestamp: string | null; publication_date: string | null }
 export type CalibreClientConfig = { library_path: string }
 /**
  * Represents metadata for pre-import books, which have a very loose structure.
@@ -58,7 +62,8 @@ path: string; publication_date: string | null;
 file_contains_cover: boolean }
 export type ImportableBookType = "EPUB" | "PDF" | "MOBI"
 export type ImportableFile = { path: string }
-export type LibraryBook = { title: string; author_list: string[]; id: string; uuid: string | null; sortable_title: string | null; author_sort_lookup: { [key in string]: string } | null; file_list: BookFile[]; cover_image: LocalOrRemoteUrl | null }
+export type LibraryAuthor = { id: string; name: string; sortable_name: string }
+export type LibraryBook = { id: string; uuid: string | null; title: string; author_list: LibraryAuthor[]; sortable_title: string | null; author_sort_lookup: { [key in string]: string } | null; file_list: BookFile[]; cover_image: LocalOrRemoteUrl | null }
 export type LocalFile = { 
 /**
  * The absolute path to the file, including extension.

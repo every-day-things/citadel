@@ -26,6 +26,7 @@ fn run_tauri_backend() -> std::io::Result<()> {
         let specta_builder = tauri_specta::ts::builder()
             .commands(tauri_specta::collect_commands![
                 libs::calibre::calibre_load_books_from_db,
+                libs::calibre::calibre_list_all_authors,
                 libs::calibre::get_importable_file_metadata,
                 libs::calibre::check_file_importable,
                 libs::calibre::add_book_to_db_by_metadata,

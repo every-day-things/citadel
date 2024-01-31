@@ -92,7 +92,7 @@
         </div>
       {/if}
       <span class="title">{shortenToChars(book.title, 50)}</span>
-      <span class="authors">{book.author_list.join(", ")}</span>
+      <span class="authors">{book.author_list.map(item => item.name).join(", ")}</span>
       <img
         src={$libraryClientStore.getCoverUrlForBook(book.id)}
         class="cover-blur"

@@ -87,13 +87,14 @@
           search.length === 0
             ? $books
             : any(book.author_list, (item) =>
-                item.toLowerCase().includes(search.toLowerCase()),
+                item.name.toLowerCase().includes(search.toLowerCase()) ||
+                item.sortable_name.toLowerCase().includes(search.toLowerCase()),
               ) || book.title.toLowerCase().includes(search.toLowerCase()),
         )
         .filter((book) => book.title !== "" && book.author_list.length > 0)
         .toSorted((a, b) => {
-          const a_author = a.author_list.length > 0 ? a.author_list[0] : "";
-          const b_author = b.author_list.length > 0 ? b.author_list[0] : "";
+          const a_author = a.author_list.length > 0 ? a.author_list[0].sortable_name : ""
+          const b_author = b.author_list.length > 0 ? b.author_list[0].sortable_name : ""
 
           switch ($sortOrder) {
             case "name-asc":

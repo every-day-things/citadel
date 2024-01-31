@@ -130,7 +130,7 @@ pub fn item_from_library_book(book: &LibraryBook) -> Result<Item, ConverionError
     rating: None,
     user_categories: HashMap::new(),
     author_sort_map: HashMap::new(),
-    authors: book.author_list.clone(),
+    authors: book.author_list.iter().map(|a| a.name.clone()).collect(),
     author_sort: String::new(),
     series: None,
     publisher: None,

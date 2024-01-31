@@ -37,10 +37,10 @@ pub enum BookFile {
 
 #[derive(Serialize, specta::Type, Deserialize, Clone)]
 pub struct LibraryBook {
-    pub title: String,
-    pub author_list: Vec<String>,
     pub id: String,
     pub uuid: Option<String>,
+    pub title: String,
+    pub author_list: Vec<LibraryAuthor>,
 
     pub sortable_title: Option<String>,
     pub author_sort_lookup: Option<HashMap<String, String>>,
@@ -50,9 +50,11 @@ pub struct LibraryBook {
     pub cover_image: Option<LocalOrRemoteUrl>,
 }
 
-#[derive(Serialize, specta::Type)]
+#[derive(Serialize, specta::Type, Deserialize, Clone)]
 pub struct LibraryAuthor {
-    // Define the fields of LibraryAuthor struct here
+    pub id: String,
+    pub name: String,
+    pub sortable_name: String,
 }
 
 #[derive(Serialize, Deserialize, specta::Type)]

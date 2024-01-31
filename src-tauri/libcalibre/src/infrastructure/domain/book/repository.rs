@@ -88,6 +88,19 @@ impl Repository for BookRepository {
         }
     }
 
+    fn remove_book_author_link(&mut self, book_id: i32, author_id: i32) -> Result<(), ()> {
+        use crate::schema::books_authors_link::dsl::*;
+
+        let link =
+            diesel::delete(books_authors_link.filter(book.eq(book_id).and(author.eq(author_id))))
+                .execute(&mut self.connection);
+
+        match link {
+            Ok(_) => Ok(()),
+            Err(_) => Err(()),
+        }
+    }
+
     fn find_author_ids_by_book_id(&mut self, book_id: i32) -> Result<Vec<i32>, ()> {
         use crate::schema::books_authors_link::dsl::*;
 

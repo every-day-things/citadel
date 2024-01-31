@@ -6,6 +6,7 @@ use std::sync::Mutex;
 
 use crate::book::ImportableBookMetadata;
 use crate::book::ImportableBookType;
+use crate::book::LibraryAuthor;
 use crate::book::LibraryBook;
 use crate::libs::file_formats::read_epub_metadata;
 
@@ -22,6 +23,7 @@ use libcalibre::application::services::domain::file::service::BookFileService;
 use libcalibre::application::services::domain::file::service::BookFileServiceTrait;
 use libcalibre::application::services::library::dto::NewLibraryEntryDto;
 use libcalibre::application::services::library::dto::NewLibraryFileDto;
+use libcalibre::application::services::library::dto::UpdateLibraryEntryDto;
 use libcalibre::application::services::library::service::LibraryService;
 use libcalibre::infrastructure::domain::author::repository::AuthorRepository;
 use libcalibre::infrastructure::domain::book::repository::BookRepository;
@@ -30,6 +32,7 @@ use libcalibre::infrastructure::file_service::FileServiceTrait;
 use serde::Deserialize;
 use serde::Serialize;
 
+mod author;
 mod book;
 pub mod models;
 pub mod schema;
@@ -62,6 +65,12 @@ pub fn init_client(library_path: String) -> CalibreClientConfig {
 #[specta::specta]
 pub fn calibre_load_books_from_db(library_root: String) -> Vec<LibraryBook> {
     book::list_all(library_root)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn calibre_list_all_authors(library_root: String) -> Vec<LibraryAuthor> {
+    author::list_all(library_root)
 }
 
 #[tauri::command]
@@ -186,34 +195,55 @@ pub fn add_book_to_db_by_metadata(library_path: String, md: ImportableBookMetada
     }
 }
 
+#[derive(Serialize, Deserialize, specta::Type, Debug)]
+pub struct BookUpdate {
+    pub author_id_list: Option<Vec<String>>,
+    pub title: Option<String>,
+    pub timestamp: Option<NaiveDateTime>,
+    pub publication_date: Option<NaiveDateTime>,
+    // pub tags: Option<String>,
+    // pub ext_id_list: Option<Vec<String>>,
+}
+
 #[tauri::command]
 #[specta::specta]
-pub fn update_book(library_path: String, book_id: String, new_title: String) -> Result<i32, ()> {
+pub fn update_book(library_path: String, book_id: String, updates: BookUpdate) -> Result<i32, ()> {
     let database_path = libcalibre::util::get_db_path(&library_path);
     match database_path {
         None => panic!("Could not find database at {}", library_path),
         Some(database_path) => {
             let book_repo = Box::new(BookRepository::new(&database_path));
+            let author_repo = Box::new(AuthorRepository::new(&database_path));
+            let book_file_repo = Box::new(BookFileRepository::new(&database_path));
 
             let book_service = Arc::new(Mutex::new(BookService::new(book_repo)));
-            let book_service_guard = book_service.lock();
+            let author_service = Arc::new(Mutex::new(AuthorService::new(author_repo)));
+            let book_file_service = Arc::new(Mutex::new(BookFileService::new(book_file_repo)));
+            let file_service = Arc::new(Mutex::new(
+                libcalibre::infrastructure::file_service::FileService::new(&library_path),
+            ));
 
-            match book_service_guard {
-                Ok(mut book_service) => {
-                    let book_id_int = book_id.parse::<i32>().unwrap();
-                    let result = book_service.update(
-                        book_id_int,
-                        UpdateBookDto {
-                            title: Some(new_title.clone()),
-                            ..UpdateBookDto::default()
-                        },
-                    );
-                    result.map(|book| book.id)
-                }
-                Err(e) => {
-                    panic!("Could not lock book service: {}", e);
-                }
-            }
+            let mut library_service = LibraryService::new(
+                book_service,
+                author_service,
+                file_service,
+                book_file_service,
+            );
+
+            let book_id_int = book_id.parse::<i32>().unwrap();
+            let result = library_service.update(
+                book_id_int,
+                UpdateLibraryEntryDto {
+                    book: UpdateBookDto {
+                        title: updates.title,
+                        timestamp: updates.timestamp,
+                        pubdate: updates.publication_date,
+                        ..UpdateBookDto::default()
+                    },
+                    author_id_list: updates.author_id_list,
+                },
+            );
+            result.map(|entry| entry.book.id).map_err(|_| ())
         }
     }
 }

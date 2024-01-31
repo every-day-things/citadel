@@ -12,38 +12,39 @@ use libcalibre::{
             file::service::{BookFileService, BookFileServiceTrait},
         },
         library::service::LibraryService,
-    },
-    infrastructure::{
+    }, infrastructure::{
         domain::{
             author::repository::AuthorRepository, book::repository::BookRepository,
             book_file::repository::BookFileRepository,
         },
         file_service::FileServiceTrait,
-    },
+    }, Author
 };
 
 use crate::{
-    book::{BookFile, LibraryBook, LocalFile, LocalOrRemote, LocalOrRemoteUrl},
+    book::{BookFile, LibraryAuthor, LibraryBook, LocalFile, LocalOrRemote, LocalOrRemoteUrl},
     libs::util,
 };
 
 fn to_library_book(
     library_path: &String,
     book: &libcalibre::Book,
-    author_names: Vec<String>,
+    author_list: Vec<Author>,
     file_list: Vec<libcalibre::BookFile>,
 ) -> LibraryBook {
     LibraryBook {
         title: book.title.clone(),
-        author_list: author_names.clone(),
+        author_list: author_list.iter().map(|a| {
+            LibraryAuthor::from(a)
+        }).collect(),
         id: book.id.to_string(),
         uuid: book.uuid.clone(),
 
         sortable_title: book.sort.clone(),
         author_sort_lookup: Some(
-            author_names
+            author_list
                 .iter()
-                .map(|a| (a.clone(), a.clone()))
+                .map(|a| (a.name.clone(), a.sortable_name()))
                 .collect::<HashMap<_, _>>(),
         ),
 
@@ -119,7 +120,7 @@ pub fn list_all(library_root: String) -> Vec<LibraryBook> {
                     let mut calibre_book = to_library_book(
                         &library_root,
                         &b.book,
-                        b.authors.iter().map(|a| a.name.clone()).collect(),
+                        b.authors.clone(),
                         b.files.clone(),
                     );
                     calibre_book.cover_image = book_cover_image(&library_root, &b.book);

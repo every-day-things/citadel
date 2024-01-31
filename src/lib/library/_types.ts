@@ -1,6 +1,8 @@
 import type {
+  BookUpdate,
   ImportableBookMetadata,
   ImportableFile,
+  LibraryAuthor,
   LibraryBook,
 } from "../../bindings";
 
@@ -11,6 +13,7 @@ export type TDeviceType = (typeof DeviceType)[keyof typeof DeviceType];
 
 export type Library = {
   listBooks(): Promise<LibraryBook[]>;
+  listAuthors(): Promise<LibraryAuthor[]>;
   sendToDevice(
     book: LibraryBook,
     deviceOptions: {
@@ -20,7 +23,7 @@ export type Library = {
       path: string;
     }
   ): Promise<void>;
-  updateBook(bookId: string, updates: Partial<LibraryBook>): Promise<void>;
+  updateBook(bookId: string, updates: BookUpdate): Promise<void>;
 
   /**
    * Returns the path to the cover image for the book with the given ID.

@@ -35,14 +35,14 @@ impl Device for ExternalDrive {
                 Ok(mut item) => {
                     // Create folder for book's author on drive, copy book to folder
                     let author_path =
-                        create_folder_for_author(&self.path, book.author_list[0].clone())
+                        create_folder_for_author(&self.path, book.author_list[0].name.clone())
                             .or(Err("Failed to create author folder on external drive"))?;
                     let file_path_on_drive = Path::new(&author_path).join(&filename);
                     std::fs::copy(&file.path, file_path_on_drive.clone())
                         .expect("Could not copy file to library folder");
 
                     // Relative to the root of the drive
-                    let file_rel_path = Path::new(&book.author_list[0].clone()).join(&filename);
+                    let file_rel_path = Path::new(&book.author_list[0].name.clone()).join(&filename);
                     item.lpath = file_rel_path.to_str().unwrap().to_string();
 
                     // Remove all items with the same UUID
