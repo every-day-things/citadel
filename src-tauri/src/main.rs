@@ -13,7 +13,6 @@ pub mod libs {
 }
 mod book;
 mod http;
-mod templates;
 
 const SERVER_FLAG: &str = "--server";
 
