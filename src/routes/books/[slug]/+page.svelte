@@ -15,8 +15,6 @@
   import CheckIcon from "virtual:icons/f7/checkmark-alt";
   import ChevronUpIcon from "virtual:icons/f7/chevron-down";
   import ChevronDownIcon from "virtual:icons/f7/chevron-up";
-  // import { Check, ChevronDown, ChevronUp } from 'lucide-svelte';
-  // import { fly } from 'svelte/transition';
 
   let authors: LibraryAuthor[] = [
     {
@@ -89,7 +87,7 @@
     )[0];
   };
 
-  const x = async (id: string) => {
+  const fetchBookAndAuthors = async (id: string) => {
     book = await getBookMatchingId(id);
     authors = (await libraryClient().listAuthors()).toSorted((a, b) =>
       a.sortable_name.localeCompare(b.sortable_name)
@@ -99,7 +97,7 @@
   };
 
   onMount(async () => {
-    await x(data.id);
+    await fetchBookAndAuthors(data.id);
   });
 
   const save = async (event: SubmitEvent) => {
@@ -113,7 +111,7 @@
       timestamp: null,
     });
     invalidateAll();
-    x(data.id);
+    fetchBookAndAuthors(data.id);
   };
 </script>
 
