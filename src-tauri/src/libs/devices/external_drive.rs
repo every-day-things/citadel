@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use crate::{
-    book::{BookFile, LibraryBook, LocalFile},
+    book::{BookFile, LibraryBook},
     libs::calibre::create_folder_for_author,
 };
 
