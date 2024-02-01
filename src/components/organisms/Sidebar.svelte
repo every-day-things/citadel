@@ -1,9 +1,14 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { promptToAddBook, commitAddBook } from "$lib/library/addBook";
-  import { pickLibrary } from "$lib/library/pickLibrary";
+  import {
+    pickLibrary,
+    selectNewLibrary,
+    createLibrary,
+  } from "$lib/library/pickLibrary";
   import { books } from "../../stores/books";
   import { libraryClient } from "../../stores/library";
+  import { commands } from "../../bindings";
   import { Button } from "$lib/components/ui/button";
   import { writable } from "svelte/store";
   import type { ImportableBookMetadata } from "../../bindings";
@@ -17,6 +22,8 @@
 
   let bookMetadata = writable<Optional<ImportableBookMetadata>>(null);
   let isMetadataEditorOpen = writable(false);
+  let maybeCreateNewLibrary = writable(false);
+  let maybeNewLibraryPath = writable("");
 
   let authorList = writable<string[]>([]);
 
@@ -48,7 +55,17 @@
   };
 
   const switchLibraryHandler = async () => {
-    await pickLibrary();
+    const path = await pickLibrary();
+    if (!path) return;
+
+    const selectedIsValid = await commands.isValidLibrary(path);
+
+    if (selectedIsValid) {
+      selectNewLibrary(path);
+    } else {
+      $maybeNewLibraryPath = path;
+      maybeCreateNewLibrary.set(true);
+    }
   };
 
   const pluralize = (count: number, singular: string, plural: string) =>
@@ -116,7 +133,7 @@
                         class="ml-2"
                         on:click={() => {
                           const newAuthorList = $authorList.filter(
-                            (a) => a !== author,
+                            (a) => a !== author
                           );
                           authorList.set(newAuthorList);
                         }}>X</button
@@ -193,6 +210,40 @@
     </button>
   </div>
 {/if}
+<Dialog.Root bind:open={$maybeCreateNewLibrary}>
+  <Dialog.Content transition={fade}>
+    <Dialog.Header>
+      <Dialog.Title>Create new library</Dialog.Title>
+      <Dialog.Description>
+        <p>
+          There is no library at the path you selected. Would you like to create
+          a new library at this location?
+        </p>
+        <p>You selected: <code>{$maybeNewLibraryPath}</code></p>
+        <div class="flex row justify-end gap-4">
+          <Button
+            variant="secondary"
+            on:click={() => {
+              maybeCreateNewLibrary.set(false);
+              maybeNewLibraryPath.set("");
+            }}
+            class="mt-6">Cancel</Button
+          >
+          <Button
+            variant="default"
+            on:click={() => {
+              createLibrary($maybeNewLibraryPath);
+              selectNewLibrary($maybeNewLibraryPath);
+              $maybeCreateNewLibrary = false;
+              $maybeNewLibraryPath = "";
+            }}
+            class="mt-6">Create library</Button
+          >
+        </div>
+      </Dialog.Description>
+    </Dialog.Header>
+  </Dialog.Content>
+</Dialog.Root>
 
 <style>
   button:has(svg) {

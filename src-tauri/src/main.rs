@@ -31,6 +31,8 @@ fn run_tauri_backend() -> std::io::Result<()> {
                 libs::calibre::check_file_importable,
                 libs::calibre::add_book_to_db_by_metadata,
                 libs::calibre::update_book,
+                libs::calibre::is_valid_library,
+                libs::calibre::create_library,
             ])
             .config(ExportConfig::default().bigint(BigIntExportBehavior::BigInt));
 

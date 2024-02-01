@@ -28,7 +28,7 @@
         "readDir": true,
         "readFile": true,
         "writeFile": true,
-        "scope": ["$APPCONFIG", "$APPCONFIG/*"]
+        "scope": ["$APPCONFIG", "$APPCONFIG/*", "$RESOURCE/*"]
       },
       "protocol": {
         "asset": true,
@@ -62,7 +62,9 @@
         "providerShortName": null,
         "signingIdentity": null
       },
-      "resources": [],
+      "resources": [
+        "resources/empty_7_2_calibre_lib.zip"
+      ],
       "shortDescription": "",
       "targets": "all",
       "windows": {
