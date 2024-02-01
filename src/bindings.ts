@@ -13,10 +13,10 @@ return await TAURI_INVOKE("plugin:tauri-specta|calibre_send_to_device", { librar
 async initClient(libraryPath: string) : Promise<CalibreClientConfig> {
 return await TAURI_INVOKE("plugin:tauri-specta|init_client", { libraryPath });
 },
-async getImportableFileMetadata(file: ImportableFile) : Promise<ImportableBookMetadata> {
+async getImportableFileMetadata(file: ImportableFile) : Promise<{ file_type: ImportableBookType; title: string; author_names: string[] | null; identifier: string | null; publisher: string | null; language: string | null; tags: string[]; path: string; publication_date: string | null; file_contains_cover: boolean } | null> {
 return await TAURI_INVOKE("plugin:tauri-specta|get_importable_file_metadata", { file });
 },
-async checkFileImportable(pathToFile: string) : Promise<ImportableFile> {
+async checkFileImportable(pathToFile: string) : Promise<{ path: string } | null> {
 return await TAURI_INVOKE("plugin:tauri-specta|check_file_importable", { pathToFile });
 },
 async addBookToDbByMetadata(libraryPath: string, md: ImportableBookMetadata) : Promise<null> {
