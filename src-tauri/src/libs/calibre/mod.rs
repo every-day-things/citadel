@@ -1,14 +1,11 @@
 use std::io::Error;
 use std::path::PathBuf;
-use std::str::FromStr;
 use std::sync::Arc;
 use std::sync::Mutex;
 
 use crate::book::ImportableBookMetadata;
-use crate::book::ImportableBookType;
 use crate::book::LibraryAuthor;
 use crate::book::LibraryBook;
-use crate::libs::file_formats::read_epub_metadata;
 
 use chrono::NaiveDate;
 use chrono::NaiveDateTime;
@@ -41,11 +38,7 @@ use std::path::Path;
 
 #[derive(Serialize, Deserialize, specta::Type, Debug)]
 pub struct ImportableFile {
-    path: PathBuf,
-}
-
-fn get_supported_extensions() -> Vec<&'static str> {
-    vec!["epub", "mobi", "pdf"]
+    pub(crate) path: PathBuf,
 }
 
 #[derive(Serialize, specta::Type)]
@@ -75,49 +68,16 @@ pub fn calibre_list_all_authors(library_root: String) -> Vec<LibraryAuthor> {
 
 #[tauri::command]
 #[specta::specta]
-pub fn check_file_importable(path_to_file: String) -> ImportableFile {
+pub fn check_file_importable(path_to_file: String) -> Option<ImportableFile> {
     let file_path = Path::new(&path_to_file);
 
-    if !file_path.exists() {
-        panic!("File does not exist at {}", path_to_file);
-    }
-
-    let file_extension = file_path.extension().and_then(|ext| ext.to_str());
-
-    match file_extension {
-        Some(extension) if get_supported_extensions().contains(&extension) => ImportableFile {
-            path: PathBuf::from(path_to_file),
-        },
-        Some(extension) => {
-            panic!("Unsupported file extension: {}", extension);
-        }
-        None => {
-            panic!("File does not have an extension");
-        }
-    }
+    super::file_formats::validate_file_importable(file_path)
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn get_importable_file_metadata(file: ImportableFile) -> ImportableBookMetadata {
-    // TODO Do not assume file is an EPUB
-    let res = read_epub_metadata(file.path.as_path());
-
-    ImportableBookMetadata {
-        file_type: ImportableBookType::EPUB,
-        title: res.title.unwrap_or("".to_string()),
-        author_names: res.creator_list,
-        language: res.language,
-        publisher: res.publisher,
-        identifier: res.identifier,
-        path: file.path,
-        file_contains_cover: res.cover_image_data.is_some(),
-        tags: res.subjects,
-        publication_date: NaiveDate::from_str(
-            res.publication_date.unwrap_or("".to_string()).as_str(),
-        )
-        .ok(),
-    }
+pub fn get_importable_file_metadata(file: ImportableFile) -> Option<ImportableBookMetadata> {
+    super::file_formats::get_importable_file_metadata(file)
 }
 
 pub fn create_folder_for_author(
