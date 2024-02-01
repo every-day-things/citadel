@@ -35,7 +35,8 @@
 <div class="container p-4">
   {#if isSelected}
     {#if isSendingToDevice}
-      <div class="controls">
+      <!-- svelte-ignore a11y-no-static-element-interactions -->
+      <div class="controls" on:click|stopPropagation>
         <button on:click={() => (isSendingToDevice = false)}>← Cancel</button>
         <label for="devicePath">Device Path</label>
         <input
@@ -58,13 +59,28 @@
       <div class="controls">
         {#if window.__TAURI__}
           <a href="/books/{book.id}"><Button>Edit</Button></a>
-          <Button on:click={() => openBookInDefaultApp(book)}>Read ↗</Button>
+          <Button
+            on:click={(e) => {
+              e.stopPropagation();
+              openBookInDefaultApp(book);
+            }}>Read ↗</Button
+          >
         {:else}
-          <Button on:click={() => handleDownload(book)}>Download</Button>
+          <Button
+            on:click={(e) => {
+              e.stopPropagation();
+              handleDownload(book);
+            }}>Download</Button
+          >
         {/if}
         <Button disabled>Info</Button>
         {#if window.__TAURI__}
-          <Button on:click={() => (isSendingToDevice = true)}>Send</Button>
+          <Button
+            on:click={(e) => {
+              e.stopPropagation();
+              isSendingToDevice = true;
+            }}>Send</Button
+          >
         {/if}
         <Button disabled>Convert</Button>
         <hr />
@@ -85,14 +101,16 @@
         <div
           class="cover-placeholder"
           style="background-color: #{Math.floor(
-            Math.random() * 16777215,
+            Math.random() * 16777215
           ).toString(16)};"
         >
           {shortenToChars(book.title, 50)}
         </div>
       {/if}
       <span class="title">{shortenToChars(book.title, 50)}</span>
-      <span class="authors">{book.author_list.map(item => item.name).join(", ")}</span>
+      <span class="authors"
+        >{book.author_list.map((item) => item.name).join(", ")}</span
+      >
       <img
         src={$libraryClientStore.getCoverUrlForBook(book.id)}
         class="cover-blur"
