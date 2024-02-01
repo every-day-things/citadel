@@ -7,7 +7,6 @@ use specta::ts::{BigIntExportBehavior, ExportConfig};
 
 pub mod libs {
     pub mod calibre;
-    pub mod devices;
     pub mod file_formats;
     mod util;
 }
@@ -26,12 +25,12 @@ fn run_tauri_backend() -> std::io::Result<()> {
             .commands(tauri_specta::collect_commands![
                 libs::calibre::calibre_load_books_from_db,
                 libs::calibre::calibre_list_all_authors,
+                libs::calibre::send_to_device::calibre_send_to_device,
+                libs::calibre::init_client,
                 libs::calibre::get_importable_file_metadata,
                 libs::calibre::check_file_importable,
                 libs::calibre::add_book_to_db_by_metadata,
                 libs::calibre::update_book,
-                libs::calibre::init_client,
-                libs::devices::add_book_to_external_drive,
             ])
             .config(ExportConfig::default().bigint(BigIntExportBehavior::BigInt));
 

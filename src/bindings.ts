@@ -7,6 +7,12 @@ return await TAURI_INVOKE("plugin:tauri-specta|calibre_load_books_from_db", { li
 async calibreListAllAuthors(libraryRoot: string) : Promise<LibraryAuthor[]> {
 return await TAURI_INVOKE("plugin:tauri-specta|calibre_list_all_authors", { libraryRoot });
 },
+async calibreSendToDevice(libraryRoot: string, deviceMountDir: string, book: LibraryBook) : Promise<null> {
+return await TAURI_INVOKE("plugin:tauri-specta|calibre_send_to_device", { libraryRoot, deviceMountDir, book });
+},
+async initClient(libraryPath: string) : Promise<CalibreClientConfig> {
+return await TAURI_INVOKE("plugin:tauri-specta|init_client", { libraryPath });
+},
 async getImportableFileMetadata(file: ImportableFile) : Promise<ImportableBookMetadata> {
 return await TAURI_INVOKE("plugin:tauri-specta|get_importable_file_metadata", { file });
 },
@@ -23,12 +29,6 @@ try {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
-},
-async initClient(libraryPath: string) : Promise<CalibreClientConfig> {
-return await TAURI_INVOKE("plugin:tauri-specta|init_client", { libraryPath });
-},
-async addBookToExternalDrive(path: string, book: LibraryBook) : Promise<null> {
-return await TAURI_INVOKE("plugin:tauri-specta|add_book_to_external_drive", { path, book });
 }
 }
 

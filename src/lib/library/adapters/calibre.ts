@@ -62,7 +62,7 @@ const genLocalCalibreClient = async (
       return commands.calibreListAllAuthors(config.library_path);
     },
     sendToDevice: async (book, deviceOptions) => {
-      await commands.addBookToExternalDrive(deviceOptions.path, book);
+      await commands.calibreSendToDevice(config.library_path, deviceOptions.path, book);
     },
     updateBook: async (bookId, updates) => {
       await commands.updateBook(

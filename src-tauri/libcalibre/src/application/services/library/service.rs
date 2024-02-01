@@ -38,7 +38,7 @@ impl std::fmt::Display for LibSrvcError {
 
 impl std::error::Error for LibSrvcError {}
 
-fn gen_book_folder_name(book_name: &String, book_id: i32) -> String {
+pub fn gen_book_folder_name(book_name: &String, book_id: i32) -> String {
     "{title} ({id})"
         .replace("{title}", book_name)
         .replace("{id}", &book_id.to_string())

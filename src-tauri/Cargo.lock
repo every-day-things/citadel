@@ -2003,6 +2003,7 @@ dependencies = [
  "epub",
  "regex",
  "serde",
+ "serde_json",
  "uuid",
 ]
 
