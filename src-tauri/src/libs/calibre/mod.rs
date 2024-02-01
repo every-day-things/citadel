@@ -12,6 +12,7 @@ use crate::libs::file_formats::read_epub_metadata;
 
 use chrono::NaiveDate;
 use chrono::NaiveDateTime;
+use diesel::RunQueryDsl;
 use libcalibre::application::services::domain::author::dto::NewAuthorDto;
 use libcalibre::application::services::domain::author::service::AuthorService;
 use libcalibre::application::services::domain::author::service::AuthorServiceTrait;
@@ -245,4 +246,40 @@ pub fn update_book(library_path: String, book_id: String, updates: BookUpdate) -
             result.map(|entry| entry.book.id).map_err(|_| ())
         }
     }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn create_library(handle: tauri::AppHandle, library_root: String) -> Result<(), String> {
+    let resource_path = handle
+        .path_resolver()
+        .resolve_resource("resources/empty_7_2_calibre_lib.zip")
+        .expect("Failed to find default empty library");
+
+    let file = std::fs::File::open(resource_path).expect("Failed to open default empty library");
+
+    // Extract the default library to the specified location
+    let mut archive = zip::ZipArchive::new(file).expect("Failed to read zip archive");
+    let result = archive.extract(&library_root).map_err(|e| e.to_string());
+
+    // Set a new UUID for the library
+    match libcalibre::util::get_db_path(&library_root) {
+        None => return Err("Failed to open database".to_string()),
+        Some(db_path) => {
+            let mut conn = libcalibre::persistence::establish_connection(&db_path)
+                .expect("Failed to open database");
+            diesel::sql_query("UPDATE library_id SET uuid = uuid4()")
+                .execute(&mut conn)
+                .expect("Failed to set new UUID");
+        }
+    }
+
+    result
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn is_valid_library(library_root: String) -> bool {
+    let db_path = libcalibre::util::get_db_path(&library_root);
+    db_path.is_some()
 }

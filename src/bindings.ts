@@ -29,6 +29,17 @@ try {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async isValidLibrary(libraryRoot: string) : Promise<boolean> {
+return await TAURI_INVOKE("plugin:tauri-specta|is_valid_library", { libraryRoot });
+},
+async createLibrary(libraryRoot: string) : Promise<__Result__<null, string>> {
+try {
+    return { status: "ok", data: await TAURI_INVOKE("plugin:tauri-specta|create_library", { libraryRoot }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
