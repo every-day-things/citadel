@@ -36,6 +36,7 @@ mod author;
 mod book;
 pub mod models;
 pub mod schema;
+pub mod send_to_device;
 
 use std::path::Path;
 
