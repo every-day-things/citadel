@@ -6,6 +6,7 @@ use super::calibre::ImportableFile;
 use crate::book::{ImportableBookMetadata, ImportableBookType};
 
 mod epub;
+mod mobi;
 
 pub enum SupportedFormats {
     EPUB,
@@ -74,6 +75,21 @@ pub fn get_importable_file_metadata(file: ImportableFile) -> Option<ImportableBo
                     metadata.publication_date.unwrap_or("".to_string()).as_str(),
                 )
                 .ok(),
+            }),
+            _ => None,
+        },
+        Some(SupportedFormats::MOBI) => match mobi::read_metadata(&file.path) {
+            Some(metadata) => Some(ImportableBookMetadata {
+                file_type: ImportableBookType::MOBI,
+                title: metadata.title,
+                author_names: Some(vec![metadata.author]),
+                identifier: None,
+                publisher: Some(metadata.publisher),
+                language: Some(metadata.language),
+                tags: metadata.subjects,
+                path: file.path,
+                publication_date: metadata.pub_date,
+                file_contains_cover: true,
             }),
             _ => None,
         },

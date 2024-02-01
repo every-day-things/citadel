@@ -2,6 +2,8 @@ use std::error::Error;
 use std::ffi::OsStr;
 use std::path::Path;
 
+use mobi::Mobi;
+
 use crate::application::services::domain::file::dto::{NewFileDto, UpdateFileDto};
 use crate::domain::book_file::entity::{BookFile, NewBookFile, UpdateBookFile};
 use crate::domain::book_file::repository::Repository as BookFileRepository;
@@ -26,6 +28,16 @@ fn cover_data(path: &Path) -> Result<Option<Vec<u8>>, Box<dyn Error>> {
         Some(MIMETYPE::EPUB) => {
             let mut doc = epub::doc::EpubDoc::new(path)?;
             Ok(doc.get_cover().map(|(data, _id)| data))
+        }
+        Some(MIMETYPE::MOBI) => {
+            let m = Mobi::from_path(&path);
+            match m {
+                Err(_) => Err("Failed to read mobi file")?,
+                Ok(mobi) => {
+                    let cover_data = mobi.image_records().last().map(|img| img.content.to_vec());
+                    Ok(cover_data)
+                }
+            }
         }
         _ => Ok(None),
     }

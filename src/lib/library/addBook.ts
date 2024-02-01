@@ -11,6 +11,10 @@ export const promptToAddBook = async (library: Library): Promise<ImportableBookM
         name: "EPUB",
         extensions: ["epub"],
       },
+      {
+        name: "MOBI",
+        extensions: ["mobi"],
+      }
     ],
   });
   if (!filePath) {
