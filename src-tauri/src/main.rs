@@ -26,6 +26,7 @@ fn run_tauri_backend() -> std::io::Result<()> {
                 libs::calibre::calibre_load_books_from_db,
                 libs::calibre::calibre_list_all_authors,
                 libs::calibre::send_to_device::calibre_send_to_device,
+                libs::calibre::calibre_list_all_filetypes,
                 libs::calibre::init_client,
                 libs::calibre::get_importable_file_metadata,
                 libs::calibre::check_file_importable,

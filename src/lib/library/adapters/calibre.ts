@@ -93,6 +93,13 @@ const genLocalCalibreClient = async (
       await commands.addBookToDbByMetadata(options.libraryPath, metadata);
       return undefined;
     },
+    listValidFileTypes: async () => {
+      const result = await commands.calibreListAllFiletypes();
+      return result.map(([mimetype, extension]) => ({
+        extension,
+        mimetype,
+      }));
+    }
   };
 };
 
@@ -152,6 +159,9 @@ const genRemoteCalibreClient = async (
       throw new Error("Not implemented");
     },
     addImportableFileByMetadata: () => {
+      throw new Error("Not implemented");
+    },
+    listValidFileTypes: async () => {
       throw new Error("Not implemented");
     },
   };

@@ -10,6 +10,10 @@ export const DeviceType = {
   externalDrive: "EXTERNAL_DRIVE",
 } as const;
 export type TDeviceType = (typeof DeviceType)[keyof typeof DeviceType];
+export type FileType = {
+  extension: string;
+  mimetype: string;
+}
 
 export type Library = {
   listBooks(): Promise<LibraryBook[]>;
@@ -80,6 +84,12 @@ export type Library = {
   addImportableFileByMetadata(
     metadata: ImportableBookMetadata
   ): Promise<LibraryBook["id"] | undefined>;
+
+  /**
+   * Returns a list of valid file extensions & mimetypes for files users want to
+   * add to their library.
+   */
+  listValidFileTypes(): Promise<FileType[]>;
 };
 
 export type LocalConnectionOptions = {

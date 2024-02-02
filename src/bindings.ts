@@ -10,6 +10,13 @@ return await TAURI_INVOKE("plugin:tauri-specta|calibre_list_all_authors", { libr
 async calibreSendToDevice(libraryRoot: string, deviceMountDir: string, book: LibraryBook) : Promise<null> {
 return await TAURI_INVOKE("plugin:tauri-specta|calibre_send_to_device", { libraryRoot, deviceMountDir, book });
 },
+/**
+ * Lists all importable file types. Those are files that Citadel knows how
+ * to import, and that libcalibre supports.
+ */
+async calibreListAllFiletypes() : Promise<([string, string])[]> {
+return await TAURI_INVOKE("plugin:tauri-specta|calibre_list_all_filetypes");
+},
 async initClient(libraryPath: string) : Promise<CalibreClientConfig> {
 return await TAURI_INVOKE("plugin:tauri-specta|init_client", { libraryPath });
 },
