@@ -2,6 +2,8 @@ pub enum MIMETYPE {
     EPUB,
     MOBI,
     PDF,
+    KF7, // Kindle Format 7 — AZW files
+    KF8, // Kindle Format 8 — AZW3 files
     UNKNOWN,
 }
 
@@ -12,6 +14,8 @@ impl MIMETYPE {
             MIMETYPE::EPUB => "application/epub+zip",
             MIMETYPE::MOBI => "application/x-mobipocket-ebook",
             MIMETYPE::PDF => "application/pdf",
+            MIMETYPE::KF7 => "application/vnd.amazon.ebook",
+            MIMETYPE::KF8 => "application/vnd.amazon.ebook-kf8", // Not a real MIME type, Amazon hasn't registered it
             MIMETYPE::UNKNOWN => "application/octet-stream",
         }
     }
@@ -21,6 +25,7 @@ impl MIMETYPE {
         match mimetype {
             "application/epub+zip" => Some(MIMETYPE::EPUB),
             "application/x-mobipocket-ebook" => Some(MIMETYPE::MOBI),
+            "application/vnd.amazon.ebook" => Some(MIMETYPE::KF7),
             "application/pdf" => Some(MIMETYPE::PDF),
             "application/octet-stream" => Some(MIMETYPE::UNKNOWN),
             _ => None,
@@ -32,6 +37,8 @@ impl MIMETYPE {
             MIMETYPE::EPUB => "epub",
             MIMETYPE::MOBI => "mobi",
             MIMETYPE::PDF => "pdf",
+            MIMETYPE::KF7 => "azw",
+            MIMETYPE::KF8 => "azw3",
             MIMETYPE::UNKNOWN => "",
         }
     }
@@ -41,6 +48,8 @@ impl MIMETYPE {
             "epub" => Some(MIMETYPE::EPUB),
             "mobi" => Some(MIMETYPE::MOBI),
             "pdf" => Some(MIMETYPE::PDF),
+            "azw" => Some(MIMETYPE::KF7),
+            "azw3" => Some(MIMETYPE::KF8),
             _ => None,
         }
     }
@@ -52,6 +61,8 @@ impl PartialEq for MIMETYPE {
             (MIMETYPE::EPUB, MIMETYPE::EPUB) => true,
             (MIMETYPE::MOBI, MIMETYPE::MOBI) => true,
             (MIMETYPE::PDF, MIMETYPE::PDF) => true,
+            (MIMETYPE::KF7, MIMETYPE::KF7) => true,
+            (MIMETYPE::KF8, MIMETYPE::KF8) => true,
             (MIMETYPE::UNKNOWN, MIMETYPE::UNKNOWN) => true,
             _ => false,
         }
