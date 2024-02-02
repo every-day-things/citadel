@@ -22,10 +22,12 @@ export const promptToAddBook = async (library: Library): Promise<ImportableBookM
   }
   const importableFile = await library.checkFileImportable(filePath);
   if (!importableFile) {
+    console.error(`File ${filePath} not importable`);
     return;
   }
   const metadata = await library.getImportableFileMetadata(importableFile);
   if (!metadata) {
+    console.error(`Failed to get metadata for file at ${filePath}`);
     return;
   }
 
