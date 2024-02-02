@@ -7,15 +7,17 @@ use crate::book::{ImportableBookMetadata, ImportableBookType};
 
 mod epub;
 mod mobi;
+mod pdf;
 
 pub enum SupportedFormats {
     EPUB,
     MOBI,
+    PDF,
     UNKNOWN,
 }
 impl SupportedFormats {
     pub fn list_all() -> Vec<&'static str> {
-        vec!["epub", "mobi"]
+        vec!["epub", "mobi", "pdf"]
     }
 
     pub fn is_supported(ext: &str) -> bool {
@@ -26,6 +28,7 @@ impl SupportedFormats {
         match *self {
             Self::EPUB => "epub",
             Self::MOBI => "mobi",
+            Self::PDF => "pdf",
             Self::UNKNOWN => "",
         }
     }
@@ -34,6 +37,7 @@ impl SupportedFormats {
         match extension.to_lowercase().as_str() {
             "epub" => Some(Self::EPUB),
             "mobi" => Some(Self::MOBI),
+            "pdf" => Some(Self::PDF),
             _ => None,
         }
     }
@@ -91,6 +95,10 @@ pub fn get_importable_file_metadata(file: ImportableFile) -> Option<ImportableBo
                 publication_date: metadata.pub_date,
                 file_contains_cover: true,
             }),
+            _ => None,
+        },
+        Some(SupportedFormats::PDF) => match pdf::read_metadata(&file.path) {
+            Some(metadata) => Some(metadata.to_importable_book_metadata()),
             _ => None,
         },
         _ => None,
