@@ -15,6 +15,8 @@ pub enum SupportedFormats {
     EPUB,
     MOBI,
     PDF,
+    KF7, // Kindle Format 7 — AZW files
+    KF8, // Kindle Format 8 — AZW3 files
     UNKNOWN,
 }
 
@@ -24,12 +26,17 @@ impl SupportedFormats {
             SupportedFormats::EPUB,
             SupportedFormats::MOBI,
             SupportedFormats::PDF,
+            SupportedFormats::KF7,
+            SupportedFormats::KF8,
             SupportedFormats::UNKNOWN,
         ]
     }
 
     pub fn list_all() -> Vec<(SupportedFormats, &'static str)> {
-        SupportedFormats::variants().iter().map(|v| (*v, v.to_file_extension())).collect()
+        SupportedFormats::variants()
+            .iter()
+            .map(|v| (*v, v.to_file_extension()))
+            .collect()
     }
 
     pub fn is_supported(ext: &str) -> bool {
@@ -41,6 +48,8 @@ impl SupportedFormats {
             Self::EPUB => "epub",
             Self::MOBI => "mobi",
             Self::PDF => "pdf",
+            Self::KF7 => "azw",
+            Self::KF8 => "azw3",
             Self::UNKNOWN => "",
         }
     }
@@ -50,6 +59,8 @@ impl SupportedFormats {
             "epub" => Some(Self::EPUB),
             "mobi" => Some(Self::MOBI),
             "pdf" => Some(Self::PDF),
+            "azw" => Some(Self::KF7),
+            "azw3" => Some(Self::KF8),
             _ => None,
         }
     }
@@ -94,7 +105,9 @@ pub fn get_importable_file_metadata(file: ImportableFile) -> Option<ImportableBo
             }),
             _ => None,
         },
-        Some(SupportedFormats::MOBI) => match mobi::read_metadata(&file.path) {
+        Some(SupportedFormats::MOBI)
+        | Some(SupportedFormats::KF7)
+        | Some(SupportedFormats::KF8) => match mobi::read_metadata(&file.path) {
             Some(metadata) => Some(ImportableBookMetadata {
                 file_type: ImportableBookType::MOBI,
                 title: metadata.title,
