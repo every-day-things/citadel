@@ -27,6 +27,7 @@ use libcalibre::infrastructure::domain::author::repository::AuthorRepository;
 use libcalibre::infrastructure::domain::book::repository::BookRepository;
 use libcalibre::infrastructure::domain::book_file::repository::BookFileRepository;
 use libcalibre::infrastructure::file_service::FileServiceTrait;
+use libcalibre::mime_type::MIMETYPE;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -78,6 +79,19 @@ pub fn check_file_importable(path_to_file: String) -> Option<ImportableFile> {
 #[specta::specta]
 pub fn get_importable_file_metadata(file: ImportableFile) -> Option<ImportableBookMetadata> {
     super::file_formats::get_importable_file_metadata(file)
+}
+
+#[tauri::command]
+#[specta::specta]
+/// Lists all importable file types. Those are files that Citadel knows how
+/// to import, and that libcalibre supports.
+pub fn calibre_list_all_filetypes() -> Vec<(&'static str, &'static str)> {
+    super::file_formats::SupportedFormats::list_all()
+        .iter()
+        .map(|(_, extension)| (MIMETYPE::from_file_extension(extension), *extension))
+        .filter(|(mimetype, _)| mimetype.is_some() && mimetype.as_ref().unwrap() != &MIMETYPE::UNKNOWN)
+        .map(|(mimetype, ext)| (mimetype.unwrap().as_str(), ext))
+        .collect()
 }
 
 pub fn create_folder_for_author(

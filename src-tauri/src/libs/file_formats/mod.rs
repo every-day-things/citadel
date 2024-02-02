@@ -1,4 +1,5 @@
 use chrono::NaiveDate;
+use serde::Serialize;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
@@ -9,15 +10,26 @@ mod epub;
 mod mobi;
 mod pdf;
 
+#[derive(Serialize, Clone, Copy, specta::Type)]
 pub enum SupportedFormats {
     EPUB,
     MOBI,
     PDF,
     UNKNOWN,
 }
+
 impl SupportedFormats {
-    pub fn list_all() -> Vec<&'static str> {
-        vec!["epub", "mobi", "pdf"]
+    fn variants() -> &'static [SupportedFormats] {
+        &[
+            SupportedFormats::EPUB,
+            SupportedFormats::MOBI,
+            SupportedFormats::PDF,
+            SupportedFormats::UNKNOWN,
+        ]
+    }
+
+    pub fn list_all() -> Vec<(SupportedFormats, &'static str)> {
+        SupportedFormats::variants().iter().map(|v| (*v, v.to_file_extension())).collect()
     }
 
     pub fn is_supported(ext: &str) -> bool {

@@ -3,22 +3,15 @@ import type { Library } from "./_types";
 import type { ImportableBookMetadata } from "../../bindings";
 
 export const promptToAddBook = async (library: Library): Promise<ImportableBookMetadata | void> => {
+  let validExtensions = (await library.listValidFileTypes()).map((type) => type.extension);
   let filePath = await dialog.open({
     multiple: false,
     directory: false,
     filters: [
       {
-        name: "EPUB",
-        extensions: ["epub"],
+        name: "Importable files",
+        extensions: validExtensions,
       },
-      {
-        name: "MOBI",
-        extensions: ["mobi"],
-      },
-      {
-        name: "PDF",
-        extensions: ["pdf"],
-      }
     ],
   });
   if (!filePath) {
