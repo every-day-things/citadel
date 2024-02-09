@@ -9,6 +9,7 @@ use crate::book::{ImportableBookMetadata, ImportableBookType};
 mod epub;
 mod mobi;
 mod pdf;
+mod txt;
 
 #[derive(Serialize, Clone, Copy, specta::Type)]
 pub enum SupportedFormats {
@@ -17,6 +18,7 @@ pub enum SupportedFormats {
     PDF,
     KF7, // Kindle Format 7 — AZW files
     KF8, // Kindle Format 8 — AZW3 files
+    TXT,
     UNKNOWN,
 }
 
@@ -28,6 +30,7 @@ impl SupportedFormats {
             SupportedFormats::PDF,
             SupportedFormats::KF7,
             SupportedFormats::KF8,
+            SupportedFormats::TXT,
             SupportedFormats::UNKNOWN,
         ]
     }
@@ -50,6 +53,7 @@ impl SupportedFormats {
             Self::PDF => "pdf",
             Self::KF7 => "azw",
             Self::KF8 => "azw3",
+            Self::TXT => "txt",
             Self::UNKNOWN => "",
         }
     }
@@ -61,6 +65,7 @@ impl SupportedFormats {
             "pdf" => Some(Self::PDF),
             "azw" => Some(Self::KF7),
             "azw3" => Some(Self::KF8),
+            "txt" => Some(Self::TXT),
             _ => None,
         }
     }
@@ -123,6 +128,10 @@ pub fn get_importable_file_metadata(file: ImportableFile) -> Option<ImportableBo
             _ => None,
         },
         Some(SupportedFormats::PDF) => match pdf::read_metadata(&file.path) {
+            Some(metadata) => Some(metadata.to_importable_book_metadata()),
+            _ => None,
+        },
+        Some(SupportedFormats::TXT) => match txt::read_metadata(&file.path) {
             Some(metadata) => Some(metadata.to_importable_book_metadata()),
             _ => None,
         },
