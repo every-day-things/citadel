@@ -1,4 +1,4 @@
-use std::{path::PathBuf, collections::HashMap};
+use std::{collections::HashMap, path::PathBuf};
 
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, specta::Type, Deserialize, Clone)]
 pub enum LocalOrRemote {
     Local,
-    Remote
+    Remote,
 }
 
 #[derive(Serialize, specta::Type, Deserialize, Clone)]
@@ -61,6 +61,7 @@ pub enum ImportableBookType {
     EPUB = 0,
     PDF = 1,
     MOBI = 2,
+    TEXT = 3,
 }
 
 impl std::fmt::Display for ImportableBookType {
@@ -69,6 +70,7 @@ impl std::fmt::Display for ImportableBookType {
             ImportableBookType::EPUB => write!(f, "EPUB"),
             ImportableBookType::PDF => write!(f, "PDF"),
             ImportableBookType::MOBI => write!(f, "MOBI"),
+            ImportableBookType::TEXT => write!(f, "TXT"),
         }
     }
 }
