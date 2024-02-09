@@ -67,6 +67,15 @@ To run the backend in server mode for production, run
 /Applications/Citadel.app/Contents/MacOS/Citadel --server --calibre-library=/path/to/calibre/library
 ```
 
+### Setting up Svelte Intellisense
+
+If you want to use an LSP with your editor that is _not_ VS Code (e.g. Helix),
+you'll need to globally install
+[svelte-language-server](https://github.com/sveltejs/language-tools/tree/master/packages/language-server).
+
+Using Bun, that looks like `bun add -g svelte-language-server`. With that, the
+project should be ready to go.
+
 ## Building
 
 To create a production version of Citadel, you'll need the development prereqs. Then:
