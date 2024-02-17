@@ -14,6 +14,7 @@
     "test": "vitest"
   },
   "devDependencies": {
+    "@biomejs/biome": "1.5.3",
     "@fontsource/fira-mono": "^4.5.10",
     "@iconify-json/f7": "^1.1.0",
     "@melt-ui/pp": "^0.3.0",

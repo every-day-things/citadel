@@ -8,7 +8,7 @@ import { get, writable } from "svelte/store";
 
 let resolveClientReady: () => void;
 const clientReadyPromise = new Promise<void>((resolve) => {
-  resolveClientReady = resolve;
+	resolveClientReady = resolve;
 });
 
 /**
@@ -23,15 +23,15 @@ export const waitForLibrary = () => clientReadyPromise;
  * Directly get the library client, without subscribing to changes.
  */
 export const libraryClient = (): Library => {
-  return get(libraryClientStore);
+	return get(libraryClientStore);
 };
 
 export const initLibrary = async (options: Options) => {
-  const client = await initClient({
-    ...options,
-    libraryType: "calibre",
-  });
+	const client = await initClient({
+		...options,
+		libraryType: "calibre",
+	});
 
-  libraryClientStore.set(client);
-  resolveClientReady();
+	libraryClientStore.set(client);
+	resolveClientReady();
 };
