@@ -100,8 +100,16 @@ bun install
 bun run build
 ```
 
-## Additional Credit
+## Additional Credit & Related Projects
 
-Huge thanks to [Kemie Guaida](https://kemielikes.design/), who created an excellent [Calibre redesign Figma prototype](https://old.reddit.com/r/Calibre/comments/udzumn/testing_a_new_interface_for_calibre/). Thank you, Kemie!
+This project would not be possible without the north star created by Kovid Goyal,
+[Calibre](https://github.com/kovidgoyal/calibre). Without his hard work building
+such an extensive and powerful tool, Citadel would not exist. 
+
+Huge thanks to [Kemie Guaida](https://kemielikes.design/), who created an
+excellent
+[Calibre redesign Figma prototype](https://old.reddit.com/r/Calibre/comments/udzumn/testing_a_new_interface_for_calibre/),
+from which Citadel takes inspiration.
+Thank you, Kemie!
 
 [^1]: https://github.com/every-day-things/citadel/issues/9
