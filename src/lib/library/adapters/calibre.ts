@@ -4,7 +4,6 @@ import {
 	type ImportableBookMetadata,
 	type LibraryBook,
 	type RemoteFile,
-	type BookFile,
 } from "../../../bindings";
 import type {
 	Library,
@@ -38,13 +37,13 @@ const genLocalCalibreClient = async (
 				config.library_path,
 			);
 
-			results.forEach((book) => {
+			for (const book of results) {
 				bookCoverCache.set(book.id.toString(), {
 					localPath: book.cover_image?.local_path ?? "",
 					url: book.cover_image?.url ?? "",
 				});
 				if (book.file_list.length === 0) {
-					return;
+					return [];
 				}
 
 				const primaryFile = book.file_list[0];
@@ -54,7 +53,7 @@ const genLocalCalibreClient = async (
 						url: undefined,
 					});
 				}
-			});
+			}
 
 			return results;
 		},
@@ -82,11 +81,13 @@ const genLocalCalibreClient = async (
 		},
 
 		checkFileImportable: async (filePath: string) => {
-			const result = await commands.checkFileImportable(filePath);
+			const result =
+				(await commands.checkFileImportable(filePath)) ?? undefined;
 			return result;
 		},
 		getImportableFileMetadata: async (importableFile: ImportableFile) => {
-			const result = await commands.getImportableFileMetadata(importableFile);
+			const result =
+				(await commands.getImportableFileMetadata(importableFile)) ?? undefined;
 			return result;
 		},
 		addImportableFileByMetadata: async (metadata: ImportableBookMetadata) => {
@@ -110,7 +111,7 @@ const genRemoteCalibreClient = async (
 	// library. In this case, Calibre.
 	const baseUrl = options.url;
 
-	let bookCache = new Map<LibraryBook["id"], LibraryBook>();
+	const bookCache = new Map<LibraryBook["id"], LibraryBook>();
 
 	return {
 		listBooks: async () => {
@@ -122,9 +123,9 @@ const genRemoteCalibreClient = async (
 					return res;
 				});
 
-			res.forEach((book) => {
+			for (const book of res) {
 				bookCache.set(book.id, book);
-			});
+			}
 
 			return res;
 		},
@@ -137,7 +138,7 @@ const genRemoteCalibreClient = async (
 		updateBook: () => {
 			throw new Error("Not implemented");
 		},
-		getCoverPathForBook: (bookId) => {
+		getCoverPathForBook: (_bookId) => {
 			return "";
 		},
 		getCoverUrlForBook(bookId) {
@@ -170,7 +171,7 @@ const genRemoteCalibreClient = async (
 export const initCalibreClient = async (options: Options): Promise<Library> => {
 	if (options.connectionType === "remote") {
 		return genRemoteCalibreClient(options);
-	} else {
-		return genLocalCalibreClient(options);
 	}
+
+	return genLocalCalibreClient(options);
 };

@@ -24,7 +24,7 @@ export const getBookDownloadUrl = (book: LibraryBook): string | undefined => {
 };
 
 export const shortenToChars = (str: string, maxChars: number) =>
-	str.length > maxChars ? str.substring(0, maxChars) + "..." : str;
+	str.length > maxChars ? `${str.substring(0, maxChars)}...` : str;
 
 export const sendToDevice = async (book: LibraryBook, devicePath: string) => {
 	libraryClient().sendToDevice(book, {

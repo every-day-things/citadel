@@ -15,9 +15,9 @@ export async function pickLibrary() {
 
 	if (typeof selected === "string") {
 		return selected;
-	} else {
-		return undefined;
 	}
+
+	return undefined;
 }
 
 export async function createLibrary(libraryRoot: string) {

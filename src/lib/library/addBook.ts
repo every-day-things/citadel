@@ -4,8 +4,8 @@ import type { ImportableBookMetadata } from "../../bindings";
 
 export const promptToAddBook = async (
 	library: Library,
-): Promise<ImportableBookMetadata | void> => {
-	let validExtensions = (await library.listValidFileTypes()).map(
+): Promise<ImportableBookMetadata | undefined> => {
+	const validExtensions = (await library.listValidFileTypes()).map(
 		(type) => type.extension,
 	);
 	let filePath = await dialog.open({

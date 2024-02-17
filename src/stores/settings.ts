@@ -30,28 +30,27 @@ const genSettingsManager = <T extends SettingsSchema>(
 ): SettingsManager<T> => {
 	if (window.__TAURI__) {
 		return new TauriSettingsManager(defaultSettings, config);
-	} else {
-		return {
-			initialize: () => {
-				Object.entries(defaultSettings).forEach((setting) => {
-					localStorage.setItem(setting[0], setting[1].toString());
-				});
-				return Promise.resolve({} as T);
-			},
-			syncCache: () => Promise.resolve({} as T),
-			set: (key, value) => {
-				localStorage.setItem(key.toString(), String(value));
-
-				return Promise.resolve({} as T);
-			},
-			get: (key) => {
-				return Promise.resolve(
-					localStorage.getItem(key.toString()) as PathValue<T, typeof key>,
-				);
-			},
-			settings: defaultSettings,
-		};
 	}
+	return {
+		initialize: () => {
+			for (const setting of Object.entries(defaultSettings)) {
+				localStorage.setItem(setting[0], setting[1].toString());
+			}
+			return Promise.resolve({} as T);
+		},
+		syncCache: () => Promise.resolve({} as T),
+		set: (key, value) => {
+			localStorage.setItem(key.toString(), String(value));
+
+			return Promise.resolve({} as T);
+		},
+		get: (key) => {
+			return Promise.resolve(
+				localStorage.getItem(key.toString()) as PathValue<T, typeof key>,
+			);
+		},
+		settings: defaultSettings,
+	};
 };
 
 const createSettingsStore = () => {
