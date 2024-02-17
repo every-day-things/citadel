@@ -2,15 +2,15 @@
   "name": "citadel",
   "version": "0.0.1",
   "scripts": {
-    "dev": "bun run dev:app",
-    "dev:app": "tauri dev",
-    "dev:web": "vite dev",
     "build": "bun run build:app",
     "build:app": "tauri build",
     "build:web": "vite build",
-    "preview:web": "vite preview",
+    "dev": "bun run dev:app",
+    "dev:app": "tauri dev",
+    "dev:web": "vite dev",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "preview:web": "vite preview",
     "test": "vitest"
   },
   "devDependencies": {
