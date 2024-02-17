@@ -1,65 +1,65 @@
 import type {
-  BookUpdate,
-  ImportableBookMetadata,
-  ImportableFile,
-  LibraryAuthor,
-  LibraryBook,
+	BookUpdate,
+	ImportableBookMetadata,
+	ImportableFile,
+	LibraryAuthor,
+	LibraryBook,
 } from "../../bindings";
 
 export const DeviceType = {
-  externalDrive: "EXTERNAL_DRIVE",
+	externalDrive: "EXTERNAL_DRIVE",
 } as const;
 export type TDeviceType = (typeof DeviceType)[keyof typeof DeviceType];
 export type FileType = {
-  extension: string;
-  mimetype: string;
-}
+	extension: string;
+	mimetype: string;
+};
 
 export type Library = {
-  listBooks(): Promise<LibraryBook[]>;
-  listAuthors(): Promise<LibraryAuthor[]>;
-  sendToDevice(
-    book: LibraryBook,
-    deviceOptions: {
-      type: TDeviceType;
-    } & {
-      type: "EXTERNAL_DRIVE";
-      path: string;
-    }
-  ): Promise<void>;
-  updateBook(bookId: string, updates: BookUpdate): Promise<void>;
+	listBooks(): Promise<LibraryBook[]>;
+	listAuthors(): Promise<LibraryAuthor[]>;
+	sendToDevice(
+		book: LibraryBook,
+		deviceOptions: {
+			type: TDeviceType;
+		} & {
+			type: "EXTERNAL_DRIVE";
+			path: string;
+		},
+	): Promise<void>;
+	updateBook(bookId: string, updates: BookUpdate): Promise<void>;
 
-  /**
-   * Returns the path to the cover image for the book with the given ID.
-   *
-   * Only useful for Local libraries, required to be sync so that it can be
-   * used in the `src` attribute of an `<img>` tag or as the icon in a
-   * `startDrag` call.
-   * @param book_id Book to retrieve the cover for.
-   */
-  getCoverPathForBook(book_id: LibraryBook["id"]): string | undefined;
-  /**
-   * Returns an asset URL for the cover image for the book with the given ID.
-   *
-   * @param book_id Book to retrieve the cover for.
-   */
-  getCoverUrlForBook(book_id: LibraryBook["id"]): string | undefined;
+	/**
+	 * Returns the path to the cover image for the book with the given ID.
+	 *
+	 * Only useful for Local libraries, required to be sync so that it can be
+	 * used in the `src` attribute of an `<img>` tag or as the icon in a
+	 * `startDrag` call.
+	 * @param book_id Book to retrieve the cover for.
+	 */
+	getCoverPathForBook(book_id: LibraryBook["id"]): string | undefined;
+	/**
+	 * Returns an asset URL for the cover image for the book with the given ID.
+	 *
+	 * @param book_id Book to retrieve the cover for.
+	 */
+	getCoverUrlForBook(book_id: LibraryBook["id"]): string | undefined;
 
-  /**
-   * Returns the absolute path for the default file for ID'ed book.
-   * 
-   * Only useful for Local Libraries, required to be sync so that it can be
-   * used in the `startDrag` call.
-   * @param book_id Book to retrieve the file for.
-   */
-  getDefaultFilePathForBook(book_id: LibraryBook["id"]): string | undefined;
+	/**
+	 * Returns the absolute path for the default file for ID'ed book.
+	 *
+	 * Only useful for Local Libraries, required to be sync so that it can be
+	 * used in the `startDrag` call.
+	 * @param book_id Book to retrieve the file for.
+	 */
+	getDefaultFilePathForBook(book_id: LibraryBook["id"]): string | undefined;
 
-  /**
-   * Return an ImportableFile if the file at `filePath` can be added to the library.
-   * @param filePath
-   */
-  checkFileImportable(filePath: string): Promise<ImportableFile | undefined>;
-  /**
+	/**
+	 * Return an ImportableFile if the file at `filePath` can be added to the library.
+	 * @param filePath
+	 */
+	checkFileImportable(filePath: string): Promise<ImportableFile | undefined>;
+	/**
    * Gets Metadata for a file that can be imported.
 
    * `ImportableFile` is used to ensure that the file can be imported:
@@ -67,41 +67,40 @@ export type Library = {
     
    * @param importableFile
    */
-  getImportableFileMetadata(
-    importableFile: ImportableFile
-  ): Promise<ImportableBookMetadata | undefined>;
-  /**
-   * Adds a file to the library.
-   *
-   * Users can edit `metadata` before calling this function. For example, they
-   * can change the title of the book before it's added to the DB.
-   *
-   * `ImportableBookMetadata` is used to ensure that the file can be imported:
-   * see {@link Library#getImportableFileMetadata} for more details.
-   *
-   * @param metadata
-   */
-  addImportableFileByMetadata(
-    metadata: ImportableBookMetadata
-  ): Promise<LibraryBook["id"] | undefined>;
+	getImportableFileMetadata(
+		importableFile: ImportableFile,
+	): Promise<ImportableBookMetadata | undefined>;
+	/**
+	 * Adds a file to the library.
+	 *
+	 * Users can edit `metadata` before calling this function. For example, they
+	 * can change the title of the book before it's added to the DB.
+	 *
+	 * `ImportableBookMetadata` is used to ensure that the file can be imported:
+	 * see {@link Library#getImportableFileMetadata} for more details.
+	 *
+	 * @param metadata
+	 */
+	addImportableFileByMetadata(
+		metadata: ImportableBookMetadata,
+	): Promise<LibraryBook["id"] | undefined>;
 
-  /**
-   * Returns a list of valid file extensions & mimetypes for files users want to
-   * add to their library.
-   */
-  listValidFileTypes(): Promise<FileType[]>;
+	/**
+	 * Returns a list of valid file extensions & mimetypes for files users want to
+	 * add to their library.
+	 */
+	listValidFileTypes(): Promise<FileType[]>;
 };
 
 export type LocalConnectionOptions = {
-  connectionType: "local";
-  libraryPath: string;
+	connectionType: "local";
+	libraryPath: string;
 };
 export type RemoteConnectionOptions = {
-  connectionType: "remote";
-  url: string;
+	connectionType: "remote";
+	url: string;
 };
 
-export type Options =
-  | {
-      libraryType: "calibre";
-    } & (LocalConnectionOptions | RemoteConnectionOptions);
+export type Options = {
+	libraryType: "calibre";
+} & (LocalConnectionOptions | RemoteConnectionOptions);
