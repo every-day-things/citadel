@@ -18,8 +18,7 @@ pub struct BookFile {
 
 impl BookFile {
     pub fn as_filename(&self) -> String {
-        let mimetype = MIMETYPE::from_file_extension(&self.format)
-            .unwrap_or(MIMETYPE::UNKNOWN);
+        let mimetype = MIMETYPE::from_file_extension(&self.format).unwrap_or(MIMETYPE::UNKNOWN);
         let ext = mimetype.to_file_extension();
 
         if ext.is_empty() {

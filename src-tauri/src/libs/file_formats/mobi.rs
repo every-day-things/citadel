@@ -108,7 +108,9 @@ pub fn read_metadata(path: &Path) -> Option<MobiMetadata> {
             let date: Option<NaiveDate> = NaiveDateTime::parse_from_str(
                 &m.metadata.publish_date().unwrap_or_default(),
                 "%Y-%m-%dT%H:%M:%S%z",
-            ).map(|dt| dt.date()).ok();
+            )
+            .map(|dt| dt.date())
+            .ok();
 
             let cover_image = m.image_records().last().map(|i| i.content.to_vec());
 
