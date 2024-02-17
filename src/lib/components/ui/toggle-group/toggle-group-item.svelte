@@ -20,9 +20,9 @@
 	class={cn(
 		toggleVariants({
 			variant: ctx.variant || variant,
-			size: ctx.size || size
+			size: ctx.size || size,
 		}),
-		className
+		className,
 	)}
 	{value}
 	{...$$restProps}

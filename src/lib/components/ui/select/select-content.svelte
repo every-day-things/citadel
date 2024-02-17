@@ -13,7 +13,7 @@
 	export let outTransitionConfig: $$Props["outTransitionConfig"] = {
 		start: 0.95,
 		opacity: 0,
-		duration: 50
+		duration: 50,
 	};
 	export { className as class };
 </script>
@@ -26,7 +26,7 @@
 	{sideOffset}
 	class={cn(
 		"relative z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md focus:outline-none",
-		className
+		className,
 	)}
 	{...$$restProps}
 >
