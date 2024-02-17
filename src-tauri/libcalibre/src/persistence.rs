@@ -2,7 +2,6 @@ use diesel::prelude::*;
 use diesel::sql_types::Text;
 use regex::Regex;
 
-
 /// Creates a sortable book title by moving the preposition to the end of the title.
 ///
 /// "Unused" is allowed because this function is called from SQL, and registered

@@ -89,7 +89,9 @@ pub fn calibre_list_all_filetypes() -> Vec<(&'static str, &'static str)> {
     super::file_formats::SupportedFormats::list_all()
         .iter()
         .map(|(_, extension)| (MIMETYPE::from_file_extension(extension), *extension))
-        .filter(|(mimetype, _)| mimetype.is_some() && mimetype.as_ref().unwrap() != &MIMETYPE::UNKNOWN)
+        .filter(|(mimetype, _)| {
+            mimetype.is_some() && mimetype.as_ref().unwrap() != &MIMETYPE::UNKNOWN
+        })
         .map(|(mimetype, ext)| (mimetype.unwrap().as_str(), ext))
         .collect()
 }

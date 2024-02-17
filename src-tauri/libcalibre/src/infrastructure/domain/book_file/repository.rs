@@ -64,14 +64,8 @@ impl Repository for BookFileRepository {
         }
     }
 
-    fn update(
-        &mut self,
-        file_id: i32,
-        file: &UpdateBookFile
-    ) -> Result<BookFile, ()> {
+    fn update(&mut self, file_id: i32, file: &UpdateBookFile) -> Result<BookFile, ()> {
         use crate::schema::data::dsl::*;
-
-        
 
         diesel::update(data)
             .filter(id.eq(file_id))
