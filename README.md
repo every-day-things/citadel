@@ -47,6 +47,21 @@ bun run dev
 # or just bun dev
 ```
 
+### Lint & Formatting
+
+To lint all source code, run `bun lint`. To autoformat, run `bun format`.
+
+| Scope | Action | Command |
+| --- | --- | --- |
+| All code | Format | `bun format` |
+| All code | Format (Check) | `bun format:check` |
+| All code | Lint | `bun lint` |
+| Backend | Format | `bun format:backend` |
+| Backend | Lint | `bun lint:backend` |
+| Frontend | Format | `bun format:web` |
+| Frontend | Lint | `bun lint:web` |
+
+
 ### App preview without backend
 
 You can run just the frontend with this command, although you WILL see errors as the Rust backend will be missing but is assumed to exist:
