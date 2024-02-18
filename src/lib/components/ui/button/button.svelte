@@ -16,8 +16,6 @@
 	export let fullOnKid = false;
 
 	export { className as class };
-
-	console.log($$restProps);
 </script>
 
 <button
