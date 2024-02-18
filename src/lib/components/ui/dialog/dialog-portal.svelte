@@ -1,9 +1,13 @@
 <script lang="ts">
-	import { Dialog as DialogPrimitive } from "bits-ui";
+	import { createDialog, melt } from "@melt-ui/svelte";
 
-	type $$Props = DialogPrimitive.PortalProps;
+	type $$Props = {
+		portalled: ReturnType<typeof createDialog>["elements"]["portalled"];
+	};
+
+	export let portalled: $$Props["portalled"];
 </script>
 
-<DialogPrimitive.Portal {...$$restProps}>
+<div use:melt={$portalled}>
 	<slot />
-</DialogPrimitive.Portal>
+</div>

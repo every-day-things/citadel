@@ -211,6 +211,7 @@
 
 	--bg-brand: var(--ctp-macchiato-mauve);
 	--bg-primary: var(--ctp-macchiato-surface0);
+	--bg-primary_rgb: var(--ctp-macchiato-surface0-rgb);
 	--bg-secondary: var(--ctp-macchiato-crust);
 	--bg-tertiary: var(--ctp-macchiato-surface2);
 	--bg-tertiary-hover: rgb(var(--ctp-macchiato-overlay1-rgb) / 0.5);
@@ -243,6 +244,7 @@
 
 		--bg-brand: var(--ctp-latte-mauve);
 		--bg-primary: var(--ctp-latte-base);
+		--bg-primary_rgb: var(--ctp-latte-surface0-rgb);
 		--bg-secondary: var(--ctp-latte-crust);
 		--bg-tertiary: var(--ctp-latte-overlay0);
 

@@ -1,16 +1,21 @@
 <script lang="ts">
-	import { Dialog as DialogPrimitive } from "bits-ui";
-	import { cn } from "$lib/utils";
+	import { melt, type createDialog } from "@melt-ui/svelte";
 
-	type $$Props = DialogPrimitive.TitleProps;
-
-	let className: $$Props["class"] = undefined;
-	export { className as class };
+	type $$Props = {
+		title: ReturnType<typeof createDialog>["elements"]["title"];
+	};
+	export let title: $$Props["title"];
 </script>
 
-<DialogPrimitive.Title
-	class={cn("text-lg font-semibold leading-none tracking-tight", className)}
-	{...$$restProps}
->
+<h2 use:melt={$title} class="title">
 	<slot />
-</DialogPrimitive.Title>
+</h2>
+
+<style>
+	.title {
+		font-size: 1.125rem;
+		font-weight: 600;
+		line-height: 1;
+		letter-spacing: -0.025em;
+	}
+</style>

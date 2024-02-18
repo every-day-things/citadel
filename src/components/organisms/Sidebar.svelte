@@ -1,20 +1,18 @@
 <script lang="ts">
 	import { page } from "$app/stores";
-	import { promptToAddBook, commitAddBook } from "$lib/library/addBook";
 	import {
 		pickLibrary,
 		selectNewLibrary,
 		createLibrary,
 	} from "$lib/library/pickLibrary";
-	import { books } from "../../stores/books";
-	import { libraryClient } from "../../stores/library";
 	import { commands } from "../../bindings";
 	import { Button } from "$lib/components/ui/button";
 	import { writable } from "svelte/store";
 	import type { ImportableBookMetadata } from "../../bindings";
 	import * as Dialog from "$lib/components/ui/dialog";
-	import { fade } from "svelte/transition";
-	import Input from "$lib/components/ui/input/input.svelte";
+	import AddBook from "./AddBook.svelte";
+	import { beginAddBookHandler } from "./AddBook";
+	import { createDialog } from "@melt-ui/svelte";
 
 	type Optional<T> = T | null;
 
@@ -36,21 +34,11 @@
 		});
 	}
 
-	const beginAddBookHandler = async () => {
-		const res = await promptToAddBook(libraryClient());
-		if (res) {
-			bookMetadata.set(res);
+	const addBookHandler = async () => {
+		const maybeMetadata = await beginAddBookHandler();
+		if (maybeMetadata) {
+			bookMetadata.set(maybeMetadata);
 			isMetadataEditorOpen.set(true);
-		}
-	};
-
-	const commitAddBookHandler = async () => {
-		if ($bookMetadata) {
-			const result = await commitAddBook(libraryClient(), $bookMetadata);
-			// side effects: update in-cache book list when Library updated
-			books.set(await libraryClient().listBooks());
-			isMetadataEditorOpen.set(false);
-			bookMetadata.set(null);
 		}
 	};
 
@@ -68,8 +56,9 @@
 		}
 	};
 
-	const pluralize = (count: number, singular: string, plural: string) =>
-		count === 1 ? singular : plural;
+	const {
+		elements: { portalled, overlay, content, description, title, close },
+	} = createDialog();
 </script>
 
 {#if sidebarOpen}
@@ -93,69 +82,8 @@
 		</button>
 		<div class="group">
 			<p class="label">My Library</p>
-			<Button variant="secondary" on:click={beginAddBookHandler}
-				>⊕ Add book</Button
-			>
-			<Dialog.Root bind:open={$isMetadataEditorOpen}>
-				<Dialog.Content transition={fade}>
-					<Dialog.Header>
-						<Dialog.Title>Add new book</Dialog.Title>
-						{#if $bookMetadata === null}
-							<p>
-								Something went wrong. Probably horribly wrong. If you see this
-								message twice, please report an issue on GitHub.
-							</p>
-						{:else}
-							<form class="flex flex-col gap-4">
-								<label for="title">Title</label>
-								<Input
-									type="text"
-									bind:value={$bookMetadata.title}
-									id="title"
-								/>
-								<label for="authors">Authors</label>
-								<p class="text-sm text-slate-400 dark:text-slate-200">
-									Adding {$authorList.length}
-									{pluralize($authorList.length, "author", "authors")}:
-									{#each $authorList as author}
-										<span
-											class="m-1 whitespace-nowrap rounded-lg bg-blue-200 px-2 py-1 text-sm"
-											>{author}</span
-										>
-										{" "}
-									{/each}
-								</p>
-								<ul id="authors" class="flex flex-col gap-1">
-									{#each $authorList as author}
-										<li class="flex w-full flex-row justify-between">
-											<Input type="text" bind:value={author} class="max-w-72" />
-											<button
-												class="ml-2"
-												on:click={() => {
-													const newAuthorList = $authorList.filter(
-														(a) => a !== author,
-													);
-													authorList.set(newAuthorList);
-												}}>X</button
-											>
-										</li>
-									{/each}
-									<button
-										on:click={() => {
-											authorList.set([...$authorList, ""]);
-										}}>+ add author</button
-									>
-								</ul>
-								<Button
-									variant="default"
-									on:click={commitAddBookHandler}
-									class="mt-6">Add book</Button
-								>
-							</form>
-						{/if}
-					</Dialog.Header>
-				</Dialog.Content>
-			</Dialog.Root>
+			<Button variant="secondary" on:click={addBookHandler}>⊕ Add book</Button>
+			<AddBook {isMetadataEditorOpen} {bookMetadata} />
 			<Button variant="secondary" on:click={switchLibraryHandler}
 				>Switch Library</Button
 			>
@@ -210,11 +138,11 @@
 		</button>
 	</div>
 {/if}
-<Dialog.Root bind:open={$maybeCreateNewLibrary}>
-	<Dialog.Content transition={fade}>
+<Dialog.Portal {portalled}>
+	<Dialog.Content bind:open={maybeCreateNewLibrary} {content} {overlay} {close}>
 		<Dialog.Header>
-			<Dialog.Title>Create new library</Dialog.Title>
-			<Dialog.Description>
+			<Dialog.Title {title}>Create new library</Dialog.Title>
+			<Dialog.Description {description}>
 				<p>
 					There is no library at the path you selected. Would you like to create
 					a new library at this location?
@@ -243,7 +171,7 @@
 			</Dialog.Description>
 		</Dialog.Header>
 	</Dialog.Content>
-</Dialog.Root>
+</Dialog.Portal>
 
 <style>
 	button:has(svg) {

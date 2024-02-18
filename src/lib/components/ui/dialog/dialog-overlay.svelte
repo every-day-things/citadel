@@ -1,21 +1,27 @@
 <script lang="ts">
 	import { Dialog as DialogPrimitive } from "bits-ui";
-	import { cn } from "$lib/utils";
-	import { fade } from "svelte/transition";
+	import { createDialog, melt } from "@melt-ui/svelte";
 
-	type $$Props = DialogPrimitive.OverlayProps;
-
-	let className: $$Props["class"] = undefined;
-	export let transition: $$Props["transition"] = fade;
-	export let transitionConfig: $$Props["transitionConfig"] = {
-		duration: 150,
-	};
-	export { className as class };
+	export let overlay: ReturnType<typeof createDialog>["elements"]["overlay"];
+	export let transition: Required<DialogPrimitive.OverlayProps>["transition"];
+	export let transitionConfig: DialogPrimitive.OverlayProps["transitionConfig"];
 </script>
 
-<DialogPrimitive.Overlay
-	{transition}
-	{transitionConfig}
-	class={cn("fixed inset-0 z-50 bg-background/80 backdrop-blur-sm ", className)}
-	{...$$restProps}
+<div
+	use:melt={$overlay}
+	class="overlay"
+	transition:transition={transitionConfig}
 />
+
+<style>
+	.overlay {
+		position: fixed;
+		inset: 0;
+		z-index: 50;
+		width: 100vw;
+		height: 100vh;
+		background-color: rgba(var(--bg-primary_rgb) / 80%);
+		backdrop-filter: blur(4px);
+		opacity: 1;
+	}
+</style>
