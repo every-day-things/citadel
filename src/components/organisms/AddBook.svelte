@@ -35,7 +35,7 @@
 	$: if (!$open) isMetadataEditorOpen.set(false);
 
 	const {
-		elements: { portalled, overlay, content, description, title, close },
+		elements: { portalled, overlay, content, title, close },
 		states: { open },
 	} = createDialog();
 </script>
@@ -90,10 +90,6 @@
 				>
 			</form>
 		{/if}
-		<Dialog.Footer
-			><p>Hi there</p>
-			<p>How are you?</p>
-		</Dialog.Footer>
 	</Dialog.Content>
 </Dialog.Portal>
 

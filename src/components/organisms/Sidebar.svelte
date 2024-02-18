@@ -1,18 +1,13 @@
 <script lang="ts">
 	import { page } from "$app/stores";
-	import {
-		pickLibrary,
-		selectNewLibrary,
-		createLibrary,
-	} from "$lib/library/pickLibrary";
+	import { pickLibrary, selectNewLibrary } from "$lib/library/pickLibrary";
 	import { commands } from "../../bindings";
 	import { Button } from "$lib/components/ui/button";
 	import { writable } from "svelte/store";
 	import type { ImportableBookMetadata } from "../../bindings";
-	import * as Dialog from "$lib/components/ui/dialog";
 	import AddBook from "./AddBook.svelte";
 	import { beginAddBookHandler } from "./AddBook";
-	import { createDialog } from "@melt-ui/svelte";
+	import DialogCreateLibrary from "./DialogCreateLibrary.svelte";
 
 	type Optional<T> = T | null;
 
@@ -55,10 +50,6 @@
 			maybeCreateNewLibrary.set(true);
 		}
 	};
-
-	const {
-		elements: { portalled, overlay, content, description, title, close },
-	} = createDialog();
 </script>
 
 {#if sidebarOpen}
@@ -138,40 +129,7 @@
 		</button>
 	</div>
 {/if}
-<Dialog.Portal {portalled}>
-	<Dialog.Content bind:open={maybeCreateNewLibrary} {content} {overlay} {close}>
-		<Dialog.Header>
-			<Dialog.Title {title}>Create new library</Dialog.Title>
-			<Dialog.Description {description}>
-				<p>
-					There is no library at the path you selected. Would you like to create
-					a new library at this location?
-				</p>
-				<p>You selected: <code>{$maybeNewLibraryPath}</code></p>
-				<div class="flex row justify-end gap-4">
-					<Button
-						variant="secondary"
-						on:click={() => {
-							maybeCreateNewLibrary.set(false);
-							maybeNewLibraryPath.set("");
-						}}
-						class="mt-6">Cancel</Button
-					>
-					<Button
-						variant="default"
-						on:click={() => {
-							createLibrary($maybeNewLibraryPath);
-							selectNewLibrary($maybeNewLibraryPath);
-							$maybeCreateNewLibrary = false;
-							$maybeNewLibraryPath = "";
-						}}
-						class="mt-6">Create library</Button
-					>
-				</div>
-			</Dialog.Description>
-		</Dialog.Header>
-	</Dialog.Content>
-</Dialog.Portal>
+<DialogCreateLibrary {maybeCreateNewLibrary} {maybeNewLibraryPath} />
 
 <style>
 	button:has(svg) {

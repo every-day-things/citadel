@@ -9,8 +9,7 @@
 	import { commands } from "../../bindings";
 	import { Button } from "$lib/components/ui/button";
 	import { writable } from "svelte/store";
-	import * as Dialog from "$lib/components/ui/dialog";
-	import { fade } from "svelte/transition";
+	import DialogCreateLibrary from "../../components/organisms/DialogCreateLibrary.svelte";
 
 	let maybeCreateNewLibrary = writable(false);
 	let maybeNewLibraryPath = writable("");
@@ -40,41 +39,7 @@
 		Choose Calibre Library Folder
 	</Button>
 </div>
-<Dialog.Root bind:open={$maybeCreateNewLibrary}>
-	<Dialog.Content transition={fade}>
-		<Dialog.Header>
-			<Dialog.Title>Create new library</Dialog.Title>
-			<Dialog.Description>
-				<p>
-					There is no library at the path you selected. Would you like to create
-					a new library at this location?
-				</p>
-				<p>You selected: <code>{$maybeNewLibraryPath}</code></p>
-				<div class="flex row justify-end gap-4">
-					<Button
-						variant="secondary"
-						on:click={() => {
-							maybeCreateNewLibrary.set(false);
-							maybeNewLibraryPath.set("");
-						}}
-						class="mt-6">Cancel</Button
-					>
-					<Button
-						variant="default"
-						on:click={() => {
-							createLibrary($maybeNewLibraryPath);
-							selectNewLibrary($maybeNewLibraryPath);
-							$maybeCreateNewLibrary = false;
-							$maybeNewLibraryPath = "";
-							goto("/");
-						}}
-						class="mt-6">Create library</Button
-					>
-				</div>
-			</Dialog.Description>
-		</Dialog.Header>
-	</Dialog.Content>
-</Dialog.Root>
+<DialogCreateLibrary {maybeCreateNewLibrary} {maybeNewLibraryPath} />
 
 <style>
 	h1 {
