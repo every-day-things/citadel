@@ -205,16 +205,22 @@
 	--text-onprimary: var(--ctp-macchiato-text);
 	--text-onsecondary: var(--ctp-macchiato-text);
 	--text-ontertiary: var(--ctp-macchiato-text);
+	--text-ondestructive: var(--ctp-macchiato-base);
+
 	/* #endregion text */
 
 	--icon-brand: var(--ctp-macchiato-blue);
 
 	--bg-brand: var(--ctp-macchiato-mauve);
+	--bg-brand-hover: rgb(var(--ctp-macchiato-mauve-rgb) / 0.5);
 	--bg-primary: var(--ctp-macchiato-surface0);
 	--bg-primary_rgb: var(--ctp-macchiato-surface0-rgb);
 	--bg-secondary: var(--ctp-macchiato-crust);
+	--bg-secondary-hover: rgb(var(--ctp-macchiato-overlay0-rgb) / 0.5);
 	--bg-tertiary: var(--ctp-macchiato-surface2);
 	--bg-tertiary-hover: rgb(var(--ctp-macchiato-overlay1-rgb) / 0.5);
+	--bg-destructive: var(--ctp-macchiato-red);
+	--bg-destructive-hover: rgb(var(--ctp-macchiato-red-rgb) / 0.5);
 
 	--background-gradient-image: var(--gradient--back-2);
 	--focus-ring: var(--ctp-macchiato-blue);
@@ -238,15 +244,20 @@
 		--text-onprimary: var(--ctp-latte-text);
 		--text-onsecondary: var(--ctp-latte-text);
 		--text-ontertiary: var(--ctp-latte-base);
+		--text-ondestructive: var(--ctp-latte-base);
 		/* #endregion text */
 
 		--icon-brand: var(--ctp-latte-mauve);
 
 		--bg-brand: var(--ctp-latte-mauve);
+		--bg-brand-hover: rgb(var(--ctp-latte-mauve-rgb) / 0.5);
 		--bg-primary: var(--ctp-latte-base);
 		--bg-primary_rgb: var(--ctp-latte-surface0-rgb);
 		--bg-secondary: var(--ctp-latte-crust);
+		--bg-secondary-hover: rgb(var(--ctp-latte-crust-rgb) / 0.5);
 		--bg-tertiary: var(--ctp-latte-overlay0);
+		--bg-destructive: var(--ctp-latte-red);
+		--bg-destructive-hover: rgb(var(--ctp-latte-red-rgb) / 0.5);
 
 		--background-gradient-image: var(--gradient--back-1);
 		--focus-ring: var(--ctp-latte-blue);

@@ -54,7 +54,7 @@
 
 {#if sidebarOpen}
 	<nav>
-		<button on:click={() => (sidebarOpen = false)}>
+		<Button size="icon" variant="ghost" on:click={() => (sidebarOpen = false)}>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
 				class="icon icon-tabler icon-tabler-layout-sidebar-left-collapse"
@@ -70,10 +70,10 @@
 					d="M4 4m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z"
 				/><path d="M9 4v16" /><path d="M15 10l-2 2l2 2" /></svg
 			>
-		</button>
+		</Button>
 		<div class="group">
 			<p class="label">My Library</p>
-			<Button variant="secondary" on:click={addBookHandler}>⊕ Add book</Button>
+			<Button on:click={addBookHandler}>⊕ Add book</Button>
 			<AddBook {isMetadataEditorOpen} {bookMetadata} />
 			<Button variant="secondary" on:click={switchLibraryHandler}
 				>Switch Library</Button
@@ -106,7 +106,12 @@
 	</nav>
 {:else}
 	<div class="floating-open">
-		<button class="open" on:click={() => (sidebarOpen = true)}>
+		<Button
+			size="icon"
+			variant="ghost"
+			fullOnKid
+			on:click={() => (sidebarOpen = true)}
+		>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
 				class="icon icon-tabler icon-tabler-layout-sidebar-left-expand"
@@ -126,34 +131,21 @@
 				<path d="M9 4v16" />
 				<path d="M14 10l2 2l-2 2" />
 			</svg>
-		</button>
+		</Button>
 	</div>
 {/if}
 <DialogCreateLibrary {maybeCreateNewLibrary} {maybeNewLibraryPath} />
 
 <style>
-	button:has(svg) {
-		background: none;
-		border: none;
-		padding: 0;
-		margin: 0;
-		cursor: pointer;
-		color: var(--text-onsecondary);
-		min-width: 44px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-
-	button.open:has(svg) {
-		color: var(--text-primary);
-	}
-
 	.floating-open {
 		position: sticky;
-		padding: 8px 0;
+		padding: 2px 0;
 		z-index: 100;
 		background-color: var(--bg-secondary);
+		display: flex;
+		flex-direction: column;
+		align-content: center;
+		min-width: 44px;
 	}
 
 	.group {
