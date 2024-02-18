@@ -59,10 +59,7 @@
 					Adding {$authorList.length}
 					{pluralize($authorList.length, "author", "authors")}:
 					{#each $authorList as author}
-						<span
-							class="m-1 whitespace-nowrap rounded-lg bg-blue-200 px-2 py-1 text-sm"
-							>{author}</span
-						>
+						<span class="authorItem">{author}</span>
 						{" "}
 					{/each}
 				</p>
@@ -108,5 +105,15 @@
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
+	}
+
+	.authorItem {
+		margin: 0.25rem;
+		white-space: nowrap;
+		border-radius: 0.375rem;
+		background-color: var(--bg-secondary);
+		color: var(--text-onsecondary);
+		padding: 0.25rem 0.75rem;
+		font-size: 0.875rem;
 	}
 </style>
