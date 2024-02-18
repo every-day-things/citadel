@@ -17,13 +17,15 @@
 	export let isMetadataEditorOpen = writable(false);
 	export let bookMetadata = writable<Optional<ImportableBookMetadata>>(null);
 
-	let authorList = writable<string[]>([]);
-
-	$: $authorList = $bookMetadata?.author_names ?? [];
+	let authorList = writable<string[]>($bookMetadata?.author_names ?? []);
 
 	const commitAddBookHandler = async () => {
 		if ($bookMetadata) {
-			const result = await commitAddBook(libraryClient(), $bookMetadata);
+			const bookToAdd = {
+				...$bookMetadata,
+				author_names: $authorList,
+			};
+			const result = await commitAddBook(libraryClient(), bookToAdd);
 			// side effects: update in-cache book list when Library updated
 			books.set(await libraryClient().listBooks());
 			isMetadataEditorOpen.set(false);
