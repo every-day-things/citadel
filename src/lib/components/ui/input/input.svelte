@@ -6,16 +6,10 @@
 	type $$Props = HTMLInputAttributes;
 	type $$Events = InputEvents;
 
-	let className: $$Props["class"] = undefined;
 	export let value: $$Props["value"] = undefined;
-	export { className as class };
 </script>
 
 <input
-	class={cn(
-		"flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-foreground file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
-		className,
-	)}
 	bind:value
 	on:blur
 	on:change
@@ -33,3 +27,35 @@
 	on:input
 	{...$$restProps}
 />
+
+<style>
+	input {
+		display: flex;
+		height: 2.25rem;
+		width: 100%;
+		border-radius: 0.375rem;
+		border: 1px solid var(--bg-secondary);
+		background-color: var(--bg-tertiary);
+		padding: 0.25rem 0.75rem;
+		font-size: 0.875rem;
+		box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+		transition:
+			color 0.2s ease-in-out,
+			background-color 0.2s ease-in-out,
+			border-color 0.2s ease-in-out;
+	}
+
+	input::placeholder {
+		color: var(--text-ontertiary);
+	}
+
+	input:focus-visible {
+		outline: none;
+		box-shadow: 0 0 0 1px var(--focus-ring);
+	}
+
+	input:disabled {
+		cursor: not-allowed;
+		opacity: 0.5;
+	}
+</style>
