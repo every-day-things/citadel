@@ -15,7 +15,7 @@ mod http;
 
 const SERVER_FLAG: &str = "--server";
 
-fn is_server(args: &Vec<String>) -> bool {
+fn is_server(args: &[String]) -> bool {
     args.iter().any(|x| x == SERVER_FLAG)
 }
 
@@ -43,12 +43,13 @@ fn run_tauri_backend() -> std::io::Result<()> {
         specta_builder.into_plugin()
     };
 
-    Ok(tauri::Builder::default()
+    tauri::Builder::default()
         .plugin(specta_builder)
         .plugin(tauri_plugin_persisted_scope::init())
         .plugin(tauri_plugin_drag::init())
         .run(tauri::generate_context!())
-        .expect("error while running tauri application"))
+        .expect("error while running tauri application");
+    Ok(())
 }
 
 #[actix_web::main]

@@ -62,19 +62,19 @@ pub struct LibraryAuthor {
 
 #[derive(Serialize, Deserialize, specta::Type)]
 pub enum ImportableBookType {
-    EPUB = 0,
-    PDF = 1,
-    MOBI = 2,
-    TEXT = 3,
+    Epub = 0,
+    Pdf = 1,
+    Mobi = 2,
+    Text = 3,
 }
 
 impl std::fmt::Display for ImportableBookType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ImportableBookType::EPUB => write!(f, "EPUB"),
-            ImportableBookType::PDF => write!(f, "PDF"),
-            ImportableBookType::MOBI => write!(f, "MOBI"),
-            ImportableBookType::TEXT => write!(f, "TXT"),
+            ImportableBookType::Epub => write!(f, "EPUB"),
+            ImportableBookType::Pdf => write!(f, "PDF"),
+            ImportableBookType::Mobi => write!(f, "MOBI"),
+            ImportableBookType::Text => write!(f, "TXT"),
         }
     }
 }

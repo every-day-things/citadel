@@ -33,7 +33,7 @@ async fn get_asset(data: web::Data<AppState>, book_id: web::Path<String>) -> imp
     let books = calibre_load_books_from_db(data.library_path.clone());
     let book_cover_path = books
         .iter()
-        .find(|x| x.id.to_string() == book_id_val)
+        .find(|x| x.id == book_id_val)
         .unwrap()
         .cover_image
         .clone()
@@ -56,7 +56,7 @@ async fn get_book_file(
 
     let file_with_mimetype = books
         .iter()
-        .find(|x| x.id.to_string() == book_id)
+        .find(|x| x.id == book_id)
         .unwrap()
         .file_list
         .iter()
@@ -101,7 +101,7 @@ async fn list_books(data: web::Data<AppState>) -> impl Responder {
                             "{}/download/{}/{}.{}",
                             URL,
                             x.id,
-                            x.title.replace(" ", "%20"), // TODO: use `urlencoding` crate
+                            x.title.replace(' ', "%20"), // TODO: use `urlencoding` crate
                             &f.mime_type
                         ),
                     }),
@@ -114,12 +114,12 @@ async fn list_books(data: web::Data<AppState>) -> impl Responder {
     HttpResponse::Ok().json(Items { items: books })
 }
 
-pub async fn run_http_server(args: &Vec<String>) -> std::io::Result<()> {
+pub async fn run_http_server(args: &[String]) -> std::io::Result<()> {
     let calibre_library_path = args
         .iter()
         .find(|x| x.starts_with("--calibre-library="))
         .unwrap()
-        .split("=")
+        .split('=')
         .collect::<Vec<&str>>()[1]
         .to_string();
     println!("Running in server mode.");

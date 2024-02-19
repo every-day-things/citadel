@@ -78,7 +78,7 @@ path: string; publication_date: string | null;
  * True if a cover image can be extracted from the file at `path`.
  */
 file_contains_cover: boolean }
-export type ImportableBookType = "EPUB" | "PDF" | "MOBI" | "TEXT"
+export type ImportableBookType = "Epub" | "Pdf" | "Mobi" | "Text"
 export type ImportableFile = { path: string }
 export type LibraryAuthor = { id: string; name: string; sortable_name: string }
 export type LibraryBook = { id: string; uuid: string | null; title: string; author_list: LibraryAuthor[]; sortable_title: string | null; author_sort_lookup: { [key in string]: string } | null; file_list: BookFile[]; cover_image: LocalOrRemoteUrl | null }
