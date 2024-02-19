@@ -26,12 +26,12 @@ return await TAURI_INVOKE("plugin:tauri-specta|get_importable_file_metadata", { 
 async checkFileImportable(pathToFile: string) : Promise<{ path: string } | null> {
 return await TAURI_INVOKE("plugin:tauri-specta|check_file_importable", { pathToFile });
 },
-async addBookToDbByMetadata(libraryPath: string, md: ImportableBookMetadata) : Promise<null> {
-return await TAURI_INVOKE("plugin:tauri-specta|add_book_to_db_by_metadata", { libraryPath, md });
+async addBookToDbByMetadata(libraryRoot: string, md: ImportableBookMetadata) : Promise<null> {
+return await TAURI_INVOKE("plugin:tauri-specta|add_book_to_db_by_metadata", { libraryRoot, md });
 },
-async updateBook(libraryPath: string, bookId: string, updates: BookUpdate) : Promise<__Result__<number, null>> {
+async updateBook(libraryRoot: string, bookId: string, updates: BookUpdate) : Promise<__Result__<number, null>> {
 try {
-    return { status: "ok", data: await TAURI_INVOKE("plugin:tauri-specta|update_book", { libraryPath, bookId, updates }) };
+    return { status: "ok", data: await TAURI_INVOKE("plugin:tauri-specta|update_book", { libraryRoot, bookId, updates }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };

@@ -1,9 +1,4 @@
-use std::sync::{Arc, Mutex};
-
-use libcalibre::{
-    application::services::domain::author::service::{AuthorService, AuthorServiceTrait},
-    infrastructure::domain::author::repository::AuthorRepository,
-};
+use libcalibre::client::CalibreClient;
 
 use crate::book::LibraryAuthor;
 
@@ -18,20 +13,15 @@ impl From<&libcalibre::Author> for LibraryAuthor {
 }
 
 pub fn list_all(library_root: String) -> Vec<LibraryAuthor> {
-    let database_path = libcalibre::util::get_db_path(&library_root);
-    match database_path {
+    match libcalibre::util::get_db_path(&library_root) {
         None => vec![],
         Some(database_path) => {
-            let author_repo = Box::new(AuthorRepository::new(&database_path));
-            let author_service = Arc::new(Mutex::new(AuthorService::new(author_repo)));
+            let mut client = CalibreClient::new(database_path);
 
-            {
-                let mut guarded_as = author_service.lock().unwrap();
-                match guarded_as.all() {
-                    Ok(authors) => authors.iter().map(|a| LibraryAuthor::from(a)).collect(),
-                    Err(_) => vec![],
-                }
-            }
+            client
+                .list_all_authors()
+                .map(|author_list| author_list.iter().map(|a| LibraryAuthor::from(a)).collect())
+                .unwrap_or(vec![])
         }
     }
 }

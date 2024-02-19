@@ -1,6 +1,10 @@
 use std::{collections::HashMap, path::PathBuf};
 
-use chrono::NaiveDate;
+use chrono::{NaiveDate, NaiveDateTime};
+use libcalibre::application::services::{
+    domain::{author::dto::NewAuthorDto, book::dto::NewBookDto},
+    library::dto::{NewLibraryEntryDto, NewLibraryFileDto},
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, specta::Type, Deserialize, Clone)]
@@ -93,6 +97,41 @@ pub struct ImportableBookMetadata {
     pub publication_date: Option<NaiveDate>,
     /// True if a cover image can be extracted from the file at `path`.
     pub file_contains_cover: bool,
+}
+
+impl ImportableBookMetadata {
+    pub fn to_new_library_entry_dto(&self) -> NewLibraryEntryDto {
+        NewLibraryEntryDto {
+            book: NewBookDto {
+                title: self.title.clone(),
+                timestamp: None,
+                pubdate: Some(NaiveDateTime::new(
+                    self.publication_date
+                        .unwrap_or(NaiveDate::from_ymd(1970, 1, 1)),
+                    chrono::NaiveTime::from_hms(0, 0, 0),
+                )),
+                series_index: 1.0,
+                isbn: None,
+                lccn: None,
+                flags: 0,
+                has_cover: None,
+            },
+            authors: match &self.author_names {
+                Some(authors) => authors
+                    .iter()
+                    .map(|name| NewAuthorDto {
+                        full_name: name.clone(),
+                        sortable_name: "".to_string(),
+                        external_url: None,
+                    })
+                    .collect(),
+                None => vec![],
+            },
+            files: Some(vec![NewLibraryFileDto {
+                path: self.path.clone(),
+            }]),
+        }
+    }
 }
 
 pub trait Library {
