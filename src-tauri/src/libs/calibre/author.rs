@@ -20,8 +20,8 @@ pub fn list_all(library_root: String) -> Vec<LibraryAuthor> {
 
             client
                 .list_all_authors()
-                .map(|author_list| author_list.iter().map(|a| LibraryAuthor::from(a)).collect())
-                .unwrap_or(vec![])
+                .map(|author_list| author_list.iter().map(LibraryAuthor::from).collect())
+                .unwrap_or_default()
         }
     }
 }

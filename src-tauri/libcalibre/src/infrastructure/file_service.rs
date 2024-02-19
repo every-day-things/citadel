@@ -48,8 +48,6 @@ impl FileServiceTrait for FileService {
 
     fn write_to_file(&self, path: &Path, contents: Vec<u8>) -> io::Result<()> {
         let complete_path = Path::new(&self.library_root).join(path);
-        let write_res = std::fs::write(complete_path, &contents);
-
-        write_res
+        std::fs::write(complete_path, contents)
     }
 }

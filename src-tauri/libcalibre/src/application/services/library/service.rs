@@ -288,7 +288,7 @@ where
                 .book_service
                 .lock()
                 .map_err(|_| LibSrvcError::DatabaseLocked)?;
-            book_service
+            let _ = book_service
                 .update(book_id, dto.book)
                 .map_err(|_| LibSrvcError::DatabaseBookWriteFailed);
 
@@ -442,7 +442,7 @@ where
                 }?;
 
                 let book_rel_path = Path::new(&book_dir_rel_path).join(&added_book.as_filename());
-                match self.file_service.lock() {
+                let _ = match self.file_service.lock() {
                     Ok(file_service_guard) => file_service_guard
                         .copy_file_to_directory(file.path.as_path(), book_rel_path.as_path())
                         .map_err(|_| LibSrvcError::InvalidDto),

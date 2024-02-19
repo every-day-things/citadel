@@ -15,7 +15,7 @@ fn to_library_book(
 ) -> LibraryBook {
     LibraryBook {
         title: book.title.clone(),
-        author_list: author_list.iter().map(|a| LibraryAuthor::from(a)).collect(),
+        author_list: author_list.iter().map(LibraryAuthor::from).collect(),
         id: book.id.to_string(),
         uuid: book.uuid.clone(),
 

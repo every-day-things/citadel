@@ -10,7 +10,7 @@ impl PdfMetadata {
     pub fn to_importable_book_metadata(&self) -> super::ImportableBookMetadata {
         super::ImportableBookMetadata {
             title: self.title.clone(),
-            file_type: ImportableBookType::PDF,
+            file_type: ImportableBookType::Pdf,
             path: self.path.clone(),
             author_names: None,
             identifier: None,

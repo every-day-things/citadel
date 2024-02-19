@@ -10,7 +10,7 @@ impl TxtMetadata {
     pub fn to_importable_book_metadata(&self) -> super::ImportableBookMetadata {
         super::ImportableBookMetadata {
             title: self.title.clone(),
-            file_type: ImportableBookType::TEXT,
+            file_type: ImportableBookType::Text,
             path: self.path.clone(),
             author_names: None,
             identifier: None,

@@ -94,7 +94,7 @@ pub fn get_importable_file_metadata(file: ImportableFile) -> Option<ImportableBo
     match format {
         Some(SupportedFormats::EPUB) => match epub::read_metadata(&file.path) {
             Some(metadata) => Some(ImportableBookMetadata {
-                file_type: ImportableBookType::EPUB,
+                file_type: ImportableBookType::Epub,
                 title: metadata.title.unwrap_or("".to_string()),
                 author_names: metadata.creator_list,
                 language: metadata.language,
@@ -114,7 +114,7 @@ pub fn get_importable_file_metadata(file: ImportableFile) -> Option<ImportableBo
         | Some(SupportedFormats::KF7)
         | Some(SupportedFormats::KF8) => match mobi::read_metadata(&file.path) {
             Some(metadata) => Some(ImportableBookMetadata {
-                file_type: ImportableBookType::MOBI,
+                file_type: ImportableBookType::Mobi,
                 title: metadata.title,
                 author_names: Some(vec![metadata.author]),
                 identifier: None,
@@ -127,14 +127,12 @@ pub fn get_importable_file_metadata(file: ImportableFile) -> Option<ImportableBo
             }),
             _ => None,
         },
-        Some(SupportedFormats::PDF) => match pdf::read_metadata(&file.path) {
-            Some(metadata) => Some(metadata.to_importable_book_metadata()),
-            _ => None,
-        },
-        Some(SupportedFormats::TXT) => match txt::read_metadata(&file.path) {
-            Some(metadata) => Some(metadata.to_importable_book_metadata()),
-            _ => None,
-        },
+        Some(SupportedFormats::PDF) => {
+            pdf::read_metadata(&file.path).map(|metadata| metadata.to_importable_book_metadata())
+        }
+        Some(SupportedFormats::TXT) => {
+            txt::read_metadata(&file.path).map(|metadata| metadata.to_importable_book_metadata())
+        }
         _ => None,
     }
 }

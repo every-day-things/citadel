@@ -82,7 +82,7 @@ pub fn create_folder_for_author(
     library_root: &String,
     author_name: String,
 ) -> Result<PathBuf, Error> {
-    let author_path = Path::new(&library_root).join(&author_name);
+    let author_path = Path::new(&library_root).join(author_name);
     let author_folder = Path::new(&author_path);
     if !author_folder.exists() {
         match std::fs::create_dir(author_folder) {
@@ -163,10 +163,10 @@ pub fn create_library(handle: tauri::AppHandle, library_root: String) -> Result<
     let result = archive.extract(&library_root).map_err(|e| e.to_string());
 
     // Set a new UUID for the library
-    libcalibre::util::get_db_path(&library_root).map(|db_path| {
+    if let Some(db_path) = libcalibre::util::get_db_path(&library_root) {
         let mut client = CalibreClient::new(db_path);
         let _ = client.dontusethis_randomize_library_uuid();
-    });
+    }
 
     result
 }

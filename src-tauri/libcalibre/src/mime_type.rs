@@ -62,15 +62,15 @@ impl MIMETYPE {
 
 impl PartialEq for MIMETYPE {
     fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (MIMETYPE::EPUB, MIMETYPE::EPUB) => true,
-            (MIMETYPE::MOBI, MIMETYPE::MOBI) => true,
-            (MIMETYPE::PDF, MIMETYPE::PDF) => true,
-            (MIMETYPE::KF7, MIMETYPE::KF7) => true,
-            (MIMETYPE::KF8, MIMETYPE::KF8) => true,
-            (MIMETYPE::TXT, MIMETYPE::TXT) => true,
-            (MIMETYPE::UNKNOWN, MIMETYPE::UNKNOWN) => true,
-            _ => false,
-        }
+        matches!(
+            (self, other),
+            (MIMETYPE::EPUB, MIMETYPE::EPUB)
+                | (MIMETYPE::MOBI, MIMETYPE::MOBI)
+                | (MIMETYPE::PDF, MIMETYPE::PDF)
+                | (MIMETYPE::KF7, MIMETYPE::KF7)
+                | (MIMETYPE::KF8, MIMETYPE::KF8)
+                | (MIMETYPE::TXT, MIMETYPE::TXT)
+                | (MIMETYPE::UNKNOWN, MIMETYPE::UNKNOWN)
+        )
     }
 }

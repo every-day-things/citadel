@@ -34,7 +34,7 @@ pub fn establish_connection(db_path: &str) -> Result<diesel::SqliteConnection, (
 
     // Register SQL function implementations. Ignore any errors.
     let _ = title_sort::register_impl(&mut connection, sort_book_title);
-    let _ = uuid4::register_impl(&mut connection, || uuid::Uuid::new_v4().to_string());
+    let _ = uuid4::register_impl(&connection, || uuid::Uuid::new_v4().to_string());
 
     Ok(connection)
 }
