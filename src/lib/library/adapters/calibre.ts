@@ -33,9 +33,7 @@ const genLocalCalibreClient = async (
 
 	return {
 		listBooks: async () => {
-			const results = await commands.calibreLoadBooksFromDb(
-				config.library_path,
-			);
+			const results = await commands.clbQueryListAllBooks(config.library_path);
 
 			for (const book of results) {
 				bookCoverCache.set(book.id.toString(), {
@@ -58,7 +56,7 @@ const genLocalCalibreClient = async (
 			return results;
 		},
 		listAuthors() {
-			return commands.calibreListAllAuthors(config.library_path);
+			return commands.clbQueryListAllAuthors(config.library_path);
 		},
 		sendToDevice: async (book, deviceOptions) => {
 			await commands.calibreSendToDevice(
@@ -68,7 +66,7 @@ const genLocalCalibreClient = async (
 			);
 		},
 		updateBook: async (bookId, updates) => {
-			await commands.updateBook(options.libraryPath, bookId, updates);
+			await commands.clbCmdUpdateBook(options.libraryPath, bookId, updates);
 		},
 		getCoverPathForBook: (bookId) => {
 			return bookCoverCache.get(bookId)?.localPath;
@@ -82,20 +80,21 @@ const genLocalCalibreClient = async (
 
 		checkFileImportable: async (filePath: string) => {
 			const result =
-				(await commands.checkFileImportable(filePath)) ?? undefined;
+				(await commands.clbQueryIsFileImportable(filePath)) ?? undefined;
 			return result;
 		},
 		getImportableFileMetadata: async (importableFile: ImportableFile) => {
 			const result =
-				(await commands.getImportableFileMetadata(importableFile)) ?? undefined;
+				(await commands.clbQueryImportableFileMetadata(importableFile)) ??
+				undefined;
 			return result;
 		},
 		addImportableFileByMetadata: async (metadata: ImportableBookMetadata) => {
-			await commands.addBookToDbByMetadata(options.libraryPath, metadata);
+			await commands.clbCmdCreateBook(options.libraryPath, metadata);
 			return undefined;
 		},
 		listValidFileTypes: async () => {
-			const result = await commands.calibreListAllFiletypes();
+			const result = await commands.clbQueryListAllFiletypes();
 			return result.map(([mimetype, extension]) => ({
 				extension,
 				mimetype,

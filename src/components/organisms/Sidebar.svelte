@@ -41,7 +41,7 @@
 		const path = await pickLibrary();
 		if (!path) return;
 
-		const selectedIsValid = await commands.isValidLibrary(path);
+		const selectedIsValid = await commands.clbQueryIsPathValidLibrary(path);
 
 		if (selectedIsValid) {
 			selectNewLibrary(path);
@@ -100,7 +100,7 @@
 
 		<div class="bottom">
 			<div>
-				<a aria-disabled="true" href="/"> ⚙️ Settings </a>
+				<a aria-disabled="true" href="/"> ⚙ Settings </a>
 			</div>
 		</div>
 	</nav>

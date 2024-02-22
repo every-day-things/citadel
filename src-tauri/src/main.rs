@@ -23,17 +23,17 @@ fn run_tauri_backend() -> std::io::Result<()> {
     let specta_builder = {
         let specta_builder = tauri_specta::ts::builder()
             .commands(tauri_specta::collect_commands![
-                libs::calibre::calibre_load_books_from_db,
-                libs::calibre::calibre_list_all_authors,
+                libs::calibre::clb_query_list_all_books,
+                libs::calibre::clb_query_list_all_authors,
                 libs::calibre::send_to_device::calibre_send_to_device,
-                libs::calibre::calibre_list_all_filetypes,
+                libs::calibre::clb_query_list_all_filetypes,
                 libs::calibre::init_client,
-                libs::calibre::get_importable_file_metadata,
-                libs::calibre::check_file_importable,
-                libs::calibre::add_book_to_db_by_metadata,
-                libs::calibre::update_book,
-                libs::calibre::is_valid_library,
-                libs::calibre::create_library,
+                libs::calibre::clb_query_importable_file_metadata,
+                libs::calibre::clb_query_is_file_importable,
+                libs::calibre::clb_cmd_create_book,
+                libs::calibre::clb_cmd_update_book,
+                libs::calibre::clb_query_is_path_valid_library,
+                libs::calibre::clb_cmd_create_library,
             ])
             .config(ExportConfig::default().bigint(BigIntExportBehavior::BigInt));
 

@@ -21,7 +21,7 @@ export async function pickLibrary() {
 }
 
 export async function createLibrary(libraryRoot: string) {
-	const create = await commands.createLibrary(libraryRoot);
+	const create = await commands.clbCmdCreateLibrary(libraryRoot);
 	if (create.status === "error") {
 		console.error("Failed to create library", create.error);
 		return;

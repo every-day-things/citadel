@@ -39,19 +39,19 @@ pub fn init_client(library_path: String) -> CalibreClientConfig {
 
 #[tauri::command]
 #[specta::specta]
-pub fn calibre_load_books_from_db(library_root: String) -> Vec<LibraryBook> {
+pub fn clb_query_list_all_books(library_root: String) -> Vec<LibraryBook> {
     book::list_all(library_root)
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn calibre_list_all_authors(library_root: String) -> Vec<LibraryAuthor> {
+pub fn clb_query_list_all_authors(library_root: String) -> Vec<LibraryAuthor> {
     author::list_all(library_root)
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn check_file_importable(path_to_file: String) -> Option<ImportableFile> {
+pub fn clb_query_is_file_importable(path_to_file: String) -> Option<ImportableFile> {
     let file_path = Path::new(&path_to_file);
 
     super::file_formats::validate_file_importable(file_path)
@@ -59,7 +59,7 @@ pub fn check_file_importable(path_to_file: String) -> Option<ImportableFile> {
 
 #[tauri::command]
 #[specta::specta]
-pub fn get_importable_file_metadata(file: ImportableFile) -> Option<ImportableBookMetadata> {
+pub fn clb_query_importable_file_metadata(file: ImportableFile) -> Option<ImportableBookMetadata> {
     super::file_formats::get_importable_file_metadata(file)
 }
 
@@ -67,7 +67,7 @@ pub fn get_importable_file_metadata(file: ImportableFile) -> Option<ImportableBo
 #[specta::specta]
 /// Lists all importable file types. Those are files that Citadel knows how
 /// to import, and that libcalibre supports.
-pub fn calibre_list_all_filetypes() -> Vec<(&'static str, &'static str)> {
+pub fn clb_query_list_all_filetypes() -> Vec<(&'static str, &'static str)> {
     super::file_formats::SupportedFormats::list_all()
         .iter()
         .map(|(_, extension)| (MIMETYPE::from_file_extension(extension), *extension))
@@ -78,7 +78,7 @@ pub fn calibre_list_all_filetypes() -> Vec<(&'static str, &'static str)> {
         .collect()
 }
 
-pub fn create_folder_for_author(
+pub fn clb_cmd_create_author_dir(
     library_root: &String,
     author_name: String,
 ) -> Result<PathBuf, Error> {
@@ -96,7 +96,7 @@ pub fn create_folder_for_author(
 
 #[tauri::command]
 #[specta::specta]
-pub fn add_book_to_db_by_metadata(library_root: String, md: ImportableBookMetadata) {
+pub fn clb_cmd_create_book(library_root: String, md: ImportableBookMetadata) {
     let database_path = libcalibre::util::get_db_path(&library_root);
     match database_path {
         None => panic!("Could not find database at {}", library_root),
@@ -134,7 +134,11 @@ impl BookUpdate {
 
 #[tauri::command]
 #[specta::specta]
-pub fn update_book(library_root: String, book_id: String, updates: BookUpdate) -> Result<i32, ()> {
+pub fn clb_cmd_update_book(
+    library_root: String,
+    book_id: String,
+    updates: BookUpdate,
+) -> Result<i32, ()> {
     match libcalibre::util::get_db_path(&library_root) {
         None => Err(()),
         Some(database_path) => {
@@ -150,7 +154,10 @@ pub fn update_book(library_root: String, book_id: String, updates: BookUpdate) -
 
 #[tauri::command]
 #[specta::specta]
-pub fn create_library(handle: tauri::AppHandle, library_root: String) -> Result<(), String> {
+pub fn clb_cmd_create_library(
+    handle: tauri::AppHandle,
+    library_root: String,
+) -> Result<(), String> {
     let resource_path = handle
         .path_resolver()
         .resolve_resource("resources/empty_7_2_calibre_lib.zip")
@@ -173,7 +180,7 @@ pub fn create_library(handle: tauri::AppHandle, library_root: String) -> Result<
 
 #[tauri::command]
 #[specta::specta]
-pub fn is_valid_library(library_root: String) -> bool {
+pub fn clb_query_is_path_valid_library(library_root: String) -> bool {
     let db_path = libcalibre::util::get_db_path(&library_root);
     db_path.is_some()
 }

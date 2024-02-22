@@ -9,7 +9,7 @@ use libcalibre::mime_type::MIMETYPE;
 
 use crate::{
     book::{BookFile, LocalOrRemote, LocalOrRemoteUrl, RemoteFile},
-    libs::calibre::calibre_load_books_from_db,
+    libs::calibre::clb_query_list_all_books,
 };
 
 const PORT: u16 = 61440;
@@ -30,7 +30,7 @@ struct Items<T> {
 async fn get_asset(data: web::Data<AppState>, book_id: web::Path<String>) -> impl Responder {
     let book_id_val = book_id.into_inner();
 
-    let books = calibre_load_books_from_db(data.library_path.clone());
+    let books = clb_query_list_all_books(data.library_path.clone());
     let book_cover_path = books
         .iter()
         .find(|x| x.id == book_id_val)
@@ -52,7 +52,7 @@ async fn get_book_file(
     path: web::Path<(String, String, String)>,
 ) -> impl Responder {
     let (book_id, _file_name, file_type) = path.into_inner();
-    let books = calibre_load_books_from_db(data.library_path.clone());
+    let books = clb_query_list_all_books(data.library_path.clone());
 
     let file_with_mimetype = books
         .iter()
@@ -83,7 +83,7 @@ async fn get_book_file(
 
 #[get("/books")]
 async fn list_books(data: web::Data<AppState>) -> impl Responder {
-    let books = calibre_load_books_from_db(data.library_path.clone())
+    let books = clb_query_list_all_books(data.library_path.clone())
         .iter()
         .map(|x| {
             let mut x = x.clone();

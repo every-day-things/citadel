@@ -64,7 +64,7 @@ export type Library = {
 
    * `ImportableFile` is used to ensure that the file can be imported:
    * see {@link Library#checkFileImportable} for more details.
-    
+
    * @param importableFile
    */
 	getImportableFileMetadata(

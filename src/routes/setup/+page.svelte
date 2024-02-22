@@ -18,7 +18,7 @@
 		const path = await pickLibrary();
 		if (!path) return;
 
-		const selectedIsValid = await commands.isValidLibrary(path);
+		const selectedIsValid = await commands.clbQueryIsPathValidLibrary(path);
 
 		if (selectedIsValid) {
 			selectNewLibrary(path);
