@@ -1,3 +1,0 @@
-- Remove the full-disk access in Tauri.conf.json.
-  - When users select a folder to load their Calibre library from, the
-    path will automatically be added to the assets path.
