@@ -60,20 +60,20 @@ export type CalibreClientConfig = { library_path: string }
 /**
  * Represents metadata for pre-import books, which have a very loose structure.
  */
-export type ImportableBookMetadata = { file_type: ImportableBookType;
+export type ImportableBookMetadata = { file_type: ImportableBookType; 
 /**
  * The title of the book, if one is available, or the name of the file to import.
  */
-title: string;
+title: string; 
 /**
  * The list of authors of the book, if available. Some books may not be formatted correctly,
  * and will have no authors, or all author names will be one string separated by "," or ";".
  */
-author_names: string[] | null; identifier: string | null; publisher: string | null; language: string | null; tags: string[];
+author_names: string[] | null; identifier: string | null; publisher: string | null; language: string | null; tags: string[]; 
 /**
  * Path of the file to import.
  */
-path: string; publication_date: string | null;
+path: string; publication_date: string | null; 
 /**
  * True if a cover image can be extracted from the file at `path`.
  */
@@ -82,11 +82,11 @@ export type ImportableBookType = "Epub" | "Pdf" | "Mobi" | "Text"
 export type ImportableFile = { path: string }
 export type LibraryAuthor = { id: string; name: string; sortable_name: string }
 export type LibraryBook = { id: string; uuid: string | null; title: string; author_list: LibraryAuthor[]; sortable_title: string | null; author_sort_lookup: { [key in string]: string } | null; file_list: BookFile[]; cover_image: LocalOrRemoteUrl | null }
-export type LocalFile = {
+export type LocalFile = { 
 /**
  * The absolute path to the file, including extension.
  */
-path: string;
+path: string; 
 /**
  * The MIME type of the file. Common values are `application/pdf` and `application/epub+zip`.
  */
@@ -151,3 +151,5 @@ function __makeEvents__<T extends Record<string, any>>(
     }
   );
 }
+
+     

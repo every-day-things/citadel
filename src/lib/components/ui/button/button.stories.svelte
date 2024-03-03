@@ -5,7 +5,7 @@
 	export const meta = {
 		title: "ui/Button",
 		component: Button,
-		tags: ["autodocs"],
+		// tags: ["autodocs"],
 		argTypes: {
 			variant: {
 				control: {
@@ -60,8 +60,8 @@
 	</Button>
 </Template>
 
-<Story name="Default" source />
-<Story name="Destructive" args={{ variant: "destructive" }} />
+<Story name="light/Default" source />
+<Story name="light/Destructive" args={{ variant: "destructive" }} />
 <Story name="Secondary" args={{ variant: "secondary" }} />
 <Story name="Ghost" args={{ variant: "ghost" }} />
 
