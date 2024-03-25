@@ -91,7 +91,7 @@
 		top: 50%;
 		z-index: 50;
 		display: grid;
-		max-width: 32rem;
+		max-width: 90vw;
 		transform: translate(-50%, -50%);
 		grid-gap: 1rem;
 		border: 1px transparent;
@@ -101,7 +101,7 @@
 			0 10px 15px -3px rgba(0, 0, 0, 0.1),
 			0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Example shadow, adjust as needed */
 		border-radius: 0.5rem;
-		width: 100%;
+		width: fit-content;
 		opacity: 1;
 	}
 
