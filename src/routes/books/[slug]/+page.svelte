@@ -146,18 +146,18 @@
 					<div class="flex">
 						<div class="flex flex-col gap-10">
 							<div class="flex flex-col h-1/2">
-								<h2>Cover</h2>
+								<h2 class="text-xl font-semibold">Cover</h2>
 								img controls
 							</div>
 							<div class="flex flex-col h-1/2">
-								<h2>Formats</h2>
+								<h2 class="text-xl font-semibold">Formats</h2>
 								format list & controls
 							</div>
 						</div>
 					</div>
 					<div class="flex flex-col w-full">
 						<div class="flex flex-row justify-between mb-4">
-							<h2>Book info</h2>
+							<h2 class="text-xl font-semibold">Book info</h2>
 							<Button variant="secondary">Download metadata</Button>
 						</div>
 						<!-- BOOK TITLE ROW -->
