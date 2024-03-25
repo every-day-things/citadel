@@ -17,6 +17,9 @@
 	import ChevronUpIcon from "virtual:icons/f7/chevron-down";
 	import ChevronDownIcon from "virtual:icons/f7/chevron-up";
 	import { Input } from "$lib/components/ui/input";
+	import TextInput from "$lib/components/forms/TextInput.svelte";
+	import Row from "$lib/components/forms/Row.svelte";
+	import Pill from "./Pill.svelte";
 
 	export let dialogOpen = writable(true);
 
@@ -106,6 +109,7 @@
 		);
 		metadata.set(book);
 		selected.set(book.author_list.map(toOption));
+		console.log({ authors });
 	};
 
 	onMount(async () => {
@@ -114,6 +118,7 @@
 
 	const save = async (event: SubmitEvent) => {
 		event.preventDefault();
+		console.log("saving");
 		const formData = new FormData(event.currentTarget as HTMLFormElement);
 
 		libraryClient().updateBook(book!.id.toString(), {
@@ -136,161 +141,189 @@
 			<Dialog.Header>
 				<Dialog.Title {title}>Editing book info – {pageTitle}</Dialog.Title>
 			</Dialog.Header>
-			<form on:submit={save} class="flex flex-row w-full gap-4">
-				<div class="flex">
-					<div class="flex flex-col gap-10">
-						<div class="flex flex-col h-1/2">
-							<h2>Cover</h2>
-							img controls
-						</div>
-						<div class="flex flex-col h-1/2">
-							<h2>Formats</h2>
-							format list & controls
+			<form on:submit={save} class="h-fit">
+				<div class="flex flex-row w-full gap-4 h-full">
+					<div class="flex">
+						<div class="flex flex-col gap-10">
+							<div class="flex flex-col h-1/2">
+								<h2>Cover</h2>
+								img controls
+							</div>
+							<div class="flex flex-col h-1/2">
+								<h2>Formats</h2>
+								format list & controls
+							</div>
 						</div>
 					</div>
-				</div>
-				<div class="flex flex-col w-full">
-					<div class="flex flex-row justify-between mb-4">
-						<h2>Book info</h2>
-						<Button variant="secondary">Download metadata</Button>
-					</div>
-					<!-- BOOK TITLE ROW -->
-					<div class="flex flex-row gap-6 items-center">
-						<div class="flex flex-col">
-							<label for="title">Title</label>
-							<Input type="text" value={book?.title} id="title" />
+					<div class="flex flex-col w-full">
+						<div class="flex flex-row justify-between mb-4">
+							<h2>Book info</h2>
+							<Button variant="secondary">Download metadata</Button>
 						</div>
-						<Button>Auto →</Button>
-						<div class="flex flex-col">
-							<label for="sortable_title">Sort title</label>
-							<input
-								disabled
-								type="text"
+						<!-- BOOK TITLE ROW -->
+						<Row>
+							<TextInput
+								label="Title"
+								value={book?.title}
+								id="title"
+								name="title"
+							/>
+							<!-- <Button>Auto →</Button> -->
+							<TextInput
+								isDisabled
+								label="Sort title"
+								value={book?.sortable_title || ""}
 								id="sortable_title"
 								name="sortable_title"
-								value={book?.sortable_title}
+								additionalInfo="Sort fields are set automatically."
 							/>
-							<span class="text-label-small"
-								>Sort fields are set automatically.</span
-							>
-						</div>
-					</div>
+						</Row>
 
-					<!-- AUTHOR ROW -->
-					<div class="flex flex-row gap-6 items-center">
-						<!-- svelte-ignore a11y-label-has-associated-control - $label contains the 'for' attribute -->
-						<div class="flex flex-col">
-							<label use:melt={$label}>
-								<span class="text-sm font-medium">Authors for this work:</span>
-							</label>
-							<div class="flex row justify-between">
-								<div class="flex row">
-									{#if $selected}
-										{#each $selected as author}
-											<span class="bg-blue-500 p-2 rounded-xl m-2"
-												>{author.value.name}</span
-											>
-										{/each}
-									{/if}
-								</div>
-
-								<div class="relative w-min">
-									<input
-										use:melt={$input}
-										class="flex h-10 items-center justify-between rounded-lg bg-white
-                px-3 pr-12 text-black"
-										placeholder="Author name..."
-									/>
-									<div
-										class="absolute right-2 top-1/2 z-10 -translate-y-1/2 text-slate-900"
-									>
-										{#if $comboOpen}
-											<ChevronUpIcon class="square-4" />
-										{:else}
-											<ChevronDownIcon class="square-4" />
+						<!-- AUTHOR ROW -->
+						<Row>
+							<!-- svelte-ignore a11y-label-has-associated-control - $label contains the 'for' attribute -->
+							<div class="flex flex-col w-full">
+								<label use:melt={$label}>
+									<span class="text-sm font-medium">Author(s)</span>
+								</label>
+								<div class="flex flex-row space-between w-full gap-8">
+									<div class="flex flex-row input-bg">
+										{#if $selected}
+											{#each $selected as author}
+												<Pill
+													label={author.value.name}
+													onRemove={() => {
+														if ($selected === undefined) return;
+														$selected = $selected.filter(
+															(a) => a.value.id !== author.value.id,
+														);
+													}}
+												/>
+											{/each}
 										{/if}
+									</div>
+
+									<div class="relative w-min">
+										<input
+											use:melt={$input}
+											class="flex h-10 items-center justify-between rounded-lg bg-white
+                px-3 pr-12 text-black"
+											placeholder="Author name..."
+										/>
+										<div
+											class="absolute right-2 top-1/2 z-10 -translate-y-1/2 text-slate-900"
+										>
+											{#if $comboOpen}
+												<ChevronUpIcon class="square-4" />
+											{:else}
+												<ChevronDownIcon class="square-4" />
+											{/if}
+										</div>
 									</div>
 								</div>
 							</div>
-						</div>
-						{#if $comboOpen}
-							<ul
-								class="z-10 flex max-h-[300px] flex-col overflow-hidden rounded-lg bg-white shadow-md text-black"
-								use:melt={$menu}
-							>
-								<!-- svelte-ignore a11y-no-noninteractive-tabindex -->
-								<div
-									class="flex max-h-fit flex-col gap-0 overflow-y-auto bg-white px-2 py-2 text-black"
-									tabindex="0"
+							{#if $comboOpen}
+								<ul
+									class="z-10 flex max-h-[300px] flex-col overflow-hidden rounded-lg bg-white shadow-md text-black"
+									use:melt={$menu}
 								>
-									{#each filteredAuthors as author, index (index)}
-										<li
-											use:melt={$option(toOption(author))}
-											class="relative cursor-pointer scroll-my-2 rounded-md py-2 pl-4 pr-4
+									<!-- svelte-ignore a11y-no-noninteractive-tabindex -->
+									<div
+										class="flex max-h-fit flex-col gap-0 overflow-y-auto bg-white px-2 py-2 text-black"
+										tabindex="0"
+									>
+										{#each filteredAuthors as author, index (index)}
+											<li
+												use:melt={$option(toOption(author))}
+												class="relative cursor-pointer scroll-my-2 rounded-md py-2 pl-4 pr-4
                 border-b border-slate-100 hover:bg-slate-100
               hover:bg-slate-100
               data-[highlighted]:bg-slate-200 data-[highlighted]:text-slate-900
                 data-[disabled]:opacity-50"
-										>
-											{#if $isSelected(author)}
-												<div
-													class="check absolute left-2 top-1/2 z-10 text-slate-900"
-												>
-													<CheckIcon class="square-4" style="color: green;" />
+											>
+												{#if $isSelected(author)}
+													<div
+														class="check absolute left-2 top-1/2 z-10 text-slate-900"
+													>
+														<CheckIcon class="square-4" style="color: green;" />
+													</div>
+												{/if}
+												<div class="pl-4">
+													<span class="font-medium">{author.name}</span>
 												</div>
-											{/if}
-											<div class="pl-4">
-												<span class="font-medium">{author.name}</span>
-											</div>
-										</li>
-									{:else}
-										<li
-											class="relative cursor-pointer rounded-md py-1 pl-8 pr-4"
+											</li>
+										{:else}
+											<li
+												class="relative cursor-pointer rounded-md py-1 pl-8 pr-4"
+											>
+												No results found
+											</li>
+										{/each}
+									</div>
+								</ul>
+							{/if}
+						</Row>
+
+						<!-- SERIES & SERIES NUMBER ROW -->
+						<Row>
+							<TextInput
+								label="Series"
+								value={"Unsupported"}
+								id="series"
+								name="series"
+							/>
+							<TextInput
+								label="Series number"
+								value={"1"}
+								id="series_number"
+								name="series_num"
+							/>
+						</Row>
+
+						<!-- TAGS ROW -->
+						<Row>
+							<div class="flex flex-row gap-6 items-center w-1/2">
+								<div class="flex flex-col w-full flex-1">
+									<!-- svelte-ignore a11y-label-has-associated-control -->
+									<label>
+										<span use:melt={$label} class="text-sm font-medium"
+											>Tags</span
 										>
-											No results found
-										</li>
-									{/each}
+									</label>
+									<div class="flex flex-row w-full input-bg">
+										<div class="flex flex-row space-between w-full gap-8">
+											<Pill label="hate crimes r bad" onRemove={() => {}} />
+										</div>
+									</div>
 								</div>
-							</ul>
-						{/if}
-						<span class="text-label-small"
-							>Sort fields are set automatically.</span
-						>
-					</div>
+							</div>
+							<Button variant="secondary">Manage tags</Button>
+						</Row>
 
-					<!-- SERIES & SERIES NUMBER ROW -->
-					<div class="flex flex-row gap-6 items-center">
-						<p>Series</p>
-						<p>Series number</p>
-					</div>
+						<!-- IDENTIFIERS & LANGUAGES ROW-->
+						<div class="flex flex-row gap-6 items-center">
+							<p>Identifiers</p>
+							<p>Languages</p>
+						</div>
 
-					<!-- TAGS ROW -->
-					<div class="flex flex-row gap-6 items-center">
-						<p>Tags</p>
-						<Button variant="secondary">Manage tags</Button>
-					</div>
-
-					<!-- IDENTIFIERS & LANGUAGES ROW-->
-					<div class="flex flex-row gap-6 items-center">
-						<p>Identifiers</p>
-						<p>Languages</p>
-					</div>
-
-					<!-- PUBLISHER & PUBLISH DATE ROW-->
-					<div class="flex flex-row gap-6 items-center">
-						<p>Publisher</p>
-						<p>Publish date</p>
-					</div>
-					<!-- HTML DESCRIPTION ROW-->
-					<div class="flex flex-row gap-6 items-center">
-						<p>description</p>
+						<!-- PUBLISHER & PUBLISH DATE ROW-->
+						<div class="flex flex-row gap-6 items-center">
+							<p>Publisher</p>
+							<p>Publish date</p>
+						</div>
+						<!-- HTML DESCRIPTION ROW-->
+						<div class="flex flex-row gap-6 items-center">
+							<p>description</p>
+						</div>
 					</div>
 				</div>
+				<Dialog.Footer>
+					<Button variant="secondary" on:click={() => dialogOpen.set(false)}
+						>Cancel</Button
+					>
+					<Button type="submit">Save</Button>
+				</Dialog.Footer>
 			</form>
-			<Dialog.Footer>
-				<Button variant="secondary" on:click={() => {}}>Cancel</Button>
-				<Button type="submit" on:click={() => {}}>Save</Button>
-			</Dialog.Footer>
 		</Dialog.Content>
 	</Dialog.Portal>
 	{#if window.__TAURI__}
@@ -345,5 +378,22 @@
 		font-style: italic;
 		margin-top: 4px;
 		margin-left: 4px;
+		min-height: 1.18rem;
+	}
+
+	.input-bg {
+		display: flex;
+		height: 2.25rem;
+		width: 100%;
+		border-radius: 0.375rem;
+		border: 1px solid var(--bg-secondary);
+		background-color: var(--bg-tertiary);
+		padding: 0.25rem 0.75rem;
+		font-size: 0.875rem;
+		box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+		transition:
+			color 0.2s ease-in-out,
+			background-color 0.2s ease-in-out,
+			border-color 0.2s ease-in-out;
 	}
 </style>
