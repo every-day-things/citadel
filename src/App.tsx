@@ -2,7 +2,6 @@ import "./App.css";
 import {
 	createTheme,
 	MantineProvider,
-	PinInput,
 	Burger,
 	Group,
 	TextInput,
@@ -12,6 +11,9 @@ import {
 	Center,
 	useMantineTheme,
 	Stack,
+	Button,
+	Divider,
+	Title,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { AppShell } from "@mantine/core";
@@ -301,7 +303,7 @@ function App() {
 				padding="md"
 				header={{ height: 60 }}
 				navbar={{
-					width: 300,
+					width: 200,
 					breakpoint: "sm",
 					collapsed: { mobile: !mobileOpened, desktop: !desktopOpened },
 				}}
@@ -324,8 +326,40 @@ function App() {
 				</AppShell.Header>
 
 				<AppShell.Navbar p="md">
-					<PinInput />
-					Navbar
+					<Stack>
+						<Title order={5}>My library</Title>
+						<Button color={theme.colors?.lavender?.[1]} variant="filled">
+							⊕ Add book
+						</Button>
+						<Button color={theme.colors?.lavender?.[1]} variant="outline">
+							Switch library
+						</Button>
+						<Button
+							variant="transparent"
+							color={theme.colors?.lavender?.[9]}
+							justify="flex-start"
+						>
+							First-time setup
+						</Button>
+						<Button
+							variant="transparent"
+							color={theme.colors?.lavender?.[9]}
+							justify="flex-start"
+						>
+							Configure library
+						</Button>
+					</Stack>
+					<Divider my="md" />
+					<Stack>
+						<Title order={5}>My shelves</Title>
+						<Button
+							variant="transparent"
+							color={theme.colors?.lavender?.[9]}
+							justify="flex-start"
+						>
+							All books
+						</Button>
+					</Stack>
 				</AppShell.Navbar>
 
 				<AppShell.Main>
