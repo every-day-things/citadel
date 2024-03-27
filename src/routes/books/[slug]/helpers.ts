@@ -8,7 +8,6 @@ export const getBookMatchingId = async (
 	client: Library,
 	id: LibraryBook["id"],
 ): Promise<LibraryBook> => {
-	console.log({client});
 	return (await client.listBooks()).filter(
 		(book) => book.id.toString() === id,
 	)[0];

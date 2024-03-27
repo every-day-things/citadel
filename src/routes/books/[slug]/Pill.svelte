@@ -1,10 +1,8 @@
 <script lang="ts">
 	import { writable } from "svelte/store";
-	import type { LibraryAuthor } from "../../../bindings";
 
 	export let onRemove: () => void;
 	export let label: string;
-	// export let value: unknown;
 
 	let isPointerOver = writable(false);
 </script>
@@ -27,13 +25,13 @@
 </div>
 
 <style>
-  .item {
-    color: var(--text-onprimary);
-    background: var(--bg-primary);
-  }
+	.item {
+		color: var(--text-onprimary);
+		background: var(--bg-primary);
+	}
 
-  .item:hover {
-    color: var(--text-ondestructive);
-    background: var(--bg-destructive);
-  }
+	.item:hover {
+		color: var(--text-ondestructive);
+		background: var(--bg-destructive);
+	}
 </style>

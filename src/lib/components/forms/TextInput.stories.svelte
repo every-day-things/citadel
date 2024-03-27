@@ -7,14 +7,14 @@
 		component: TextInput,
 		// tags: ["autodocs"],
 		argTypes: {
-			title: {
+			label: {
 				control: {
 					type: "text",
 				},
 			},
 		},
 		args: {
-			title: writable("Input title"),
+			label: "Input title",
 		},
 	} satisfies Meta<TextInput>;
 </script>
@@ -28,15 +28,14 @@
 	// WORKAROUND: Update state to match the args on mount and when the args change
 	// Thanks to https://github.com/storybookjs/addon-svelte-csf/issues/164
 
-	let title = writable("default");
+	let label = "default";
 
 	// @ts-ignore
 	const { argsStore } =
 		getContext("storybook-registration-context-component") || {};
 	// @ts-ignore
 	argsStore?.subscribe((args) => {
-		console.log(args);
-		({ title } = args);
+		({ label } = args);
 	});
 	// #endregion
 
@@ -47,7 +46,7 @@
 </script>
 
 <Template let:args>
-	<TextInput {...args} bind:title on:click on:click={handleClick}>
+	<TextInput {...args} bind:label on:click on:click={handleClick}>
 		You clicked: {count}
 	</TextInput>
 </Template>

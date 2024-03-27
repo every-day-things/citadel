@@ -2,7 +2,7 @@
 	import { goto } from "$app/navigation";
 	import { onMount } from "svelte";
 	import { derived, writable } from "svelte/store";
-		import type { LibraryBook } from "../bindings";
+	import type { LibraryBook } from "../bindings";
 	import BookTable from "../components/molecules/BookTable.svelte";
 	import CoverView from "../components/molecules/CoverView.svelte";
 	import {
@@ -67,8 +67,8 @@
 	};
 
 	const editBook = (book: LibraryBook) => {
-		$selectedBookToEdit = book
-		$editBookDialogOpen = true
+		$selectedBookToEdit = book;
+		$editBookDialogOpen = true;
 	};
 
 	let view: "table" | "cover" = "cover";
@@ -213,14 +213,21 @@
 		{:then _}
 			<div class="view-container">
 				{#if view === "cover"}
-					<CoverView bookList={$selectedBooks} dragHandler={x} editHandler={editBook} />
+					<CoverView
+						bookList={$selectedBooks}
+						dragHandler={x}
+						editHandler={editBook}
+					/>
 				{:else if view === "table"}
 					<BookTable bookList={$selectedBooks} />
 				{/if}
 			</div>
 		{/await}
 
-		<BookEditDialog bookId={($selectedBookToEdit)?.id ?? ''} dialogOpen={editBookDialogOpen}/>
+		<BookEditDialog
+			bookId={$selectedBookToEdit?.id ?? ""}
+			dialogOpen={editBookDialogOpen}
+		/>
 	</div>
 </section>
 
