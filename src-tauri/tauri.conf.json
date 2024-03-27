@@ -3,8 +3,8 @@
   "build": {
     "beforeBuildCommand": "bun run build:web",
     "beforeDevCommand": "bun run dev:web",
-    "devPath": "http://localhost:5173",
-    "distDir": "../build"
+    "devPath": "http://localhost:1420",
+    "distDir": "../dist"
   },
   "package": {
     "productName": "Citadel",
