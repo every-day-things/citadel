@@ -11,6 +11,12 @@
 	-webkit-text-size-adjust: 100%;
 }
 
+body {
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+}
+
 * {
 	cursor: default!important;
 }
