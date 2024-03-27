@@ -2,12 +2,18 @@ const tailwindcss = require("tailwindcss");
 const autoprefixer = require("autoprefixer");
 
 const config = {
-  plugins: [
-    //Some plugins, like tailwindcss/nesting, need to run before Tailwind,
-    tailwindcss(),
-    //But others, like autoprefixer, need to run after,
-    autoprefixer,
-  ],
+  plugins: {
+    'postcss-preset-mantine': {},
+    'postcss-simple-vars': {
+      variables: {
+        'mantine-breakpoint-xs': '36em',
+        'mantine-breakpoint-sm': '48em',
+        'mantine-breakpoint-md': '62em',
+        'mantine-breakpoint-lg': '75em',
+        'mantine-breakpoint-xl': '88em',
+      },
+    },
+  },
 };
 
 module.exports = config;
