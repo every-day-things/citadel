@@ -2,5 +2,12 @@
   "rust-analyzer.linkedProjects": [
     "./src-tauri/Cargo.toml",
     "./src-tauri/Cargo.toml"
+  ],
+  "cssVariables.lookupFiles": [
+    "**/*.css",
+    "**/*.scss",
+    "**/*.sass",
+    "**/*.less",
+    "node_modules/@mantine/core/styles.css"
   ]
 }
