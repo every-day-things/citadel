@@ -3,10 +3,7 @@
 	import Row from "$lib/components/forms/Row.svelte";
 	import TextInput from "$lib/components/forms/TextInput.svelte";
 	import { Button } from "$lib/components/ui/button";
-	import {
-		createCombobox,
-		melt,
-	} from "@melt-ui/svelte";
+	import { createCombobox, melt } from "@melt-ui/svelte";
 	import CheckIcon from "virtual:icons/f7/checkmark-alt";
 	import ChevronUpIcon from "virtual:icons/f7/chevron-down";
 	import ChevronDownIcon from "virtual:icons/f7/chevron-up";
@@ -76,7 +73,6 @@
 			<div class="flex flex-col w-full">
 				<div class="flex flex-row justify-between mb-4">
 					<h2 class="text-xl font-semibold">Book info</h2>
-					<Button variant="secondary">Download metadata</Button>
 				</div>
 				<Row>
 					<TextInput
