@@ -2,7 +2,7 @@
 	import { goto } from "$app/navigation";
 	import { onMount } from "svelte";
 	import { derived, writable } from "svelte/store";
-	import * as bindings from "../bindings";
+		import type { LibraryBook } from "../bindings";
 	import BookTable from "../components/molecules/BookTable.svelte";
 	import CoverView from "../components/molecules/CoverView.svelte";
 	import {
@@ -19,6 +19,7 @@
 	import SwitchIcon from "$lib/components/ui/switch-icon/SwitchIcon.svelte";
 	import GridIcon from "virtual:icons/f7/square-grid-2x2";
 	import ListIcon from "virtual:icons/f7/list-bullet";
+	import BookEditDialog from "./books/[slug]/BookEditDialog.svelte";
 
 	const LibraryBookSortOrder = {
 		nameAz: "name-asc",
@@ -40,13 +41,16 @@
 			[keyof typeof LibraryBookSortOrder, string]
 		>;
 
+	let selectedBookToEdit = writable<LibraryBook | undefined>(undefined);
+	let editBookDialogOpen = writable(false);
+
 	type LibraryBookSortOrderKinds =
 		| "name-asc"
 		| "name-desc"
 		| "author-asc"
 		| "author-desc";
 
-	const x = (event: DragEvent, book: bindings.LibraryBook) => {
+	const x = (event: DragEvent, book: LibraryBook) => {
 		event.preventDefault();
 		const coverImageAbsPath = $libraryClient.getCoverPathForBook(
 			book.id.toString(),
@@ -60,6 +64,11 @@
 			item: [bookFilePath],
 			icon: coverImageAbsPath,
 		});
+	};
+
+	const editBook = (book: LibraryBook) => {
+		$selectedBookToEdit = book
+		$editBookDialogOpen = true
 	};
 
 	let view: "table" | "cover" = "cover";
@@ -204,12 +213,14 @@
 		{:then _}
 			<div class="view-container">
 				{#if view === "cover"}
-					<CoverView bookList={$selectedBooks} dragHandler={x} />
+					<CoverView bookList={$selectedBooks} dragHandler={x} editHandler={editBook} />
 				{:else if view === "table"}
 					<BookTable bookList={$selectedBooks} />
 				{/if}
 			</div>
 		{/await}
+
+		<BookEditDialog bookId={($selectedBookToEdit)?.id ?? ''} dialogOpen={editBookDialogOpen}/>
 	</div>
 </section>
 

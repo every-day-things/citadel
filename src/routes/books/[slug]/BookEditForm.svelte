@@ -6,7 +6,6 @@
 	import {
 		createCombobox,
 		melt,
-		type ComboboxOptionProps,
 	} from "@melt-ui/svelte";
 	import CheckIcon from "virtual:icons/f7/checkmark-alt";
 	import ChevronUpIcon from "virtual:icons/f7/chevron-down";
@@ -44,14 +43,11 @@
 		? filterAuthorsByTerm(authors, $inputValue)
 		: authors;
 
-	console.log({filteredAuthors});
-
 	const save = async (event: SubmitEvent) => {
 		event.preventDefault();
-		console.log("saving");
 		const formData = new FormData(event.currentTarget as HTMLFormElement);
 
-		libraryClient().updateBook(book!.id.toString(), {
+		await libraryClient().updateBook(book!.id.toString(), {
 			title: (formData.get("title") as string | undefined) ?? book.title ?? "",
 			author_id_list: $selected?.map((author) => author.value.id) ?? [],
 			publication_date: null,
@@ -67,7 +63,6 @@
 		);
 		metadata.set(book);
 		selected.set(book.author_list.map(toComboboxOption));
-		console.log({ authors });
 	};
 
 	onMount(async () => {
@@ -86,14 +81,14 @@
 				<Row>
 					<TextInput
 						label="Title"
-						value={book?.title}
+						value={$metadata?.title}
 						id="title"
 						name="title"
 					/>
 					<TextInput
 						isDisabled
 						label="Sort title"
-						value={book?.sortable_title || ""}
+						value={$metadata?.sortable_title || ""}
 						id="sortable_title"
 						name="sortable_title"
 						additionalInfo="Sort fields are set automatically."
@@ -199,10 +194,6 @@
 		left: 0.5rem;
 		top: 50%;
 		translate: 0 calc(-50% + 1px);
-	}
-
-	h1 {
-		font-size: 1rem;
 	}
 
 	.text-label-small {

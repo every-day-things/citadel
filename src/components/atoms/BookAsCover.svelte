@@ -10,9 +10,13 @@
 	import { downloadFile } from "$lib/download";
 	import { Button } from "$lib/components/ui/button";
 	import type { Writable } from "svelte/store";
+	import { goto } from "$app/navigation";
 
 	export let dragHandler: (event: DragEvent, book: LibraryBook) => void;
 	export let onClickHandler: () => void;
+	export let onEditHandler: (book: LibraryBook) => void = (book) => {
+		goto(`/books/${book.id}`);
+	};
 	export let book: LibraryBook;
 	export let selectedItemId: Writable<LibraryBook["id"] | undefined>;
 
@@ -58,7 +62,11 @@
 		{:else}
 			<div class="controls">
 				{#if window.__TAURI__}
-					<a href="/books/{book.id}"><Button>Edit</Button></a>
+					<Button
+						on:click={(e) => {
+							onEditHandler(book);
+						}}>Edit</Button
+					>
 					<Button
 						on:click={(e) => {
 							e.stopPropagation();

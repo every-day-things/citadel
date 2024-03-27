@@ -7,6 +7,7 @@
 
 	export let bookList: LibraryBook[];
 	export let dragHandler: (event: DragEvent, book: LibraryBook) => void;
+	export let editHandler: (book: LibraryBook) => void;
 
 	let selectedItemId = writable<LibraryBook["id"] | undefined>(undefined);
 	const itemHeight = 320;
@@ -43,6 +44,9 @@
 			book: bookList[bookListIndex],
 			dragHandler,
 			selectedItemId,
+			onEditHandler: (book: LibraryBook) => {
+				editHandler(book);
+			},
 			onClickHandler: (e: MouseEvent) => {
 				e.stopPropagation();
 				selectedItemId.set(bookList[bookListIndex].id);
