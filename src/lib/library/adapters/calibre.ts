@@ -118,7 +118,6 @@ const genRemoteCalibreClient = async (
 				.then((res) => res.json() as unknown as { items: LibraryBook[] })
 				.then((res) => res.items)
 				.then((res) => {
-					console.log("Book list", res);
 					return res;
 				});
 

@@ -1,20 +1,20 @@
 import {
-	createTheme,
-	MantineProvider,
 	Burger,
-	Group,
-	Stack,
 	Button,
 	Divider,
+	Group,
+	MantineProvider,
+	Stack,
 	Title,
+	createTheme,
 } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
 import { AppShell } from "@mantine/core";
-import { initLibrary, libraryClient } from "./stores/library";
-import { createContext, useEffect } from "react";
-import { settings, waitForSettings } from "./stores/settings";
-import { Library } from "./lib/library/_types";
+import { useDisclosure } from "@mantine/hooks";
+import { useEffect, useState } from "react";
 import { BookView } from "./components/organisms/BookView";
+import { initLibrary, libraryClient, shutdownLibrary } from "./stores/library";
+import { settings, waitForSettings } from "./stores/settings";
+import { LibraryContext } from "./lib/contexts/library-context";
 
 const catppuccinShades = {
 	rosewater: [
@@ -193,11 +193,12 @@ const theme = createTheme({
 	},
 });
 
-const LibraryContext = createContext<Library>({} as Library);
 interface LibraryProviderProps {
 	children: React.ReactNode;
 }
 const LibraryProvider = ({ children }: LibraryProviderProps) => {
+	const [loading, setLoading] = useState(true);
+
 	useEffect(() => {
 		void (async (): Promise<void> => {
 			await waitForSettings();
@@ -207,12 +208,17 @@ const LibraryProvider = ({ children }: LibraryProviderProps) => {
 				libraryType: "calibre",
 				connectionType: "local",
 			});
+			setLoading(false);
 		})();
+
+		return () => {
+			shutdownLibrary();
+		};
 	});
 
 	return (
 		<LibraryContext.Provider value={libraryClient()}>
-			{children}
+			{!loading && children}
 		</LibraryContext.Provider>
 	);
 };
@@ -220,7 +226,6 @@ const LibraryProvider = ({ children }: LibraryProviderProps) => {
 function App() {
 	const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
 	const [desktopOpened, { toggle: toggleDesktop }] = useDisclosure(true);
-
 
 	return (
 		<LibraryProvider>

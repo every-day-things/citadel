@@ -17,7 +17,5 @@ let  query;
     query = `(min-width: ${theme.breakpoints[minBreakpoint]})`;
   }
 
-  console.log(query);
-
   return useMediaQuery(query);
 }

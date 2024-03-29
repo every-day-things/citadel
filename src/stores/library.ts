@@ -35,3 +35,7 @@ export const initLibrary = async (options: Options) => {
 	libraryClientStore.set(client);
 	resolveClientReady();
 };
+
+export const shutdownLibrary = () => {
+	libraryClientStore.set(null as unknown as Library);
+}
