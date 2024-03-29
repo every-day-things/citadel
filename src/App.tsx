@@ -212,6 +212,7 @@ const LibraryProvider = ({ children }: LibraryProviderProps) => {
 		})();
 
 		return () => {
+			setLoading(true);
 			shutdownLibrary();
 		};
 	});

@@ -10,23 +10,27 @@ import {
 } from "@mantine/core";
 import { F7SquareGrid2x2 } from "../icons/F7SquareGrid2x2";
 import { UseFormReturnType, useForm } from "@mantine/form";
-import { BookTable } from "../molecules/BookTable";
 import { useState, useEffect, useMemo } from "react";
-import { libraryClient } from "@/stores/library";
+
 import { LibraryBook } from "@/bindings";
 import { F7ListBullet } from "../icons/F7ListBullet";
+import { BookGrid } from "../molecules/BookGrid";
+import { BookTable } from "../molecules/BookTable";
+import { useLibrary } from "@/lib/contexts/library-context";
 
 const useLoadBooks = () => {
 	const [loading, setLoading] = useState(true);
 	const [books, setBooks] = useState<LibraryBook[]>([]);
+  const client = useLibrary();
 
 	useEffect(() => {
 		void (async () => {
-			const books = await libraryClient().listBooks();
+			const books = await client.listBooks();
 			setBooks(books);
 			setLoading(false);
 		})();
-	}, []);
+	}, [client]);
+
 	return [loading, books] as const;
 };
 
@@ -38,11 +42,12 @@ const LibraryBookSortOrder = {
 } as const;
 
 type BookViewForm = UseFormReturnType<{
-  query: string;
-  sortOrder: keyof typeof LibraryBookSortOrder;
-}>
+	query: string;
+	sortOrder: keyof typeof LibraryBookSortOrder;
+	view: "covers" | "list";
+}>;
 
-function FilterControls({ form }: {form: BookViewForm}) {
+function FilterControls({ form }: { form: BookViewForm }) {
 	const LibraryBookSortOrderStrings: Record<
 		keyof typeof LibraryBookSortOrder,
 		string
@@ -62,7 +67,7 @@ function FilterControls({ form }: {form: BookViewForm}) {
 	const mdBreakpoint = useBreakpoint("md");
 	const viewControls = [
 		{
-			value: "preview",
+			value: "covers",
 			label: (
 				<Center style={{ gap: 4 }}>
 					<F7SquareGrid2x2 />
@@ -71,7 +76,7 @@ function FilterControls({ form }: {form: BookViewForm}) {
 			),
 		},
 		{
-			value: "code",
+			value: "list",
 			label: (
 				<Center style={{ gap: 4 }}>
 					<F7ListBullet />
@@ -107,16 +112,21 @@ function FilterControls({ form }: {form: BookViewForm}) {
 				{...form.getInputProps("sortOrder")}
 			/>
 
-			<SegmentedControl color={theme.colors.lavender[2]} data={viewControls} />
+			<SegmentedControl color={theme.colors.lavender[2]} data={viewControls} {...form.getInputProps("view")} />
 		</Flex>
 	);
 }
 
-function Header({ form, bookCount }: {form: BookViewForm, bookCount: number}) {
+function Header({
+	form,
+	bookCount,
+}: { form: BookViewForm; bookCount: number }) {
 	return (
 		<Stack>
 			<FilterControls form={form} />
-			<p>Showing 1-{bookCount} of {bookCount} items</p>
+			<p>
+				Showing 1-{bookCount} of {bookCount} items
+			</p>
 		</Stack>
 	);
 }
@@ -139,10 +149,12 @@ export const BookView = () => {
 	const form = useForm<{
 		query: string;
 		sortOrder: keyof typeof LibraryBookSortOrder;
+		view: "covers" | "list";
 	}>({
 		initialValues: {
 			query: "",
 			sortOrder: "authorAz",
+			view: "covers",
 		},
 	});
 
@@ -182,7 +194,11 @@ export const BookView = () => {
 	return (
 		<>
 			<Header form={form} bookCount={sortedBooks.length} />
-			<BookTable bookList={sortedBooks} loading={loading} />
+			{form.values.view === "covers" ? (
+				<BookGrid bookList={sortedBooks} loading={loading} />
+			) : (
+				<BookTable bookList={sortedBooks} loading={loading} />
+			)}
 		</>
 	);
 };
