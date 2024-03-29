@@ -3,12 +3,6 @@ import {
 	MantineProvider,
 	Burger,
 	Group,
-	TextInput,
-	Select,
-	Flex,
-	SegmentedControl,
-	Center,
-	useMantineTheme,
 	Stack,
 	Button,
 	Divider,
@@ -16,15 +10,11 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { AppShell } from "@mantine/core";
-import { useForm } from "@mantine/form";
-import { F7SquareGrid2x2 } from "./components/icons/F7SquareGrid2x2";
-import { F7ListBullet } from "./components/icons/F7ListBullet";
-import { useBreakpoint } from "./lib/hooks/use-breakpoint";
-import { BookTable } from "./components/molecules/BookTable";
 import { initLibrary, libraryClient } from "./stores/library";
 import { createContext, useEffect } from "react";
 import { settings, waitForSettings } from "./stores/settings";
 import { Library } from "./lib/library/_types";
+import { BookView } from "./components/organisms/BookView";
 
 const catppuccinShades = {
 	rosewater: [
@@ -203,92 +193,6 @@ const theme = createTheme({
 	},
 });
 
-const LibraryBookSortOrder = {
-	nameAz: "name-asc",
-	nameZa: "name-desc",
-	authorAz: "author-asc",
-	authorZa: "author-desc",
-} as const;
-
-function FilterControls({form}) {
-	const LibraryBookSortOrderStrings: Record<
-		keyof typeof LibraryBookSortOrder,
-		string
-	> = {
-		nameAz: "Name (A-Z)",
-		nameZa: "Name (Z-A)",
-		authorAz: "Author (A-Z)",
-		authorZa: "Author (Z-A)",
-	} as const;
-	const LBSOSEntries: [keyof typeof LibraryBookSortOrder, string][] =
-		Object.entries(LibraryBookSortOrder) as [
-			keyof typeof LibraryBookSortOrder,
-			string,
-		][];
-
-	const theme = useMantineTheme();
-	const mdBreakpoint = useBreakpoint("md");
-	const viewControls = [
-		{
-			value: "preview",
-			label: (
-				<Center style={{ gap: 4 }}>
-					<F7SquareGrid2x2 />
-					{mdBreakpoint && <span>Covers</span>}
-				</Center>
-			),
-		},
-		{
-			value: "code",
-			label: (
-				<Center style={{ gap: 4 }}>
-					<F7ListBullet />
-					{mdBreakpoint && <span>List</span>}
-				</Center>
-			),
-		},
-	];
-
-	return (
-		<Flex
-			mih={50}
-			gap="sm"
-			miw={100}
-			justify="space-between"
-			align="center"
-			direction="row"
-			wrap="wrap"
-		>
-			<TextInput
-				miw="32ch"
-				placeholder="Search book titles and authors"
-				{...form.getInputProps("query")}
-			/>
-			<Select
-				placeholder="Sort Order"
-				allowDeselect={false}
-				w={150}
-				data={LBSOSEntries.map(([key]) => ({
-					value: key,
-					label: LibraryBookSortOrderStrings[key],
-				}))}
-				{...form.getInputProps("sortOrder")}
-			/>
-
-			<SegmentedControl color={theme.colors.lavender[2]} data={viewControls} />
-		</Flex>
-	);
-}
-
-function Header({form}) {
-	return (
-		<Stack>
-			<FilterControls form={form} />
-			<p>Showing 1-158 of 158 items</p>
-		</Stack>
-	);
-}
-
 const LibraryContext = createContext<Library>({} as Library);
 interface LibraryProviderProps {
 	children: React.ReactNode;
@@ -317,15 +221,6 @@ function App() {
 	const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
 	const [desktopOpened, { toggle: toggleDesktop }] = useDisclosure(true);
 
-	const form = useForm<{
-		query: string;
-		sortOrder: keyof typeof LibraryBookSortOrder;
-	}>({
-		initialValues: {
-			query: "",
-			sortOrder: "authorAz",
-		},
-	});
 
 	return (
 		<LibraryProvider>
@@ -396,13 +291,7 @@ function App() {
 					</AppShell.Navbar>
 
 					<AppShell.Main>
-						<Header form={form} />
-						<BookTable
-							options={{
-								sortOrder: form.values.sortOrder,
-								searchQuery: form.values.query,
-							}}
-						/>
+						<BookView />
 					</AppShell.Main>
 				</AppShell>
 			</MantineProvider>
