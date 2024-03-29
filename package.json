@@ -26,6 +26,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.5.3",
+    "@faker-js/faker": "^8.4.1",
     "@fontsource/fira-mono": "^4.5.10",
     "@iconify-json/f7": "^1.1.0",
     "@melt-ui/pp": "^0.3.0",
