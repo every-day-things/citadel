@@ -2,6 +2,7 @@ import { BookView } from "@/BookView";
 import { Box } from "@mantine/core";
 import { DataTable } from "mantine-datatable";
 import { LibraryBook } from "../../bindings";
+import { formatAuthorList } from "@/lib/authors";
 
 const BookTablePure = ({
 	loading,
@@ -46,7 +47,7 @@ const BookTablePure = ({
 					// this column has custom cell data rendering
 					render: ({ author_list }) => (
 						<Box>
-							{author_list.map((item) => item.name).join(", ")}
+							{formatAuthorList(author_list)}
 						</Box>
 					),
 				}
