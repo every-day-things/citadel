@@ -6,7 +6,8 @@ import "@mantine/core/styles.css";
 import '@mantine/core/styles.layer.css';
 import 'mantine-datatable/styles.css';
 
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
+// biome-ignore lint/style/noNonNullAssertion: If this fails, we'll notice.
+ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>,
