@@ -1,0 +1,51 @@
+.container {
+  padding: 16px;
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.cover {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  position: relative;
+}
+
+.coverPlaceholder {
+  width: 120px;
+  height: 200px;
+  display: flex;
+  flex-direction: row;
+  font: 4em sans-serif;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  overflow: hidden;
+}
+
+.img {
+  max-width: 100%;
+  max-height: 240px;
+  transition: all 0.2s ease-in-out;
+  border: 2px solid transparent;
+  position: relative;
+  z-index: 1;
+}
+
+.img:hover {
+  transform: scale(1.02);
+}
+
+.title {
+  text-align: center;
+  margin: 8px 0;
+}
+
+.authors {
+  text-align: center;
+}
