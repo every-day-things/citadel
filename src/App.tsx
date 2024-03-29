@@ -13,6 +13,7 @@ import {
 	Button,
 	Divider,
 	Title,
+	Box,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { AppShell } from "@mantine/core";
@@ -20,6 +21,11 @@ import { useForm } from "@mantine/form";
 import { F7SquareGrid2x2 } from "./components/icons/F7SquareGrid2x2";
 import { F7ListBullet } from "./components/icons/F7ListBullet";
 import { useBreakpoint } from "./lib/hooks/use-breakpoint";
+import { DataTable } from "mantine-datatable";
+
+const showNotification = (props: unknown) => {
+	console.log(props);
+};
 
 const catppuccinShades = {
 	rosewater: [
@@ -363,6 +369,48 @@ function App() {
 
 				<AppShell.Main>
 					<Header />
+					<DataTable
+						withTableBorder
+						borderRadius="sm"
+						withColumnBorders
+						striped
+						highlightOnHover
+						// provide data
+						records={[
+							{ id: 1, name: "Joe Biden", bornIn: 1942, party: "Democratic" },
+							{ id: 2, name: "J Trump", bornIn: 1948, party: "Republican" },
+							// more records...
+						]}
+						// define columns
+						columns={[
+							{
+								accessor: "id",
+								// this column has a custom title
+								title: "#",
+								// right-align column
+								textAlign: "right",
+							},
+							{ accessor: "name" },
+							{
+								accessor: "party",
+								// this column has custom cell data rendering
+								render: ({ party }) => (
+									<Box fw={700} c={party === "Democratic" ? "blue" : "red"}>
+										{party.slice(0, 3).toUpperCase()}
+									</Box>
+								),
+							},
+							{ accessor: "bornIn" },
+						]}
+						// execute this callback when a row is clicked
+						onRowClick={({ record: { name, party, bornIn } }) =>
+							showNotification({
+								title: `Clicked on ${name}`,
+								message: `You clicked on ${name}, a ${party.toLowerCase()} president born in ${bornIn}`,
+								withBorder: true,
+							})
+						}
+					/>
 				</AppShell.Main>
 			</AppShell>
 		</MantineProvider>
