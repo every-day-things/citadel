@@ -43,7 +43,6 @@
 		getContext("storybook-registration-context-component") || {};
 	// @ts-ignore
 	argsStore?.subscribe((args) => {
-		console.log(args);
 		({ variant, size } = args);
 	});
 	// #endregion

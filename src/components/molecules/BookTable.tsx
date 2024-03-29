@@ -3,10 +3,6 @@ import { Box } from "@mantine/core";
 import { DataTable } from "mantine-datatable";
 import { LibraryBook } from "../../bindings";
 
-const showNotification = (props: unknown) => {
-	console.log(props);
-};
-
 const BookTablePure = ({
 	loading,
 	bookList: books,
@@ -23,15 +19,30 @@ const BookTablePure = ({
 			columns={[
 				{
 					accessor: "id",
-					// this column has a custom title
-					title: "#",
-					// right-align column
-					textAlign: "right",
-					width: 50,
+					title: "Cover",
+					render: ({ cover_image }) => {
+						return (
+							<Box
+								style={{
+									backgroundImage: `url(${cover_image?.url})`,
+									backgroundSize: "contain",
+									backgroundPosition: "center",
+									backgroundRepeat: "no-repeat",
+									maxWidth: "220px",
+									width: '220px',
+									height: "220px",
+									boxSizing: "border-box",
+									padding: "0",
+									margin: "0",
+								}}
+							/>
+						);
+					},
 				},
 				{ accessor: "title" },
 				{
 					accessor: "author_list",
+					title: "Authors",
 					// this column has custom cell data rendering
 					render: ({ author_list }) => (
 						<Box>
@@ -40,16 +51,6 @@ const BookTablePure = ({
 					),
 				}
 			]}
-			// execute this callback when a row is clicked
-			onRowClick={({ record: { author_list, title } }) =>
-				showNotification({
-					title: `Clicked on ${title}`,
-					message: `You clicked on ${title}, a book written by ${author_list.join(
-						", ",
-					)}`,
-					withBorder: true,
-				})
-			}
 		/>
 	);
 };
