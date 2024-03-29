@@ -13,7 +13,6 @@ import {
 	Button,
 	Divider,
 	Title,
-	Box,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { AppShell } from "@mantine/core";
@@ -21,11 +20,11 @@ import { useForm } from "@mantine/form";
 import { F7SquareGrid2x2 } from "./components/icons/F7SquareGrid2x2";
 import { F7ListBullet } from "./components/icons/F7ListBullet";
 import { useBreakpoint } from "./lib/hooks/use-breakpoint";
-import { DataTable } from "mantine-datatable";
-
-const showNotification = (props: unknown) => {
-	console.log(props);
-};
+import { BookTable } from "./components/molecules/BookTable";
+import { initLibrary, libraryClient } from "./stores/library";
+import { createContext, useEffect } from "react";
+import { settings, waitForSettings } from "./stores/settings";
+import { Library } from "./lib/library/_types";
 
 const catppuccinShades = {
 	rosewater: [
@@ -204,13 +203,14 @@ const theme = createTheme({
 	},
 });
 
-function FilterControls() {
-	const LibraryBookSortOrder = {
-		nameAz: "name-asc",
-		nameZa: "name-desc",
-		authorAz: "author-asc",
-		authorZa: "author-desc",
-	} as const;
+const LibraryBookSortOrder = {
+	nameAz: "name-asc",
+	nameZa: "name-desc",
+	authorAz: "author-asc",
+	authorZa: "author-desc",
+} as const;
+
+function FilterControls({form}) {
 	const LibraryBookSortOrderStrings: Record<
 		keyof typeof LibraryBookSortOrder,
 		string
@@ -226,15 +226,6 @@ function FilterControls() {
 			string,
 		][];
 
-	const form = useForm<{
-		query: string;
-		sortOrder: keyof typeof LibraryBookSortOrder;
-	}>({
-		initialValues: {
-			query: "",
-			sortOrder: "authorAz",
-		},
-	});
 	const theme = useMantineTheme();
 	const mdBreakpoint = useBreakpoint("md");
 	const viewControls = [
@@ -289,131 +280,133 @@ function FilterControls() {
 	);
 }
 
-function Header() {
+function Header({form}) {
 	return (
 		<Stack>
-			<FilterControls />
+			<FilterControls form={form} />
 			<p>Showing 1-158 of 158 items</p>
 		</Stack>
 	);
 }
 
+const LibraryContext = createContext<Library>({} as Library);
+interface LibraryProviderProps {
+	children: React.ReactNode;
+}
+const LibraryProvider = ({ children }: LibraryProviderProps) => {
+	useEffect(() => {
+		void (async (): Promise<void> => {
+			await waitForSettings();
+			const calibreLibraryPath = await settings.get("calibreLibraryPath");
+			await initLibrary({
+				libraryPath: calibreLibraryPath,
+				libraryType: "calibre",
+				connectionType: "local",
+			});
+		})();
+	});
+
+	return (
+		<LibraryContext.Provider value={libraryClient()}>
+			{children}
+		</LibraryContext.Provider>
+	);
+};
+
 function App() {
 	const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
 	const [desktopOpened, { toggle: toggleDesktop }] = useDisclosure(true);
 
+	const form = useForm<{
+		query: string;
+		sortOrder: keyof typeof LibraryBookSortOrder;
+	}>({
+		initialValues: {
+			query: "",
+			sortOrder: "authorAz",
+		},
+	});
+
 	return (
-		<MantineProvider theme={theme} forceColorScheme="dark">
-			<AppShell
-				padding="md"
-				header={{ height: 60 }}
-				navbar={{
-					width: 200,
-					breakpoint: "sm",
-					collapsed: { mobile: !mobileOpened, desktop: !desktopOpened },
-				}}
-			>
-				<AppShell.Header h={48}>
-					<Group h="100%" px="md">
-						<Burger
-							opened={mobileOpened}
-							onClick={toggleMobile}
-							hiddenFrom="sm"
-							size="sm"
-						/>
-						<Burger
-							opened={desktopOpened}
-							onClick={toggleDesktop}
-							visibleFrom="sm"
-							size="sm"
-						/>
-					</Group>
-				</AppShell.Header>
+		<LibraryProvider>
+			<MantineProvider theme={theme} forceColorScheme="dark">
+				<AppShell
+					padding="md"
+					header={{ height: 60 }}
+					navbar={{
+						width: 200,
+						breakpoint: "sm",
+						collapsed: { mobile: !mobileOpened, desktop: !desktopOpened },
+					}}
+					h={"100vh"}
+					style={{ overflowY: "scroll" }}
+				>
+					<AppShell.Header h={48}>
+						<Group h="100%" px="md">
+							<Burger
+								opened={mobileOpened}
+								onClick={toggleMobile}
+								hiddenFrom="sm"
+								size="sm"
+							/>
+							<Burger
+								opened={desktopOpened}
+								onClick={toggleDesktop}
+								visibleFrom="sm"
+								size="sm"
+							/>
+						</Group>
+					</AppShell.Header>
 
-				<AppShell.Navbar p="md">
-					<Stack>
-						<Title order={5}>My library</Title>
-						<Button color={theme.colors?.lavender?.[1]} variant="filled">
-							⊕ Add book
-						</Button>
-						<Button color={theme.colors?.lavender?.[1]} variant="outline">
-							Switch library
-						</Button>
-						<Button
-							variant="transparent"
-							color={theme.colors?.lavender?.[9]}
-							justify="flex-start"
-						>
-							First-time setup
-						</Button>
-						<Button
-							variant="transparent"
-							color={theme.colors?.lavender?.[9]}
-							justify="flex-start"
-						>
-							Configure library
-						</Button>
-					</Stack>
-					<Divider my="md" />
-					<Stack>
-						<Title order={5}>My shelves</Title>
-						<Button
-							variant="transparent"
-							color={theme.colors?.lavender?.[9]}
-							justify="flex-start"
-						>
-							All books
-						</Button>
-					</Stack>
-				</AppShell.Navbar>
+					<AppShell.Navbar p="md">
+						<Stack>
+							<Title order={5}>My library</Title>
+							<Button color={theme.colors?.lavender?.[1]} variant="filled">
+								⊕ Add book
+							</Button>
+							<Button color={theme.colors?.lavender?.[1]} variant="outline">
+								Switch library
+							</Button>
+							<Button
+								variant="transparent"
+								color={theme.colors?.lavender?.[9]}
+								justify="flex-start"
+							>
+								First-time setup
+							</Button>
+							<Button
+								variant="transparent"
+								color={theme.colors?.lavender?.[9]}
+								justify="flex-start"
+							>
+								Configure library
+							</Button>
+						</Stack>
+						<Divider my="md" />
+						<Stack>
+							<Title order={5}>My shelves</Title>
+							<Button
+								variant="transparent"
+								color={theme.colors?.lavender?.[9]}
+								justify="flex-start"
+							>
+								All books
+							</Button>
+						</Stack>
+					</AppShell.Navbar>
 
-				<AppShell.Main>
-					<Header />
-					<DataTable
-						withTableBorder
-						borderRadius="sm"
-						withColumnBorders
-						striped
-						highlightOnHover
-						// provide data
-						records={[
-							{ id: 1, name: "Joe Biden", bornIn: 1942, party: "Democratic" },
-							{ id: 2, name: "J Trump", bornIn: 1948, party: "Republican" },
-							// more records...
-						]}
-						// define columns
-						columns={[
-							{
-								accessor: "id",
-								// this column has a custom title
-								title: "#",
-								// right-align column
-								textAlign: "right",
-							},
-							{ accessor: "name" },
-							{
-								accessor: "party",
-								// this column has custom cell data rendering
-								render: ({ party }) => (
-									<Box fw={700} c={party === "Democratic" ? "blue" : "red"}>
-										{party.slice(0, 3).toUpperCase()}
-									</Box>
-								),
-							},
-							{ accessor: "bornIn" },
-						]}
-						// execute this callback when a row is clicked
-						onRowClick={({ record: { name, party, bornIn } }) =>
-							showNotification({
-								title: `Clicked on ${name}`,
-								message: `You clicked on ${name}, a ${party.toLowerCase()} president born in ${bornIn}`,
-								withBorder: true,
-							})
-						}
-					/>
-				</AppShell.Main>
-			</AppShell>
-		</MantineProvider>
+					<AppShell.Main>
+						<Header form={form} />
+						<BookTable
+							options={{
+								sortOrder: form.values.sortOrder,
+								searchQuery: form.values.query,
+							}}
+						/>
+					</AppShell.Main>
+				</AppShell>
+			</MantineProvider>
+		</LibraryProvider>
 	);
 }
 
