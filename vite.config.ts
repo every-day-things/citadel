@@ -1,12 +1,19 @@
 import { defineConfig } from "vitest/config";
 import Icons from "unplugin-icons/vite";
 import react from "@vitejs/plugin-react-swc";
+import path from 'path';
 
 export default defineConfig({
   plugins: [
     react(),
     Icons(),
   ],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      $lib: path.resolve(__dirname, './src/lib'),
+    }
+  },
   // 1. prevent vite from obscuring rust errors
   clearScreen: false,
   server: {
