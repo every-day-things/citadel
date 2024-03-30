@@ -39,10 +39,10 @@ const BookGridRow = ({ books }: { books: LibraryBook[] }) => {
  */
 const groupSize = (isMid: boolean, isBig: boolean) => {
 	if (isBig) {
-		return 6;
+		return 4;
 	}
 	if (isMid) {
-		return 4;
+		return 3;
 	}
 	return 2;
 };
