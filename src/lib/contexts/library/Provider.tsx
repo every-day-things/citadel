@@ -1,17 +1,13 @@
 import { settings, waitForSettings } from "@/stores/settings";
 import { useEffect, useState } from "react";
-import { LibraryContext, LibraryContextType } from "./context";
+import { DEFAULT_CONTEXT_VALUE, LibraryContext, LibraryContextType, LibraryState } from "./context";
 import { initClient } from "@/lib/library/libraryCommsManager";
 
 interface LibraryProviderProps {
 	children: React.ReactNode;
 }
 export const LibraryProvider = ({ children }: LibraryProviderProps) => {
-	const [context, setContext] = useState<LibraryContextType>({
-		loading: true,
-		library: null,
-		error: null,
-	});
+	const [context, setContext] = useState<LibraryContextType>(DEFAULT_CONTEXT_VALUE);
 
 	useEffect(() => {
 		void (async (): Promise<void> => {
@@ -30,6 +26,7 @@ export const LibraryProvider = ({ children }: LibraryProviderProps) => {
 				library: client,
 				loading: false,
 				error: null,
+        state: LibraryState.ready
 			});
 		})();
 
@@ -38,6 +35,7 @@ export const LibraryProvider = ({ children }: LibraryProviderProps) => {
 				library: null,
 				loading: false,
 				error: new Error("Library context was shut down"),
+        state: LibraryState.error
 			});
 		};
 	});

@@ -16,21 +16,24 @@ import { LibraryBook } from "@/bindings";
 import { F7ListBullet } from "../icons/F7ListBullet";
 import { BookGrid } from "../molecules/BookGrid";
 import { BookTable } from "../molecules/BookTable";
-import { useLibrary } from "@/lib/contexts/library";
+import { useLibrary, LibraryState } from "@/lib/contexts/library";
 
 const useLoadBooks = () => {
 	const [loading, setLoading] = useState(true);
 	const [books, setBooks] = useState<LibraryBook[]>([]);
-  const {library, loading: libraryLoading} = useLibrary();
+  const {library, state} = useLibrary();
 
 	useEffect(() => {
 		void (async () => {
-			if (libraryLoading || library === null) return;
+			if (state !== LibraryState.ready) {
+				return
+			}
+
 			const books = await library.listBooks();
 			setBooks(books);
 			setLoading(false);
 		})();
-	}, [library, libraryLoading]);
+	}, [library, state]);
 
 	return [loading, books] as const;
 };

@@ -1,12 +1,8 @@
 import { useContext } from "react";
-import { LibraryContext } from "./context";
+import { LibraryContext, LibraryContextType } from "./context";
 
-export const useLibrary = () => {
+export const useLibrary = (): LibraryContextType => {
 	const context = useContext(LibraryContext);
 
-	return {
-    library: context.library,
-    loading: context.loading,
-    error: context.error
-  }
+	return context;
 };
