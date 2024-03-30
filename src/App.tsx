@@ -10,11 +10,8 @@ import {
 } from "@mantine/core";
 import { AppShell } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { useEffect, useState } from "react";
 import { BookView } from "./components/organisms/BookView";
-import { initLibrary, libraryClient, shutdownLibrary } from "./stores/library";
-import { settings, waitForSettings } from "./stores/settings";
-import { LibraryContext } from "./lib/contexts/library-context";
+import { LibraryProvider } from "./lib/contexts/library";
 
 const catppuccinShades = {
 	rosewater: [
@@ -192,37 +189,6 @@ const theme = createTheme({
 		...catppuccinShades,
 	},
 });
-
-interface LibraryProviderProps {
-	children: React.ReactNode;
-}
-const LibraryProvider = ({ children }: LibraryProviderProps) => {
-	const [loading, setLoading] = useState(true);
-
-	useEffect(() => {
-		void (async (): Promise<void> => {
-			await waitForSettings();
-			const calibreLibraryPath = await settings.get("calibreLibraryPath");
-			await initLibrary({
-				libraryPath: calibreLibraryPath,
-				libraryType: "calibre",
-				connectionType: "local",
-			});
-			setLoading(false);
-		})();
-
-		return () => {
-			setLoading(true);
-			shutdownLibrary();
-		};
-	});
-
-	return (
-		<LibraryContext.Provider value={libraryClient()}>
-			{!loading && children}
-		</LibraryContext.Provider>
-	);
-};
 
 function App() {
 	const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
