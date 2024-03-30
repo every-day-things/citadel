@@ -58,7 +58,11 @@ const BookGridPure = ({
 	const isAtLeastLg = useBreakpoint("lg") ?? false;
 
 	const groups = useMemo(
-		() => groupBySize(groupSize(isAtLeastMd, isAtLeastLg), books),
+		() =>
+			groupBySize(groupSize(isAtLeastMd, isAtLeastLg), books).map((books) => ({
+				books,
+				lastBookId: (books).at(-1)?.id,
+			})),
 		[isAtLeastMd, isAtLeastLg, books],
 	);
 
@@ -70,9 +74,9 @@ const BookGridPure = ({
 			records={groups}
 			columns={[
 				{
-					accessor: "id",
+					accessor: "lastBookId",
 					title: "Cover",
-					render: (books) => <BookGridRow books={books} />,
+					render: ({ books }) => <BookGridRow books={books} />,
 				},
 			]}
 		/>
