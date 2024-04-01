@@ -1,12 +1,12 @@
 import { LibraryAuthor } from "@/bindings";
-import { resolver, theme } from "@/lib/theme";
+import { theme } from "@/lib/theme";
 import { MantineProvider } from "@mantine/core";
 import type { Meta, StoryFn, StoryObj } from "@storybook/react";
 import { AddBookForm } from "./AddBookForm";
 
 const MantineForStorybook = (Story: StoryFn) => {
 	return (
-		<MantineProvider theme={theme} forceColorScheme="dark" cssVariablesResolver={resolver}>
+		<MantineProvider theme={theme} forceColorScheme="dark">
 			<Story />
 		</MantineProvider>
 	);
