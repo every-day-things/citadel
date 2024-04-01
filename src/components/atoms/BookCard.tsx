@@ -1,9 +1,10 @@
-import styles from "./BookCard.module.css";
 import { LibraryBook } from "@/bindings";
-import { shortenToChars } from "./BookAsCover";
 import { Card, Center, Image } from "@mantine/core";
+import React from "react";
+import { shortenToChars } from "./BookAsCover";
+import styles from "./BookCard.module.css";
 
-export default function BookCard({
+export const BookCard = React.memo(function BookCard({
 	book,
 }: {
 	book: LibraryBook;
@@ -38,4 +39,4 @@ export default function BookCard({
 			</Card>
 		</>
 	);
-}
+});

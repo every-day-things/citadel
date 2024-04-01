@@ -4,7 +4,7 @@ import { useBreakpoint } from "@/lib/hooks/use-breakpoint";
 import { Flex } from "@mantine/core";
 import { DataTable } from "mantine-datatable";
 import { useMemo } from "react";
-import BookCard from "../atoms/BookCard";
+import { BookCard } from "../atoms/BookCard";
 
 const groupBySize = <T,>(groupSize: number, array: T[]) => {
 	const groups: T[][] = [];
@@ -61,7 +61,7 @@ const BookGridPure = ({
 		() =>
 			groupBySize(groupSize(isAtLeastMd, isAtLeastLg), books).map((books) => ({
 				books,
-				lastBookId: (books).at(-1)?.id,
+				lastBookId: books.at(-1)?.id,
 			})),
 		[isAtLeastMd, isAtLeastLg, books],
 	);
