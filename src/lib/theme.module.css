@@ -1,0 +1,21 @@
+.root {
+  &[data-variant='danger'] {
+    background-color: var(--mantine-color-red-9);
+    color: var(--mantine-color-red-0);
+    transition: ease-in-out background-color 100ms;
+
+    &:hover, &:focus-visible {
+      background-color: var(--mantine-color-red-7);
+    }
+  }
+
+  &[data-variant='primary'] {
+    background: linear-gradient(45deg, #4b6cb7 10%, #253b67 90%);
+    color: var(--mantine-color-white);
+    border-width: 0;
+
+    &:hover, &:focus-visible {
+      background: linear-gradient(45deg, #5879c4 10%, #283e6a 90%);
+    }
+  }
+}
