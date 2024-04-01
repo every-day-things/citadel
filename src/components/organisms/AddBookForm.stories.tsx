@@ -15,6 +15,17 @@ const MantineForStorybook = (Story: StoryFn) => {
 const meta: Meta<typeof AddBookForm> = {
 	component: AddBookForm,
 	decorators: [MantineForStorybook],
+	argTypes: {
+		fileName: {
+			control: { type: "text" },
+		},
+		initial: {
+			table: { disable: true}
+		},
+		authorList: {
+			table: { disable: true}
+		}
+	},
 };
 
 export default meta;
@@ -39,15 +50,18 @@ const AUTHORS: LibraryAuthor[] = [
  * to learn how to use render functions.
  */
 export const Primary: Story = {
-	render: () => (
+	render: ({fileName}) => (
 		<AddBookForm
+			fileName={fileName}
 			initial={{
 				authorList: ["Robert Pattison"],
 				title: "The Batman",
 			}}
-			fileName="/Users/you/Downloads/your-book-from-a-drm-free-publisher.epub"
 			authorList={AUTHORS.map((author) => author.name)}
 			onSubmit={(data) => console.log("Book data added", data)}
 		/>
 	),
+	args: {
+		fileName: "/Users/you/Downloads/your-book-from-a-drm-free-publisher.epub",
+	},
 };
