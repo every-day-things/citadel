@@ -6,7 +6,6 @@ import {
 	Select,
 	Stack,
 	TextInput,
-	useMantineTheme,
 } from "@mantine/core";
 import { F7SquareGrid2x2 } from "../icons/F7SquareGrid2x2";
 import { UseFormReturnType, useForm } from "@mantine/form";
@@ -67,7 +66,6 @@ function FilterControls({ form }: { form: BookViewForm }) {
 			string,
 		][];
 
-	const theme = useMantineTheme();
 	const mdBreakpoint = useBreakpoint("md");
 	const viewControls = [
 		{
@@ -116,7 +114,7 @@ function FilterControls({ form }: { form: BookViewForm }) {
 				{...form.getInputProps("sortOrder")}
 			/>
 
-			<SegmentedControl color={theme.colors.lavender[2]} data={viewControls} {...form.getInputProps("view")} />
+			<SegmentedControl data={viewControls} {...form.getInputProps("view")} />
 		</Flex>
 	);
 }

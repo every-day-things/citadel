@@ -11,7 +11,7 @@ import { AppShell } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { BookView } from "./components/organisms/BookView";
 import { LibraryProvider } from "./lib/contexts/library";
-import { resolver, theme } from "./lib/theme";
+import { theme } from "./lib/theme";
 
 function App() {
 	const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
@@ -19,7 +19,7 @@ function App() {
 
 	return (
 		<LibraryProvider>
-			<MantineProvider theme={theme} forceColorScheme="dark" cssVariablesResolver={resolver}>
+			<MantineProvider theme={theme} forceColorScheme="dark">
 				<AppShell
 					padding="md"
 					header={{ height: 60 }}
@@ -51,22 +51,20 @@ function App() {
 					<AppShell.Navbar p="md">
 						<Stack>
 							<Title order={5}>My library</Title>
-							<Button color={theme.colors?.lavender?.[1]} variant="filled">
+							<Button variant="filled">
 								⊕ Add book
 							</Button>
-							<Button color={theme.colors?.lavender?.[1]} variant="outline">
+							<Button variant="outline">
 								Switch library
 							</Button>
 							<Button
 								variant="transparent"
-								color={theme.colors?.lavender?.[9]}
 								justify="flex-start"
 							>
 								First-time setup
 							</Button>
 							<Button
 								variant="transparent"
-								color={theme.colors?.lavender?.[9]}
 								justify="flex-start"
 							>
 								Configure library
@@ -77,7 +75,6 @@ function App() {
 							<Title order={5}>My shelves</Title>
 							<Button
 								variant="transparent"
-								color={theme.colors?.lavender?.[9]}
 								justify="flex-start"
 							>
 								All books
