@@ -45,6 +45,7 @@ export const Primary: Story = {
 				authorList: ["Robert Pattison"],
 				title: "The Batman",
 			}}
+			fileName="/Users/you/Downloads/your-book-from-a-drm-free-publisher.epub"
 			authorList={AUTHORS.map((author) => author.name)}
 			onSubmit={(data) => console.log("Book data added", data)}
 		/>
