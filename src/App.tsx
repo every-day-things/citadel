@@ -11,7 +11,7 @@ import { AppShell } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { BookView } from "./components/organisms/BookView";
 import { LibraryProvider } from "./lib/contexts/library";
-import { theme } from "./lib/theme";
+import { resolver, theme } from "./lib/theme";
 
 function App() {
 	const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
@@ -19,7 +19,7 @@ function App() {
 
 	return (
 		<LibraryProvider>
-			<MantineProvider theme={theme} forceColorScheme="dark">
+			<MantineProvider theme={theme} forceColorScheme="dark" cssVariablesResolver={resolver}>
 				<AppShell
 					padding="md"
 					header={{ height: 60 }}
