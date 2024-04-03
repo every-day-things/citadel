@@ -4,7 +4,7 @@ import { beginAddBookHandler } from "./AddBook";
 import { useCallback, useState } from "react";
 import { ImportableBookMetadata } from "@/bindings";
 import { useDisclosure } from "@mantine/hooks";
-import { AddBookForm } from "./AddBookForm";
+import { AddBookForm, title as addBookFormTitle } from "./AddBookForm";
 
 interface SidebarPureProps {
 	addBookHandler: () => void;
@@ -60,19 +60,26 @@ export const Sidebar = () => {
 	}
 	return (
 		<>
-			<Modal
-				opened={isAddBookModalOpen}
-				onClose={closeAddBookModal}
-			>
-				<AddBookForm
-					initial={{
-						authorList: metadata?.author_names ?? [],
-						title: metadata?.title ?? "",
-					}}
-					authorList={["Arthur C. Clarke"]}
-					fileName={metadata?.path ?? ""}
-				/>
-			</Modal>
+			<Modal.Root opened={isAddBookModalOpen} onClose={closeAddBookModal}>
+				<Modal.Overlay blur={3} backgroundOpacity={0.35} />
+				<Modal.Content>
+					<Modal.Header>
+						<Modal.Title>{addBookFormTitle}</Modal.Title>
+						<Modal.CloseButton />
+					</Modal.Header>
+					<Modal.Body>
+						<AddBookForm
+							initial={{
+								authorList: metadata?.author_names ?? [],
+								title: metadata?.title ?? "",
+							}}
+							authorList={["Arthur C. Clarke"]}
+							fileName={metadata?.path ?? ""}
+							hideTitle={true}
+						/>
+					</Modal.Body>
+				</Modal.Content>
+			</Modal.Root>
 			<SidebarPure addBookHandler={addBookHandler} />
 		</>
 	);

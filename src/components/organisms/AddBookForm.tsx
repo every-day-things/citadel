@@ -1,5 +1,13 @@
 import { MultiSelectCreatable } from "@/lib/components/ui/Multiselect/Multiselect";
-import { Button, Code, Stack, Text, TextInput, Title } from "@mantine/core";
+import {
+	Button,
+	Code,
+	Space,
+	Stack,
+	Text,
+	TextInput,
+	Title,
+} from "@mantine/core";
 import { Form, useForm } from "@mantine/form";
 
 interface AddBookForm {
@@ -12,13 +20,17 @@ export interface AddBookFormProps {
 	authorList: string[];
 	fileName: string;
 	onSubmit?: (formData: AddBookForm) => void;
+	hideTitle: boolean;
 }
+
+export const title = "Add new book";
 
 export const AddBookForm = ({
 	initial,
 	authorList,
 	onSubmit,
 	fileName,
+	hideTitle = false,
 }: AddBookFormProps) => {
 	const form = useForm({
 		initialValues: initial,
@@ -34,7 +46,7 @@ export const AddBookForm = ({
 			}}
 		>
 			<Stack gap={"lg"}>
-				<Title>Add new book</Title>
+				{!hideTitle && <Title>{title}</Title>}
 				<Text>
 					Selected file: <Code>{fileName}</Code>{" "}
 				</Text>
@@ -48,6 +60,7 @@ export const AddBookForm = ({
 					}
 					{...form.getInputProps("authorList")}
 				/>
+				<Space h="xl" />
 				<Button variant="filled" fullWidth type="submit">
 					Add book
 				</Button>
