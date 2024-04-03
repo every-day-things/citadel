@@ -1,8 +1,8 @@
 import { promptToAddBook } from "$lib/library/addBook";
-import { libraryClient } from "../../stores/library";
+import { Library } from "@/lib/library/_types";
 
-export async function beginAddBookHandler() {
-	return promptToAddBook(libraryClient());
+export async function beginAddBookHandler(library: Library) {
+	return promptToAddBook(library);
 }
 
 export function pluralize(count: number, singular: string, plural: string) {

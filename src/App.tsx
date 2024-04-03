@@ -1,17 +1,10 @@
-import {
-	Burger,
-	Button,
-	Divider,
-	Group,
-	MantineProvider,
-	Stack,
-	Title,
-} from "@mantine/core";
+import { Burger, Group, MantineProvider } from "@mantine/core";
 import { AppShell } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { BookView } from "./components/organisms/BookView";
 import { LibraryProvider } from "./lib/contexts/library";
 import { theme } from "./lib/theme";
+import { Sidebar } from "./components/organisms/Sidebar";
 
 function App() {
 	const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
@@ -49,37 +42,7 @@ function App() {
 					</AppShell.Header>
 
 					<AppShell.Navbar p="md">
-						<Stack>
-							<Title order={5}>My library</Title>
-							<Button variant="filled">
-								⊕ Add book
-							</Button>
-							<Button variant="outline">
-								Switch library
-							</Button>
-							<Button
-								variant="transparent"
-								justify="flex-start"
-							>
-								First-time setup
-							</Button>
-							<Button
-								variant="transparent"
-								justify="flex-start"
-							>
-								Configure library
-							</Button>
-						</Stack>
-						<Divider my="md" />
-						<Stack>
-							<Title order={5}>My shelves</Title>
-							<Button
-								variant="transparent"
-								justify="flex-start"
-							>
-								All books
-							</Button>
-						</Stack>
+						<Sidebar />
 					</AppShell.Navbar>
 
 					<AppShell.Main>
