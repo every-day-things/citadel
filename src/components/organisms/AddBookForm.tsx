@@ -10,7 +10,7 @@ import {
 } from "@mantine/core";
 import { Form, useForm } from "@mantine/form";
 
-interface AddBookForm {
+export interface AddBookForm {
 	title: string;
 	authorList: string[];
 }

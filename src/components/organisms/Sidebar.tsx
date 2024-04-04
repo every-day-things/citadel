@@ -5,6 +5,7 @@ import { useCallback, useState } from "react";
 import { ImportableBookMetadata } from "@/bindings";
 import { useDisclosure } from "@mantine/hooks";
 import { AddBookForm, title as addBookFormTitle } from "./AddBookForm";
+import { commitAddBook } from "@/lib/library/addBook";
 
 interface SidebarPureProps {
 	addBookHandler: () => void;
@@ -45,18 +46,36 @@ export const Sidebar = () => {
 		{ close: closeAddBookModal, open: openAddBookModal },
 	] = useDisclosure(false);
 
-	const addBookHandler = useCallback(() => {
+	const addBookByMetadataWithEffects = (form: AddBookForm) => {
+		if (!metadata || state !== LibraryState.ready) return;
+		const editedMetadata: ImportableBookMetadata = {
+			...metadata,
+			title: form.title,
+			author_names: form.authorList,
+		};
+		commitAddBook(library, editedMetadata)
+			.then(() => {
+				closeAddBookModal();
+				setMetadata(null);
+			})
+			.catch((error) => {
+				console.error("Failed to add book to database", error);
+			});
+	};
+
+	const selectAndEditBookFile = useCallback(() => {
 		if (state !== LibraryState.ready) return;
 
-		beginAddBookHandler(library).then((importableMetadata) => {
-			if (importableMetadata) {
-				setMetadata(importableMetadata);
-				openAddBookModal();
-			}
-		}).catch((failure) => {
-			console.error("failed to import new book: ", failure);
-		})
-
+		beginAddBookHandler(library)
+			.then((importableMetadata) => {
+				if (importableMetadata) {
+					setMetadata(importableMetadata);
+					openAddBookModal();
+				}
+			})
+			.catch((failure) => {
+				console.error("failed to import new book: ", failure);
+			});
 	}, [library, state, openAddBookModal]);
 
 	if (state !== LibraryState.ready) {
@@ -80,11 +99,12 @@ export const Sidebar = () => {
 							authorList={["Arthur C. Clarke"]}
 							fileName={metadata?.path ?? ""}
 							hideTitle={true}
+							onSubmit={addBookByMetadataWithEffects}
 						/>
 					</Modal.Body>
 				</Modal.Content>
 			</Modal.Root>
-			<SidebarPure addBookHandler={addBookHandler} />
+			<SidebarPure addBookHandler={selectAndEditBookFile} />
 		</>
 	);
 };
