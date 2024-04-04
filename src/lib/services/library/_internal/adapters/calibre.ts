@@ -4,7 +4,7 @@ import {
 	type ImportableBookMetadata,
 	type LibraryBook,
 	type RemoteFile,
-} from "../../../../../bindings";
+} from "@/bindings";
 import type {
 	Library,
 	LocalConnectionOptions,
