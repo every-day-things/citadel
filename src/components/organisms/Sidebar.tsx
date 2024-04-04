@@ -1,8 +1,8 @@
 import { LibraryState, useLibrary } from "@/lib/contexts/library";
 import { Button, Divider, Modal, Stack, Title } from "@mantine/core";
 import { beginAddBookHandler } from "./AddBook";
-import { useCallback, useState } from "react";
-import { ImportableBookMetadata } from "@/bindings";
+import { useCallback, useEffect, useState } from "react";
+import { ImportableBookMetadata, LibraryAuthor } from "@/bindings";
 import { useDisclosure } from "@mantine/hooks";
 import { AddBookForm, title as addBookFormTitle } from "./AddBookForm";
 import { commitAddBook } from "@/lib/library/addBook";
@@ -12,6 +12,7 @@ interface AddBookModalProps {
 	onClose: () => void;
 	metadata: ImportableBookMetadata;
 	onSubmitHandler: (form: AddBookForm) => void;
+	authorNameList: string[];
 }
 
 const AddBookModalPure = ({
@@ -19,9 +20,10 @@ const AddBookModalPure = ({
 	onClose,
 	metadata,
 	onSubmitHandler,
+	authorNameList,
 }: AddBookModalProps) => {
 	return (
-		<Modal.Root opened={isOpen} onClose={onClose}>
+		<Modal.Root opened={isOpen} onClose={onClose} size={"lg"}>
 			<Modal.Overlay blur={3} backgroundOpacity={0.35} />
 			<Modal.Content>
 				<Modal.Header>
@@ -34,7 +36,7 @@ const AddBookModalPure = ({
 							authorList: metadata?.author_names ?? [],
 							title: metadata?.title ?? "",
 						}}
-						authorList={["Arthur C. Clarke"]}
+						authorList={authorNameList}
 						fileName={metadata?.path ?? ""}
 						hideTitle={true}
 						onSubmit={onSubmitHandler}
@@ -43,6 +45,10 @@ const AddBookModalPure = ({
 			</Modal.Content>
 		</Modal.Root>
 	);
+};
+
+const sortAuthors = (a: LibraryAuthor, b: LibraryAuthor) => {
+	return a.sortable_name.localeCompare(b.sortable_name);
 };
 
 interface SidebarPureProps {
@@ -83,6 +89,16 @@ export const Sidebar = () => {
 		isAddBookModalOpen,
 		{ close: closeAddBookModal, open: openAddBookModal },
 	] = useDisclosure(false);
+	const [authorList, setAuthorList] = useState<string[]>([]);
+	useEffect(() => {
+		void (async () => {
+			setAuthorList(
+				((await library?.listAuthors()) ?? [])
+					.sort(sortAuthors)
+					.map((author) => author.name),
+			);
+		})();
+	}, [library]);
 
 	const selectAndEditBookFile = useCallback(() => {
 		if (state !== LibraryState.ready) return;
@@ -127,6 +143,7 @@ export const Sidebar = () => {
 					onClose={closeAddBookModal}
 					metadata={metadata}
 					onSubmitHandler={addBookByMetadataWithEffects}
+					authorNameList={authorList}
 				/>
 			)}
 			<SidebarPure addBookHandler={selectAndEditBookFile} />
