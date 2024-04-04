@@ -10,12 +10,12 @@ export const DeviceType = {
 	externalDrive: "EXTERNAL_DRIVE",
 } as const;
 export type TDeviceType = (typeof DeviceType)[keyof typeof DeviceType];
-export type FileType = {
+export interface FileType {
 	extension: string;
 	mimetype: string;
-};
+}
 
-export type Library = {
+export interface Library {
 	listBooks(): Promise<LibraryBook[]>;
 	listAuthors(): Promise<LibraryAuthor[]>;
 	sendToDevice(
@@ -90,16 +90,16 @@ export type Library = {
 	 * add to their library.
 	 */
 	listValidFileTypes(): Promise<FileType[]>;
-};
+}
 
-export type LocalConnectionOptions = {
+export interface LocalConnectionOptions {
 	connectionType: "local";
 	libraryPath: string;
-};
-export type RemoteConnectionOptions = {
+}
+export interface RemoteConnectionOptions {
 	connectionType: "remote";
 	url: string;
-};
+}
 
 export type Options = {
 	libraryType: "calibre";
