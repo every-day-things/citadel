@@ -1,6 +1,8 @@
 import { useBreakpoint } from "@/lib/hooks/use-breakpoint";
 import {
+	Button,
 	Center,
+	Drawer,
 	Flex,
 	SegmentedControl,
 	Select,
@@ -9,23 +11,24 @@ import {
 } from "@mantine/core";
 import { F7SquareGrid2x2 } from "../icons/F7SquareGrid2x2";
 import { UseFormReturnType, useForm } from "@mantine/form";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 
 import { LibraryBook } from "@/bindings";
 import { F7ListBullet } from "../icons/F7ListBullet";
 import { BookGrid } from "../molecules/BookGrid";
 import { BookTable } from "../molecules/BookTable";
 import { useLibrary, LibraryState } from "@/lib/contexts/library";
+import { useDisclosure } from "@mantine/hooks";
 
 const useLoadBooks = () => {
 	const [loading, setLoading] = useState(true);
 	const [books, setBooks] = useState<LibraryBook[]>([]);
-  const {library, state} = useLibrary();
+	const { library, state } = useLibrary();
 
 	useEffect(() => {
 		void (async () => {
 			if (state !== LibraryState.ready) {
-				return
+				return;
 			}
 
 			const books = await library.listBooks();
@@ -193,14 +196,51 @@ export const Books = () => {
 		return [...filteredBooks].sort(compare);
 	}, [filteredBooks, form.values.sortOrder]);
 
+	const [
+		isBookSidebarOpen,
+		{ open: openBookSidebar, close: closeBookSidebar },
+	] = useDisclosure(false);
+
+	const [selectedSidebarBook, setSelectedSidebarBook] =
+		useState<LibraryBook | null>(null);
+	const onBookOpen = useCallback(
+		(bookId: LibraryBook["id"]) => {
+			const book = books.filter((book) => book.id === bookId).at(0);
+			if (!book) return;
+			setSelectedSidebarBook(book);
+			openBookSidebar();
+		},
+		[books, openBookSidebar],
+	);
+
 	return (
 		<>
+			<Button onClick={openBookSidebar}>open drawer</Button>
 			<Header form={form} bookCount={sortedBooks.length} />
 			{form.values.view === "covers" ? (
-				<BookGrid bookList={sortedBooks} loading={loading} />
+				<BookGrid
+					bookList={sortedBooks}
+					loading={loading}
+					onBookOpen={onBookOpen}
+				/>
 			) : (
-				<BookTable bookList={sortedBooks} loading={loading} />
+				<BookTable
+					bookList={sortedBooks}
+					loading={loading}
+					onBookOpen={onBookOpen}
+				/>
 			)}
+			<Drawer
+				offset={8}
+				radius="md"
+				opened={isBookSidebarOpen}
+				position="right"
+				onClose={closeBookSidebar}
+				title="Authentication"
+				overlayProps={{ blur: 3, backgroundOpacity: 0.35 }}
+			>
+				<p>{selectedSidebarBook?.title}</p>
+			</Drawer>
 		</>
 	);
 };
