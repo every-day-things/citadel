@@ -2,7 +2,6 @@ import { MultiSelectCreatable } from "@/lib/components/ui/Multiselect/Multiselec
 import {
 	Button,
 	Code,
-	Space,
 	Stack,
 	Text,
 	TextInput,
@@ -47,7 +46,7 @@ export const AddBookForm = ({
 		>
 			<Stack gap={"lg"}>
 				{!hideTitle && <Title>{title}</Title>}
-				<Text>
+				<Text mb="sm">
 					Selected file: <Code>{fileName}</Code>{" "}
 				</Text>
 				<TextInput label="Title" {...form.getInputProps("title")} />
@@ -60,8 +59,7 @@ export const AddBookForm = ({
 					}
 					{...form.getInputProps("authorList")}
 				/>
-				<Space h="xl" />
-				<Button variant="filled" fullWidth type="submit">
+				<Button mt="mg" variant="filled" fullWidth type="submit">
 					Add book
 				</Button>
 			</Stack>
