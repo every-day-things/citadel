@@ -1,12 +1,12 @@
 import { settings, waitForSettings } from "@/stores/settings";
-import { useEffect, useState } from "react";
+import { useEffect, useReducer } from "react";
 import {
 	DEFAULT_CONTEXT_VALUE,
 	LibraryContext,
 	LibraryContextType,
 	LibraryState,
 } from "./context";
-import { initClient } from "@/lib/services/library";
+import { Library, initClient } from "@/lib/services/library";
 
 const initializeLibrary = async () => {
 	await waitForSettings();
@@ -20,35 +20,76 @@ const initializeLibrary = async () => {
 	return initClient(options);
 };
 
+type Action =
+	| {
+			type: "init";
+			client: Library;
+	  }
+	| {
+			type: "shutdown";
+	  }
+	| {
+			type: "error";
+			error: Error;
+	  };
+
+const reducer = (
+	_state: LibraryContextType,
+	action: Action,
+): LibraryContextType => {
+	switch (action.type) {
+		case "init":
+			return {
+				library: action.client,
+				loading: false,
+				error: null,
+				state: LibraryState.ready,
+			};
+		case "shutdown":
+			return {
+				library: null,
+				loading: false,
+				error: null,
+				state: LibraryState.closed,
+			};
+		case "error":
+			return {
+				library: null,
+				loading: false,
+				error: action.error,
+				state: LibraryState.error,
+			};
+		default:
+			return DEFAULT_CONTEXT_VALUE;
+	}
+};
+
 interface LibraryProviderProps {
 	children: React.ReactNode;
 }
 export const LibraryProvider = ({ children }: LibraryProviderProps) => {
-	const [context, setContext] = useState<LibraryContextType>(
-		DEFAULT_CONTEXT_VALUE,
-	);
+	const [context, dispatch] = useReducer(reducer, DEFAULT_CONTEXT_VALUE);
+
+	useEffect(() => {
+		if (context.state === LibraryState.error) {
+			console.log(context.error);
+		}
+	}, [context]);
 
 	useEffect(() => {
 		initializeLibrary()
 			.then((client) => {
-				setContext({
-					library: client,
-					loading: false,
-					error: null,
-					state: LibraryState.ready,
+				dispatch({
+					type: "init",
+					client,
 				});
 			})
 			.catch(() => {
-				console.error("Failed to init library");
+				dispatch({ type: "error", error: new Error("Failed to init Library") });
 			});
 
 		return () => {
-			setContext({
-				library: null,
-				loading: false,
-				error: new Error("Library context was shut down"),
-				state: LibraryState.error,
-			});
+			dispatch({ type: "shutdown" });
 		};
 	}, []);
 
