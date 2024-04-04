@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import { Library } from "../../services/library/_types";
+import { Library } from "../../services/library";
 
 export enum LibraryState {
 	ready = 0,

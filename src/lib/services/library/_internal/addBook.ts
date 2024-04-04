@@ -1,5 +1,5 @@
 import { dialog } from "@tauri-apps/api";
-import type { Library } from "./_types";
+import type { Library } from "./_internal/_types";
 import type { ImportableBookMetadata } from "../../../bindings";
 
 export const promptToAddBook = async (
