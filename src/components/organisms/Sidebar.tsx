@@ -1,11 +1,10 @@
 import { LibraryState, useLibrary } from "@/lib/contexts/library";
 import { Button, Divider, Modal, Stack, Title } from "@mantine/core";
-import { beginAddBookHandler } from "./AddBook";
 import { useCallback, useEffect, useState } from "react";
 import { ImportableBookMetadata, LibraryAuthor } from "@/bindings";
 import { useDisclosure } from "@mantine/hooks";
 import { AddBookForm, title as addBookFormTitle } from "./AddBookForm";
-import { commitAddBook } from "@/lib/library/addBook";
+import { commitAddBook, promptToAddBook } from "@/lib/library/addBook";
 
 interface AddBookModalProps {
 	isOpen: boolean;
@@ -103,7 +102,7 @@ export const Sidebar = () => {
 	const selectAndEditBookFile = useCallback(() => {
 		if (state !== LibraryState.ready) return;
 
-		beginAddBookHandler(library)
+		promptToAddBook(library)
 			.then((importableMetadata) => {
 				if (importableMetadata) {
 					setMetadata(importableMetadata);
