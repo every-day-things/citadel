@@ -2,8 +2,8 @@
  * Svelte store to wrap the Library client.
  * See {@link initClient} for more details about setting up the client.
  */
-import { initClient } from "$lib/library/libraryCommsManager";
-import { type Library, type Options } from "$lib/library/_types";
+import { initClient } from "@/lib/services/library/libraryCommsManager";
+import { type Library, type Options } from "@/lib/services/library/_types";
 import { get, writable } from "svelte/store";
 
 let resolveClientReady: () => void;
