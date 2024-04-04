@@ -1,4 +1,4 @@
-import type { Library } from "@/lib/services/library/_types";
+import type { Library } from "@/lib/services/library";
 import type { LibraryBook } from "../../../bindings";
 
 export const pageTitleForBook = (book: LibraryBook) =>

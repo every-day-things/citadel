@@ -1,7 +1,7 @@
 import { open } from "@tauri-apps/api/shell";
 import type { LibraryBook } from "../../bindings";
 import { libraryClient } from "../../stores/library";
-import { DeviceType } from "@/lib/services/library/_types";
+import { DeviceType } from "@/lib/services/library";
 
 export const openBookInDefaultApp = (book: LibraryBook) => {
 	const bookAbsPath = libraryClient().getDefaultFilePathForBook(book.id);

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ImportableBookMetadata, LibraryAuthor } from "@/bindings";
 import { useDisclosure } from "@mantine/hooks";
 import { AddBookForm, title as addBookFormTitle } from "./AddBookForm";
-import { commitAddBook, promptToAddBook } from "@/lib/services/library/addBook";
+import { commitAddBook, promptToAddBook } from "@/lib/services/library";
 
 interface AddBookModalProps {
 	isOpen: boolean;
