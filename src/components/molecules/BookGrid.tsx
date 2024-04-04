@@ -20,11 +20,17 @@ const groupBySize = <T,>(groupSize: number, array: T[]) => {
  * @param param0
  * @returns
  */
-const BookGridRow = ({ books }: { books: LibraryBook[] }) => {
+const BookGridRow = ({
+	books,
+	onBookOpen,
+}: {
+	books: LibraryBook[];
+	onBookOpen: (bookId: LibraryBook["id"]) => void;
+}) => {
 	return (
 		<Flex w={"100%"}>
 			{books.map((book) => (
-				<BookCard key={book.id} book={book} />
+				<BookCard key={book.id} book={book} onBookOpen={onBookOpen} />
 			))}
 		</Flex>
 	);
@@ -50,9 +56,11 @@ const groupSize = (isMid: boolean, isBig: boolean) => {
 const BookGridPure = ({
 	loading,
 	bookList: books,
+	onBookOpen,
 }: {
 	loading: boolean;
 	bookList: LibraryBook[];
+	onBookOpen: BookView["onBookOpen"];
 }) => {
 	const isAtLeastMd = useBreakpoint("md") ?? true;
 	const isAtLeastLg = useBreakpoint("lg") ?? false;
@@ -76,13 +84,21 @@ const BookGridPure = ({
 				{
 					accessor: "lastBookId",
 					title: "Cover",
-					render: ({ books }) => <BookGridRow books={books} />,
+					render: ({ books }) => (
+						<BookGridRow books={books} onBookOpen={onBookOpen} />
+					),
 				},
 			]}
 		/>
 	);
 };
 
-export const BookGrid = ({ loading, bookList }: BookView) => {
-	return <BookGridPure loading={loading} bookList={bookList} />;
+export const BookGrid = ({ loading, bookList, onBookOpen }: BookView) => {
+	return (
+		<BookGridPure
+			loading={loading}
+			bookList={bookList}
+			onBookOpen={onBookOpen}
+		/>
+	);
 };
