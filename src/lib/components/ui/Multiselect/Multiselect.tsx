@@ -127,7 +127,10 @@ export function MultiSelectCreatable({
 			</Combobox.DropdownTarget>
 
 			<Combobox.Dropdown>
-				<Combobox.Options>
+				<Combobox.Options style={{
+					maxHeight: '10rem',
+					overflowY: 'scroll'
+				}}>
 					{options}
 
 					{!exactOptionMatch && search.trim().length > 0 && (
