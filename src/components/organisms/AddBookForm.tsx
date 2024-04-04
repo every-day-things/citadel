@@ -1,4 +1,4 @@
-import { MultiSelectCreatable } from "@/lib/components/ui/Multiselect/Multiselect";
+import { MultiSelectCreatable } from "@/components/atoms/Multiselect";
 import {
 	Button,
 	Code,
