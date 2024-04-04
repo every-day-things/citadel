@@ -7,6 +7,44 @@ import { useDisclosure } from "@mantine/hooks";
 import { AddBookForm, title as addBookFormTitle } from "./AddBookForm";
 import { commitAddBook } from "@/lib/library/addBook";
 
+interface AddBookModalProps {
+	isOpen: boolean;
+	onClose: () => void;
+	metadata: ImportableBookMetadata;
+	onSubmitHandler: (form: AddBookForm) => void;
+}
+
+const AddBookModalPure = ({
+	isOpen,
+	onClose,
+	metadata,
+	onSubmitHandler,
+}: AddBookModalProps) => {
+	return (
+		<Modal.Root opened={isOpen} onClose={onClose}>
+			<Modal.Overlay blur={3} backgroundOpacity={0.35} />
+			<Modal.Content>
+				<Modal.Header>
+					<Modal.Title>{addBookFormTitle}</Modal.Title>
+					<Modal.CloseButton />
+				</Modal.Header>
+				<Modal.Body>
+					<AddBookForm
+						initial={{
+							authorList: metadata?.author_names ?? [],
+							title: metadata?.title ?? "",
+						}}
+						authorList={["Arthur C. Clarke"]}
+						fileName={metadata?.path ?? ""}
+						hideTitle={true}
+						onSubmit={onSubmitHandler}
+					/>
+				</Modal.Body>
+			</Modal.Content>
+		</Modal.Root>
+	);
+};
+
 interface SidebarPureProps {
 	addBookHandler: () => void;
 }
@@ -46,6 +84,21 @@ export const Sidebar = () => {
 		{ close: closeAddBookModal, open: openAddBookModal },
 	] = useDisclosure(false);
 
+	const selectAndEditBookFile = useCallback(() => {
+		if (state !== LibraryState.ready) return;
+
+		beginAddBookHandler(library)
+			.then((importableMetadata) => {
+				if (importableMetadata) {
+					setMetadata(importableMetadata);
+					openAddBookModal();
+				}
+			})
+			.catch((failure) => {
+				console.error("failed to import new book: ", failure);
+			});
+	}, [library, state, openAddBookModal]);
+
 	const addBookByMetadataWithEffects = (form: AddBookForm) => {
 		if (!metadata || state !== LibraryState.ready) return;
 		const editedMetadata: ImportableBookMetadata = {
@@ -63,47 +116,19 @@ export const Sidebar = () => {
 			});
 	};
 
-	const selectAndEditBookFile = useCallback(() => {
-		if (state !== LibraryState.ready) return;
-
-		beginAddBookHandler(library)
-			.then((importableMetadata) => {
-				if (importableMetadata) {
-					setMetadata(importableMetadata);
-					openAddBookModal();
-				}
-			})
-			.catch((failure) => {
-				console.error("failed to import new book: ", failure);
-			});
-	}, [library, state, openAddBookModal]);
-
 	if (state !== LibraryState.ready) {
 		return null;
 	}
 	return (
 		<>
-			<Modal.Root opened={isAddBookModalOpen} onClose={closeAddBookModal}>
-				<Modal.Overlay blur={3} backgroundOpacity={0.35} />
-				<Modal.Content>
-					<Modal.Header>
-						<Modal.Title>{addBookFormTitle}</Modal.Title>
-						<Modal.CloseButton />
-					</Modal.Header>
-					<Modal.Body>
-						<AddBookForm
-							initial={{
-								authorList: metadata?.author_names ?? [],
-								title: metadata?.title ?? "",
-							}}
-							authorList={["Arthur C. Clarke"]}
-							fileName={metadata?.path ?? ""}
-							hideTitle={true}
-							onSubmit={addBookByMetadataWithEffects}
-						/>
-					</Modal.Body>
-				</Modal.Content>
-			</Modal.Root>
+			{metadata && (
+				<AddBookModalPure
+					isOpen={isAddBookModalOpen}
+					onClose={closeAddBookModal}
+					metadata={metadata}
+					onSubmitHandler={addBookByMetadataWithEffects}
+				/>
+			)}
 			<SidebarPure addBookHandler={selectAndEditBookFile} />
 		</>
 	);
