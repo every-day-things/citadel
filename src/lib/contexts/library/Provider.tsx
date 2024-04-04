@@ -1,5 +1,5 @@
 import { settings, waitForSettings } from "@/stores/settings";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
 	DEFAULT_CONTEXT_VALUE,
 	LibraryContext,
@@ -7,6 +7,18 @@ import {
 	LibraryState,
 } from "./context";
 import { initClient } from "@/lib/services/library";
+
+const initializeLibrary = async () => {
+	await waitForSettings();
+	const calibreLibraryPath = await settings.get("calibreLibraryPath");
+	const options = {
+		libraryPath: calibreLibraryPath,
+		libraryType: "calibre",
+		connectionType: "local",
+	} as const;
+
+	return initClient(options);
+};
 
 interface LibraryProviderProps {
 	children: React.ReactNode;
@@ -16,30 +28,19 @@ export const LibraryProvider = ({ children }: LibraryProviderProps) => {
 		DEFAULT_CONTEXT_VALUE,
 	);
 
-	const initializeLibrary = useCallback(async () => {
-		await waitForSettings();
-		const calibreLibraryPath = await settings.get("calibreLibraryPath");
-		const options = {
-			libraryPath: calibreLibraryPath,
-			libraryType: "calibre",
-			connectionType: "local",
-		} as const;
-		const client = await initClient({
-			...options,
-			libraryType: "calibre",
-		});
-		setContext({
-			library: client,
-			loading: false,
-			error: null,
-			state: LibraryState.ready,
-		});
-	}, []);
-
 	useEffect(() => {
-		initializeLibrary().catch(() => {
-			console.error("Failed to init library");
-		});
+		initializeLibrary()
+			.then((client) => {
+				setContext({
+					library: client,
+					loading: false,
+					error: null,
+					state: LibraryState.ready,
+				});
+			})
+			.catch(() => {
+				console.error("Failed to init library");
+			});
 
 		return () => {
 			setContext({
@@ -49,7 +50,7 @@ export const LibraryProvider = ({ children }: LibraryProviderProps) => {
 				state: LibraryState.error,
 			});
 		};
-	}, [initializeLibrary]);
+	}, []);
 
 	return (
 		<LibraryContext.Provider value={context}>
