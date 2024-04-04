@@ -147,7 +147,7 @@ const filterBooksByQuery = (books: LibraryBook[], query: string) => {
 	);
 };
 
-export const BookView = () => {
+export const Books = () => {
 	const form = useForm<{
 		query: string;
 		sortOrder: keyof typeof LibraryBookSortOrder;

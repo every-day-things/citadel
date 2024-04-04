@@ -1,7 +1,7 @@
 import { Burger, Group, MantineProvider } from "@mantine/core";
 import { AppShell } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { BookView } from "./components/organisms/BookView";
+import { Books } from "./components/pages/Books";
 import { LibraryProvider } from "./lib/contexts/library";
 import { theme } from "./lib/theme";
 import { Sidebar } from "./components/organisms/Sidebar";
@@ -46,7 +46,7 @@ function App() {
 					</AppShell.Navbar>
 
 					<AppShell.Main>
-						<BookView />
+						<Books />
 					</AppShell.Main>
 				</AppShell>
 			</MantineProvider>
