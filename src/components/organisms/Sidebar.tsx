@@ -45,14 +45,18 @@ export const Sidebar = () => {
 		{ close: closeAddBookModal, open: openAddBookModal },
 	] = useDisclosure(false);
 
-	const addBookHandler = useCallback(async () => {
+	const addBookHandler = useCallback(() => {
 		if (state !== LibraryState.ready) return;
 
-		const importableMetadata = await beginAddBookHandler(library);
-		if (importableMetadata) {
-			setMetadata(importableMetadata);
-			openAddBookModal();
-		}
+		beginAddBookHandler(library).then((importableMetadata) => {
+			if (importableMetadata) {
+				setMetadata(importableMetadata);
+				openAddBookModal();
+			}
+		}).catch((failure) => {
+			console.error("failed to import new book: ", failure);
+		})
+
 	}, [library, state, openAddBookModal]);
 
 	if (state !== LibraryState.ready) {
