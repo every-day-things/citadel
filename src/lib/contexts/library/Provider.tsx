@@ -6,7 +6,7 @@ import {
 	LibraryContextType,
 	LibraryState,
 } from "./context";
-import { initClient } from "@/lib/library/libraryCommsManager";
+import { initClient } from "@/lib/services/library/libraryCommsManager";
 
 interface LibraryProviderProps {
 	children: React.ReactNode;

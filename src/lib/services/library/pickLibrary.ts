@@ -1,9 +1,9 @@
 import { open } from "@tauri-apps/api/dialog";
-import { settings } from "../../stores/settings";
-import { initLibrary, libraryClient } from "../../stores/library";
-import { books } from "../../stores/books";
+import { settings } from "../../../stores/settings";
+import { initLibrary, libraryClient } from "../../../stores/library";
+import { books } from "../../../stores/books";
 
-import { commands } from "../../bindings";
+import { commands } from "../../../bindings";
 
 export async function pickLibrary() {
 	const selected = await open({
