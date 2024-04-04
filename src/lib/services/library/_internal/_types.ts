@@ -4,7 +4,7 @@ import type {
 	ImportableFile,
 	LibraryAuthor,
 	LibraryBook,
-} from "../../../../bindings";
+} from "@/bindings";
 
 export const DeviceType = {
 	externalDrive: "EXTERNAL_DRIVE",
