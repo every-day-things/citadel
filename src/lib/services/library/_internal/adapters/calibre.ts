@@ -105,6 +105,8 @@ const genLocalCalibreClient = async (
 
 const genRemoteCalibreClient = async (
 	options: RemoteConnectionOptions,
+	// The interface requires this function to be async.
+	// eslint-disable-next-line @typescript-eslint/require-await
 ): Promise<Library> => {
 	// All remote clients are really Citadel clients... but for a certain kind of
 	// library. In this case, Calibre.
@@ -136,6 +138,8 @@ const genRemoteCalibreClient = async (
 		updateBook: () => {
 			throw new Error("Not implemented");
 		},
+		// The interface requires we accept param.
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		getCoverPathForBook: (_bookId) => {
 			return "";
 		},
@@ -160,6 +164,8 @@ const genRemoteCalibreClient = async (
 		addImportableFileByMetadata: () => {
 			throw new Error("Not implemented");
 		},
+		// The interface requires this function is async.
+		// eslint-disable-next-line @typescript-eslint/require-await
 		listValidFileTypes: async () => {
 			throw new Error("Not implemented");
 		},
