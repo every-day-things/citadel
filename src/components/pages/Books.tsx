@@ -2,11 +2,15 @@ import { useBreakpoint } from "@/lib/hooks/use-breakpoint";
 import {
 	Button,
 	Center,
+	Divider,
 	Drawer,
 	Flex,
+	Group,
+	Image,
 	SegmentedControl,
 	Select,
 	Stack,
+	Text,
 	TextInput,
 } from "@mantine/core";
 import { F7SquareGrid2x2 } from "../icons/F7SquareGrid2x2";
@@ -136,6 +140,42 @@ function Header({
 	);
 }
 
+const BookDetails = ({ book }: { book: LibraryBook }) => {
+	return (
+		<>
+			<Stack>
+				<Group wrap={"nowrap"} align="flex-start">
+					<Image
+						h={200}
+						w="auto"
+						fit="contain"
+						src={book.cover_image?.url}
+						alt={book.title}
+					/>
+					<Stack ml={"sm"} align="flex-start" justify="flex-start">
+						<Text size="xl" fw={"700"}>
+							{book.title}
+						</Text>
+						<Text size="md">
+							{book.author_list.map((author) => author.name).join(", ")}
+						</Text>
+					</Stack>
+				</Group>
+				<Divider />
+				<Group>
+					<p></p>
+				</Group>
+				<Divider />
+				<Stack>
+					<p>
+						<span>ISBN</span>: <span>14987234908</span>
+					</p>
+				</Stack>
+			</Stack>
+		</>
+	);
+};
+
 export interface BookViewOptions {
 	sortOrder: "authorAz" | "authorZa" | "nameAz" | "nameZa";
 	searchQuery: string;
@@ -232,14 +272,15 @@ export const Books = () => {
 			)}
 			<Drawer
 				offset={8}
+				size={"lg"}
 				radius="md"
 				opened={isBookSidebarOpen}
 				position="right"
 				onClose={closeBookSidebar}
-				title="Authentication"
+				title=""
 				overlayProps={{ blur: 3, backgroundOpacity: 0.35 }}
 			>
-				<p>{selectedSidebarBook?.title}</p>
+				{selectedSidebarBook && <BookDetails book={selectedSidebarBook} />}
 			</Drawer>
 		</>
 	);
