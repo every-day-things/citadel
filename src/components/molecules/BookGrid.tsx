@@ -3,7 +3,7 @@ import { LibraryBook } from "@/bindings";
 import { useBreakpoint } from "@/lib/hooks/use-breakpoint";
 import { Flex } from "@mantine/core";
 import { DataTable } from "mantine-datatable";
-import { useMemo } from "react";
+import { createContext, useContext, useMemo } from "react";
 import { BookCard } from "../atoms/BookCard";
 
 const groupBySize = <T,>(groupSize: number, array: T[]) => {
@@ -22,15 +22,15 @@ const groupBySize = <T,>(groupSize: number, array: T[]) => {
  */
 const BookGridRow = ({
 	books,
-	onBookOpen,
 }: {
 	books: LibraryBook[];
-	onBookOpen: (bookId: LibraryBook["id"]) => void;
 }) => {
+	const actions = useContext(bookActionsContext);
+
 	return (
 		<Flex w={"100%"}>
 			{books.map((book) => (
-				<BookCard key={book.id} book={book} onBookOpen={onBookOpen} />
+				<BookCard key={book.id} book={book} actions={actions} />
 			))}
 		</Flex>
 	);
@@ -56,11 +56,9 @@ const groupSize = (isMid: boolean, isBig: boolean) => {
 const BookGridPure = ({
 	loading,
 	bookList: books,
-	onBookOpen,
 }: {
 	loading: boolean;
 	bookList: LibraryBook[];
-	onBookOpen: BookView["onBookOpen"];
 }) => {
 	const isAtLeastMd = useBreakpoint("md") ?? true;
 	const isAtLeastLg = useBreakpoint("lg") ?? false;
@@ -84,21 +82,31 @@ const BookGridPure = ({
 				{
 					accessor: "lastBookId",
 					title: "Cover",
-					render: ({ books }) => (
-						<BookGridRow books={books} onBookOpen={onBookOpen} />
-					),
+					render: ({ books }) => <BookGridRow books={books} />,
 				},
 			]}
 		/>
 	);
 };
 
+type BookAction = (bookId: LibraryBook["id"]) => void;
+interface BookActionsContext {
+	onViewBook: BookAction;
+}
+const bookActionsContext = createContext<BookActionsContext>(
+	null as unknown as BookActionsContext,
+);
+
 export const BookGrid = ({ loading, bookList, onBookOpen }: BookView) => {
+	const actionsContext = useMemo(() => {
+		return {
+			onViewBook: onBookOpen,
+		};
+	}, [onBookOpen]);
+
 	return (
-		<BookGridPure
-			loading={loading}
-			bookList={bookList}
-			onBookOpen={onBookOpen}
-		/>
+		<bookActionsContext.Provider value={actionsContext}>
+			<BookGridPure loading={loading} bookList={bookList} />
+		</bookActionsContext.Provider>
 	);
 };
