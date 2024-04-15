@@ -17,13 +17,14 @@ import { F7SquareGrid2x2 } from "../icons/F7SquareGrid2x2";
 import { UseFormReturnType, useForm } from "@mantine/form";
 import { useState, useEffect, useMemo, useCallback } from "react";
 
-import { LibraryBook } from "@/bindings";
+import { LibraryBook, LocalFile } from "@/bindings";
 import { F7ListBullet } from "../icons/F7ListBullet";
 import { BookGrid } from "../molecules/BookGrid";
 import { BookTable } from "../molecules/BookTable";
 import { useLibrary, LibraryState } from "@/lib/contexts/library";
 import { useDisclosure } from "@mantine/hooks";
 import { BookCover } from "../atoms/BookCover";
+import { open } from "@tauri-apps/api/shell";
 
 const useLoadBooks = () => {
 	const [loading, setLoading] = useState(true);
@@ -158,12 +159,28 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 				</Group>
 				<Divider />
 				<Group>
-					<p></p>
+					<p />
 				</Group>
 				<Divider />
 				<Stack>
 					<p>
 						<span>ISBN</span>: <span>14987234908</span>
+					</p>
+					<p>
+						<span>Formats</span>:{" "}
+						{book.file_list
+							.filter((item): item is { Local: LocalFile } => "Local" in item)
+							.map((f1) => (
+								<span
+									key={f1.Local.path}
+									style={{ textDecoration: "underline", marginRight: "1rem" }}
+									onPointerDown={() => {
+										open(f1.Local.path).catch(console.log);
+									}}
+								>
+									{f1.Local.mime_type} ↗
+								</span>
+							))}
 					</p>
 				</Stack>
 			</Stack>
