@@ -158,14 +158,7 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 					</Stack>
 				</Group>
 				<Divider />
-				<Group>
-					<p />
-				</Group>
-				<Divider />
 				<Stack>
-					<p>
-						<span>ISBN</span>: <span>14987234908</span>
-					</p>
 					<p>
 						<span>Formats</span>:{" "}
 						{book.file_list
