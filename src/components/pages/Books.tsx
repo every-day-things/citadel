@@ -278,7 +278,6 @@ export const Books = () => {
 
 	return (
 		<>
-			<Button onClick={openBookSidebar}>open drawer</Button>
 			<Header form={form} bookCount={sortedBooks.length} />
 			{form.values.view === "covers" ? (
 				<BookGrid
