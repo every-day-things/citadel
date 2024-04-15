@@ -23,6 +23,7 @@ import { BookGrid } from "../molecules/BookGrid";
 import { BookTable } from "../molecules/BookTable";
 import { useLibrary, LibraryState } from "@/lib/contexts/library";
 import { useDisclosure } from "@mantine/hooks";
+import { BookCover } from "../atoms/BookCover";
 
 const useLoadBooks = () => {
 	const [loading, setLoading] = useState(true);
@@ -145,13 +146,7 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 		<>
 			<Stack>
 				<Group wrap={"nowrap"} align="flex-start">
-					<Image
-						h={200}
-						w="auto"
-						fit="contain"
-						src={book.cover_image?.url}
-						alt={book.title}
-					/>
+					<BookCover book={book} />
 					<Stack ml={"sm"} align="flex-start" justify="flex-start">
 						<Text size="xl" fw={"700"}>
 							{book.title}

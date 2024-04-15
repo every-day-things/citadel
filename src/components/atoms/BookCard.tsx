@@ -1,8 +1,7 @@
 import React, { useCallback } from "react";
 import { LibraryBook } from "@/bindings";
-import { Card, Center, Image } from "@mantine/core";
-import { shortenToChars } from "./BookAsCover";
-import styles from "./BookCard.module.css";
+import { Card, Center } from "@mantine/core";
+import { BookCover } from "./BookCover";
 
 type BookAction = (bookId: LibraryBook["id"]) => void;
 
@@ -28,28 +27,7 @@ export const BookCard = React.memo(function BookCard({
 			<Card m="xs" flex={1}>
 				<Card.Section p={4}>
 					<Center>
-						{book.cover_image?.url ? (
-							<Image
-								h={200}
-								w="auto"
-								fit="contain"
-								src={book.cover_image?.url}
-								alt={book.title}
-								onPointerDown={onCoverTouch}
-							/>
-						) : (
-							<div
-								className={styles.coverPlaceholder}
-								onPointerDown={onCoverTouch}
-								style={{
-									backgroundColor: `#${Math.floor(
-										Math.random() * 16777215,
-									).toString(16)}`,
-								}}
-							>
-								{shortenToChars(book.title, 50)}
-							</div>
-						)}
+						<BookCover book={book} onPointerDown={onCoverTouch} />
 					</Center>
 				</Card.Section>
 			</Card>
