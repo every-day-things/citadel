@@ -145,7 +145,7 @@ function Header({
 const BookDetails = ({ book }: { book: LibraryBook }) => {
 	return (
 		<>
-			<Stack>
+			<Stack h={"100%"}>
 				<Group wrap={"nowrap"} align="flex-start">
 					<BookCover book={book} />
 					<Stack ml={"sm"} align="flex-start" justify="flex-start">
@@ -175,6 +175,24 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 								</span>
 							))}
 					</p>
+				</Stack>
+				<Stack justify="flex-end" align="flex-end" style={{ flexGrow: 1 }}>
+					<Group>
+						<Button
+							onPointerDown={() => {
+								const firstFile = book.file_list[0];
+								if (firstFile === undefined) return;
+
+								const isLocal = "Local" in firstFile;
+								if (!isLocal) return;
+
+								open(firstFile.Local.path).catch(console.log);
+							}}
+						>
+							Read
+						</Button>
+						<Button>Edit</Button>
+					</Group>
 				</Stack>
 			</Stack>
 		</>
