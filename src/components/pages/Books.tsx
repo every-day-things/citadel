@@ -277,7 +277,7 @@ export const Books = () => {
 			)}
 			<Drawer
 				offset={8}
-				size={"lg"}
+				size={"md"}
 				radius="md"
 				opened={isBookSidebarOpen}
 				position="right"
