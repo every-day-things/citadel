@@ -19,7 +19,7 @@ export interface AddBookFormProps {
 	authorList: string[];
 	fileName: string;
 	onSubmit?: (formData: AddBookForm) => void;
-	hideTitle: boolean;
+	hideTitle?: boolean;
 }
 
 export const title = "Add new book";
