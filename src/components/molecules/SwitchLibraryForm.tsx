@@ -6,21 +6,59 @@ export interface SwitchLibraryForm {
 	libraryPath: string;
 }
 
-export interface SwitchLibraryFormProps {
-	currentLibraryPath: string;
-	onSubmit: (formData: SwitchLibraryForm) => void;
-	selectLibraryDirectory: () => Promise<string | undefined>;
-	hideTitle?: boolean;
-}
+export type SelectFirstLibraryProps = BaseSelectLibraryFormProps;
 
-export const title = "Switch Library";
+export const SWITCH_LIBRARY_TITLE = "Switch Library";
+
+export const SelectFirstLibrary = (props: SelectFirstLibraryProps) => {
+	return (
+		<BaseSelectLibraryForm
+			{...props}
+			description={
+				<Text>
+					Select the folder where your Calibre library is. This is a folder that
+					contains a metadata.db file as well as folders for each author in
+					your library.
+				</Text>
+			}
+		/>
+	);
+};
+
+export interface SwitchLibraryFormProps extends BaseSelectLibraryFormProps {
+	currentLibraryPath?: string;
+}
 
 export const SwitchLibraryForm = ({
 	currentLibraryPath,
+	...props
+}: SwitchLibraryFormProps) => {
+	return (
+		<BaseSelectLibraryForm
+			{...props}
+			description={
+				<Stack mb="sm" gap="xs">
+					<Text mb="0">Current library:</Text>{" "}
+					<Code mt="0">{currentLibraryPath}</Code>
+				</Stack>
+			}
+		/>
+	);
+};
+
+interface BaseSelectLibraryFormProps {
+	onSubmit: (formData: SwitchLibraryForm) => void;
+	selectLibraryDirectory: () => Promise<string | undefined>;
+	hideTitle?: boolean;
+	description?: React.ReactNode;
+}
+
+const BaseSelectLibraryForm = ({
 	onSubmit,
 	selectLibraryDirectory,
 	hideTitle = false,
-}: SwitchLibraryFormProps) => {
+	description = null,
+}: BaseSelectLibraryFormProps) => {
 	const form = useForm<SwitchLibraryForm>({
 		initialValues: {
 			libraryPath: "",
@@ -30,24 +68,22 @@ export const SwitchLibraryForm = ({
 				if (value === "") {
 					return "Library path is required";
 				}
-			}
-		}
+			},
+		},
 	});
+
 	return (
 		<Form
 			form={form}
 			onSubmit={() => {
-				if (onSubmit && form.isTouched()&& form.isValid()) {
+				if (onSubmit && form.isTouched() && form.isValid()) {
 					onSubmit(form.values);
 				}
 			}}
 		>
 			<Stack gap={"lg"}>
-				{!hideTitle && <Title>{title}</Title>}
-				<Stack mb="sm" gap="xs">
-					<Text mb="0">Current library:</Text>{" "}
-					<Code mt="0">{currentLibraryPath}</Code>
-				</Stack>
+				{!hideTitle && <Title>{SWITCH_LIBRARY_TITLE}</Title>}
+				{description}
 				<TextInput
 					label="Library path"
 					description="This folder contains your metadata.db"
