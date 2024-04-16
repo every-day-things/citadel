@@ -3,8 +3,14 @@ import { Button, Divider, Modal, Stack, Title } from "@mantine/core";
 import { useCallback, useEffect, useState } from "react";
 import { ImportableBookMetadata, LibraryAuthor } from "@/bindings";
 import { useDisclosure } from "@mantine/hooks";
-import { AddBookForm, title as addBookFormTitle } from "./AddBookForm";
+import {
+	AddBookForm,
+	title as addBookFormTitle,
+} from "../molecules/AddBookForm";
 import { commitAddBook, promptToAddBook } from "@/lib/services/library";
+import { useSettings } from "@/lib/contexts/settings";
+import { SwitchLibraryForm, title as SwitchLibraryFormTitle } from "../molecules/SwitchLibraryForm";
+import { pickLibrary } from "@/lib/services/library/_internal/pickLibrary";
 
 interface AddBookModalProps {
 	isOpen: boolean;
@@ -46,23 +52,54 @@ const AddBookModalPure = ({
 	);
 };
 
+interface SwitchLibraryPathModalPureProps {
+	isOpen: boolean;
+	onClose: () => void;
+	children: React.ReactNode;
+}
+
+const SwitchLibraryPathModalPure = ({
+	isOpen,
+	onClose,
+	children,
+}: SwitchLibraryPathModalPureProps) => {
+	return (
+		<Modal.Root opened={isOpen} onClose={onClose} size={"lg"}>
+			<Modal.Overlay blur={3} backgroundOpacity={0.35} />
+			<Modal.Content>
+				<Modal.Header>
+					<Modal.Title>{SwitchLibraryFormTitle}</Modal.Title>
+					<Modal.CloseButton />
+				</Modal.Header>
+				<Modal.Body>{children}</Modal.Body>
+			</Modal.Content>
+		</Modal.Root>
+	);
+};
+
 const sortAuthors = (a: LibraryAuthor, b: LibraryAuthor) => {
 	return a.sortable_name.localeCompare(b.sortable_name);
 };
 
 interface SidebarPureProps {
 	addBookHandler: () => void;
+	switchLibraryHandler: () => void;
 }
 
-const SidebarPure = ({ addBookHandler }: SidebarPureProps) => {
+const SidebarPure = ({
+	addBookHandler,
+	switchLibraryHandler,
+}: SidebarPureProps) => {
 	return (
 		<>
 			<Stack>
 				<Title order={5}>My library</Title>
-				<Button variant="filled" onClick={addBookHandler}>
+				<Button variant="filled" onPointerDown={addBookHandler}>
 					⊕ Add book
 				</Button>
-				<Button variant="outline">Switch library</Button>
+				<Button variant="outline" onPointerDown={switchLibraryHandler}>
+					Switch library
+				</Button>
 				<Button variant="transparent" justify="flex-start">
 					First-time setup
 				</Button>
@@ -83,12 +120,21 @@ const SidebarPure = ({ addBookHandler }: SidebarPureProps) => {
 
 export const Sidebar = () => {
 	const { library, state } = useLibrary();
+	const { set, subscribe } = useSettings();
+
 	const [metadata, setMetadata] = useState<ImportableBookMetadata | null>();
+	const [currentLibraryPath, setCurrentLibraryPath] = useState<string>();
+	const [authorList, setAuthorList] = useState<string[]>([]);
+
 	const [
 		isAddBookModalOpen,
 		{ close: closeAddBookModal, open: openAddBookModal },
 	] = useDisclosure(false);
-	const [authorList, setAuthorList] = useState<string[]>([]);
+	const [
+		isSwitchLibraryModalOpen,
+		{ close: closeSwitchLibraryModal, open: openSwitchLibraryModal },
+	] = useDisclosure(false);
+
 	useEffect(() => {
 		void (async () => {
 			setAuthorList(
@@ -98,6 +144,11 @@ export const Sidebar = () => {
 			);
 		})();
 	}, [library]);
+	useEffect(() => {
+		return subscribe((update) => {
+			setCurrentLibraryPath(update.calibreLibraryPath);
+		});
+	}, [subscribe]);
 
 	const selectAndEditBookFile = useCallback(() => {
 		if (state !== LibraryState.ready) return;
@@ -113,6 +164,10 @@ export const Sidebar = () => {
 				console.error("failed to import new book: ", failure);
 			});
 	}, [library, state, openAddBookModal]);
+
+	const switchLibrary = useCallback(() => {
+		openSwitchLibraryModal();
+	}, [openSwitchLibraryModal]);
 
 	const addBookByMetadataWithEffects = (form: AddBookForm) => {
 		if (!metadata || state !== LibraryState.ready) return;
@@ -130,10 +185,20 @@ export const Sidebar = () => {
 				console.error("Failed to add book to database", error);
 			});
 	};
+	const setNewLibraryPath = useCallback(async (form: SwitchLibraryForm) => {
+		await set("calibreLibraryPath", form.libraryPath);
+		closeSwitchLibraryModal();
+	}, [closeSwitchLibraryModal, set]);
+
 
 	if (state !== LibraryState.ready) {
 		return null;
 	}
+
+	if (currentLibraryPath === undefined) {
+		return <p>Something went wrong!</p>;
+	}
+
 	return (
 		<>
 			{metadata && (
@@ -145,7 +210,21 @@ export const Sidebar = () => {
 					authorNameList={authorList}
 				/>
 			)}
-			<SidebarPure addBookHandler={selectAndEditBookFile} />
+			<SwitchLibraryPathModalPure
+				isOpen={isSwitchLibraryModalOpen}
+				onClose={closeSwitchLibraryModal}
+			>
+				<SwitchLibraryForm
+					hideTitle={true}
+					currentLibraryPath={currentLibraryPath}
+					onSubmit={(form) => void setNewLibraryPath(form)}
+					selectLibraryDirectory={pickLibrary}
+				/>
+			</SwitchLibraryPathModalPure>
+			<SidebarPure
+				addBookHandler={selectAndEditBookFile}
+				switchLibraryHandler={switchLibrary}
+			/>
 		</>
 	);
 };

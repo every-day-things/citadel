@@ -5,19 +5,19 @@ import {
 	type ConfigOptions,
 } from "tauri-settings";
 
-export type SettingsSchema = {
+export interface SettingsSchema {
 	theme: "dark" | "light";
 	startFullscreen: boolean;
 	calibreLibraryPath: string;
-};
+}
 
-type SettingsManager<T> = {
+interface SettingsManager<T> {
 	initialize: () => Promise<T>;
 	set: <S extends Path<T>>(key: S, value: PathValue<T, S>) => Promise<T>;
 	get: <S extends Path<T>>(key: S) => Promise<PathValue<T, S>>;
 	syncCache: () => Promise<T>;
 	settings: T;
-};
+}
 
 let resolveSettingsLoaded: () => void;
 const settingsLoadedPromise = new Promise<void>((resolve) => {

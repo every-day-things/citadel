@@ -1,3 +1,6 @@
+import { LibraryProvider } from "$lib/contexts/library";
+import { SettingsProvider } from "$lib/contexts/settings";
+import { theme } from "$lib/theme";
 import {
 	ActionIcon,
 	Burger,
@@ -10,23 +13,19 @@ import {
 } from "@mantine/core";
 import { AppShell } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { Books } from "./components/pages/Books";
-import { LibraryProvider } from "$lib/contexts/library";
-import { theme } from "$lib/theme";
-import { Sidebar } from "./components/organisms/Sidebar";
-import { F7MoonFill } from "./components/icons/F7MoonFill";
-import { F7CircleRighthalfFill } from "./components/icons/F7CircleRightHalfFill";
-import { F7SunMaxFill } from "./components/icons/F7SunMaxFill";
 import { useEffect, useMemo, useState } from "react";
+import { F7CircleRighthalfFill } from "./components/icons/F7CircleRightHalfFill";
+import { F7MoonFill } from "./components/icons/F7MoonFill";
+import { F7SunMaxFill } from "./components/icons/F7SunMaxFill";
+import { Sidebar } from "./components/organisms/Sidebar";
+import { Books } from "./components/pages/Books";
 import { settings } from "./stores/settings";
-import { SettingsProvider } from '$lib/contexts/settings';
 
 export const App = () => {
 	const [mobileOpened, { toggle: toggleMobile }] = useDisclosure(false);
 	const [desktopOpened, { toggle: toggleDesktop }] = useDisclosure(true);
 
 	const [libraryPath, setLibraryPath] = useState<string | null>(null);
-
 	useEffect(() => {
 		settings.subscribe((settings) => {
 			if (settings !== undefined) setLibraryPath(settings.calibreLibraryPath);
@@ -40,28 +39,29 @@ export const App = () => {
 	return (
 		<SettingsProvider value={settings}>
 			<LibraryProvider libraryPath={libraryPath}>
-				<ColorSchemeScript defaultColorScheme="auto" />
-				<MantineProvider theme={theme} defaultColorScheme="auto">
-					<AppShell
-						padding="md"
-						header={{ height: 60 }}
-						navbar={{
-							width: 200,
-							breakpoint: "sm",
-							collapsed: { mobile: !mobileOpened, desktop: !desktopOpened },
-						}}
-						h={"100vh"}
-						style={{ overflowY: "scroll" }}
-					>
-						<Main
-							toggleMobile={toggleMobile}
-							toggleDesktop={toggleDesktop}
-							isSidebarOpenDesktop={desktopOpened}
-							isSidebarOpenMobile={mobileOpened}
-						/>
-					</AppShell>
-				</MantineProvider>
-			</LibraryProvider>
+			<ColorSchemeScript defaultColorScheme="auto" />
+			<MantineProvider theme={theme} defaultColorScheme="auto">
+				<AppShell
+					padding="md"
+					header={{ height: 60 }}
+					navbar={{
+						width: 200,
+						breakpoint: "sm",
+						collapsed: { mobile: !mobileOpened, desktop: !desktopOpened },
+					}}
+					h={"100vh"}
+					style={{ overflowY: "scroll" }}
+				>
+					<Main
+						toggleMobile={toggleMobile}
+						toggleDesktop={toggleDesktop}
+						isSidebarOpenDesktop={desktopOpened}
+						isSidebarOpenMobile={mobileOpened}
+					/>
+				</AppShell>
+			</MantineProvider>
+		</LibraryProvider>
+
 		</SettingsProvider>
 	);
 };
