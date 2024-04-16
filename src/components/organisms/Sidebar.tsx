@@ -9,7 +9,10 @@ import {
 } from "../molecules/AddBookForm";
 import { commitAddBook, promptToAddBook } from "@/lib/services/library";
 import { useSettings } from "@/lib/contexts/settings";
-import { SwitchLibraryForm, title as SwitchLibraryFormTitle } from "../molecules/SwitchLibraryForm";
+import {
+	SwitchLibraryForm,
+	SWITCH_LIBRARY_TITLE as SwitchLibraryFormTitle,
+} from "../molecules/SwitchLibraryForm";
 import { pickLibrary } from "@/lib/services/library/_internal/pickLibrary";
 
 interface AddBookModalProps {
@@ -185,11 +188,13 @@ export const Sidebar = () => {
 				console.error("Failed to add book to database", error);
 			});
 	};
-	const setNewLibraryPath = useCallback(async (form: SwitchLibraryForm) => {
-		await set("calibreLibraryPath", form.libraryPath);
-		closeSwitchLibraryModal();
-	}, [closeSwitchLibraryModal, set]);
-
+	const setNewLibraryPath = useCallback(
+		async (form: SwitchLibraryForm) => {
+			await set("calibreLibraryPath", form.libraryPath);
+			closeSwitchLibraryModal();
+		},
+		[closeSwitchLibraryModal, set],
+	);
 
 	if (state !== LibraryState.ready) {
 		return null;
