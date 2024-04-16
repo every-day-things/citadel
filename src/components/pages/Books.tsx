@@ -182,15 +182,15 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 				<Stack justify="flex-end" align="flex-end" style={{ flexGrow: 1 }}>
 					<Group>
 						<Button
-							onPointerDown={() => {
+							onPointerDown={safeAsyncEventHandler(async () => {
 								const firstFile = book.file_list[0];
 								if (firstFile === undefined) return;
 
 								const isLocal = "Local" in firstFile;
 								if (!isLocal) return;
 
-								open(firstFile.Local.path, "open").catch(console.log);
-							}}
+								await open(firstFile.Local.path, "open");
+							})}
 						>
 							Read
 						</Button>
