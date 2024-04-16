@@ -1,29 +1,22 @@
-import { settings, waitForSettings } from "@/stores/settings";
 import { useEffect, useReducer } from "react";
-import {
-	DEFAULT_CONTEXT_VALUE,
-	LibraryContext,
-	LibraryState,
-} from "./context";
-import { initClient } from "@/lib/services/library";
+import { DEFAULT_CONTEXT_VALUE, LibraryContext, LibraryState } from "./context";
+import { Options, initClient } from "@/lib/services/library";
 import { reducer } from "./reducer";
 
-const initializeLibrary = async () => {
-	await waitForSettings();
-	const calibreLibraryPath = await settings.get("calibreLibraryPath");
-	const options = {
-		libraryPath: calibreLibraryPath,
-		libraryType: "calibre",
-		connectionType: "local",
-	} as const;
-
-	return initClient(options);
-};
+const localLibraryFromPath = (path: string): Options => ({
+	libraryPath: path,
+	libraryType: "calibre",
+	connectionType: "local",
+});
 
 interface LibraryProviderProps {
 	children: React.ReactNode;
+	libraryPath: string;
 }
-export const LibraryProvider = ({ children }: LibraryProviderProps) => {
+export const LibraryProvider = ({
+	children,
+	libraryPath,
+}: LibraryProviderProps) => {
 	const [context, dispatch] = useReducer(reducer, DEFAULT_CONTEXT_VALUE);
 
 	useEffect(() => {
@@ -33,7 +26,7 @@ export const LibraryProvider = ({ children }: LibraryProviderProps) => {
 	}, [context]);
 
 	useEffect(() => {
-		initializeLibrary()
+		initClient(localLibraryFromPath(libraryPath))
 			.then((client) => {
 				dispatch({
 					type: "init",
@@ -47,7 +40,7 @@ export const LibraryProvider = ({ children }: LibraryProviderProps) => {
 		return () => {
 			dispatch({ type: "shutdown" });
 		};
-	}, []);
+	}, [libraryPath]);
 
 	return (
 		<LibraryContext.Provider value={context}>
