@@ -3,10 +3,10 @@ import { useEffect, useReducer } from "react";
 import {
 	DEFAULT_CONTEXT_VALUE,
 	LibraryContext,
-	LibraryContextType,
 	LibraryState,
 } from "./context";
-import { Library, initClient } from "@/lib/services/library";
+import { initClient } from "@/lib/services/library";
+import { reducer } from "./reducer";
 
 const initializeLibrary = async () => {
 	await waitForSettings();
@@ -18,50 +18,6 @@ const initializeLibrary = async () => {
 	} as const;
 
 	return initClient(options);
-};
-
-type Action =
-	| {
-			type: "init";
-			client: Library;
-	  }
-	| {
-			type: "shutdown";
-	  }
-	| {
-			type: "error";
-			error: Error;
-	  };
-
-const reducer = (
-	_state: LibraryContextType,
-	action: Action,
-): LibraryContextType => {
-	switch (action.type) {
-		case "init":
-			return {
-				library: action.client,
-				loading: false,
-				error: null,
-				state: LibraryState.ready,
-			};
-		case "shutdown":
-			return {
-				library: null,
-				loading: false,
-				error: null,
-				state: LibraryState.closed,
-			};
-		case "error":
-			return {
-				library: null,
-				loading: false,
-				error: action.error,
-				state: LibraryState.error,
-			};
-		default:
-			return DEFAULT_CONTEXT_VALUE;
-	}
 };
 
 interface LibraryProviderProps {
