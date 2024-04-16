@@ -17,36 +17,52 @@ import { Sidebar } from "./components/organisms/Sidebar";
 import { F7MoonFill } from "./components/icons/F7MoonFill";
 import { F7CircleRighthalfFill } from "./components/icons/F7CircleRightHalfFill";
 import { F7SunMaxFill } from "./components/icons/F7SunMaxFill";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { settings } from "./stores/settings";
+import { SettingsProvider } from '$lib/contexts/settings';
 
 export const App = () => {
 	const [mobileOpened, { toggle: toggleMobile }] = useDisclosure(false);
 	const [desktopOpened, { toggle: toggleDesktop }] = useDisclosure(true);
 
+	const [libraryPath, setLibraryPath] = useState<string | null>(null);
+
+	useEffect(() => {
+		settings.subscribe((settings) => {
+			if (settings !== undefined) setLibraryPath(settings.calibreLibraryPath);
+		});
+	}, []);
+
+	if (libraryPath === null) {
+		return null;
+	}
+
 	return (
-		<LibraryProvider>
-			<ColorSchemeScript defaultColorScheme="auto" />
-			<MantineProvider theme={theme} defaultColorScheme="auto">
-				<AppShell
-					padding="md"
-					header={{ height: 60 }}
-					navbar={{
-						width: 200,
-						breakpoint: "sm",
-						collapsed: { mobile: !mobileOpened, desktop: !desktopOpened },
-					}}
-					h={"100vh"}
-					style={{ overflowY: "scroll" }}
-				>
-					<Main
-						toggleMobile={toggleMobile}
-						toggleDesktop={toggleDesktop}
-						isSidebarOpenDesktop={desktopOpened}
-						isSidebarOpenMobile={mobileOpened}
-					/>
-				</AppShell>
-			</MantineProvider>
-		</LibraryProvider>
+		<SettingsProvider value={settings}>
+			<LibraryProvider libraryPath={libraryPath}>
+				<ColorSchemeScript defaultColorScheme="auto" />
+				<MantineProvider theme={theme} defaultColorScheme="auto">
+					<AppShell
+						padding="md"
+						header={{ height: 60 }}
+						navbar={{
+							width: 200,
+							breakpoint: "sm",
+							collapsed: { mobile: !mobileOpened, desktop: !desktopOpened },
+						}}
+						h={"100vh"}
+						style={{ overflowY: "scroll" }}
+					>
+						<Main
+							toggleMobile={toggleMobile}
+							toggleDesktop={toggleDesktop}
+							isSidebarOpenDesktop={desktopOpened}
+							isSidebarOpenMobile={mobileOpened}
+						/>
+					</AppShell>
+				</MantineProvider>
+			</LibraryProvider>
+		</SettingsProvider>
 	);
 };
 
@@ -170,15 +186,17 @@ const Main = ({
 	}, [setColorScheme]);
 
 	return (
-		<MainPure
-			isSidebarOpenDesktop={isSidebarOpenDesktop}
-			toggleDesktop={toggleDesktop}
-			isSidebarOpenMobile={isSidebarOpenMobile}
-			toggleMobile={toggleMobile}
-			isThemeSettingsOpen={isThemeModalOpen}
-			openThemeSettings={openThemeModal}
-			closeThemeSettings={closeThemeModal}
-			colorSchemeSetters={colorSchemeSetters}
-		/>
+		<>
+			<MainPure
+				isSidebarOpenDesktop={isSidebarOpenDesktop}
+				toggleDesktop={toggleDesktop}
+				isSidebarOpenMobile={isSidebarOpenMobile}
+				toggleMobile={toggleMobile}
+				isThemeSettingsOpen={isThemeModalOpen}
+				openThemeSettings={openThemeModal}
+				closeThemeSettings={closeThemeModal}
+				colorSchemeSetters={colorSchemeSetters}
+			/>
+		</>
 	);
 };
