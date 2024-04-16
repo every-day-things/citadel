@@ -6,7 +6,6 @@ import {
 	Drawer,
 	Flex,
 	Group,
-	Image,
 	SegmentedControl,
 	Select,
 	Stack,
@@ -25,6 +24,8 @@ import { useLibrary, LibraryState } from "@/lib/contexts/library";
 import { useDisclosure } from "@mantine/hooks";
 import { BookCover } from "../atoms/BookCover";
 import { open } from "@tauri-apps/api/shell";
+import { path } from "@tauri-apps/api";
+import { safeAsyncEventHandler } from "@/lib/async";
 
 const useLoadBooks = () => {
 	const [loading, setLoading] = useState(true);
@@ -167,9 +168,11 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 								<span
 									key={f1.Local.path}
 									style={{ textDecoration: "underline", marginRight: "1rem" }}
-									onPointerDown={() => {
-										open(f1.Local.path).catch(console.log);
-									}}
+									onPointerDown={safeAsyncEventHandler(async () => {
+										const directory = await path.dirname(f1.Local.path);
+
+										await open(directory);
+									})}
 								>
 									{f1.Local.mime_type} ↗
 								</span>
@@ -186,7 +189,7 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 								const isLocal = "Local" in firstFile;
 								if (!isLocal) return;
 
-								open(firstFile.Local.path).catch(console.log);
+								open(firstFile.Local.path, "open").catch(console.log);
 							}}
 						>
 							Read
