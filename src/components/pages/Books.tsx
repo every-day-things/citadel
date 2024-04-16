@@ -189,7 +189,7 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 								const isLocal = "Local" in firstFile;
 								if (!isLocal) return;
 
-								await open(firstFile.Local.path, "open");
+								await open(firstFile.Local.path);
 							})}
 						>
 							Read
