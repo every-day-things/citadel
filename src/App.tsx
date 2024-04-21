@@ -18,8 +18,18 @@ import { F7CircleRighthalfFill } from "./components/icons/F7CircleRightHalfFill"
 import { F7MoonFill } from "./components/icons/F7MoonFill";
 import { F7SunMaxFill } from "./components/icons/F7SunMaxFill";
 import { Sidebar } from "./components/organisms/Sidebar";
-import { Books } from "./components/pages/Books";
 import { settings } from "./stores/settings";
+
+import {routeTree} from "./routeTree.gen";
+import { RouterProvider, createRouter } from "@tanstack/react-router";
+
+const router = createRouter({ routeTree});
+
+declare module '@tanstack/react-router' {
+	interface Register {
+		router: typeof router;
+	}
+}
 
 export const App = () => {
 	const [mobileOpened, { toggle: toggleMobile }] = useDisclosure(false);
@@ -154,7 +164,7 @@ const MainPure = ({
 			</AppShell.Navbar>
 
 			<AppShell.Main>
-				<Books />
+				<RouterProvider router={router} />
 			</AppShell.Main>
 		</>
 	);
