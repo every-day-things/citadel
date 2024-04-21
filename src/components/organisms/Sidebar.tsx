@@ -1,7 +1,7 @@
 import { LibraryState, useLibrary } from "@/lib/contexts/library";
 import { Button, Divider, Modal, Stack, Title } from "@mantine/core";
 import { useCallback, useEffect, useState } from "react";
-import { ImportableBookMetadata, LibraryAuthor } from "@/bindings";
+import { ImportableBookMetadata, LibraryAuthor, commands } from "@/bindings";
 import { useDisclosure } from "@mantine/hooks";
 import {
 	AddBookForm,
@@ -190,8 +190,17 @@ export const Sidebar = () => {
 	};
 	const setNewLibraryPath = useCallback(
 		async (form: SwitchLibraryForm) => {
-			await set("calibreLibraryPath", form.libraryPath);
-			closeSwitchLibraryModal();
+			const selectedIsValid = await commands.clbQueryIsPathValidLibrary(
+				form.libraryPath,
+			);
+
+			if (selectedIsValid) {
+				await set("calibreLibraryPath", form.libraryPath);
+				closeSwitchLibraryModal();
+			} else {
+				// TODO: You could create a new library, if you like.
+				console.error("Invalid library path selected");
+			}
 		},
 		[closeSwitchLibraryModal, set],
 	);
