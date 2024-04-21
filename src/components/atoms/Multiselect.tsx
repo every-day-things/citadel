@@ -55,13 +55,14 @@ export function MultiSelectCreatable({
 			setData([..._data, search]);
 			setValue([..._value, search]);
 		} else {
-			setValue(
-				_value.includes(val)
-					? _value.filter((v) => v !== val)
-					: [..._value, val],
-			);
-			console.log("_value", _value, val);
-			// onChange(_value);
+			const isItemRemoval = _value.includes(val);
+			if (isItemRemoval) {
+				handleValueRemove(val);
+				return;
+			}
+
+			const newValue = [..._value, val];
+			setValue(newValue);
 		}
 	};
 
@@ -127,10 +128,12 @@ export function MultiSelectCreatable({
 			</Combobox.DropdownTarget>
 
 			<Combobox.Dropdown>
-				<Combobox.Options style={{
-					maxHeight: '10rem',
-					overflowY: 'scroll'
-				}}>
+				<Combobox.Options
+					style={{
+						maxHeight: "10rem",
+						overflowY: "scroll",
+					}}
+				>
 					{options}
 
 					{!exactOptionMatch && search.trim().length > 0 && (
