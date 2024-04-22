@@ -107,8 +107,8 @@ impl ImportableBookMetadata {
                 timestamp: None,
                 pubdate: Some(NaiveDateTime::new(
                     self.publication_date
-                        .unwrap_or(NaiveDate::from_ymd(1970, 1, 1)),
-                    chrono::NaiveTime::from_hms(0, 0, 0),
+                        .unwrap_or(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap()),
+                    chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
                 )),
                 series_index: 1.0,
                 flags: 0,
