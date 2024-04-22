@@ -38,8 +38,6 @@ impl Repository for BookRepository {
             timestamp: book.timestamp,
             pubdate: book.pubdate,
             series_index: book.series_index,
-            isbn: book.isbn.clone(),
-            lccn: book.lccn.clone(),
             flags: book.flags,
             has_cover: book.has_cover,
         };

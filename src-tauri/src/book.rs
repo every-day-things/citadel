@@ -111,8 +111,6 @@ impl ImportableBookMetadata {
                     chrono::NaiveTime::from_hms(0, 0, 0),
                 )),
                 series_index: 1.0,
-                isbn: None,
-                lccn: None,
                 flags: 0,
                 has_cover: None,
             },
