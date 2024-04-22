@@ -1,5 +1,9 @@
 import { Library } from "@/lib/services/library";
-import { DEFAULT_CONTEXT_VALUE, LibraryContextType, LibraryState } from "./context";
+import {
+	DEFAULT_CONTEXT_VALUE,
+	LibraryContextType,
+	LibraryState,
+} from "./context";
 
 type Action = ActionInitialize | ActionShutdown | ActionError;
 
