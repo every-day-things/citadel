@@ -217,6 +217,8 @@ const filterBooksByQuery = (books: LibraryBook[], query: string) => {
 	);
 };
 
+const BOOK_FORM_PREFS_KEY = "book-form-prefs";
+
 export const Books = () => {
 	const form = useForm<{
 		query: string;
@@ -228,7 +230,25 @@ export const Books = () => {
 			sortOrder: "authorAz",
 			view: "covers",
 		},
+		onValuesChange: (values) => {
+			window.localStorage.setItem(BOOK_FORM_PREFS_KEY, JSON.stringify(values));
+		},
 	});
+
+	useEffect(() => {
+		const storedValue = window.localStorage.getItem(BOOK_FORM_PREFS_KEY);
+		if (storedValue) {
+			try {
+				// TODO: Actually validate that the stored config is valid
+				const savedPreferences: typeof form.values = JSON.parse(
+					storedValue,
+				) as unknown as typeof form.values;
+				form.setValues(savedPreferences);
+			} catch (e) {
+				console.error("Failed to parse stored value");
+			}
+		}
+	}, [form]);
 
 	const [loading, books] = useLoadBooks();
 
