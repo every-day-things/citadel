@@ -14,6 +14,7 @@ import {
 	SWITCH_LIBRARY_TITLE as SwitchLibraryFormTitle,
 } from "../molecules/SwitchLibraryForm";
 import { pickLibrary } from "@/lib/services/library/_internal/pickLibrary";
+import { Link } from "@tanstack/react-router";
 
 interface AddBookModalProps {
 	isOpen: boolean;
@@ -87,11 +88,16 @@ const sortAuthors = (a: LibraryAuthor, b: LibraryAuthor) => {
 interface SidebarPureProps {
 	addBookHandler: () => void;
 	switchLibraryHandler: () => void;
+	shelves: {
+		title: string;
+		LinkComponent: React.FunctionComponent<React.PropsWithChildren<unknown>>;
+	}[];
 }
 
 const SidebarPure = ({
 	addBookHandler,
 	switchLibraryHandler,
+	shelves,
 }: SidebarPureProps) => {
 	return (
 		<>
@@ -113,9 +119,13 @@ const SidebarPure = ({
 			<Divider my="md" />
 			<Stack>
 				<Title order={5}>My shelves</Title>
-				<Button variant="transparent" justify="flex-start">
-					All books
-				</Button>
+				{shelves.map(({ title, LinkComponent }) => (
+					<LinkComponent key={title}>
+						<Button variant="transparent" justify="flex-start">
+							{title}
+						</Button>
+					</LinkComponent>
+				))}
 			</Stack>
 		</>
 	);
@@ -238,6 +248,14 @@ export const Sidebar = () => {
 			<SidebarPure
 				addBookHandler={selectAndEditBookFile}
 				switchLibraryHandler={switchLibrary}
+				shelves={[
+					{
+						title: "All Books",
+						LinkComponent: ({ children }: React.PropsWithChildren<unknown>) => (
+							<Link to={"/"}>{children}</Link>
+						),
+					},
+				]}
 			/>
 		</>
 	);
