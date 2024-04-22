@@ -74,7 +74,7 @@
     "typescript-svelte-plugin": "^0.3.37",
     "unplugin-icons": "^0.18.2",
     "vite": "^5.0.3",
-    "vitest": "^1.0.0"
+    "vitest": "^1.5.0"
   },
   "dependencies": {
     "@crabnebula/tauri-plugin-drag": "^0.2.0",
