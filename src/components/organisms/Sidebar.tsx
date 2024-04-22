@@ -1,135 +1,20 @@
-import { LibraryState, useLibrary } from "@/lib/contexts/library";
-import { Button, Divider, Modal, Stack, Title } from "@mantine/core";
-import { useCallback, useEffect, useState } from "react";
 import { ImportableBookMetadata, LibraryAuthor, commands } from "@/bindings";
+import { LibraryState, useLibrary } from "@/lib/contexts/library";
+import { useSettings } from "@/lib/contexts/settings";
+import { commitAddBook, promptToAddBook } from "@/lib/services/library";
+import { pickLibrary } from "@/lib/services/library/_internal/pickLibrary";
+import { Button, Divider, Modal, Stack, Title } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
+import { Link } from "@tanstack/react-router";
+import { useCallback, useEffect, useState } from "react";
 import {
 	AddBookForm,
 	title as addBookFormTitle,
 } from "../molecules/AddBookForm";
-import { commitAddBook, promptToAddBook } from "@/lib/services/library";
-import { useSettings } from "@/lib/contexts/settings";
 import {
-	SwitchLibraryForm,
 	SWITCH_LIBRARY_TITLE as SwitchLibraryFormTitle,
+	SwitchLibraryForm,
 } from "../molecules/SwitchLibraryForm";
-import { pickLibrary } from "@/lib/services/library/_internal/pickLibrary";
-import { Link } from "@tanstack/react-router";
-
-interface AddBookModalProps {
-	isOpen: boolean;
-	onClose: () => void;
-	metadata: ImportableBookMetadata;
-	onSubmitHandler: (form: AddBookForm) => void;
-	authorNameList: string[];
-}
-
-const AddBookModalPure = ({
-	isOpen,
-	onClose,
-	metadata,
-	onSubmitHandler,
-	authorNameList,
-}: AddBookModalProps) => {
-	return (
-		<Modal.Root opened={isOpen} onClose={onClose} size={"lg"}>
-			<Modal.Overlay blur={3} backgroundOpacity={0.35} />
-			<Modal.Content>
-				<Modal.Header>
-					<Modal.Title>{addBookFormTitle}</Modal.Title>
-					<Modal.CloseButton />
-				</Modal.Header>
-				<Modal.Body>
-					<AddBookForm
-						initial={{
-							authorList: metadata?.author_names ?? [],
-							title: metadata?.title ?? "",
-						}}
-						authorList={authorNameList}
-						fileName={metadata?.path ?? ""}
-						hideTitle={true}
-						onSubmit={onSubmitHandler}
-					/>
-				</Modal.Body>
-			</Modal.Content>
-		</Modal.Root>
-	);
-};
-
-interface SwitchLibraryPathModalPureProps {
-	isOpen: boolean;
-	onClose: () => void;
-	children: React.ReactNode;
-}
-
-const SwitchLibraryPathModalPure = ({
-	isOpen,
-	onClose,
-	children,
-}: SwitchLibraryPathModalPureProps) => {
-	return (
-		<Modal.Root opened={isOpen} onClose={onClose} size={"lg"}>
-			<Modal.Overlay blur={3} backgroundOpacity={0.35} />
-			<Modal.Content>
-				<Modal.Header>
-					<Modal.Title>{SwitchLibraryFormTitle}</Modal.Title>
-					<Modal.CloseButton />
-				</Modal.Header>
-				<Modal.Body>{children}</Modal.Body>
-			</Modal.Content>
-		</Modal.Root>
-	);
-};
-
-const sortAuthors = (a: LibraryAuthor, b: LibraryAuthor) => {
-	return a.sortable_name.localeCompare(b.sortable_name);
-};
-
-interface SidebarPureProps {
-	addBookHandler: () => void;
-	switchLibraryHandler: () => void;
-	shelves: {
-		title: string;
-		LinkComponent: React.FunctionComponent<React.PropsWithChildren<unknown>>;
-	}[];
-}
-
-const SidebarPure = ({
-	addBookHandler,
-	switchLibraryHandler,
-	shelves,
-}: SidebarPureProps) => {
-	return (
-		<>
-			<Stack>
-				<Title order={5}>My library</Title>
-				<Button variant="filled" onPointerDown={addBookHandler}>
-					⊕ Add book
-				</Button>
-				<Button variant="outline" onPointerDown={switchLibraryHandler}>
-					Switch library
-				</Button>
-				<Button variant="transparent" justify="flex-start">
-					First-time setup
-				</Button>
-				<Button variant="transparent" justify="flex-start">
-					Configure library
-				</Button>
-			</Stack>
-			<Divider my="md" />
-			<Stack>
-				<Title order={5}>My shelves</Title>
-				{shelves.map(({ title, LinkComponent }) => (
-					<LinkComponent key={title}>
-						<Button variant="transparent" justify="flex-start">
-							{title}
-						</Button>
-					</LinkComponent>
-				))}
-			</Stack>
-		</>
-	);
-};
 
 export const Sidebar = () => {
 	const { library, state } = useLibrary();
@@ -257,6 +142,121 @@ export const Sidebar = () => {
 					},
 				]}
 			/>
+		</>
+	);
+};
+
+interface AddBookModalProps {
+	isOpen: boolean;
+	onClose: () => void;
+	metadata: ImportableBookMetadata;
+	onSubmitHandler: (form: AddBookForm) => void;
+	authorNameList: string[];
+}
+
+const AddBookModalPure = ({
+	isOpen,
+	onClose,
+	metadata,
+	onSubmitHandler,
+	authorNameList,
+}: AddBookModalProps) => {
+	return (
+		<Modal.Root opened={isOpen} onClose={onClose} size={"lg"}>
+			<Modal.Overlay blur={3} backgroundOpacity={0.35} />
+			<Modal.Content>
+				<Modal.Header>
+					<Modal.Title>{addBookFormTitle}</Modal.Title>
+					<Modal.CloseButton />
+				</Modal.Header>
+				<Modal.Body>
+					<AddBookForm
+						initial={{
+							authorList: metadata?.author_names ?? [],
+							title: metadata?.title ?? "",
+						}}
+						authorList={authorNameList}
+						fileName={metadata?.path ?? ""}
+						hideTitle={true}
+						onSubmit={onSubmitHandler}
+					/>
+				</Modal.Body>
+			</Modal.Content>
+		</Modal.Root>
+	);
+};
+
+interface SwitchLibraryPathModalPureProps {
+	isOpen: boolean;
+	onClose: () => void;
+	children: React.ReactNode;
+}
+
+const SwitchLibraryPathModalPure = ({
+	isOpen,
+	onClose,
+	children,
+}: SwitchLibraryPathModalPureProps) => {
+	return (
+		<Modal.Root opened={isOpen} onClose={onClose} size={"lg"}>
+			<Modal.Overlay blur={3} backgroundOpacity={0.35} />
+			<Modal.Content>
+				<Modal.Header>
+					<Modal.Title>{SwitchLibraryFormTitle}</Modal.Title>
+					<Modal.CloseButton />
+				</Modal.Header>
+				<Modal.Body>{children}</Modal.Body>
+			</Modal.Content>
+		</Modal.Root>
+	);
+};
+
+const sortAuthors = (a: LibraryAuthor, b: LibraryAuthor) => {
+	return a.sortable_name.localeCompare(b.sortable_name);
+};
+
+interface SidebarPureProps {
+	addBookHandler: () => void;
+	switchLibraryHandler: () => void;
+	shelves: {
+		title: string;
+		LinkComponent: React.FunctionComponent<React.PropsWithChildren<unknown>>;
+	}[];
+}
+
+const SidebarPure = ({
+	addBookHandler,
+	switchLibraryHandler,
+	shelves,
+}: SidebarPureProps) => {
+	return (
+		<>
+			<Stack>
+				<Title order={5}>My library</Title>
+				<Button variant="filled" onPointerDown={addBookHandler}>
+					⊕ Add book
+				</Button>
+				<Button variant="outline" onPointerDown={switchLibraryHandler}>
+					Switch library
+				</Button>
+				<Button variant="transparent" justify="flex-start">
+					First-time setup
+				</Button>
+				<Button variant="transparent" justify="flex-start">
+					Configure library
+				</Button>
+			</Stack>
+			<Divider my="md" />
+			<Stack>
+				<Title order={5}>My shelves</Title>
+				{shelves.map(({ title, LinkComponent }) => (
+					<LinkComponent key={title}>
+						<Button variant="transparent" justify="flex-start">
+							{title}
+						</Button>
+					</LinkComponent>
+				))}
+			</Stack>
 		</>
 	);
 };

@@ -6,6 +6,20 @@ import { DataTable } from "mantine-datatable";
 import { createContext, useContext, useMemo } from "react";
 import { BookCard } from "../atoms/BookCard";
 
+export const BookGrid = ({ loading, bookList, onBookOpen }: BookView) => {
+	const actionsContext = useMemo(() => {
+		return {
+			onViewBook: onBookOpen,
+		};
+	}, [onBookOpen]);
+
+	return (
+		<bookActionsContext.Provider value={actionsContext}>
+			<BookGridPure loading={loading} bookList={bookList} />
+		</bookActionsContext.Provider>
+	);
+};
+
 const groupBySize = <T,>(groupSize: number, array: T[]) => {
 	const groups: T[][] = [];
 	for (let i = 0; i < array.length; i += groupSize) {
@@ -96,17 +110,3 @@ interface BookActionsContext {
 const bookActionsContext = createContext<BookActionsContext>(
 	null as unknown as BookActionsContext,
 );
-
-export const BookGrid = ({ loading, bookList, onBookOpen }: BookView) => {
-	const actionsContext = useMemo(() => {
-		return {
-			onViewBook: onBookOpen,
-		};
-	}, [onBookOpen]);
-
-	return (
-		<bookActionsContext.Provider value={actionsContext}>
-			<BookGridPure loading={loading} bookList={bookList} />
-		</bookActionsContext.Provider>
-	);
-};

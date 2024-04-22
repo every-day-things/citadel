@@ -1,8 +1,12 @@
 import { BookView } from "@/BookView";
+import { formatAuthorList } from "@/lib/authors";
 import { Box } from "@mantine/core";
 import { DataTable } from "mantine-datatable";
 import { LibraryBook } from "../../bindings";
-import { formatAuthorList } from "@/lib/authors";
+
+export const BookTable = ({ loading, bookList }: BookView) => {
+	return <BookTablePure loading={loading} bookList={bookList} />;
+};
 
 const BookTablePure = ({
 	loading,
@@ -52,8 +56,4 @@ const BookTablePure = ({
 			]}
 		/>
 	);
-};
-
-export const BookTable = ({ loading, bookList }: BookView) => {
-	return <BookTablePure loading={loading} bookList={bookList} />;
 };

@@ -10,39 +10,39 @@
 
 // Import Routes
 
-import { Route as rootRoute } from "./routes/__root";
-import { Route as IndexImport } from "./routes/index";
-import { Route as BooksBookIdImport } from "./routes/books.$bookId";
+import { Route as rootRoute } from './routes/__root'
+import { Route as IndexImport } from './routes/index'
+import { Route as BooksBookIdImport } from './routes/books.$bookId'
 
 // Create/Update Routes
 
 const IndexRoute = IndexImport.update({
-	path: "/",
-	getParentRoute: () => rootRoute,
-} as any);
+  path: '/',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const BooksBookIdRoute = BooksBookIdImport.update({
-	path: "/books/$bookId",
-	getParentRoute: () => rootRoute,
-} as any);
+  path: '/books/$bookId',
+  getParentRoute: () => rootRoute,
+} as any)
 
 // Populate the FileRoutesByPath interface
 
-declare module "@tanstack/react-router" {
-	interface FileRoutesByPath {
-		"/": {
-			preLoaderRoute: typeof IndexImport;
-			parentRoute: typeof rootRoute;
-		};
-		"/books/$bookId": {
-			preLoaderRoute: typeof BooksBookIdImport;
-			parentRoute: typeof rootRoute;
-		};
-	}
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/': {
+      preLoaderRoute: typeof IndexImport
+      parentRoute: typeof rootRoute
+    }
+    '/books/$bookId': {
+      preLoaderRoute: typeof BooksBookIdImport
+      parentRoute: typeof rootRoute
+    }
+  }
 }
 
 // Create and export the route tree
 
-export const routeTree = rootRoute.addChildren([IndexRoute, BooksBookIdRoute]);
+export const routeTree = rootRoute.addChildren([IndexRoute, BooksBookIdRoute])
 
 /* prettier-ignore-end */

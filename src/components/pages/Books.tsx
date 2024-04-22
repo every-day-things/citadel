@@ -27,6 +27,119 @@ import { F7SquareGrid2x2 } from "../icons/F7SquareGrid2x2";
 import { BookGrid } from "../molecules/BookGrid";
 import { BookTable } from "../molecules/BookTable";
 
+export const Books = () => {
+	const form = useForm<{
+		query: string;
+		sortOrder: keyof typeof LibraryBookSortOrder;
+		view: "covers" | "list";
+	}>({
+		initialValues: {
+			query: "",
+			sortOrder: "authorAz",
+			view: "covers",
+		},
+		onValuesChange: (values) => {
+			window.localStorage.setItem(BOOK_FORM_PREFS_KEY, JSON.stringify(values));
+		},
+	});
+
+	useEffect(() => {
+		const storedValue = window.localStorage.getItem(BOOK_FORM_PREFS_KEY);
+		if (storedValue) {
+			try {
+				// TODO: Actually validate that the stored config is valid
+				const savedPreferences: typeof form.values = JSON.parse(
+					storedValue,
+				) as unknown as typeof form.values;
+				form.setValues(savedPreferences);
+			} catch (e) {
+				console.error("Failed to parse stored value");
+			}
+		}
+	}, [form]);
+
+	const [loading, books] = useLoadBooks();
+
+	const filteredBooks = useMemo(
+		() => filterBooksByQuery(books, form.values.query),
+		[books, form.values.query],
+	);
+
+	const sortedBooks = useMemo(() => {
+		const compare = (a: LibraryBook, b: LibraryBook) => {
+			switch (form.values.sortOrder) {
+				case "authorAz":
+					return a.author_list[0].sortable_name.localeCompare(
+						b.author_list[0].sortable_name,
+					);
+				case "authorZa":
+					return b.author_list[0].sortable_name.localeCompare(
+						a.author_list[0].sortable_name,
+					);
+				case "nameAz":
+					return (a.sortable_title ?? a.title).localeCompare(
+						b.sortable_title ?? b.title,
+					);
+				case "nameZa":
+					return (b.sortable_title ?? b.title).localeCompare(
+						a.sortable_title ?? a.title,
+					);
+				default:
+					return 0;
+			}
+		};
+		return [...filteredBooks].sort(compare);
+	}, [filteredBooks, form.values.sortOrder]);
+
+	const [
+		isBookSidebarOpen,
+		{ open: openBookSidebar, close: closeBookSidebar },
+	] = useDisclosure(false);
+
+	const [selectedSidebarBook, setSelectedSidebarBook] =
+		useState<LibraryBook | null>(null);
+	const onBookOpen = useCallback(
+		(bookId: LibraryBook["id"]) => {
+			const book = books.filter((book) => book.id === bookId).at(0);
+			if (!book) return;
+			setSelectedSidebarBook(book);
+			openBookSidebar();
+		},
+		[books, openBookSidebar],
+	);
+
+	return (
+		<>
+			<Header form={form} bookCount={sortedBooks.length} />
+			{form.values.view === "covers" ? (
+				<BookGrid
+					bookList={sortedBooks}
+					loading={loading}
+					onBookOpen={onBookOpen}
+				/>
+			) : (
+				<BookTable
+					bookList={sortedBooks}
+					loading={loading}
+					onBookOpen={onBookOpen}
+				/>
+			)}
+			<Drawer
+				offset={8}
+				size={"md"}
+				radius="md"
+				opened={isBookSidebarOpen}
+				position="right"
+				onClose={closeBookSidebar}
+				title=""
+				overlayProps={{ blur: 3, backgroundOpacity: 0.35 }}
+			>
+				{selectedSidebarBook && <BookDetails book={selectedSidebarBook} />}
+			</Drawer>
+		</>
+	);
+};
+
 const useLoadBooks = () => {
 	const [loading, setLoading] = useState(true);
 	const [books, setBooks] = useState<LibraryBook[]>([]);
@@ -46,6 +159,8 @@ const useLoadBooks = () => {
 
 	return [loading, books] as const;
 };
+
+const BOOK_FORM_PREFS_KEY = "book-form-prefs";
 
 const LibraryBookSortOrder = {
 	nameAz: "name-asc",
@@ -213,120 +328,5 @@ const filterBooksByQuery = (books: LibraryBook[], query: string) => {
 		({ title, author_list }) =>
 			title.toLowerCase().includes(lowerQuery) ||
 			author_list.some(({ name }) => name.toLowerCase().includes(lowerQuery)),
-	);
-};
-
-const BOOK_FORM_PREFS_KEY = "book-form-prefs";
-
-export const Books = () => {
-	const form = useForm<{
-		query: string;
-		sortOrder: keyof typeof LibraryBookSortOrder;
-		view: "covers" | "list";
-	}>({
-		initialValues: {
-			query: "",
-			sortOrder: "authorAz",
-			view: "covers",
-		},
-		onValuesChange: (values) => {
-			window.localStorage.setItem(BOOK_FORM_PREFS_KEY, JSON.stringify(values));
-		},
-	});
-
-	useEffect(() => {
-		const storedValue = window.localStorage.getItem(BOOK_FORM_PREFS_KEY);
-		if (storedValue) {
-			try {
-				// TODO: Actually validate that the stored config is valid
-				const savedPreferences: typeof form.values = JSON.parse(
-					storedValue,
-				) as unknown as typeof form.values;
-				form.setValues(savedPreferences);
-			} catch (e) {
-				console.error("Failed to parse stored value");
-			}
-		}
-	}, [form]);
-
-	const [loading, books] = useLoadBooks();
-
-	const filteredBooks = useMemo(
-		() => filterBooksByQuery(books, form.values.query),
-		[books, form.values.query],
-	);
-
-	const sortedBooks = useMemo(() => {
-		const compare = (a: LibraryBook, b: LibraryBook) => {
-			switch (form.values.sortOrder) {
-				case "authorAz":
-					return a.author_list[0].sortable_name.localeCompare(
-						b.author_list[0].sortable_name,
-					);
-				case "authorZa":
-					return b.author_list[0].sortable_name.localeCompare(
-						a.author_list[0].sortable_name,
-					);
-				case "nameAz":
-					return (a.sortable_title ?? a.title).localeCompare(
-						b.sortable_title ?? b.title,
-					);
-				case "nameZa":
-					return (b.sortable_title ?? b.title).localeCompare(
-						a.sortable_title ?? a.title,
-					);
-				default:
-					return 0;
-			}
-		};
-		return [...filteredBooks].sort(compare);
-	}, [filteredBooks, form.values.sortOrder]);
-
-	const [
-		isBookSidebarOpen,
-		{ open: openBookSidebar, close: closeBookSidebar },
-	] = useDisclosure(false);
-
-	const [selectedSidebarBook, setSelectedSidebarBook] =
-		useState<LibraryBook | null>(null);
-	const onBookOpen = useCallback(
-		(bookId: LibraryBook["id"]) => {
-			const book = books.filter((book) => book.id === bookId).at(0);
-			if (!book) return;
-			setSelectedSidebarBook(book);
-			openBookSidebar();
-		},
-		[books, openBookSidebar],
-	);
-
-	return (
-		<>
-			<Header form={form} bookCount={sortedBooks.length} />
-			{form.values.view === "covers" ? (
-				<BookGrid
-					bookList={sortedBooks}
-					loading={loading}
-					onBookOpen={onBookOpen}
-				/>
-			) : (
-				<BookTable
-					bookList={sortedBooks}
-					loading={loading}
-					onBookOpen={onBookOpen}
-				/>
-			)}
-			<Drawer
-				offset={8}
-				size={"md"}
-				radius="md"
-				opened={isBookSidebarOpen}
-				position="right"
-				onClose={closeBookSidebar}
-				title=""
-				overlayProps={{ blur: 3, backgroundOpacity: 0.35 }}
-			>
-				{selectedSidebarBook && <BookDetails book={selectedSidebarBook} />}
-			</Drawer>
-		</>
 	);
 };
