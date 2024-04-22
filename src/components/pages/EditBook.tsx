@@ -191,9 +191,12 @@ const EditBookForm = ({
 					selectOptions={allAuthorNames}
 					{...form.getInputProps("authorList")}
 				/>
-				<Group justify="flex-end" mt="md">
+				<Group justify="flex-end" mt="md" gap="80px">
+					<Button variant="subtle" onClick={() => form.reset()} color="red">
+						Cancel
+					</Button>
 					<Button type="submit" loading={isSaving} disabled={isSaving}>
-						Submit
+						Save
 					</Button>
 				</Group>
 			</Stack>
