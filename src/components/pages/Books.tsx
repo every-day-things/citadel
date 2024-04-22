@@ -309,7 +309,9 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 						>
 							Read
 						</Button>
-						<Link to={`/books/${book.id}`}>Edit</Link>
+						<Link to={`/books/${book.id}`}>
+							<Button>Edit</Button>
+						</Link>
 					</Group>
 				</Stack>
 			</Stack>
