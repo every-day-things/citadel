@@ -26,6 +26,7 @@ import { BookCover } from "../atoms/BookCover";
 import { open } from "@tauri-apps/api/shell";
 import { path } from "@tauri-apps/api";
 import { safeAsyncEventHandler } from "@/lib/async";
+import { Link } from "@tanstack/react-router";
 
 const useLoadBooks = () => {
 	const [loading, setLoading] = useState(true);
@@ -194,7 +195,7 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 						>
 							Read
 						</Button>
-						<Button>Edit</Button>
+						<Link to={`/books/${book.id}`}>Edit</Link>
 					</Group>
 				</Stack>
 			</Stack>

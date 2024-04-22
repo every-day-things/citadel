@@ -55,6 +55,7 @@ export const AddBookForm = ({
 					placeholder="Search or add author"
 					selectOptions={authorList}
 					onCreateSelectOption={(list, payload) =>
+						// TODO: Do something to create the new author?
 						console.log({ list, payload })
 					}
 					{...form.getInputProps("authorList")}
