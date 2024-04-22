@@ -1,9 +1,9 @@
 import { writable } from "svelte/store";
-import type { Path, PathValue } from "tauri-settings/dist/types/dot-notation";
 import {
 	SettingsManager as TauriSettingsManager,
 	type ConfigOptions,
 } from "tauri-settings";
+import type { Path, PathValue } from "tauri-settings/dist/types/dot-notation";
 
 export interface SettingsSchema {
 	theme: "dark" | "light";

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
 	CheckIcon,
 	Combobox,
@@ -8,6 +7,7 @@ import {
 	useCombobox,
 } from "@mantine/core";
 import { useUncontrolled } from "@mantine/hooks";
+import { useState } from "react";
 
 interface BaseProps<T> {
 	label: string;
