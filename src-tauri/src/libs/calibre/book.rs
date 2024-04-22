@@ -3,7 +3,10 @@ use std::{collections::HashMap, path::PathBuf};
 use libcalibre::{client::CalibreClient, Author};
 
 use crate::{
-    book::{BookFile, LibraryAuthor, LibraryBook, LocalFile, LocalOrRemote, LocalOrRemoteUrl},
+    book::{
+        BookFile, Identifier, LibraryAuthor, LibraryBook, LocalFile, LocalOrRemote,
+        LocalOrRemoteUrl,
+    },
     libs::util,
 };
 
@@ -12,6 +15,7 @@ fn to_library_book(
     book: &libcalibre::Book,
     author_list: Vec<Author>,
     file_list: Vec<libcalibre::BookFile>,
+    identifer_list: Vec<Identifier>,
 ) -> LibraryBook {
     LibraryBook {
         title: book.title.clone(),
@@ -41,6 +45,8 @@ fn to_library_book(
             .collect(),
 
         cover_image: None,
+
+        identifier_list: identifer_list.clone(),
     }
 }
 
@@ -74,8 +80,23 @@ pub fn list_all(library_root: String) -> Vec<LibraryBook> {
             results
                 .iter()
                 .map(|b| {
-                    let mut calibre_book =
-                        to_library_book(&library_root, &b.book, b.authors.clone(), b.files.clone());
+                    let identifer_list: Vec<_> = calibre
+                        .list_identifiers_for_book(b.book.id)
+                        .unwrap_or(Vec::new())
+                        .iter()
+                        .map(|(k, v)| Identifier {
+                            label: k.clone(),
+                            value: v.clone(),
+                        })
+                        .collect();
+
+                    let mut calibre_book = to_library_book(
+                        &library_root,
+                        &b.book,
+                        b.authors.clone(),
+                        b.files.clone(),
+                        identifer_list,
+                    );
                     calibre_book.cover_image = book_cover_image(&library_root, &b.book);
 
                     calibre_book

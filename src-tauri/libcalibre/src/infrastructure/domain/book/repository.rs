@@ -140,4 +140,18 @@ impl Repository for BookRepository {
             Err(_) => Err(()),
         }
     }
+
+    fn list_identifiers_for_book(&mut self, book_id: i32) -> Result<Vec<(String, String)>, ()> {
+        use crate::schema::identifiers::dsl::*;
+
+        let ids = identifiers
+            .filter(book.eq(book_id))
+            .select((type_, val))
+            .load::<(String, String)>(&mut self.connection);
+
+        match ids {
+            Ok(ids) => Ok(ids),
+            Err(_) => Err(()),
+        }
+    }
 }

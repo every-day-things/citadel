@@ -91,6 +91,26 @@ impl CalibreClient {
             .map_err(|_| Box::new(CalibreError::DatabaseError) as Box<dyn std::error::Error>)
     }
 
+    pub fn list_identifiers_for_book(
+        &mut self,
+        book_id: i32,
+    ) -> Result<Vec<(String, String)>, Box<dyn std::error::Error>> {
+        let book_repo = Box::new(BookRepository::new(
+            &self.validated_library_path.database_path,
+        ));
+        let book_service = Arc::new(Mutex::new(BookService::new(book_repo)));
+
+        book_service
+            .lock()
+            .map(
+                |mut locked_bs| match locked_bs.list_identifiers_for_book(book_id) {
+                    Ok(identifiers) => identifiers,
+                    Err(_) => vec![],
+                },
+            )
+            .map_err(|_| Box::new(CalibreError::DatabaseError) as Box<dyn std::error::Error>)
+    }
+
     fn get_mut_library_service(
         &mut self,
     ) -> LibraryService<BookService, AuthorService, FileService, BookFileService> {
