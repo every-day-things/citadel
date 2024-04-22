@@ -15,4 +15,6 @@ pub trait Repository {
     fn find_author_ids_by_book_id(&mut self, book_id: i32) -> Result<Vec<i32>, ()>;
     /// Update a book
     fn update(&mut self, id: i32, book: &UpdateBookData) -> Result<Book, ()>;
+    /// List all associated identifiers for a book.
+    fn list_identifiers_for_book(&mut self, book_id: i32) -> Result<Vec<(String, String)>, ()>;
 }

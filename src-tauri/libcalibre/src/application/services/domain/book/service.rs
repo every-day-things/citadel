@@ -11,6 +11,7 @@ pub trait BookServiceTrait {
     fn find_author_ids_by_book_id(&mut self, book_id: i32) -> Result<Vec<i32>, ()>;
     fn link_book_to_author(&mut self, book_id: i32, author_id: i32) -> Result<(), ()>;
     fn unlink_book_from_author(&mut self, book_id: i32, author_id: i32) -> Result<(), ()>;
+    fn list_identifiers_for_book(&mut self, book_id: i32) -> Result<Vec<(String, String)>, ()>;
 }
 
 pub struct BookService {
@@ -55,5 +56,9 @@ impl BookServiceTrait for BookService {
     fn unlink_book_from_author(&mut self, book_id: i32, author_id: i32) -> Result<(), ()> {
         self.book_repository
             .remove_book_author_link(book_id, author_id)
+    }
+
+    fn list_identifiers_for_book(&mut self, book_id: i32) -> Result<Vec<(String, String)>, ()> {
+        self.book_repository.list_identifiers_for_book(book_id)
     }
 }

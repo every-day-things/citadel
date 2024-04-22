@@ -58,6 +58,10 @@ export type BookFile = { Local: LocalFile } | { Remote: RemoteFile }
 export type BookUpdate = { author_id_list: string[] | null; title: string | null; timestamp: string | null; publication_date: string | null }
 export type CalibreClientConfig = { library_path: string }
 /**
+ * Book identifiers, such as ISBN, DOI, Google Books ID, etc.
+ */
+export type Identifier = { label: string; value: string }
+/**
  * Represents metadata for pre-import books, which have a very loose structure.
  */
 export type ImportableBookMetadata = { file_type: ImportableBookType; 
@@ -81,7 +85,7 @@ file_contains_cover: boolean }
 export type ImportableBookType = "Epub" | "Pdf" | "Mobi" | "Text"
 export type ImportableFile = { path: string }
 export type LibraryAuthor = { id: string; name: string; sortable_name: string }
-export type LibraryBook = { id: string; uuid: string | null; title: string; author_list: LibraryAuthor[]; sortable_title: string | null; author_sort_lookup: { [key in string]: string } | null; file_list: BookFile[]; cover_image: LocalOrRemoteUrl | null }
+export type LibraryBook = { id: string; uuid: string | null; title: string; author_list: LibraryAuthor[]; sortable_title: string | null; author_sort_lookup: { [key in string]: string } | null; file_list: BookFile[]; cover_image: LocalOrRemoteUrl | null; identifier_list: Identifier[] }
 export type LocalFile = { 
 /**
  * The absolute path to the file, including extension.
