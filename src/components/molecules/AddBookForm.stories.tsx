@@ -20,11 +20,11 @@ const meta: Meta<typeof AddBookForm> = {
 			control: { type: "text" },
 		},
 		initial: {
-			table: { disable: true}
+			table: { disable: true },
 		},
 		authorList: {
-			table: { disable: true}
-		}
+			table: { disable: true },
+		},
 	},
 };
 
@@ -50,7 +50,7 @@ const AUTHORS: LibraryAuthor[] = [
  * to learn how to use render functions.
  */
 export const Primary: Story = {
-	render: ({fileName}) => (
+	render: ({ fileName }) => (
 		<AddBookForm
 			fileName={fileName}
 			initial={{

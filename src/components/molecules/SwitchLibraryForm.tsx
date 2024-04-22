@@ -17,8 +17,8 @@ export const SelectFirstLibrary = (props: SelectFirstLibraryProps) => {
 			description={
 				<Text>
 					Select the folder where your Calibre library is. This is a folder that
-					contains a metadata.db file as well as folders for each author in
-					your library.
+					contains a metadata.db file as well as folders for each author in your
+					library.
 				</Text>
 			}
 		/>

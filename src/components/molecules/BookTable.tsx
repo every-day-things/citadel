@@ -30,7 +30,7 @@ const BookTablePure = ({
 									backgroundPosition: "center",
 									backgroundRepeat: "no-repeat",
 									maxWidth: "220px",
-									width: '220px',
+									width: "220px",
 									height: "220px",
 									boxSizing: "border-box",
 									padding: "0",
@@ -46,16 +46,13 @@ const BookTablePure = ({
 					title: "Authors",
 					// this column has custom cell data rendering
 					render: ({ author_list }) => (
-						<Box>
-							{formatAuthorList(author_list)}
-						</Box>
+						<Box>{formatAuthorList(author_list)}</Box>
 					),
-				}
+				},
 			]}
 		/>
 	);
 };
-
 
 export const BookTable = ({ loading, bookList }: BookView) => {
 	return <BookTablePure loading={loading} bookList={bookList} />;

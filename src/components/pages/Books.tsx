@@ -1,3 +1,6 @@
+import { LibraryBook, LocalFile } from "@/bindings";
+import { safeAsyncEventHandler } from "@/lib/async";
+import { LibraryState, useLibrary } from "@/lib/contexts/library";
 import { useBreakpoint } from "@/lib/hooks/use-breakpoint";
 import {
 	Button,
@@ -12,21 +15,17 @@ import {
 	Text,
 	TextInput,
 } from "@mantine/core";
-import { F7SquareGrid2x2 } from "../icons/F7SquareGrid2x2";
 import { UseFormReturnType, useForm } from "@mantine/form";
-import { useState, useEffect, useMemo, useCallback } from "react";
-
-import { LibraryBook, LocalFile } from "@/bindings";
+import { useDisclosure } from "@mantine/hooks";
+import { Link } from "@tanstack/react-router";
+import { path } from "@tauri-apps/api";
+import { open } from "@tauri-apps/api/shell";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { BookCover } from "../atoms/BookCover";
 import { F7ListBullet } from "../icons/F7ListBullet";
+import { F7SquareGrid2x2 } from "../icons/F7SquareGrid2x2";
 import { BookGrid } from "../molecules/BookGrid";
 import { BookTable } from "../molecules/BookTable";
-import { useLibrary, LibraryState } from "@/lib/contexts/library";
-import { useDisclosure } from "@mantine/hooks";
-import { BookCover } from "../atoms/BookCover";
-import { open } from "@tauri-apps/api/shell";
-import { path } from "@tauri-apps/api";
-import { safeAsyncEventHandler } from "@/lib/async";
-import { Link } from "@tanstack/react-router";
 
 const useLoadBooks = () => {
 	const [loading, setLoading] = useState(true);

@@ -12,11 +12,15 @@ describe("formatAuthorList", () => {
 		expect(formatAuthorList(authors)).toBe("Tris NoBoilerplate, Robert Pirzig");
 	});
 
-  it("must not sort the authors", () => {
-    const authorOne = LibraryAuthorFactory({ name: "Tris NoBoilerplate" });
-    const authorTwo = LibraryAuthorFactory({ name: "Robert Pirzig" });
+	it("must not sort the authors", () => {
+		const authorOne = LibraryAuthorFactory({ name: "Tris NoBoilerplate" });
+		const authorTwo = LibraryAuthorFactory({ name: "Robert Pirzig" });
 
-    expect(formatAuthorList([authorOne, authorTwo])).toBe("Tris NoBoilerplate, Robert Pirzig");
-    expect(formatAuthorList([authorTwo, authorOne])).toBe("Robert Pirzig, Tris NoBoilerplate");
-  })
+		expect(formatAuthorList([authorOne, authorTwo])).toBe(
+			"Tris NoBoilerplate, Robert Pirzig",
+		);
+		expect(formatAuthorList([authorTwo, authorOne])).toBe(
+			"Robert Pirzig, Tris NoBoilerplate",
+		);
+	});
 });
