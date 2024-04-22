@@ -1,7 +1,7 @@
+import { shortenToChars } from '$lib/domain/book';
 import { LibraryBook } from "@/bindings";
 import { Image } from "@mantine/core";
 import { HTMLAttributes } from "react";
-import { shortenToChars } from "./BookAsCover";
 import styles from "./BookCover.module.css";
 
 export const BookCover = ({
