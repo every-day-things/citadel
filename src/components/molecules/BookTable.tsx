@@ -11,7 +11,10 @@ export const BookTable = ({ loading, bookList }: BookView) => {
 const BookTablePure = ({
 	loading,
 	bookList: books,
-}: { loading: boolean; bookList: LibraryBook[] }) => {
+}: {
+	loading: boolean;
+	bookList: LibraryBook[];
+}) => {
 	return (
 		<DataTable
 			withTableBorder

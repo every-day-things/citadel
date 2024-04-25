@@ -34,11 +34,7 @@ const groupBySize = <T,>(groupSize: number, array: T[]) => {
  * @param param0
  * @returns
  */
-const BookGridRow = ({
-	books,
-}: {
-	books: LibraryBook[];
-}) => {
+const BookGridRow = ({ books }: { books: LibraryBook[] }) => {
 	const actions = useContext(bookActionsContext);
 
 	return (

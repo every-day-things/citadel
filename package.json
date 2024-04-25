@@ -13,7 +13,7 @@
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "format": "bun format:web; bun format:backend",
     "format:backend": "cd src-tauri; cargo fmt",
-    "format:web": "biome format --write src/; prettier --write src/",
+    "format:web": "biome format --write src/",
     "format:check": "biome format src/ && prettier --check src/ && (cd src-tauri; cargo fmt --check)",
     "lint": "bun lint:web && bun lint:backend",
     "lint:web": "biome lint src/ && eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",

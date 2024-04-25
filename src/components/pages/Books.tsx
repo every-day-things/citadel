@@ -252,7 +252,10 @@ function FilterControls({ form }: { form: BookViewForm }) {
 function Header({
 	form,
 	bookCount,
-}: { form: BookViewForm; bookCount: number }) {
+}: {
+	form: BookViewForm;
+	bookCount: number;
+}) {
 	return (
 		<Stack>
 			<FilterControls form={form} />
@@ -346,7 +349,9 @@ const isKnownLabel = (
 
 const BookIdentifiers = ({
 	identifier_list,
-}: { identifier_list: Identifier[] }) => {
+}: {
+	identifier_list: Identifier[];
+}) => {
 	return (
 		<Stack gap={"xs"}>
 			<Text size="xs">IDs</Text>
@@ -371,8 +376,8 @@ const BookIdentifiers = ({
 										{value}
 									</a>
 									<ActionIcon
-									variant="subtle"
-									color="gray"
+										variant="subtle"
+										color="gray"
 										onPointerDown={safeAsyncEventHandler(async () => {
 											await clipboard.writeText(value);
 										})}

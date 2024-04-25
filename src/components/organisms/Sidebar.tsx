@@ -1,7 +1,11 @@
 import { ImportableBookMetadata, LibraryAuthor, commands } from "@/bindings";
 import { LibraryState, useLibrary } from "@/lib/contexts/library";
 import { useSettings } from "@/lib/contexts/settings";
-import { commitAddBook, promptToAddBook, pickLibrary } from "@/lib/services/library";
+import {
+	commitAddBook,
+	promptToAddBook,
+	pickLibrary,
+} from "@/lib/services/library";
 import { Button, Divider, Modal, Stack, Title } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { Link } from "@tanstack/react-router";
