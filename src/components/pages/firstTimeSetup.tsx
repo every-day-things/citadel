@@ -1,20 +1,24 @@
 import { commands } from "@/bindings";
 import { safeAsyncEventHandler } from "@/lib/async";
 import { pickLibrary } from "@/lib/services/library";
+import { createLibrary } from "@/lib/services/library/_internal/pickLibrary";
 import { settings } from "@/stores/settings";
 import { Button, Stack, Text, Title } from "@mantine/core";
 
-const openFilePicker = async () => {
+const openFilePicker = async (): Promise<
+	| { type: "existing library selected"; path: string }
+	| { type: "new library selected"; path: string }
+	| { type: "invalid library path selected" }
+> => {
 	const path = await pickLibrary();
-	if (!path) return;
+	if (!path) return { type: "invalid library path selected" };
 
 	const selectedIsValid = await commands.clbQueryIsPathValidLibrary(path);
 
 	if (selectedIsValid) {
-		await settings.set("calibreLibraryPath", path);
-		return "existing library selected";
+		return { type: "existing library selected", path };
 	}
-	return "new library selected";
+	return { type: "new library selected", path };
 };
 
 export const FirstTimeSetup = ({
@@ -31,9 +35,15 @@ export const FirstTimeSetup = ({
 			<Button
 				onPointerDown={safeAsyncEventHandler(async () => {
 					const returnStatus = await openFilePicker();
-					if (returnStatus === "existing library selected") {
-						onLibraryPathPicked();
+					if (returnStatus.type === "invalid library path selected") {
+						return;
 					}
+
+					if (returnStatus.type === "new library selected") {
+						await createLibrary(returnStatus.path);
+					}
+					await settings.set("calibreLibraryPath", returnStatus.path);
+					onLibraryPathPicked();
 				})}
 			>
 				Choose Calibre library folder
