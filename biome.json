@@ -11,7 +11,8 @@
 	},
 	"files": {
 		"ignore": [
-			"src/bindings.ts"
+			"src/bindings.ts",
+      "src/routeTree.gen.ts"
 		]
 	}
 }
