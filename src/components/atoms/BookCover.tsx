@@ -1,4 +1,4 @@
-import { shortenToChars } from '$lib/domain/book';
+import { shortenToChars } from "$lib/domain/book";
 import { LibraryBook } from "@/bindings";
 import { Image } from "@mantine/core";
 import { HTMLAttributes } from "react";
