@@ -58,8 +58,8 @@ jobs:
         with:
           name: linux-deb-and-appimage
           path: |
-            src-tauri/target/release/bundle/deb/citadel_0.1.0_amd64.deb
-            src-tauri/target/release/bundle/appimage/citadel_0.1.0_amd64.AppImage
+            src-tauri/target/release/bundle/deb/citadel_0.2.0_amd64.deb
+            src-tauri/target/release/bundle/appimage/citadel_0.2.0_amd64.AppImage
 
       - name: (macOS only) Upload build artifacts
         if: matrix.platform == 'macos-12'
@@ -68,4 +68,4 @@ jobs:
           name: macos-app-and-dmg
           path: |
             src-tauri/target/release/bundle/macos/Citadel.app
-            src-tauri/target/release/bundle/dmg/Citadel_0.1.0_x64.dmg
+            src-tauri/target/release/bundle/dmg/Citadel_0.2.0_x64.dmg
