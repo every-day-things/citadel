@@ -1,3 +1,4 @@
+import { safeAsyncEventHandler } from "@/lib/async";
 import { writable } from "svelte/store";
 import {
 	SettingsManager as TauriSettingsManager,
@@ -5,11 +6,12 @@ import {
 } from "tauri-settings";
 import type { Path, PathValue } from "tauri-settings/dist/types/dot-notation";
 
-export interface SettingsSchema {
+// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+export type SettingsSchema = {
 	theme: "dark" | "light";
 	startFullscreen: boolean;
 	calibreLibraryPath: string;
-}
+};
 
 interface SettingsManager<T> {
 	initialize: () => Promise<T>;
@@ -61,13 +63,20 @@ const createSettingsStore = () => {
 	};
 	const settings = writable<SettingsSchema>();
 	const manager = genSettingsManager(defaultSettings, {});
-	manager.initialize().then(async () => {
-		await manager.syncCache();
-		for (const [key, value] of Object.entries(manager.settings)) {
-			settings.update((s) => ({ ...s, [key]: value }));
-		}
-		resolveSettingsLoaded();
-	});
+	manager
+		.initialize()
+		.then(
+			safeAsyncEventHandler(async () => {
+				await manager.syncCache();
+				for (const [key, value] of Object.entries(manager.settings)) {
+					settings.update((s) => ({ ...s, [key]: value }));
+				}
+				resolveSettingsLoaded();
+			}),
+		)
+		.catch((e) => {
+			console.error(e);
+		});
 
 	return {
 		set: async <K extends Path<SettingsSchema>>(
