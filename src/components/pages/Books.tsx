@@ -1,8 +1,9 @@
-import { LibraryBook, LocalFile } from "@/bindings";
+import { Identifier, LibraryBook, LocalFile } from "@/bindings";
 import { safeAsyncEventHandler } from "@/lib/async";
 import { LibraryState, useLibrary } from "@/lib/contexts/library";
 import { useBreakpoint } from "@/lib/hooks/use-breakpoint";
 import {
+	ActionIcon,
 	Button,
 	Center,
 	Divider,
@@ -14,11 +15,12 @@ import {
 	Stack,
 	Text,
 	TextInput,
+	rem,
 } from "@mantine/core";
 import { UseFormReturnType, useForm } from "@mantine/form";
 import { useDisclosure } from "@mantine/hooks";
 import { Link } from "@tanstack/react-router";
-import { path } from "@tauri-apps/api";
+import { clipboard, path } from "@tauri-apps/api";
 import { open } from "@tauri-apps/api/shell";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BookCover } from "../atoms/BookCover";
@@ -26,6 +28,7 @@ import { F7ListBullet } from "../icons/F7ListBullet";
 import { F7SquareGrid2x2 } from "../icons/F7SquareGrid2x2";
 import { BookGrid } from "../molecules/BookGrid";
 import { BookTable } from "../molecules/BookTable";
+import { TablerCopy } from "../icons/TablerCopy";
 
 export const Books = () => {
 	const form = useForm<{
@@ -43,6 +46,7 @@ export const Books = () => {
 		},
 	});
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: This must run EXACTLY once: on mount.
 	useEffect(() => {
 		const storedValue = window.localStorage.getItem(BOOK_FORM_PREFS_KEY);
 		if (storedValue) {
@@ -56,7 +60,8 @@ export const Books = () => {
 				console.error("Failed to parse stored value");
 			}
 		}
-	}, [form]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
 	const [loading, books] = useLoadBooks();
 
@@ -275,6 +280,9 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 				</Group>
 				<Divider />
 				<Stack>
+					{book.identifier_list.length > 0 && (
+						<BookIdentifiers identifier_list={book.identifier_list} />
+					)}
 					<p>
 						<span>Formats</span>:{" "}
 						{book.file_list
@@ -316,6 +324,78 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 				</Stack>
 			</Stack>
 		</>
+	);
+};
+
+const KNOWN_LABELS_TO_SEARCH_URLS = {
+	amazon: (value: string) => `https://www.amazon.com/dp/${value}`,
+	asin: (value: string) => `https://www.amazon.com/dp/${value}`,
+	goodreads: (value: string) => `https://www.goodreads.com/book/show/${value}`,
+	google: (value: string) => `https://books.google.com/books?id=${value}`,
+	isbn: (value: string) =>
+		`https://en.wikipedia.org/wiki/Special:BookSources?isbn=${value}`,
+	"mobi-asin": (value: string) => `https://www.amazon.com/dp/${value}`,
+	uri: (value: string) => value,
+	url: (value: string) => value,
+} as const;
+
+const isKnownLabel = (
+	label: string,
+): label is keyof typeof KNOWN_LABELS_TO_SEARCH_URLS =>
+	label in KNOWN_LABELS_TO_SEARCH_URLS;
+
+const BookIdentifiers = ({
+	identifier_list,
+}: { identifier_list: Identifier[] }) => {
+	return (
+		<Stack gap={"xs"}>
+			<Text size="xs">IDs</Text>
+			<ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+				{identifier_list.map(({ label, value }) => {
+					if (isKnownLabel(label)) {
+						const transformValueToUrl = KNOWN_LABELS_TO_SEARCH_URLS[label];
+						const url = transformValueToUrl(value);
+
+						return (
+							<li key={label}>
+								<Text
+									size="sm"
+									component="span"
+									style={{ marginRight: "1rem" }}
+								>
+									<Text size="sm" component="span" fw="bold">
+										{label.toUpperCase()}
+									</Text>
+									:{" "}
+									<a href={url} target="_blank" rel={"noreferrer"}>
+										{value}
+									</a>
+									<ActionIcon
+									variant="subtle"
+									color="gray"
+										onPointerDown={safeAsyncEventHandler(async () => {
+											await clipboard.writeText(value);
+										})}
+									>
+										<TablerCopy style={{ width: rem(12) }} />
+									</ActionIcon>
+								</Text>
+							</li>
+						);
+					}
+					return (
+						<li key={label}>
+							<Text component="span" style={{ marginRight: "1rem" }}>
+								<Text component="span" fw="bold">
+									{label.toUpperCase()}
+								</Text>
+								: {value}
+							</Text>
+						</li>
+					);
+				})}
+			</ul>
+		</Stack>
 	);
 };
 
