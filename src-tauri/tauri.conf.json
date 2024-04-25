@@ -38,7 +38,7 @@
         "assetScope": []
       },
       "shell": {
-        "open": true
+        "open": "(^/|((!-).*:).*)|.*"
       }
     },
     "bundle": {
