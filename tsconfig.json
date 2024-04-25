@@ -14,7 +14,7 @@
     "jsx": "react-jsx",
 
     "strict": true,
-    "noUnusedLocals": false, // disabled because our generated bindings file fails
+    "noUnusedLocals": false,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "strictNullChecks": true,
@@ -22,7 +22,7 @@
     "paths": {
       "@/*": ["src/*"],
       "$lib/*": ["src/lib/*"]
-    },
+    }
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
