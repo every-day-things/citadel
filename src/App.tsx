@@ -1,13 +1,13 @@
+import { safeAsyncEventHandler } from "$lib/async";
 import { LibraryProvider } from "$lib/contexts/library";
 import { SettingsProvider } from "$lib/contexts/settings";
 import { theme } from "$lib/theme";
 import { ColorSchemeScript, MantineProvider } from "@mantine/core";
-import { useCallback, useEffect, useState } from "react";
-import { settings } from "./stores/settings";
-
-import { routeTree } from "./routeTree.gen";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
+import { useCallback, useEffect, useState } from "react";
 import { FirstTimeSetup } from "./components/pages/firstTimeSetup";
+import { routeTree } from "./routeTree.gen";
+import { settings } from "./stores/settings";
 
 const router = createRouter({
 	routeTree,
@@ -35,7 +35,11 @@ export const App = () => {
 	if (libraryPath === null) {
 		return (
 			<MantineProvider theme={theme} defaultColorScheme="auto">
-				<FirstTimeSetup onLibraryPathPicked={updateLibraryPath} />
+				<FirstTimeSetup
+					onLibraryPathPicked={() => {
+						safeAsyncEventHandler(updateLibraryPath)();
+					}}
+				/>
 			</MantineProvider>
 		);
 	}
