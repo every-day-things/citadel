@@ -20,6 +20,9 @@
         "request": true,
         "scope": ["http://*", "https://*"]
       },
+      "clipboard": {
+        "writeText": true
+      },
       "path": {
         "all": true
       },
@@ -35,7 +38,7 @@
         "assetScope": []
       },
       "shell": {
-        "open": "^/|((!-).*:).*"
+        "open": true
       }
     },
     "bundle": {
