@@ -42,7 +42,7 @@ bun install
 
 and start up the app like so:
 
-```
+```fish
 bun run dev
 # or just bun dev
 ```
@@ -61,7 +61,6 @@ To lint all source code, run `bun lint`. To autoformat, run `bun format`.
 | Frontend | Format | `bun format:web` |
 | Frontend | Lint | `bun lint:web` |
 
-
 ### App preview without backend
 
 You can run just the frontend with this command, although you WILL see errors as the Rust backend will be missing but is assumed to exist:
@@ -71,6 +70,7 @@ bun dev:app
 ```
 
 To run the backend in server mode for development, run
+
 ```fish
 bun dev -- -- -- -- --server --calibre-library=/path/to/calibre/library
 ```
@@ -78,18 +78,10 @@ bun dev -- -- -- -- --server --calibre-library=/path/to/calibre/library
 Yes, that is 4 pairs of `--`s. This is because Bun will pass the first pair to another bun run command, the second will go to tauri dev, the third will go to vite dev, and finally the last set will go to Cargo when running the backend. It's a mess!
 
 To run the backend in server mode for production, run
+
 ```fish
 /Applications/Citadel.app/Contents/MacOS/Citadel --server --calibre-library=/path/to/calibre/library
 ```
-
-### Setting up Svelte Intellisense
-
-If you want to use an LSP with your editor that is _not_ VS Code (e.g. Helix),
-you'll need to globally install
-[svelte-language-server](https://github.com/sveltejs/language-tools/tree/master/packages/language-server).
-
-Using Bun, that looks like `bun add -g svelte-language-server`. With that, the
-project should be ready to go.
 
 ## Building
 
@@ -104,7 +96,7 @@ bun run build
 
 This project would not be possible without the north star created by Kovid Goyal,
 [Calibre](https://github.com/kovidgoyal/calibre). Without his hard work building
-such an extensive and powerful tool, Citadel would not exist. 
+such an extensive and powerful tool, Citadel would not exist.
 
 Huge thanks to [Kemie Guaida](https://kemielikes.design/), who created an
 excellent

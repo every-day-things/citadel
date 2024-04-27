@@ -1,6 +1,6 @@
 # Citadel docs
 
-Citadel is a Tauri app that uses Svelte for the UI and Rust for the backend.
+Citadel is a Tauri app that uses React for the UI and Rust for the backend.
 
 Tauri uses native WebViews to render the UI, which is why the app is so small.
 It also means that not all users will see the same UI, as it depends on the
@@ -16,13 +16,12 @@ The headless server is still in progress, so we'll focus on the bundled app.
   <figcaption>Overview of how the UI talks to <code>libcalibre</code>.</figcaption>
 </figure>
 
-The bundled app has a Svelte frontend that uses interprocess communication (IPC) to send async commands to the backend.
+The bundled app has a React frontend that uses interprocess communication (IPC) to send async commands to the backend.
 The frontend has a `Library` that can be initialized to use different kind of library types.
 For now, the only option is either local or remote Calibre libraries.
 
-Local calibre libraries are called through IPC, and all that _Citadel_ does is
-translate commands and call `libcalibre`, which is the core library that handles
-all the logic related to Calibre.
+All reading, creating, and updating is done by the `libcalibre` crate.
+Citadel is essentially a UI wrapper around that library.
 
 ## Principles
 
