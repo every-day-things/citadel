@@ -1,6 +1,6 @@
 [package]
 name = "libcalibre"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -15,3 +15,4 @@ regex = "1.10.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 uuid = { version = "1.6.1", features = [ "v4", "fast-rng", ] }
+sanitise-file-name = "1.0.0"

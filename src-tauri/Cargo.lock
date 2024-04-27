@@ -2101,7 +2101,7 @@ checksum = "302d7ab3130588088d277783b1e2d2e10c9e9e4a16dd9050e6ec93fb3e7048f4"
 
 [[package]]
 name = "libcalibre"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "chrono",
  "diesel",
@@ -2109,6 +2109,7 @@ dependencies = [
  "epub",
  "mobi",
  "regex",
+ "sanitise-file-name",
  "serde",
  "serde_json",
  "uuid",
@@ -3196,6 +3197,12 @@ checksum = "93fc1dc3aaa9bfed95e02e6eadabb4baf7e3078b0bd1b4d7b6b0b68378900502"
 dependencies = [
  "winapi-util",
 ]
+
+[[package]]
+name = "sanitise-file-name"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "19d36299972b96b8ae7e8f04ecbf75fb41a27bf3781af00abcf57609774cb911"
 
 [[package]]
 name = "schannel"
