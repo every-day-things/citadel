@@ -1,8 +1,8 @@
 import { shortenToChars } from "$lib/domain/book";
 import { LibraryBook } from "@/bindings";
-import { Image } from "@mantine/core";
+import { Image, Text } from "@mantine/core";
 import { HTMLAttributes } from "react";
-import styles from "./BookCover.module.css";
+import { formatAuthorList } from "@/lib/authors";
 
 export const BookCover = ({
 	book,
@@ -23,15 +23,30 @@ export const BookCover = ({
 
 	return (
 		<div
-			className={styles.coverPlaceholder}
 			{...props}
 			style={{
-				backgroundColor: `#${Math.floor(Math.random() * 16777215).toString(
-					16,
-				)}`,
+				width: "150px",
+				height: "200px",
+				background: "linear-gradient(#555, #111)",
+				backgroundColor: "#555",
+				padding: "0.5rem",
 			}}
 		>
-			{shortenToChars(book.title, 50)}
+			<div
+				style={{
+					border: "2px solid #888",
+					height: "100%",
+					display: "flex",
+					flexDirection: "column",
+					alignContent: "center",
+					justifyContent: "space-between",
+					textAlign: "center",
+					padding: "0.5rem",
+				}}
+			>
+				<Text size="sm">{shortenToChars(book.title, 50)}</Text>
+				<Text size="sm">{formatAuthorList(book.author_list)}</Text>
+			</div>
 		</div>
 	);
 };
