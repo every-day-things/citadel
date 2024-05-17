@@ -1,4 +1,3 @@
-import initSqlJs, { Database } from "sql.js";
 
 import {
 	commands,
@@ -12,8 +11,8 @@ import type {
 	LocalConnectionOptions,
 	Options,
 	RemoteConnectionOptions,
-	WebConnectionOptions,
 } from "../_types";
+import { genWebCalibreClient } from "./web";
 
 const genLocalCalibreClient = async (
 	options: LocalConnectionOptions,
@@ -173,61 +172,6 @@ const genRemoteCalibreClient = async (
 			throw new Error("Not implemented");
 		},
 	};
-};
-
-const genWebCalibreClient = async (
-	options: WebConnectionOptions,
-	// The interface requires this function to be async.
-	// eslint-disable-next-line @typescript-eslint/require-await
-): Promise<Library> => {
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-	const SQL = await initSqlJs({
-		// TODO: Now Citadel requires being online on the web? ... that is probably fine, yes.
-		locateFile: (file: string) => `https://sql.js.org/dist/${file}`, });
-	const loadDb = async (): Promise<Database> => {
-		const fileBuffer = await (
-			await (
-				await options.libraryDirectoryHandle.getFileHandle("metadata.db", {
-					create: false,
-				})
-			).getFile()
-		).arrayBuffer();
-
-		const db = new SQL.Database(new Uint8Array(fileBuffer));
-
-		return db;
-	};
-
-	console.log("Connecting to Calibre from the Web");
-
-	return {
-		listBooks: async () => {
-			const db = await loadDb();
-			const res = db.exec("SELECT * FROM 'books'");
-			if (res.length === 0) {
-				return [];
-			}
-
-			const books = res[0].values.map((row): LibraryBook => ({
-				id: row[0]?.toString()?? '',
-				title: row[1]?.toString() ?? '',
-				author_list: [{
-					sortable_name: '',
-					name: '',
-					id: ''
-				}],
-				uuid: null,
-				sortable_title: '',
-				author_sort_lookup: {},
-				file_list: [],
-				cover_image: null,
-				identifier_list: [],
-			}));
-
-			console.log({ res, books });
-			return books;
-		},
-	} as unknown as Library;
 };
 
 export const initCalibreClient = async (options: Options): Promise<Library> => {
