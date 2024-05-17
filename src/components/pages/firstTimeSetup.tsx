@@ -1,5 +1,6 @@
 import { commands } from "@/bindings";
 import { safeAsyncEventHandler } from "@/lib/async";
+import { isDesktop } from "@/lib/platform";
 import { pickLibrary } from "@/lib/services/library";
 import { createLibrary } from "@/lib/services/library/_internal/pickLibrary";
 import { settings } from "@/stores/settings";
@@ -23,7 +24,11 @@ const openFilePicker = async (): Promise<
 
 export const FirstTimeSetup = ({
 	onLibraryPathPicked,
-}: { onLibraryPathPicked: () => void }) => {
+	onLibraryFSDirectoryHandlePicked,
+}: {
+	onLibraryPathPicked: () => void;
+	onLibraryFSDirectoryHandlePicked: (handle: FileSystemDirectoryHandle) => void;
+}) => {
 	return (
 		<Stack align="center" justify="flex-start" h={"100vh"} p="sm">
 			<Title>Welcome to Citadel!</Title>
@@ -34,16 +39,33 @@ export const FirstTimeSetup = ({
 			</Text>
 			<Button
 				onPointerDown={safeAsyncEventHandler(async () => {
-					const returnStatus = await openFilePicker();
-					if (returnStatus.type === "invalid library path selected") {
-						return;
-					}
+					if (isDesktop()) {
+						const returnStatus = await openFilePicker();
+						if (returnStatus.type === "invalid library path selected") {
+							return;
+						}
 
-					if (returnStatus.type === "new library selected") {
-						await createLibrary(returnStatus.path);
+						if (returnStatus.type === "new library selected") {
+							await createLibrary(returnStatus.path);
+						}
+						await settings.set("calibreLibraryPath", returnStatus.path);
+						onLibraryPathPicked();
+					} else {
+						const currentDirHandle = await (
+							// This function is experimental, and not yet in the TS types.
+							window as typeof window & {
+								showDirectoryPicker: () => Promise<FileSystemDirectoryHandle>;
+							}
+						).showDirectoryPicker();
+						if (currentDirHandle === undefined) return;
+
+						await settings.set(
+							"calibreLibraryPath",
+							`webfilesystem://${currentDirHandle.name}`,
+						);
+						onLibraryFSDirectoryHandlePicked(currentDirHandle);
+						onLibraryPathPicked();
 					}
-					await settings.set("calibreLibraryPath", returnStatus.path);
-					onLibraryPathPicked();
 				})}
 			>
 				Choose Calibre library folder

@@ -1,5 +1,5 @@
 import { safeAsyncEventHandler } from "$lib/async";
-import { LibraryProvider } from "$lib/contexts/library";
+import { LocalCalibreLibraryProvider, WebCalibreLibraryProvider } from "$lib/contexts/library";
 import { SettingsProvider } from "$lib/contexts/settings";
 import { theme } from "$lib/theme";
 import { ColorSchemeScript, MantineProvider } from "@mantine/core";
@@ -21,6 +21,9 @@ declare module "@tanstack/react-router" {
 
 export const App = () => {
 	const [libraryPath, setLibraryPath] = useState<string | null>(null);
+	const [libraryFSDirectoryHandle, setLibraryFSDirectoryHandle] = useState<FileSystemDirectoryHandle | null>(
+		null
+	);
 	const updateLibraryPath = useCallback(async () => {
 		const libPath = await settings.get("calibreLibraryPath");
 		setLibraryPath(libPath);
@@ -39,19 +42,31 @@ export const App = () => {
 					onLibraryPathPicked={() => {
 						safeAsyncEventHandler(updateLibraryPath)();
 					}}
+					onLibraryFSDirectoryHandlePicked={setLibraryFSDirectoryHandle}
 				/>
 			</MantineProvider>
 		);
 	}
 
-	return (
-		<SettingsProvider value={settings}>
-			<LibraryProvider libraryPath={libraryPath}>
+	if (libraryFSDirectoryHandle) {
+		return <SettingsProvider value={settings}>
+			<WebCalibreLibraryProvider directoryHandle={libraryFSDirectoryHandle}>
 				<ColorSchemeScript defaultColorScheme="auto" />
 				<MantineProvider theme={theme} defaultColorScheme="auto">
 					<RouterProvider router={router} />
 				</MantineProvider>
-			</LibraryProvider>
+			</WebCalibreLibraryProvider>
+		</SettingsProvider>;
+	}
+
+	return (
+		<SettingsProvider value={settings}>
+			<LocalCalibreLibraryProvider libraryPath={libraryPath}>
+				<ColorSchemeScript defaultColorScheme="auto" />
+				<MantineProvider theme={theme} defaultColorScheme="auto">
+					<RouterProvider router={router} />
+				</MantineProvider>
+			</LocalCalibreLibraryProvider>
 		</SettingsProvider>
 	);
 };

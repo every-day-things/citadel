@@ -3,19 +3,19 @@ import { DEFAULT_CONTEXT_VALUE, LibraryContext, LibraryState } from "./context";
 import { Options, initClient } from "@/lib/services/library";
 import { reducer } from "./reducer";
 
-const localLibraryFromPath = (path: string): Options => ({
-	libraryPath: path,
+const webLibraryFromHandle = (handle: FileSystemDirectoryHandle): Options => ({
+	libraryDirectoryHandle: handle,
 	libraryType: "calibre",
-	connectionType: "local",
+	connectionType: "web",
 });
 
 interface LibraryProviderProps {
 	children: React.ReactNode;
-	libraryPath: string;
+	directoryHandle: FileSystemDirectoryHandle;
 }
-export const LocalCalibreLibraryProvider = ({
+export const WebCalibreLibraryProvider = ({
 	children,
-	libraryPath,
+	directoryHandle,
 }: LibraryProviderProps) => {
 	const [context, dispatch] = useReducer(reducer, DEFAULT_CONTEXT_VALUE);
 
@@ -26,7 +26,7 @@ export const LocalCalibreLibraryProvider = ({
 	}, [context]);
 
 	useEffect(() => {
-		initClient(localLibraryFromPath(libraryPath))
+		initClient(webLibraryFromHandle(directoryHandle))
 			.then((client) => {
 				dispatch({
 					type: "init",
@@ -40,7 +40,7 @@ export const LocalCalibreLibraryProvider = ({
 		return () => {
 			dispatch({ type: "shutdown" });
 		};
-	}, [libraryPath]);
+	}, [directoryHandle]);
 
 	return (
 		<LibraryContext.Provider value={context}>

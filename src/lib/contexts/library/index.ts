@@ -1,5 +1,6 @@
-import { LibraryProvider } from "./Provider";
+import { LocalCalibreLibraryProvider } from "./Provider";
+import {WebCalibreLibraryProvider} from "./WebProvider";
 import { LibraryState } from "./context";
 import { useLibrary } from "./hooks";
 
-export { LibraryProvider, useLibrary, LibraryState };
+export { LocalCalibreLibraryProvider, WebCalibreLibraryProvider, useLibrary, LibraryState };
