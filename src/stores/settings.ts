@@ -1,4 +1,5 @@
 import { safeAsyncEventHandler } from "@/lib/async";
+import { isDesktop } from "@/lib/platform";
 import { writable } from "svelte/store";
 import {
 	SettingsManager as TauriSettingsManager,
@@ -30,9 +31,10 @@ const genSettingsManager = <T extends SettingsSchema>(
 	defaultSettings: T,
 	config: ConfigOptions,
 ): SettingsManager<T> => {
-	if (window.__TAURI__) {
+	if (isDesktop()) {
 		return new TauriSettingsManager(defaultSettings, config);
 	}
+
 	return {
 		initialize: () => {
 			for (const setting of Object.entries(defaultSettings)) {
