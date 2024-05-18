@@ -7,7 +7,7 @@ export const libraryAuthor = {
 		return {
 			id: author.id.toString(),
 			name: author.name,
-			sortable_name: "",
+			sortable_name: author.sort ?? author.name,
 		};
 	},
 };

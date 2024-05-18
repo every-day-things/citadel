@@ -19,17 +19,16 @@ export const Book = {
 	fromRow: (row: any[]): Book => {
 		return {
 			id: row[0].toString() as BookId,
-			uuid: row[1],
-			title: row[2],
-			sort: row[3],
-			timestamp: row[4],
-			pubdate: row[5],
-			series_index: row[6],
-			author_sort: row[7],
-			path: row[8],
-			flags: row[9],
-			has_cover: row[10],
-			last_modified: row[11],
+			title: row[1],
+			sort: row[2],
+			timestamp: row[3],
+			pubdate: row[4],
+			series_index: row[5],
+			path: row[9],
+			flags: row[10],
+			uuid: row[11],
+			has_cover: row[12],
+			last_modified: row[13],
 		};
 	},
 	toRow: (book: Book): any[] => {

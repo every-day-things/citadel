@@ -11,6 +11,7 @@ import {
 } from "./web/repositories/sqljs";
 import { createCatalogService } from "./web/services/catalog";
 import { createAuthorService } from "./web/services/author";
+import { libraryAuthor } from "./web/entities/LibraryAuthor";
 
 export const genWebCalibreClient = async (
 	options: WebConnectionOptions,
@@ -28,7 +29,7 @@ export const genWebCalibreClient = async (
 		options.libraryDirectoryHandle,
 		SQL,
 	);
-	const authorService = createAuthorService(authorRepo)
+	const authorService = createAuthorService(authorRepo);
 	const catalogService = createCatalogService(
 		bookRepo,
 		bookAuthorLinkRepo,
@@ -77,10 +78,10 @@ export const genWebCalibreClient = async (
 
 			return books;
 		},
-		// listAuthors: async () => {
-		// 	return authorService.all();
-		// }
-	}
+		listAuthors: async () => {
+			return (await authorService.all()).map(libraryAuthor.fromAuthor);
+		},
+	};
 };
 
 const coverImageFromPath = async (
