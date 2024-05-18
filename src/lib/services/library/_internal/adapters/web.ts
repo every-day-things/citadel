@@ -48,7 +48,7 @@ export const genWebCalibreClient = async (
 			const rows = res[0].values;
 
 			const coverImagePromises = rows.map((row) => {
-				const path = row[9].toString();
+				const path = (row[9] ?? "").toString();
 				if (path === "") {
 					return null;
 				}
@@ -80,6 +80,33 @@ export const genWebCalibreClient = async (
 		},
 		listAuthors: async () => {
 			return (await authorService.all()).map(libraryAuthor.fromAuthor);
+		},
+		listValidFileTypes: () => {
+			return Promise.resolve([]);
+		},
+		getCoverPathForBook: () => {
+			throw new Error("Not implemented");
+		},
+		getCoverUrlForBook: () => {
+			throw new Error("Not implemented");
+		},
+		getDefaultFilePathForBook: () => {
+			throw new Error("Not implemented");
+		},
+		getImportableFileMetadata: () => {
+			throw new Error("Not implemented");
+		},
+		sendToDevice: () => {
+			throw new Error("Not implemented");
+		},
+		updateBook: () => {
+			throw new Error("Not implemented");
+		},
+		addImportableFileByMetadata: () => {
+			throw new Error("Not implemented");
+		},
+		checkFileImportable: () => {
+			throw new Error("Not implemented");
 		},
 	};
 };

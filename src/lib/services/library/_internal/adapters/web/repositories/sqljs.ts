@@ -17,7 +17,7 @@ export const createBookAuthorLinkRepository: SqljsRepository<
 			const res = db.exec(
 				`SELECT author FROM 'books_authors_link' WHERE book = ${bookId}`,
 			);
-			return res[0].values.map((row) => row[0].toString() as AuthorId);
+			return res[0].values.map((row) => (row[0] ?? "").toString() as AuthorId);
 		},
 	};
 };
