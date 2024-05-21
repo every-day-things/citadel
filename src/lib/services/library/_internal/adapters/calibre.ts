@@ -1,3 +1,4 @@
+
 import {
 	commands,
 	type ImportableFile,
@@ -11,6 +12,7 @@ import type {
 	Options,
 	RemoteConnectionOptions,
 } from "../_types";
+import { genWebCalibreClient } from "./web";
 
 const genLocalCalibreClient = async (
 	options: LocalConnectionOptions,
@@ -175,6 +177,9 @@ const genRemoteCalibreClient = async (
 export const initCalibreClient = async (options: Options): Promise<Library> => {
 	if (options.connectionType === "remote") {
 		return genRemoteCalibreClient(options);
+	}
+	if (options.connectionType === "web") {
+		return genWebCalibreClient(options);
 	}
 
 	return genLocalCalibreClient(options);

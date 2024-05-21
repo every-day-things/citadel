@@ -100,7 +100,11 @@ export interface RemoteConnectionOptions {
 	connectionType: "remote";
 	url: string;
 }
+export interface WebConnectionOptions {
+	connectionType: "web";
+	libraryDirectoryHandle: FileSystemDirectoryHandle;
+}
 
 export type Options = {
 	libraryType: "calibre";
-} & (LocalConnectionOptions | RemoteConnectionOptions);
+} & (LocalConnectionOptions | RemoteConnectionOptions | WebConnectionOptions);
