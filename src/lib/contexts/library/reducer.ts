@@ -2,14 +2,17 @@ import { Library } from "@/lib/services/library";
 import {
 	DEFAULT_CONTEXT_VALUE,
 	LibraryContextType,
+	LibraryEvents,
 	LibraryState,
 } from "./context";
+import { EventEmitter } from "@/lib/event";
 
 type Action = ActionInitialize | ActionShutdown | ActionError;
 
 interface ActionInitialize {
 	type: "init";
 	client: Library;
+	eventEmitter: EventEmitter<LibraryEvents>;
 }
 interface ActionShutdown {
 	type: "shutdown";
@@ -28,6 +31,7 @@ export const reducer = (
 			return {
 				library: action.client,
 				loading: false,
+				eventEmitter: action.eventEmitter,
 				error: null,
 				state: LibraryState.ready,
 			};
@@ -37,6 +41,7 @@ export const reducer = (
 				loading: false,
 				error: null,
 				state: LibraryState.closed,
+				eventEmitter: null,
 			};
 		case "error":
 			return {
@@ -44,6 +49,7 @@ export const reducer = (
 				loading: false,
 				error: action.error,
 				state: LibraryState.error,
+				eventEmitter: null,
 			};
 		default:
 			return DEFAULT_CONTEXT_VALUE;

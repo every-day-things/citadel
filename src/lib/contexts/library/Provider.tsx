@@ -1,6 +1,12 @@
-import { useEffect, useReducer } from "react";
-import { DEFAULT_CONTEXT_VALUE, LibraryContext, LibraryState } from "./context";
+import { createEventEmitter } from "@/lib/event";
 import { Options, initClient } from "@/lib/services/library";
+import { useEffect, useReducer } from "react";
+import {
+	DEFAULT_CONTEXT_VALUE,
+	LibraryContext,
+	LibraryEvents,
+	LibraryState,
+} from "./context";
 import { reducer } from "./reducer";
 
 const localLibraryFromPath = (path: string): Options => ({
@@ -26,11 +32,13 @@ export const LibraryProvider = ({
 	}, [context]);
 
 	useEffect(() => {
+		const eventEmitter = createEventEmitter<LibraryEvents>();
 		initClient(localLibraryFromPath(libraryPath))
 			.then((client) => {
 				dispatch({
 					type: "init",
 					client,
+					eventEmitter,
 				});
 			})
 			.catch(() => {
