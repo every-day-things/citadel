@@ -29,8 +29,10 @@ import { F7SquareGrid2x2 } from "../icons/F7SquareGrid2x2";
 import { BookGrid } from "../molecules/BookGrid";
 import { BookTable } from "../molecules/BookTable";
 import { TablerCopy } from "../icons/TablerCopy";
+import { LibraryEventNames } from "@/lib/contexts/library/context";
 
 export const Books = () => {
+	const { eventEmitter } = useLibrary();
 	const form = useForm<{
 		query: string;
 		sortOrder: keyof typeof LibraryBookSortOrder;
@@ -115,6 +117,13 @@ export const Books = () => {
 
 	return (
 		<>
+			<Button
+				onPointerDown={() =>
+					eventEmitter?.emit(LibraryEventNames.LIBRARY_BOOK_CREATED, { bookname: "hi" })
+				}
+			>
+				Emit Event
+			</Button>
 			<Header form={form} bookCount={sortedBooks.length} />
 			{form.values.view === "covers" ? (
 				<BookGrid
@@ -148,9 +157,9 @@ export const Books = () => {
 const useLoadBooks = () => {
 	const [loading, setLoading] = useState(true);
 	const [books, setBooks] = useState<LibraryBook[]>([]);
-	const { library, state } = useLibrary();
-
-	useEffect(() => {
+	const { library, state, eventEmitter } = useLibrary();
+	const updateBooklist = useCallback(() => {
+		setLoading(true);
 		void (async () => {
 			if (state !== LibraryState.ready) {
 				return;
@@ -161,6 +170,25 @@ const useLoadBooks = () => {
 			setLoading(false);
 		})();
 	}, [library, state]);
+
+	useEffect(() => {
+		updateBooklist();
+	}, [updateBooklist]);
+
+	useEffect(() => {
+		if (state !== LibraryState.ready) {
+			return;
+		}
+
+		const unsub = eventEmitter.listen(LibraryEventNames.LIBRARY_BOOK_CREATED, (data) => {
+			updateBooklist();
+			console.log("Updated book list because of new book:", data);
+		});
+
+		return () => {
+			unsub();
+		};
+	}, [state, eventEmitter, updateBooklist]);
 
 	return [loading, books] as const;
 };

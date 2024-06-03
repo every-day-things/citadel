@@ -20,7 +20,7 @@ import {
 } from "../molecules/SwitchLibraryForm";
 
 export const Sidebar = () => {
-	const { library, state } = useLibrary();
+	const { library, state, eventEmitter } = useLibrary();
 	const { set, subscribe } = useSettings();
 
 	const [metadata, setMetadata] = useState<ImportableBookMetadata | null>();
@@ -77,7 +77,7 @@ export const Sidebar = () => {
 			title: form.title,
 			author_names: form.authorList,
 		};
-		commitAddBook(library, editedMetadata)
+		commitAddBook(library, editedMetadata, eventEmitter)
 			.then(() => {
 				closeAddBookModal();
 				setMetadata(null);
