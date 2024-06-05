@@ -39,6 +39,9 @@
       },
       "shell": {
         "open": "(^/|((!-).*:).*)|.*"
+      },
+      "window": {
+        "show": true
       }
     },
     "bundle": {
@@ -83,13 +86,6 @@
       "active": false
     },
     "windows": [
-      {
-        "fullscreen": false,
-        "height": 600,
-        "resizable": true,
-        "title": "Citadel",
-        "width": 800
-      }
     ]
   }
 }

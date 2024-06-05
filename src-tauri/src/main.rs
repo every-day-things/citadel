@@ -44,11 +44,23 @@ fn run_tauri_backend() -> std::io::Result<()> {
     };
 
     tauri::Builder::default()
+        .setup(|app| {
+            let main_window =
+                tauri::WindowBuilder::new(app, "main", tauri::WindowUrl::App("index.html".into()))
+                    .visible(false)
+                    .build()
+                    .expect("failed to create main window");
+            main_window.set_title("title").unwrap();
+            main_window.center().unwrap();
+
+            Ok(())
+        })
         .plugin(specta_builder)
         .plugin(tauri_plugin_persisted_scope::init())
         .plugin(tauri_plugin_drag::init())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+
     Ok(())
 }
 

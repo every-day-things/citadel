@@ -36,6 +36,12 @@ export const App = () => {
 		});
 	}, []);
 
+	useEffect(() => {
+		if (!isLoading) {
+			safeAsyncEventHandler(setupAppWindow)();
+		}
+	}, [isLoading]);
+
 	if (isLoading) {
 		return null;
 	}
@@ -63,3 +69,14 @@ export const App = () => {
 		</SettingsProvider>
 	);
 };
+
+/**
+ * Set the main App Window to be visible.
+ * Used to avoid a flash-of-white during startup. See:
+ * https://github.com/tauri-apps/tauri/issues/5170, https://github.com/tauri-apps/tauri/issues/1564,
+ * and https://github.com/cloudy-org/roseate/commit/21f445011f8becc81300b42fe10d8f4c419c95bd
+ */
+async function setupAppWindow() {
+	const appWindow = (await import("@tauri-apps/api/window")).appWindow;
+	safeAsyncEventHandler(async () => appWindow.show())();
+}
