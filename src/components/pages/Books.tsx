@@ -32,7 +32,6 @@ import { TablerCopy } from "../icons/TablerCopy";
 import { LibraryEventNames } from "@/lib/contexts/library/context";
 
 export const Books = () => {
-	const { eventEmitter } = useLibrary();
 	const form = useForm<{
 		query: string;
 		sortOrder: keyof typeof LibraryBookSortOrder;
@@ -117,13 +116,6 @@ export const Books = () => {
 
 	return (
 		<>
-			<Button
-				onPointerDown={() =>
-					eventEmitter?.emit(LibraryEventNames.LIBRARY_BOOK_CREATED, { bookname: "hi" })
-				}
-			>
-				Emit Event
-			</Button>
 			<Header form={form} bookCount={sortedBooks.length} />
 			{form.values.view === "covers" ? (
 				<BookGrid
