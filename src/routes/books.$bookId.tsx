@@ -2,54 +2,69 @@ import { LibraryAuthor, LibraryBook } from "@/bindings";
 import { BookPage } from "@/components/pages/EditBook";
 import { safeAsyncEventHandler } from "@/lib/async";
 import { LibraryState, useLibrary } from "@/lib/contexts/library";
-import {
-	createFileRoute,
-	useNavigate,
-	useParams,
-} from "@tanstack/react-router";
+import { LibraryEventNames } from "@/lib/contexts/library/context";
+import { Library } from "@/lib/services/library";
+import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 
+const libraryIsReady = (
+	state: LibraryState,
+	_library: Library | null,
+): _library is Library => state === LibraryState.ready;
+
 const EditBookRoute = () => {
-	const navigate = useNavigate();
 	const { bookId } = useParams({ from: "/books/$bookId" });
-	const { library, state } = useLibrary();
+	const { library, state, eventEmitter } = useLibrary();
 
 	const [book, setBook] = useState<LibraryBook | undefined>();
 	const [allAuthorList, setAllAuthorList] = useState<LibraryAuthor[]>([]);
 
-	useEffect(() => {
-		safeAsyncEventHandler(async () => {
-			if (state !== LibraryState.ready) {
-				return;
-			}
+	const loadBook = useCallback(async () => {
+		if (!libraryIsReady(state, library)) {
+			return;
+		}
 
-			const booklistPromise = library.listBooks();
-			const authorlistPromise = library.listAuthors();
+		const [bookList, authorList] = await Promise.all([
+			library.listBooks(),
+			library.listAuthors(),
+		]);
 
-			const [bookList, authorList] = await Promise.all([
-				booklistPromise,
-				authorlistPromise,
-			]);
+		const matchingBook = bookList.find((b) => b.id === bookId);
 
-			const matchingBook = bookList.find((b) => b.id === bookId);
-			if (matchingBook) {
-				setBook(matchingBook);
-			}
-			setAllAuthorList(authorList);
-		})();
+		if (matchingBook) {
+			setBook(matchingBook);
+		}
+
+		setAllAuthorList(authorList);
 	}, [bookId, library, state]);
 
-	const onSave = useCallback(async () => {
-		// TODO: Fix this hacky bodge that reloads the data we collected in our
-		// `EditBookRoute` component in our routes. This sucks!
-		await navigate({ to: "/" })
-			.then(() => {
-				return navigate({ to: `/books/${bookId}` });
-			})
-			.catch((e) => {
-				console.error(e);
+	useEffect(() => {
+		// Load book on first render
+		safeAsyncEventHandler(loadBook)();
+	}, [loadBook]);
+
+	useEffect(() => {
+		// Re-load `book` when Library emits "book updated" event, to capture
+		// any changes automatically done by the backend
+		const unsubUpdatedBook = eventEmitter?.listen(
+			LibraryEventNames.LIBRARY_BOOK_UPDATED,
+			safeAsyncEventHandler(async () => {
+				await loadBook();
+			}),
+		);
+
+		return unsubUpdatedBook;
+	}, [eventEmitter, loadBook]);
+
+	const onSave = useCallback(() => {
+		if (bookId) {
+			eventEmitter?.emit(LibraryEventNames.LIBRARY_BOOK_UPDATED, {
+				book: bookId,
 			});
-	}, [bookId, navigate]);
+		}
+
+		return Promise.resolve();
+	}, [eventEmitter, bookId]);
 
 	if (state !== LibraryState.ready) {
 		return <div>Loading...</div>;

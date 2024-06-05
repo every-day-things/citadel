@@ -12,7 +12,7 @@ import {
 	Title,
 } from "@mantine/core";
 import { Form, useForm } from "@mantine/form";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { BookCover } from "../atoms/BookCover";
 import { MultiSelectCreatable } from "../atoms/Multiselect";
 
@@ -108,6 +108,12 @@ const Cover = ({ book }: { book: LibraryBook }) => {
 	);
 };
 
+const formValuesFromBook = (book: LibraryBook) => ({
+	title: book.title,
+	sortTitle: book.sortable_title ?? "",
+	authorList: book.author_list.map((author) => author.name),
+});
+
 // How much an element has to be offset vertically to account for the lack of a
 // text label.
 const LABEL_OFFSET_MARGIN = "22px";
@@ -121,15 +127,10 @@ const EditBookForm = ({
 	allAuthorList: LibraryAuthor[];
 	onSave: () => Promise<void>;
 }) => {
-	const [isSaving, setIsSaving] = useState(false);
-	const initialValues = useMemo(
-		() => ({
-			title: book.title,
-			sortTitle: book.sortable_title ?? "",
-			authorList: book.author_list.map((author) => author.name),
-		}),
-		[book.title, book.sortable_title, book.author_list],
-	);
+	const { library, state } = useLibrary();
+	const initialValues = useMemo(() => {
+		return formValuesFromBook(book);
+	}, [book]);
 	const form = useForm({
 		initialValues,
 	});
@@ -137,15 +138,19 @@ const EditBookForm = ({
 		() => allAuthorList.map((author) => author.name),
 		[allAuthorList],
 	);
-	const { library, state } = useLibrary();
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Re-rendering when Form is updated causes infinite loops.
+	useEffect(() => {
+		form.setValues(formValuesFromBook(book));
+		// Re-rendering when `form` is updated causes infinite loops
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [book]);
 
 	return (
 		<Form
 			form={form}
 			onSubmit={safeAsyncEventHandler(async () => {
-				setIsSaving(true);
 				if (state !== LibraryState.ready) {
-					setIsSaving(false);
 					return;
 				}
 
@@ -162,10 +167,9 @@ const EditBookForm = ({
 					timestamp: null,
 					publication_date: null,
 				};
-				await library?.updateBook(book.id, bookUpdate);
 
+				await library?.updateBook(book.id, bookUpdate);
 				await onSave();
-				setIsSaving(false);
 			})}
 			style={{
 				// Additional `flex: 1` on the form prevents the element from
@@ -195,7 +199,7 @@ const EditBookForm = ({
 					<Button variant="subtle" onClick={() => form.reset()} color="red">
 						Cancel
 					</Button>
-					<Button type="submit" loading={isSaving} disabled={isSaving}>
+					<Button type="submit" component="button">
 						Save
 					</Button>
 				</Group>
