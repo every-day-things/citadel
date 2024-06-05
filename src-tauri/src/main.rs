@@ -48,9 +48,9 @@ fn run_tauri_backend() -> std::io::Result<()> {
             let main_window =
                 tauri::WindowBuilder::new(app, "main", tauri::WindowUrl::App("index.html".into()))
                     .visible(false)
+                    .title("")
                     .build()
                     .expect("failed to create main window");
-            main_window.set_title("title").unwrap();
             main_window.center().unwrap();
 
             Ok(())
