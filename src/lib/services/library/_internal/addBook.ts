@@ -44,8 +44,10 @@ export const promptToAddBook = async (
 export const commitAddBook = async (
 	library: Library,
 	metadata: ImportableBookMetadata,
-	eventEmitter: EventEmitter<LibraryEvents>
+	eventEmitter: EventEmitter<LibraryEvents>,
 ) => {
 	await library.addImportableFileByMetadata(metadata);
-	eventEmitter.emit(LibraryEventNames.LIBRARY_BOOK_CREATED, {bookname: metadata.title});
+	eventEmitter.emit(LibraryEventNames.LIBRARY_BOOK_CREATED, {
+		bookname: metadata.title,
+	});
 };

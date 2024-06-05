@@ -172,13 +172,18 @@ const useLoadBooks = () => {
 			return;
 		}
 
-		const unsubNewBook = eventEmitter.listen(LibraryEventNames.LIBRARY_BOOK_CREATED, () => {
-			updateBooklist();
-		});
-		const unsubUpdatedBook = eventEmitter.listen(LibraryEventNames.LIBRARY_BOOK_UPDATED, () => {
-			updateBooklist();
-		});
-
+		const unsubNewBook = eventEmitter.listen(
+			LibraryEventNames.LIBRARY_BOOK_CREATED,
+			() => {
+				updateBooklist();
+			},
+		);
+		const unsubUpdatedBook = eventEmitter.listen(
+			LibraryEventNames.LIBRARY_BOOK_UPDATED,
+			() => {
+				updateBooklist();
+			},
+		);
 
 		return () => {
 			unsubNewBook();
