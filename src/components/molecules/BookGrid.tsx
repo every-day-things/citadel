@@ -5,6 +5,7 @@ import { Flex } from "@mantine/core";
 import { DataTable } from "mantine-datatable";
 import { createContext, useContext, useMemo } from "react";
 import { BookCard } from "../atoms/BookCard";
+import { randomId } from "@mantine/hooks";
 
 export const BookGrid = ({ loading, bookList, onBookOpen }: BookView) => {
 	const actionsContext = useMemo(() => {
@@ -38,7 +39,7 @@ const BookGridRow = ({ books }: { books: LibraryBook[] }) => {
 	const actions = useContext(bookActionsContext);
 
 	return (
-		<Flex w={"100%"}>
+		<Flex w={"100%"} key={"a"}>
 			{books.map((book) => (
 				<BookCard key={book.id} book={book} actions={actions} />
 			))}
@@ -63,6 +64,24 @@ const groupSize = (isMid: boolean, isBig: boolean) => {
 	return 2;
 };
 
+/**
+ * Wraps an object in an object that has an `id` field with a random `id`, and
+ * a `key` field with the value `value`.
+ *
+ * Useful for rendering data in Mantine DataTables, which use an `id` key to
+ * identify each unique row during rendering (by default).
+ *
+ * @param value
+ * @param key
+ * @returns
+ */
+const wrapWithId = <T,>(value: T): { value: T; id: string } => {
+	return {
+		value,
+		id: randomId(),
+	};
+};
+
 const BookGridPure = ({
 	loading,
 	bookList: books,
@@ -75,10 +94,12 @@ const BookGridPure = ({
 
 	const groups = useMemo(
 		() =>
-			groupBySize(groupSize(isAtLeastMd, isAtLeastLg), books).map((books) => ({
-				books,
-				lastBookId: books.at(-1)?.id,
-			})),
+			groupBySize(groupSize(isAtLeastMd, isAtLeastLg), books)
+				.map((books) => ({
+					books,
+					lastBookId: books.at(-1)?.id,
+				}))
+				.map((group) => wrapWithId(group)),
 		[isAtLeastMd, isAtLeastLg, books],
 	);
 
@@ -92,7 +113,7 @@ const BookGridPure = ({
 				{
 					accessor: "lastBookId",
 					title: "Cover",
-					render: ({ books }) => <BookGridRow books={books} />,
+					render: ({ value: { books } }) => <BookGridRow books={books} />,
 				},
 			]}
 		/>
