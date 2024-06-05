@@ -20,17 +20,25 @@ declare module "@tanstack/react-router" {
 }
 
 export const App = () => {
+	const [isLoading, setIsLoading] = useState(true);
 	const [libraryPath, setLibraryPath] = useState<string | null>(null);
 	const updateLibraryPath = useCallback(async () => {
 		const libPath = await settings.get("calibreLibraryPath");
 		setLibraryPath(libPath);
+		setIsLoading(false);
 	}, []);
 	useEffect(() => {
 		settings.subscribe((settings) => {
-			if (settings !== undefined && settings.calibreLibraryPath?.length > 0)
+			if (settings !== undefined && settings.calibreLibraryPath?.length > 0) {
 				setLibraryPath(settings.calibreLibraryPath);
+				setIsLoading(false);
+			}
 		});
 	}, []);
+
+	if (isLoading) {
+		return null;
+	}
 
 	if (libraryPath === null) {
 		return (
