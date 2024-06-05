@@ -13,8 +13,8 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/router-devtools";
-import { useMemo } from "react";
+import React from "react";
+import { Suspense, useMemo } from "react";
 
 const Root = () => {
 	const [mobileOpened, { toggle: toggleMobile }] = useDisclosure(false);
@@ -40,14 +40,24 @@ const Root = () => {
 					isSidebarOpenMobile={mobileOpened}
 				/>
 			</AppShell>
-			<TanStackRouterDevtools />
+			<Suspense>
+				<RouterDevTools />
+			</Suspense>
 		</>
 	);
 };
 
-export const Route = createRootRoute({
-	component: Root,
-});
+const RouterDevTools =
+  process.env.NODE_ENV === 'production'
+    ? () => null // Render nothing in production
+    : React.lazy(() =>
+        // Lazy load in development
+        import('@tanstack/router-devtools').then((res) => ({
+          default: res.TanStackRouterDevtools,
+          // For Embedded Mode
+          // default: res.TanStackRouterDevtoolsPanel
+        })),
+      );
 
 interface MainPureProps {
 	isSidebarOpenMobile: boolean;
@@ -183,3 +193,7 @@ const Main = ({
 		</>
 	);
 };
+
+export const Route = createRootRoute({
+	component: Root,
+});
