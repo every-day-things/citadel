@@ -57,7 +57,7 @@ const RouterDevTools =
 					// For Embedded Mode
 					// default: res.TanStackRouterDevtoolsPanel
 				})),
-			);
+		  );
 
 interface MainPureProps {
 	isSidebarOpenMobile: boolean;
