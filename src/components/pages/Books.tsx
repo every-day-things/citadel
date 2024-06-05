@@ -180,13 +180,17 @@ const useLoadBooks = () => {
 			return;
 		}
 
-		const unsub = eventEmitter.listen(LibraryEventNames.LIBRARY_BOOK_CREATED, (data) => {
+		const unsubNewBook = eventEmitter.listen(LibraryEventNames.LIBRARY_BOOK_CREATED, () => {
 			updateBooklist();
-			console.log("Updated book list because of new book:", data);
+		});
+		const unsubUpdatedBook = eventEmitter.listen(LibraryEventNames.LIBRARY_BOOK_UPDATED, () => {
+			updateBooklist();
 		});
 
+
 		return () => {
-			unsub();
+			unsubNewBook();
+			unsubUpdatedBook();
 		};
 	}, [state, eventEmitter, updateBooklist]);
 
