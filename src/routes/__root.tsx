@@ -1,5 +1,6 @@
 import { F7CircleRighthalfFill } from "@/components/icons/F7CircleRightHalfFill";
 import { F7MoonFill } from "@/components/icons/F7MoonFill";
+import { F7SidebarLeft } from "@/components/icons/F7SidebarLeft";
 import { F7SunMaxFill } from "@/components/icons/F7SunMaxFill";
 import { Sidebar } from "@/components/organisms/Sidebar";
 import {
@@ -24,7 +25,7 @@ const Root = () => {
 		<>
 			<AppShell
 				padding="md"
-				header={{ height: 60 }}
+				header={{ height: 36 }}
 				navbar={{
 					width: 200,
 					breakpoint: "sm",
@@ -36,7 +37,6 @@ const Root = () => {
 				<Main
 					toggleMobile={toggleMobile}
 					toggleDesktop={toggleDesktop}
-					isSidebarOpenDesktop={desktopOpened}
 					isSidebarOpenMobile={mobileOpened}
 				/>
 			</AppShell>
@@ -61,7 +61,6 @@ const RouterDevTools =
 interface MainPureProps {
 	isSidebarOpenMobile: boolean;
 	toggleMobile: () => void;
-	isSidebarOpenDesktop: boolean;
 	toggleDesktop: () => void;
 	isThemeSettingsOpen: boolean;
 	openThemeSettings: () => void;
@@ -76,7 +75,6 @@ interface MainPureProps {
 const MainPure = ({
 	toggleMobile,
 	toggleDesktop,
-	isSidebarOpenDesktop,
 	isSidebarOpenMobile,
 	openThemeSettings,
 	isThemeSettingsOpen,
@@ -85,26 +83,37 @@ const MainPure = ({
 }: MainPureProps) => {
 	return (
 		<>
-			<AppShell.Header h={48}>
-				<Group h="100%" px="md" justify="space-between">
+			<AppShell.Header data-tauri-drag-region>
+				<Group
+					h="100%"
+					px="md"
+					pl={"75px"}
+					justify="space-between"
+					data-tauri-drag-region
+				>
 					<Burger
 						opened={isSidebarOpenMobile}
 						onClick={toggleMobile}
 						hiddenFrom="sm"
-						size="sm"
-					/>
-					<Burger
-						opened={isSidebarOpenDesktop}
-						onClick={toggleDesktop}
-						visibleFrom="sm"
-						size="sm"
+						size="xs"
 					/>
 					<ActionIcon
-						variant="default"
+						onClick={toggleDesktop}
+						color={"text"}
+						variant="transparent"
+						visibleFrom="sm"
+						size={"xs"}
+					>
+						<F7SidebarLeft title="Toggle sidebar" />
+					</ActionIcon>
+					<ActionIcon
+						variant="transparent"
+						color={"text"}
 						aria-label="Settings"
+						size={"xs"}
 						onClick={openThemeSettings}
 					>
-						<F7SunMaxFill />
+						<F7SunMaxFill title="Colour scheme" />
 					</ActionIcon>
 				</Group>
 			</AppShell.Header>
@@ -125,7 +134,7 @@ const MainPure = ({
 						Auto
 					</Button>
 					<Button
-						leftSection={<F7SunMaxFill />}
+						leftSection={<F7SunMaxFill title="" />}
 						onPointerDown={colorSchemeSetters.light}
 						variant="default"
 					>
@@ -153,14 +162,12 @@ const MainPure = ({
 };
 
 interface MainProps {
-	isSidebarOpenDesktop: boolean;
 	toggleDesktop: () => void;
 	isSidebarOpenMobile: boolean;
 	toggleMobile: () => void;
 }
 
 const Main = ({
-	isSidebarOpenDesktop,
 	isSidebarOpenMobile,
 	toggleDesktop,
 	toggleMobile,
@@ -180,7 +187,6 @@ const Main = ({
 	return (
 		<>
 			<MainPure
-				isSidebarOpenDesktop={isSidebarOpenDesktop}
 				toggleDesktop={toggleDesktop}
 				isSidebarOpenMobile={isSidebarOpenMobile}
 				toggleMobile={toggleMobile}
