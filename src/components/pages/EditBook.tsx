@@ -1,10 +1,9 @@
-import { BookUpdate, LibraryAuthor, LibraryBook } from "@/bindings";
+import type { BookUpdate, LibraryAuthor, LibraryBook } from "@/bindings";
 import { safeAsyncEventHandler } from "@/lib/async";
-import { LibraryState, useLibrary } from "@/lib/contexts/library";
-import { Library } from "@/lib/services/library";
 import {
 	ActionIcon,
 	Button,
+	Fieldset,
 	Group,
 	Stack,
 	Text,
@@ -12,71 +11,48 @@ import {
 	Title,
 } from "@mantine/core";
 import { Form, useForm } from "@mantine/form";
-import { useEffect, useMemo } from "react";
+import { type HTMLProps, useEffect, useMemo } from "react";
 import { BookCover } from "../atoms/BookCover";
 import { MultiSelectCreatable } from "../atoms/Multiselect";
 
 interface BookPageProps {
 	book: LibraryBook;
 	allAuthorList: LibraryAuthor[];
-	library: Library;
-	onSave: () => Promise<void>;
+	onSave: (bookUpdate: BookUpdate) => Promise<void>;
 }
 
-export const BookPage = ({
-	book,
-	allAuthorList,
-	library,
-	onSave,
-}: BookPageProps) => {
+export const BookPage = ({ book, allAuthorList, onSave }: BookPageProps) => {
 	return (
-		<BookPagePure
-			book={book}
-			library={library}
-			allAuthorList={allAuthorList}
-			onSave={onSave}
-		/>
+		<BookPagePure book={book} allAuthorList={allAuthorList} onSave={onSave} />
 	);
 };
 
 interface BookPagePureProps {
 	book: LibraryBook;
-	library: Library;
 	allAuthorList: LibraryAuthor[];
-	onSave: () => Promise<void>;
+	onSave: (bookUpdate: BookUpdate) => Promise<void>;
 }
 
 const BookPagePure = ({ book, allAuthorList, onSave }: BookPagePureProps) => {
 	return (
-		<Stack h={"-webkit-fill-available"}>
+		<Stack h={"100%"}>
 			<Title size="md">
 				<Text fw={900} component="span">
 					Editing book info
 				</Text>{" "}
 				– {book.title}
 			</Title>
-			<Group align="flex-start" preventGrowOverflow>
-				<Stack>
-					<Stack>
-						<Cover book={book} />
-					</Stack>
-					<Stack>
-						<Formats book={book} />
-					</Stack>
-				</Stack>
-				<EditBookForm
-					book={book}
-					allAuthorList={allAuthorList}
-					onSave={onSave}
-				/>
-			</Group>
+			<EditBookForm book={book} allAuthorList={allAuthorList} onSave={onSave} />
 		</Stack>
 	);
 };
 
-const Formats = ({ book }: { book: LibraryBook }) => {
+const Formats = ({
+	book,
+	style,
+}: { book: LibraryBook } & HTMLProps<HTMLDivElement>) => {
 	return (
-		<>
+		<div style={style}>
 			<Text size="xl">Formats</Text>
 			<ul>
 				{book.file_list.map((file) => {
@@ -95,16 +71,19 @@ const Formats = ({ book }: { book: LibraryBook }) => {
 					);
 				})}
 			</ul>
-		</>
+		</div>
 	);
 };
 
-const Cover = ({ book }: { book: LibraryBook }) => {
+const Cover = ({
+	book,
+	style,
+}: { book: LibraryBook } & HTMLProps<HTMLDivElement>) => {
 	return (
-		<>
+		<div style={style}>
 			<Text size="xl">Cover</Text>
 			<BookCover book={book} />
-		</>
+		</div>
 	);
 };
 
@@ -112,6 +91,7 @@ const formValuesFromBook = (book: LibraryBook) => ({
 	title: book.title,
 	sortTitle: book.sortable_title ?? "",
 	authorList: book.author_list.map((author) => author.name),
+	identifierList: book.identifier_list,
 });
 
 // How much an element has to be offset vertically to account for the lack of a
@@ -125,9 +105,8 @@ const EditBookForm = ({
 }: {
 	book: LibraryBook;
 	allAuthorList: LibraryAuthor[];
-	onSave: () => Promise<void>;
+	onSave: (update: BookUpdate) => Promise<void>;
 }) => {
-	const { library, state } = useLibrary();
 	const initialValues = useMemo(() => {
 		return formValuesFromBook(book);
 	}, [book]);
@@ -150,10 +129,6 @@ const EditBookForm = ({
 		<Form
 			form={form}
 			onSubmit={safeAsyncEventHandler(async () => {
-				if (state !== LibraryState.ready) {
-					return;
-				}
-
 				const authorIdsFromName = form.values.authorList
 					.map(
 						(authorName) =>
@@ -168,42 +143,81 @@ const EditBookForm = ({
 					publication_date: null,
 				};
 
-				await library?.updateBook(book.id, bookUpdate);
-				await onSave();
+				await onSave(bookUpdate);
 			})}
 			style={{
 				// Additional `flex: 1` on the form prevents the element from
 				// overflowing when a second+ author is selected
-				flex: 1,
+				display: "grid",
+				gridTemplateColumns: "0.3fr 1.8fr",
+				gridTemplateRows: "1.4fr 1.4fr 0.2fr",
+				gridTemplateAreas: `"Cover BookInfo"
+				 "Format BookInfo"
+				 "Buttons Buttons"`,
+				gap: "0px 1rem",
+				height: "100%",
 			}}
 		>
-			<Stack flex={1}>
-				<Text size="xl">Book info</Text>
-				<Group flex={1}>
-					<TextInput label="Title" flex={1} {...form.getInputProps("title")} />
-					<ActionIcon variant="outline" mt={LABEL_OFFSET_MARGIN}>
-						→
-					</ActionIcon>
-					<TextInput
-						label="Sort title"
-						{...form.getInputProps("sortTitle")}
-						flex={1}
+			<Cover book={book} style={{ gridArea: "Cover" }} />
+			<Formats book={book} style={{ gridArea: "Format" }} />
+			<Group
+				align="flex-start"
+				preventGrowOverflow
+				style={{ gridArea: "BookInfo" }}
+			>
+				<Stack flex={1}>
+					<Text size="xl">Book info</Text>
+					<Group flex={1}>
+						<TextInput
+							label="Title"
+							flex={1}
+							{...form.getInputProps("title")}
+						/>
+						<ActionIcon variant="outline" mt={LABEL_OFFSET_MARGIN}>
+							→
+						</ActionIcon>
+						<TextInput
+							label="Sort title"
+							{...form.getInputProps("sortTitle")}
+							flex={1}
+						/>
+					</Group>
+					<MultiSelectCreatable
+						label="Authors"
+						selectOptions={allAuthorNames}
+						{...form.getInputProps("authorList")}
 					/>
-				</Group>
-				<MultiSelectCreatable
-					label="Authors"
-					selectOptions={allAuthorNames}
-					{...form.getInputProps("authorList")}
-				/>
-				<Group justify="flex-end" mt="md" gap="80px">
-					<Button variant="subtle" onClick={() => form.reset()} color="red">
-						Cancel
-					</Button>
-					<Button type="submit" component="button">
-						Save
-					</Button>
-				</Group>
-			</Stack>
+					{form.values.identifierList.length > 0 && (
+						<Group flex={1}>
+							<Fieldset legend="Identifiers">
+								{form.values.identifierList.map(({ label, value }) => (
+									<Group key={`${label}-${value}`} flex={1} align="center">
+										<TextInput
+											flex={"15ch"}
+											label={label.toUpperCase()}
+											value={value}
+											disabled
+										/>
+									</Group>
+								))}
+							</Fieldset>
+						</Group>
+					)}
+				</Stack>
+			</Group>
+			<Group
+				justify="flex-end"
+				mt="md"
+				gap="80px"
+				style={{ gridArea: "3 / 1 / 4 / 3" }}
+			>
+				<Button variant="subtle" onClick={() => form.reset()} color="red">
+					Cancel
+				</Button>
+				<Button type="submit" component="button">
+					Save
+				</Button>
+			</Group>
 		</Form>
 	);
 };

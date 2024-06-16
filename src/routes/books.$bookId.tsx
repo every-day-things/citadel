@@ -1,9 +1,9 @@
-import { LibraryAuthor, LibraryBook } from "@/bindings";
+import type { BookUpdate, LibraryAuthor, LibraryBook } from "@/bindings";
 import { BookPage } from "@/components/pages/EditBook";
 import { safeAsyncEventHandler } from "@/lib/async";
 import { LibraryState, useLibrary } from "@/lib/contexts/library";
 import { LibraryEventNames } from "@/lib/contexts/library/context";
-import { Library } from "@/lib/services/library";
+import type { Library } from "@/lib/services/library";
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 
@@ -56,15 +56,20 @@ const EditBookRoute = () => {
 		return unsubUpdatedBook;
 	}, [eventEmitter, loadBook]);
 
-	const onSave = useCallback(() => {
-		if (bookId) {
-			eventEmitter?.emit(LibraryEventNames.LIBRARY_BOOK_UPDATED, {
-				book: bookId,
-			});
-		}
+	const onSave = useCallback(
+		async (bookUpdate: BookUpdate) => {
+			await library?.updateBook(bookId, bookUpdate);
 
-		return Promise.resolve();
-	}, [eventEmitter, bookId]);
+			if (bookId) {
+				eventEmitter?.emit(LibraryEventNames.LIBRARY_BOOK_UPDATED, {
+					book: bookId,
+				});
+			}
+
+			return Promise.resolve();
+		},
+		[library, bookId, eventEmitter],
+	);
 
 	if (state !== LibraryState.ready) {
 		return <div>Loading...</div>;
@@ -73,14 +78,7 @@ const EditBookRoute = () => {
 		return <div>Book not found</div>;
 	}
 
-	return (
-		<BookPage
-			book={book}
-			library={library}
-			allAuthorList={allAuthorList}
-			onSave={onSave}
-		/>
-	);
+	return <BookPage book={book} allAuthorList={allAuthorList} onSave={onSave} />;
 };
 
 export const Route = createFileRoute("/books/$bookId")({

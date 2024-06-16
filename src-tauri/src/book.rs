@@ -46,7 +46,6 @@ pub struct LibraryBook {
     pub author_list: Vec<LibraryAuthor>,
 
     pub sortable_title: Option<String>,
-    pub author_sort_lookup: Option<HashMap<String, String>>,
 
     pub file_list: Vec<BookFile>,
 
@@ -142,6 +141,7 @@ pub trait Library {
 /// Book identifiers, such as ISBN, DOI, Google Books ID, etc.
 #[derive(Serialize, Deserialize, Clone, specta::Type)]
 pub struct Identifier {
+		pub id: i32,
     pub label: String,
     pub value: String,
 }

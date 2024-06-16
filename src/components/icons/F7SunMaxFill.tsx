@@ -1,6 +1,10 @@
 import type { SVGProps } from "react";
 
-export function F7SunMaxFill(props: SVGProps<SVGSVGElement>) {
+type F7SunMaxFillProps = {
+	title?: string;
+} & SVGProps<SVGSVGElement>;
+
+export function F7SunMaxFill(props: F7SunMaxFillProps) {
 	return (
 		<svg
 			xmlns="http://www.w3.org/2000/svg"
@@ -9,7 +13,7 @@ export function F7SunMaxFill(props: SVGProps<SVGSVGElement>) {
 			viewBox="0 0 56 56"
 			{...props}
 		>
-			<title>Full sun</title>
+			<title>{props.title ?? ""}</title>
 			{/* biome-ignore lint/style/useSelfClosingElements: It's an SVG */}
 			<path
 				fill="currentColor"

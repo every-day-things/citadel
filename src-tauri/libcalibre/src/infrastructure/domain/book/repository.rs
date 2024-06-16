@@ -1,10 +1,10 @@
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
-use crate::domain::book::{
-    entity::{Book, NewBook},
+use crate::{domain::book::{
+    entity::{Book, NewBook, UpsertBookIdentifier},
     repository::Repository,
-};
+}, models::Identifier};
 use crate::persistence::establish_connection;
 
 pub struct BookRepository {
@@ -30,7 +30,7 @@ fn uuid_for_book(conn: &mut SqliteConnection, book_id: i32) -> Option<String> {
 }
 
 impl Repository for BookRepository {
-    fn create(&mut self, book: &crate::domain::book::entity::NewBook) -> Result<Book, ()> {
+	fn create(&mut self, book: &crate::domain::book::entity::NewBook) -> Result<Book, ()> {
         use crate::schema::books::dsl::*;
 
         let new_book = NewBook {
@@ -141,17 +141,48 @@ impl Repository for BookRepository {
         }
     }
 
-    fn list_identifiers_for_book(&mut self, book_id: i32) -> Result<Vec<(String, String)>, ()> {
+    fn list_identifiers_for_book(&mut self, book_id: i32) -> Result<Vec<Identifier>, ()> {
         use crate::schema::identifiers::dsl::*;
 
         let ids = identifiers
             .filter(book.eq(book_id))
-            .select((type_, val))
-            .load::<(String, String)>(&mut self.connection);
+            .select(Identifier::as_returning())
+            .load(&mut self.connection);
 
         match ids {
             Ok(ids) => Ok(ids),
             Err(_) => Err(()),
         }
     }
+
+    fn upsert_book_identifier(&mut self, update: UpsertBookIdentifier) -> Result<i32, ()> {
+	     match update.id {
+		     Some(update_id) => upsert_book_identifier_by_id(self, update, update_id),
+		     None => create_book_identifier(self, update)
+	     }
+    }
+}
+
+fn upsert_book_identifier_by_id(repo: &mut BookRepository, update: UpsertBookIdentifier, identifier_id: i32) -> Result<i32, ()> {
+	use crate::schema::identifiers::dsl::*;
+
+	diesel::update(identifiers)
+				.filter(id.eq(identifier_id))
+				.set((
+					type_.eq(update.label),
+					val.eq(update.value)
+				))
+				.returning(id)
+        .get_result::<i32>(&mut repo.connection)
+        .or(Err(()))
+}
+
+fn create_book_identifier(repo: &mut BookRepository, update: UpsertBookIdentifier) -> Result<i32, ()> {
+	use crate::schema::identifiers::dsl::*;
+
+	diesel::insert_into(identifiers)
+  	.values((book.eq(update.book_id), type_.eq(update.label), val.eq(update.value)))
+    .returning(id)
+    .get_result::<i32>(&mut repo.connection)
+    .or(Err(()))
 }

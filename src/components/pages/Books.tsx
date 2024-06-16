@@ -1,4 +1,4 @@
-import { Identifier, LibraryBook, LocalFile } from "@/bindings";
+import type { Identifier, LibraryBook, LocalFile } from "@/bindings";
 import { safeAsyncEventHandler } from "@/lib/async";
 import { LibraryState, useLibrary } from "@/lib/contexts/library";
 import { useBreakpoint } from "@/lib/hooks/use-breakpoint";
@@ -17,7 +17,7 @@ import {
 	TextInput,
 	rem,
 } from "@mantine/core";
-import { UseFormReturnType, useForm } from "@mantine/form";
+import { type UseFormReturnType, useForm } from "@mantine/form";
 import { useDisclosure } from "@mantine/hooks";
 import { Link } from "@tanstack/react-router";
 import { clipboard, path } from "@tauri-apps/api";
@@ -115,7 +115,7 @@ export const Books = () => {
 	);
 
 	return (
-		<>
+		<Stack>
 			<Header form={form} bookCount={sortedBooks.length} />
 			{form.values.view === "covers" ? (
 				<BookGrid
@@ -142,7 +142,7 @@ export const Books = () => {
 			>
 				{selectedSidebarBook && <BookDetails book={selectedSidebarBook} />}
 			</Drawer>
-		</>
+		</Stack>
 	);
 };
 

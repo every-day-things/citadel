@@ -1,6 +1,7 @@
 use crate::application::services::domain::book::dto::{NewBookDto, UpdateBookDto};
 use crate::domain::book::entity::{Book, NewBook, UpdateBookData};
 use crate::domain::book::repository::Repository as BookRepository;
+use crate::models::Identifier;
 
 pub trait BookServiceTrait {
     fn new(book_repository: Box<dyn BookRepository>) -> Self;
@@ -11,7 +12,7 @@ pub trait BookServiceTrait {
     fn find_author_ids_by_book_id(&mut self, book_id: i32) -> Result<Vec<i32>, ()>;
     fn link_book_to_author(&mut self, book_id: i32, author_id: i32) -> Result<(), ()>;
     fn unlink_book_from_author(&mut self, book_id: i32, author_id: i32) -> Result<(), ()>;
-    fn list_identifiers_for_book(&mut self, book_id: i32) -> Result<Vec<(String, String)>, ()>;
+    fn list_identifiers_for_book(&mut self, book_id: i32) -> Result<Vec<Identifier>, ()>;
 }
 
 pub struct BookService {
@@ -58,7 +59,7 @@ impl BookServiceTrait for BookService {
             .remove_book_author_link(book_id, author_id)
     }
 
-    fn list_identifiers_for_book(&mut self, book_id: i32) -> Result<Vec<(String, String)>, ()> {
+    fn list_identifiers_for_book(&mut self, book_id: i32) -> Result<Vec<Identifier>, ()> {
         self.book_repository.list_identifiers_for_book(book_id)
     }
 }
