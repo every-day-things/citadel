@@ -5,6 +5,7 @@ import type { Library } from "@/lib/services/library";
 import {
 	ActionIcon,
 	Button,
+	Fieldset,
 	Group,
 	Stack,
 	Text,
@@ -112,6 +113,7 @@ const formValuesFromBook = (book: LibraryBook) => ({
 	title: book.title,
 	sortTitle: book.sortable_title ?? "",
 	authorList: book.author_list.map((author) => author.name),
+	identifierList: book.identifier_list,
 });
 
 // How much an element has to be offset vertically to account for the lack of a
@@ -195,6 +197,20 @@ const EditBookForm = ({
 					selectOptions={allAuthorNames}
 					{...form.getInputProps("authorList")}
 				/>
+				<Group flex={1}>
+					<Fieldset legend="Identifiers">
+						{(form.values ?? []).identifierList.map(({ label, value }) => (
+							<Group key={`${label}-${value}`} flex={1} align="center">
+								<TextInput
+									flex={"15ch"}
+									label={label.toUpperCase()}
+									value={value}
+									disabled
+								/>
+							</Group>
+						))}
+					</Fieldset>
+				</Group>
 				<Group justify="flex-end" mt="md" gap="80px">
 					<Button variant="subtle" onClick={() => form.reset()} color="red">
 						Cancel
