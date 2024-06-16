@@ -1,7 +1,7 @@
-import { BookUpdate, LibraryAuthor, LibraryBook } from "@/bindings";
+import type { BookUpdate, LibraryAuthor, LibraryBook } from "@/bindings";
 import { safeAsyncEventHandler } from "@/lib/async";
 import { LibraryState, useLibrary } from "@/lib/contexts/library";
-import { Library } from "@/lib/services/library";
+import type { Library } from "@/lib/services/library";
 import {
 	ActionIcon,
 	Button,
