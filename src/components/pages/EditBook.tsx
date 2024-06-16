@@ -149,12 +149,12 @@ const EditBookForm = ({
 				// Additional `flex: 1` on the form prevents the element from
 				// overflowing when a second+ author is selected
 				display: "grid",
-				gridTemplateColumns: "0.5fr 1.5fr",
+				gridTemplateColumns: "0.3fr 1.8fr",
 				gridTemplateRows: "1.4fr 1.4fr 0.2fr",
 				gridTemplateAreas: `"Cover BookInfo"
 				 "Format BookInfo"
 				 "Buttons Buttons"`,
-				gap: "0px 0px",
+				gap: "0px 1rem",
 				height: "100%",
 			}}
 		>
@@ -187,20 +187,22 @@ const EditBookForm = ({
 						selectOptions={allAuthorNames}
 						{...form.getInputProps("authorList")}
 					/>
-					<Group flex={1}>
-						<Fieldset legend="Identifiers">
-							{(form.values ?? []).identifierList.map(({ label, value }) => (
-								<Group key={`${label}-${value}`} flex={1} align="center">
-									<TextInput
-										flex={"15ch"}
-										label={label.toUpperCase()}
-										value={value}
-										disabled
-									/>
-								</Group>
-							))}
-						</Fieldset>
-					</Group>
+					{form.values.identifierList.length > 0 && (
+						<Group flex={1}>
+							<Fieldset legend="Identifiers">
+								{form.values.identifierList.map(({ label, value }) => (
+									<Group key={`${label}-${value}`} flex={1} align="center">
+										<TextInput
+											flex={"15ch"}
+											label={label.toUpperCase()}
+											value={value}
+											disabled
+										/>
+									</Group>
+								))}
+							</Fieldset>
+						</Group>
+					)}
 				</Stack>
 			</Group>
 			<Group
