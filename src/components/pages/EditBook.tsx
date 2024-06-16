@@ -11,7 +11,7 @@ import {
 	Title,
 } from "@mantine/core";
 import { Form, useForm } from "@mantine/form";
-import { useEffect, useMemo } from "react";
+import { type HTMLProps, useEffect, useMemo } from "react";
 import { BookCover } from "../atoms/BookCover";
 import { MultiSelectCreatable } from "../atoms/Multiselect";
 
@@ -35,7 +35,7 @@ interface BookPagePureProps {
 
 const BookPagePure = ({ book, allAuthorList, onSave }: BookPagePureProps) => {
 	return (
-		<Stack h={"-webkit-fill-available"}>
+		<Stack h={"100%"}>
 			<Title size="md">
 				<Text fw={900} component="span">
 					Editing book info
@@ -47,9 +47,12 @@ const BookPagePure = ({ book, allAuthorList, onSave }: BookPagePureProps) => {
 	);
 };
 
-const Formats = ({ book }: { book: LibraryBook }) => {
+const Formats = ({
+	book,
+	style,
+}: { book: LibraryBook } & HTMLProps<HTMLDivElement>) => {
 	return (
-		<>
+		<div style={style}>
 			<Text size="xl">Formats</Text>
 			<ul>
 				{book.file_list.map((file) => {
@@ -68,16 +71,19 @@ const Formats = ({ book }: { book: LibraryBook }) => {
 					);
 				})}
 			</ul>
-		</>
+		</div>
 	);
 };
 
-const Cover = ({ book }: { book: LibraryBook }) => {
+const Cover = ({
+	book,
+	style,
+}: { book: LibraryBook } & HTMLProps<HTMLDivElement>) => {
 	return (
-		<>
+		<div style={style}>
 			<Text size="xl">Cover</Text>
 			<BookCover book={book} />
-		</>
+		</div>
 	);
 };
 
@@ -145,18 +151,20 @@ const EditBookForm = ({
 				display: "grid",
 				gridTemplateColumns: "0.5fr 1.5fr",
 				gridTemplateRows: "1.4fr 1.4fr 0.2fr",
+				gridTemplateAreas: `"Cover BookInfo"
+				 "Format BookInfo"
+				 "Buttons Buttons"`,
 				gap: "0px 0px",
+				height: "100%",
 			}}
 		>
-			<Group align="flex-start" preventGrowOverflow>
-				<Stack>
-					<Stack>
-						<Cover book={book} />
-					</Stack>
-					<Stack>
-						<Formats book={book} />
-					</Stack>
-				</Stack>
+			<Cover book={book} style={{ gridArea: "Cover" }} />
+			<Formats book={book} style={{ gridArea: "Format" }} />
+			<Group
+				align="flex-start"
+				preventGrowOverflow
+				style={{ gridArea: "BookInfo" }}
+			>
 				<Stack flex={1}>
 					<Text size="xl">Book info</Text>
 					<Group flex={1}>
