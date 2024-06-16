@@ -1,6 +1,6 @@
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
-use diesel::query_builder::AsChangeset;
+
 use serde::Deserialize;
 
 use crate::schema::books;
@@ -46,4 +46,12 @@ pub struct UpdateBookData {
     pub(crate) path: Option<String>,
     pub(crate) flags: Option<i32>,
     pub(crate) has_cover: Option<bool>,
+}
+
+#[derive(Deserialize, Default, Debug)]
+pub struct UpsertBookIdentifier {
+		pub(crate) book_id: i32,
+    pub(crate) id: Option<i32>,
+    pub(crate) label: String,
+    pub(crate) value: String,
 }

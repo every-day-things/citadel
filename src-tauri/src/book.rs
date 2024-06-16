@@ -141,6 +141,7 @@ pub trait Library {
 /// Book identifiers, such as ISBN, DOI, Google Books ID, etc.
 #[derive(Serialize, Deserialize, Clone, specta::Type)]
 pub struct Identifier {
+		pub id: i32,
     pub label: String,
     pub value: String,
 }
