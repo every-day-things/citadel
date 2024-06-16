@@ -50,7 +50,7 @@ pub struct UpdateBookData {
 
 #[derive(Deserialize, Default, Debug)]
 pub struct UpsertBookIdentifier {
-		pub(crate) book_id: i32,
+    pub(crate) book_id: i32,
     pub(crate) id: Option<i32>,
     pub(crate) label: String,
     pub(crate) value: String,
