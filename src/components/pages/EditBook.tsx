@@ -1,7 +1,5 @@
 import type { BookUpdate, LibraryAuthor, LibraryBook } from "@/bindings";
 import { safeAsyncEventHandler } from "@/lib/async";
-import { LibraryState, useLibrary } from "@/lib/contexts/library";
-import type { Library } from "@/lib/services/library";
 import {
 	ActionIcon,
 	Button,
@@ -20,31 +18,19 @@ import { MultiSelectCreatable } from "../atoms/Multiselect";
 interface BookPageProps {
 	book: LibraryBook;
 	allAuthorList: LibraryAuthor[];
-	library: Library;
-	onSave: () => Promise<void>;
+	onSave: (bookUpdate: BookUpdate) => Promise<void>;
 }
 
-export const BookPage = ({
-	book,
-	allAuthorList,
-	library,
-	onSave,
-}: BookPageProps) => {
+export const BookPage = ({ book, allAuthorList, onSave }: BookPageProps) => {
 	return (
-		<BookPagePure
-			book={book}
-			library={library}
-			allAuthorList={allAuthorList}
-			onSave={onSave}
-		/>
+		<BookPagePure book={book} allAuthorList={allAuthorList} onSave={onSave} />
 	);
 };
 
 interface BookPagePureProps {
 	book: LibraryBook;
-	library: Library;
 	allAuthorList: LibraryAuthor[];
-	onSave: () => Promise<void>;
+	onSave: (bookUpdate: BookUpdate) => Promise<void>;
 }
 
 const BookPagePure = ({ book, allAuthorList, onSave }: BookPagePureProps) => {
@@ -127,9 +113,8 @@ const EditBookForm = ({
 }: {
 	book: LibraryBook;
 	allAuthorList: LibraryAuthor[];
-	onSave: () => Promise<void>;
+	onSave: (update: BookUpdate) => Promise<void>;
 }) => {
-	const { library, state } = useLibrary();
 	const initialValues = useMemo(() => {
 		return formValuesFromBook(book);
 	}, [book]);
@@ -152,10 +137,6 @@ const EditBookForm = ({
 		<Form
 			form={form}
 			onSubmit={safeAsyncEventHandler(async () => {
-				if (state !== LibraryState.ready) {
-					return;
-				}
-
 				const authorIdsFromName = form.values.authorList
 					.map(
 						(authorName) =>
@@ -170,8 +151,7 @@ const EditBookForm = ({
 					publication_date: null,
 				};
 
-				await library?.updateBook(book.id, bookUpdate);
-				await onSave();
+				await onSave(bookUpdate);
 			})}
 			style={{
 				// Additional `flex: 1` on the form prevents the element from
