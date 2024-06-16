@@ -154,7 +154,12 @@ const MainPure = ({
 				<Sidebar />
 			</AppShell.Navbar>
 
-			<AppShell.Main>
+			<AppShell.Main
+				style={{
+					display: "grid",
+					gridTemplateRows: "1fr",
+				}}
+			>
 				<Outlet />
 			</AppShell.Main>
 		</>

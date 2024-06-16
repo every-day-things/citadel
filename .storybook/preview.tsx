@@ -7,6 +7,9 @@ import "../src/styles.css";
 import "@mantine/core/styles.layer.css";
 import "mantine-datatable/styles.css";
 
+const STORYBOOK_IFRAME_PADDING_OFFSET = "36px";
+const FULL_HEIGHT_MINUS_SB_PADDING = `calc(100svh - ${STORYBOOK_IFRAME_PADDING_OFFSET}`;
+
 const preview: Preview = {
 	parameters: {
 		controls: {
@@ -22,10 +25,17 @@ const preview: Preview = {
 				header={{ height: 0 }}
 				footer={{ height: 0 }}
 				padding="md"
-				h={"100vh"}
+				h={FULL_HEIGHT_MINUS_SB_PADDING}
 				style={{ overflowY: "scroll" }}
 			>
-				<AppShell.Main>
+				<AppShell.Main
+					style={{
+						display: "grid",
+						gridTemplateRows: "1fr",
+						height: FULL_HEIGHT_MINUS_SB_PADDING,
+						minHeight: FULL_HEIGHT_MINUS_SB_PADDING,
+					}}
+				>
 					<Story />
 				</AppShell.Main>
 			</AppShell>
