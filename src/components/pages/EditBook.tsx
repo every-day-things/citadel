@@ -42,21 +42,7 @@ const BookPagePure = ({ book, allAuthorList, onSave }: BookPagePureProps) => {
 				</Text>{" "}
 				– {book.title}
 			</Title>
-			<Group align="flex-start" preventGrowOverflow>
-				<Stack>
-					<Stack>
-						<Cover book={book} />
-					</Stack>
-					<Stack>
-						<Formats book={book} />
-					</Stack>
-				</Stack>
-				<EditBookForm
-					book={book}
-					allAuthorList={allAuthorList}
-					onSave={onSave}
-				/>
-			</Group>
+			<EditBookForm book={book} allAuthorList={allAuthorList} onSave={onSave} />
 		</Stack>
 	);
 };
@@ -156,50 +142,72 @@ const EditBookForm = ({
 			style={{
 				// Additional `flex: 1` on the form prevents the element from
 				// overflowing when a second+ author is selected
-				flex: 1,
+				display: "grid",
+				gridTemplateColumns: "0.5fr 1.5fr",
+				gridTemplateRows: "1.4fr 1.4fr 0.2fr",
+				gap: "0px 0px",
 			}}
 		>
-			<Stack flex={1}>
-				<Text size="xl">Book info</Text>
-				<Group flex={1}>
-					<TextInput label="Title" flex={1} {...form.getInputProps("title")} />
-					<ActionIcon variant="outline" mt={LABEL_OFFSET_MARGIN}>
-						→
-					</ActionIcon>
-					<TextInput
-						label="Sort title"
-						{...form.getInputProps("sortTitle")}
-						flex={1}
+			<Group align="flex-start" preventGrowOverflow>
+				<Stack>
+					<Stack>
+						<Cover book={book} />
+					</Stack>
+					<Stack>
+						<Formats book={book} />
+					</Stack>
+				</Stack>
+				<Stack flex={1}>
+					<Text size="xl">Book info</Text>
+					<Group flex={1}>
+						<TextInput
+							label="Title"
+							flex={1}
+							{...form.getInputProps("title")}
+						/>
+						<ActionIcon variant="outline" mt={LABEL_OFFSET_MARGIN}>
+							→
+						</ActionIcon>
+						<TextInput
+							label="Sort title"
+							{...form.getInputProps("sortTitle")}
+							flex={1}
+						/>
+					</Group>
+					<MultiSelectCreatable
+						label="Authors"
+						selectOptions={allAuthorNames}
+						{...form.getInputProps("authorList")}
 					/>
-				</Group>
-				<MultiSelectCreatable
-					label="Authors"
-					selectOptions={allAuthorNames}
-					{...form.getInputProps("authorList")}
-				/>
-				<Group flex={1}>
-					<Fieldset legend="Identifiers">
-						{(form.values ?? []).identifierList.map(({ label, value }) => (
-							<Group key={`${label}-${value}`} flex={1} align="center">
-								<TextInput
-									flex={"15ch"}
-									label={label.toUpperCase()}
-									value={value}
-									disabled
-								/>
-							</Group>
-						))}
-					</Fieldset>
-				</Group>
-				<Group justify="flex-end" mt="md" gap="80px">
-					<Button variant="subtle" onClick={() => form.reset()} color="red">
-						Cancel
-					</Button>
-					<Button type="submit" component="button">
-						Save
-					</Button>
-				</Group>
-			</Stack>
+					<Group flex={1}>
+						<Fieldset legend="Identifiers">
+							{(form.values ?? []).identifierList.map(({ label, value }) => (
+								<Group key={`${label}-${value}`} flex={1} align="center">
+									<TextInput
+										flex={"15ch"}
+										label={label.toUpperCase()}
+										value={value}
+										disabled
+									/>
+								</Group>
+							))}
+						</Fieldset>
+					</Group>
+				</Stack>
+			</Group>
+			<Group
+				justify="flex-end"
+				mt="md"
+				gap="80px"
+				style={{ gridArea: "3 / 1 / 4 / 3" }}
+			>
+				<Button variant="subtle" onClick={() => form.reset()} color="red">
+					Cancel
+				</Button>
+				<Button type="submit" component="button">
+					Save
+				</Button>
+			</Group>
 		</Form>
 	);
 };
