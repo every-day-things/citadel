@@ -1,20 +1,9 @@
 import type { LibraryAuthor, LibraryBook } from "@/bindings";
-import { theme } from "@/lib/theme";
-import { MantineProvider } from "@mantine/core";
-import type { Meta, StoryFn, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react";
 import { BookPage } from "./EditBook";
-
-const MantineForStorybook = (Story: StoryFn) => {
-	return (
-		<MantineProvider theme={theme} forceColorScheme="dark">
-			<Story />
-		</MantineProvider>
-	);
-};
 
 const meta: Meta<typeof BookPage> = {
 	component: BookPage,
-	decorators: [MantineForStorybook],
 };
 export default meta;
 
