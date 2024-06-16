@@ -81,7 +81,7 @@ pub fn list_all(library_root: String) -> Vec<LibraryBook> {
                         .map(|identifier| Identifier {
                             label: identifier.type_.clone(),
                             value: identifier.val.clone(),
-                            id: identifier.id
+                            id: identifier.id,
                         })
                         .collect();
 

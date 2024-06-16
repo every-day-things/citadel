@@ -1,4 +1,7 @@
-use crate::{domain::book::entity::{Book, NewBook, UpdateBookData}, models::Identifier};
+use crate::{
+    domain::book::entity::{Book, NewBook, UpdateBookData},
+    models::Identifier,
+};
 
 use super::entity::UpsertBookIdentifier;
 

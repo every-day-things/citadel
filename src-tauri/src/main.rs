@@ -47,7 +47,7 @@ fn run_tauri_backend() -> std::io::Result<()> {
         .setup(|app| {
             let main_window =
                 tauri::WindowBuilder::new(app, "main", tauri::WindowUrl::App("index.html".into()))
-                		// Hide main app window until UI app is ready & makes visible
+                    // Hide main app window until UI app is ready & makes visible
                     .visible(false)
                     // UI app controls custom window decorations
                     .title_bar_style(tauri::TitleBarStyle::Overlay)
