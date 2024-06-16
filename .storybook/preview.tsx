@@ -1,6 +1,12 @@
-import { AppShell, MantineProvider } from "@mantine/core";
+import {
+	AppShell,
+	MantineProvider,
+	useMantineColorScheme,
+} from "@mantine/core";
+import { addons } from "@storybook/preview-api";
 import type { Preview } from "@storybook/react";
-import React from "react";
+import React, { type PropsWithChildren, useEffect, useCallback } from "react";
+import { DARK_MODE_EVENT_NAME } from "storybook-dark-mode";
 import { theme } from "../src/lib/theme";
 
 import "../src/styles.css";
@@ -9,6 +15,23 @@ import "mantine-datatable/styles.css";
 
 const STORYBOOK_IFRAME_PADDING_OFFSET = "36px";
 const FULL_HEIGHT_MINUS_SB_PADDING = `calc(100svh - ${STORYBOOK_IFRAME_PADDING_OFFSET}`;
+
+const channel = addons.getChannel();
+
+function ColorSchemeWrapper({ children }: PropsWithChildren<unknown>) {
+	const { setColorScheme } = useMantineColorScheme();
+	const handleColorScheme = useCallback(
+		(value: boolean) => setColorScheme(value ? "dark" : "light"),
+		[setColorScheme],
+	);
+
+	useEffect(() => {
+		channel.on(DARK_MODE_EVENT_NAME, handleColorScheme);
+		return () => channel.off(DARK_MODE_EVENT_NAME, handleColorScheme);
+	}, [handleColorScheme]);
+
+	return <>{children}</>;
+}
 
 const preview: Preview = {
 	parameters: {
@@ -20,6 +43,11 @@ const preview: Preview = {
 		},
 	},
 	decorators: [
+		(Story) => (
+			<ColorSchemeWrapper>
+				<Story />
+			</ColorSchemeWrapper>
+		),
 		(Story) => (
 			<AppShell
 				header={{ height: 0 }}
@@ -41,7 +69,7 @@ const preview: Preview = {
 			</AppShell>
 		),
 		(Story) => (
-			<MantineProvider theme={theme} forceColorScheme="dark">
+			<MantineProvider theme={theme}>
 				<Story />
 			</MantineProvider>
 		),
