@@ -46,7 +46,6 @@ pub struct LibraryBook {
     pub author_list: Vec<LibraryAuthor>,
 
     pub sortable_title: Option<String>,
-    pub author_sort_lookup: Option<HashMap<String, String>>,
 
     pub file_list: Vec<BookFile>,
 

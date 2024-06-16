@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::path::PathBuf;
 
 use libcalibre::{client::CalibreClient, Author};
 
@@ -24,12 +24,6 @@ fn to_library_book(
         uuid: book.uuid.clone(),
 
         sortable_title: book.sort.clone(),
-        author_sort_lookup: Some(
-            author_list
-                .iter()
-                .map(|a| (a.name.clone(), a.sortable_name()))
-                .collect::<HashMap<_, _>>(),
-        ),
 
         file_list: file_list
             .iter()
