@@ -17,6 +17,7 @@ use crate::infrastructure::domain::book::repository::BookRepository;
 use crate::infrastructure::domain::book_file::repository::BookFileRepository;
 use crate::infrastructure::file_service::FileService;
 use crate::infrastructure::file_service::FileServiceTrait;
+use crate::models::Identifier;
 use crate::persistence::establish_connection;
 use crate::util::ValidDbPath;
 
@@ -94,7 +95,7 @@ impl CalibreClient {
     pub fn list_identifiers_for_book(
         &mut self,
         book_id: i32,
-    ) -> Result<Vec<(String, String)>, Box<dyn std::error::Error>> {
+    ) -> Result<Vec<Identifier>, Box<dyn std::error::Error>> {
         let book_repo = Box::new(BookRepository::new(
             &self.validated_library_path.database_path,
         ));

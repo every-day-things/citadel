@@ -1,4 +1,6 @@
-use crate::domain::book::entity::{Book, NewBook, UpdateBookData};
+use crate::{domain::book::entity::{Book, NewBook, UpdateBookData}, models::Identifier};
+
+use super::entity::UpsertBookIdentifier;
 
 pub trait Repository {
     /// Return all books
@@ -16,5 +18,7 @@ pub trait Repository {
     /// Update a book
     fn update(&mut self, id: i32, book: &UpdateBookData) -> Result<Book, ()>;
     /// List all associated identifiers for a book.
-    fn list_identifiers_for_book(&mut self, book_id: i32) -> Result<Vec<(String, String)>, ()>;
+    fn list_identifiers_for_book(&mut self, book_id: i32) -> Result<Vec<Identifier>, ()>;
+    /// Add new identifier (no id) or update existing identifier (with ID).
+    fn upsert_book_identifier(&mut self, update: UpsertBookIdentifier) -> Result<i32, ()>;
 }

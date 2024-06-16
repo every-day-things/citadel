@@ -78,9 +78,10 @@ pub fn list_all(library_root: String) -> Vec<LibraryBook> {
                         .list_identifiers_for_book(b.book.id)
                         .unwrap_or(Vec::new())
                         .iter()
-                        .map(|(k, v)| Identifier {
-                            label: k.clone(),
-                            value: v.clone(),
+                        .map(|identifier| Identifier {
+                            label: identifier.type_.clone(),
+                            value: identifier.val.clone(),
+                            id: identifier.id
                         })
                         .collect();
 

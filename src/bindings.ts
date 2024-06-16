@@ -60,7 +60,7 @@ export type CalibreClientConfig = { library_path: string }
 /**
  * Book identifiers, such as ISBN, DOI, Google Books ID, etc.
  */
-export type Identifier = { label: string; value: string }
+export type Identifier = { id: number; label: string; value: string }
 /**
  * Represents metadata for pre-import books, which have a very loose structure.
  */
