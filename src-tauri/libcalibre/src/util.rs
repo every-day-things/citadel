@@ -1,5 +1,6 @@
 use std::path::Path;
 
+#[derive(Clone)]
 pub struct ValidDbPath {
     pub(crate) library_path: String,
     pub(crate) database_path: String,

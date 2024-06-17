@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::sync::Arc;
 use std::sync::Mutex;
 
@@ -11,6 +12,7 @@ use crate::application::services::domain::file::service::BookFileService;
 use crate::application::services::domain::file::service::BookFileServiceTrait;
 use crate::application::services::library::dto::NewLibraryEntryDto;
 use crate::application::services::library::dto::UpdateLibraryEntryDto;
+use crate::application::services::library::service::LibSrvcError;
 use crate::application::services::library::service::LibraryService;
 use crate::infrastructure::domain::author::repository::AuthorRepository;
 use crate::infrastructure::domain::book::repository::BookRepository;
@@ -20,6 +22,9 @@ use crate::infrastructure::file_service::FileServiceTrait;
 use crate::models::Identifier;
 use crate::persistence::establish_connection;
 use crate::util::ValidDbPath;
+use crate::Author;
+use crate::BookWithAuthorsAndFiles;
+use crate::ClientV2;
 
 #[derive(Debug)]
 pub enum CalibreError {
@@ -36,12 +41,14 @@ impl std::error::Error for CalibreError {}
 
 pub struct CalibreClient {
     validated_library_path: ValidDbPath,
+    client_v2: ClientV2,
 }
 
 impl CalibreClient {
     pub fn new(db_path: ValidDbPath) -> CalibreClient {
         CalibreClient {
-            validated_library_path: db_path,
+            validated_library_path: db_path.clone(),
+            client_v2: ClientV2::new(db_path),
         }
     }
 
@@ -66,29 +73,63 @@ impl CalibreClient {
         &mut self,
         book_id: i32,
     ) -> Result<crate::BookWithAuthorsAndFiles, Box<dyn std::error::Error>> {
-        let mut library_service = self.get_mut_library_service();
-        library_service.find_book_with_authors(book_id)
+        let book = self.client_v2.books().find_by_id(book_id).unwrap().unwrap();
+        let author_ids = self
+            .client_v2
+            .books()
+            .find_author_ids_by_book_id(book_id)
+            .unwrap();
+
+        let authors: Vec<Author> = author_ids
+            .into_iter()
+            .map(|author_id| {
+                let authors = self.client_v2.authors().find_by_id(author_id);
+                match authors {
+                    Ok(Some(author)) => Ok(author),
+                    _ => Err(LibSrvcError::NotFoundAuthor),
+                }
+            })
+            .map(|item| item.map_err(|e| e.into()))
+            .collect::<Result<Vec<Author>, Box<dyn Error>>>()?;
+
+        let database_path = self.validated_library_path.database_path.clone();
+        let book_file_repo = Box::new(BookFileRepository::new(&database_path));
+        let book_file_service = Arc::new(Mutex::new(BookFileService::new(book_file_repo)));
+        let mut file_repo_guard = book_file_service
+            .lock()
+            .map_err(|_| LibSrvcError::DatabaseLocked)?;
+        let files = file_repo_guard
+            .find_all_for_book_id(book.id)
+            .map_err(|_| LibSrvcError::NotFoundBookFiles)?;
+
+        Ok(BookWithAuthorsAndFiles {
+            book,
+            authors,
+            files,
+        })
     }
 
     pub fn find_all(
         &mut self,
     ) -> Result<Vec<crate::BookWithAuthorsAndFiles>, Box<dyn std::error::Error>> {
-        let mut library_service = self.get_mut_library_service();
-        library_service.find_all()
+        let mut book_list = Vec::new();
+        let books = self.client_v2.books().list().unwrap();
+
+        for book in books {
+        		let result = self.find_book_with_authors(book.id);
+          	match result {
+           		Ok(res) => book_list.push(res),
+             	Err(_) => ()
+           }
+        }
+
+        Ok(book_list)
     }
 
     pub fn list_all_authors(&mut self) -> Result<Vec<crate::Author>, Box<dyn std::error::Error>> {
-        let author_repo = Box::new(AuthorRepository::new(
-            &self.validated_library_path.database_path,
-        ));
-        let author_service = Arc::new(Mutex::new(AuthorService::new(author_repo)));
-
-        author_service
-            .lock()
-            .map(|mut locked_as| match locked_as.all() {
-                Ok(authors) => authors,
-                Err(_) => vec![],
-            })
+        self.client_v2
+            .authors()
+            .list()
             .map_err(|_| Box::new(CalibreError::DatabaseError) as Box<dyn std::error::Error>)
     }
 

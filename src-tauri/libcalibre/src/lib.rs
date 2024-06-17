@@ -19,7 +19,7 @@ pub use domain::book::aggregate::BookWithAuthorsAndFiles;
 pub use domain::book::entity::Book;
 pub use domain::book_file::entity::BookFile;
 
-pub struct Client {
+pub struct ClientV2 {
     validated_library_path: ValidDbPath,
     connection: Arc<Mutex<SqliteConnection>>,
 }
