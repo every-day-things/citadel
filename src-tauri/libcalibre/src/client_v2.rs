@@ -1,20 +1,27 @@
-use crate::api::authors::{self};
+use crate::api::{
+    authors::{self},
+    books::{self},
+};
 use crate::persistence::establish_connection;
 use crate::util::ValidDbPath;
-use crate::Client;
+use crate::ClientV2;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-impl Client {
-    fn new(db_path: ValidDbPath) -> Self {
+impl ClientV2 {
+    pub fn new(db_path: ValidDbPath) -> Self {
         let conn = establish_connection(&db_path.database_path).unwrap();
-        Client {
+        ClientV2 {
             validated_library_path: db_path,
             connection: Arc::new(Mutex::new(conn)),
         }
     }
 
-    fn authors(&mut self) -> authors::AuthorsHandler {
+    pub fn authors(&mut self) -> authors::AuthorsHandler {
         authors::AuthorsHandler::new(Arc::clone(&self.connection))
+    }
+
+    pub fn books(&mut self) -> books::BooksHandler {
+        books::BooksHandler::new(Arc::clone(&self.connection))
     }
 }
