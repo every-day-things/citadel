@@ -5,6 +5,7 @@ use diesel::prelude::*;
 use diesel::SelectableHelper;
 
 use crate::domain::author::entity::NewAuthor;
+use crate::domain::author::entity::UpdateAuthorData;
 use crate::Author;
 
 pub struct AuthorsHandler {
