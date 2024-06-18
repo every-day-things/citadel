@@ -17,7 +17,7 @@ impl ClientV2 {
         }
     }
 
-    pub fn authors(&mut self) -> authors::AuthorsHandler {
+	  pub fn authors(&mut self) -> authors::AuthorsHandler {
         authors::AuthorsHandler::new(Arc::clone(&self.connection))
     }
 

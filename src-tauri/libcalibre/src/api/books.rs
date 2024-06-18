@@ -3,6 +3,7 @@ use std::sync::Mutex;
 
 use diesel::prelude::*;
 
+use crate::domain::book::entity::NewBook;
 use crate::domain::book::entity::UpdateBookData;
 use crate::models::Identifier;
 use crate::Book;
@@ -14,6 +15,34 @@ pub struct BooksHandler {
 impl BooksHandler {
     pub(crate) fn new(client: Arc<Mutex<SqliteConnection>>) -> Self {
         Self { client }
+    }
+
+    pub fn create(&self, book: NewBook) -> Result<Book, ()> {
+        use crate::schema::books::dsl::*;
+        let mut connection = self.client.lock().unwrap();
+
+        let new_book = NewBook {
+            title: book.title.clone(),
+            timestamp: book.timestamp,
+            pubdate: book.pubdate,
+            series_index: book.series_index,
+            flags: book.flags,
+            has_cover: book.has_cover,
+        };
+
+        let b = diesel::insert_into(books)
+            .values(new_book)
+            .returning(Book::as_returning())
+            .get_result(&mut *connection)
+            .expect("Error saving new book");
+
+        // SQLite doesn't add the UUID until after our `insert_into` call,
+        // so we need to fetch it from the DB to provide it to the caller.
+        let mut book_generated = b.clone();
+        let book_uuid = uuid_for_book(&mut *connection, b.id);
+        book_generated.uuid = book_uuid;
+
+        Ok(book_generated)
     }
 
     pub fn list(&self) -> Result<Vec<Book>, ()> {
@@ -96,4 +125,14 @@ impl BooksHandler {
             .map(|_| ())
             .or(Err(()))
     }
+}
+
+fn uuid_for_book(conn: &mut SqliteConnection, book_id: i32) -> Option<String> {
+    use crate::schema::books::dsl::*;
+
+    books
+        .select(uuid)
+        .filter(id.eq(book_id))
+        .first::<Option<String>>(conn)
+        .expect("Error getting book UUID")
 }

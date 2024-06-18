@@ -4,6 +4,7 @@ use std::sync::Mutex;
 use diesel::prelude::*;
 use diesel::SelectableHelper;
 
+use crate::application::services::domain::author::dto::NewAuthorDto;
 use crate::domain::author::entity::NewAuthor;
 use crate::domain::author::entity::UpdateAuthorData;
 use crate::Author;
@@ -36,6 +37,14 @@ impl AuthorsHandler {
             .returning(Author::as_returning())
             .get_result::<Author>(&mut *connection)
             .map_err(|_| ())
+    }
+
+    pub fn create_if_missing(&mut self, dto: NewAuthorDto) -> Result<Author, ()> {
+        let author = NewAuthor::try_from(dto)?;
+        match self.find_by_name(&author.name)? {
+            Some(author) => Ok(author),
+            _ => self.create(&author),
+        }
     }
 
     pub fn find_by_id(&mut self, search_id: i32) -> Result<Option<Author>, ()> {
