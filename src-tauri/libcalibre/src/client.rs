@@ -14,6 +14,7 @@ use crate::application::services::library::dto::NewLibraryEntryDto;
 use crate::application::services::library::dto::UpdateLibraryEntryDto;
 use crate::application::services::library::service::LibSrvcError;
 use crate::application::services::library::service::LibraryService;
+use crate::domain::book::entity::UpdateBookData;
 use crate::infrastructure::domain::author::repository::AuthorRepository;
 use crate::infrastructure::domain::book::repository::BookRepository;
 use crate::infrastructure::domain::book_file::repository::BookFileRepository;
@@ -65,8 +66,36 @@ impl CalibreClient {
         book_id: i32,
         updates: UpdateLibraryEntryDto,
     ) -> Result<crate::BookWithAuthorsAndFiles, Box<dyn std::error::Error>> {
-        let mut library_service = self.get_mut_library_service();
-        library_service.update(book_id, updates)
+        // Write new updates to book
+        let book_update = UpdateBookData::try_from(updates.book).unwrap();
+        let _book = self.client_v2.books().update(book_id, book_update);
+
+        match updates.author_id_list {
+            Some(author_id_list) => {
+                // Unlink existing authors
+                let existing_authors = self
+                    .client_v2
+                    .books()
+                    .find_author_ids_by_book_id(book_id)
+                    .unwrap();
+                existing_authors.iter().for_each(|&author_id| {
+                    let _ = self.client_v2
+                        .books()
+                        .unlink_author_from_book(book_id, author_id);
+                });
+
+                // Link requested authors to book
+                author_id_list.iter().for_each(|author_id| {
+                    let author_id_int = author_id.parse::<i32>().unwrap();
+                    let _ = self.client_v2
+                        .books()
+                        .link_author_to_book(book_id, author_id_int);
+                });
+            }
+            None => {}
+        }
+
+        self.find_book_with_authors(book_id)
     }
 
     pub fn find_book_with_authors(
@@ -116,11 +145,11 @@ impl CalibreClient {
         let books = self.client_v2.books().list().unwrap();
 
         for book in books {
-        		let result = self.find_book_with_authors(book.id);
-          	match result {
-           		Ok(res) => book_list.push(res),
-             	Err(_) => ()
-           }
+            let result = self.find_book_with_authors(book.id);
+            match result {
+                Ok(res) => book_list.push(res),
+                Err(_) => (),
+            }
         }
 
         Ok(book_list)
@@ -137,19 +166,9 @@ impl CalibreClient {
         &mut self,
         book_id: i32,
     ) -> Result<Vec<Identifier>, Box<dyn std::error::Error>> {
-        let book_repo = Box::new(BookRepository::new(
-            &self.validated_library_path.database_path,
-        ));
-        let book_service = Arc::new(Mutex::new(BookService::new(book_repo)));
-
-        book_service
-            .lock()
-            .map(
-                |mut locked_bs| match locked_bs.list_identifiers_for_book(book_id) {
-                    Ok(identifiers) => identifiers,
-                    Err(_) => vec![],
-                },
-            )
+        self.client_v2
+            .books()
+            .list_identifiers_for_book(book_id)
             .map_err(|_| Box::new(CalibreError::DatabaseError) as Box<dyn std::error::Error>)
     }
 
