@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::path::PathBuf;
 
 use chrono::{NaiveDate, NaiveDateTime};
 use libcalibre::application::services::{

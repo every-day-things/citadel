@@ -12,7 +12,6 @@ impl ClientV2 {
     pub fn new(db_path: ValidDbPath) -> Self {
         let conn = establish_connection(&db_path.database_path).unwrap();
         ClientV2 {
-            validated_library_path: db_path,
             connection: Arc::new(Mutex::new(conn)),
         }
     }
