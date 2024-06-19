@@ -65,6 +65,8 @@ impl CalibreClient {
         &mut self,
         dto: NewLibraryEntryDto,
     ) -> Result<crate::BookWithAuthorsAndFiles, Box<dyn std::error::Error>> {
+    		let file_service = FileService::new(&self.validated_library_path.library_path);
+
         // 1. Create Authors & Book, then link them.
         // ======================================
         let created_author_list = self.create_authors(dto.authors)?;
@@ -98,7 +100,6 @@ impl CalibreClient {
         let book_dir_name = gen_book_folder_name(&dto.book.title, book.id);
         let book_dir_relative_path = Path::new(&author_dir_name).join(&book_dir_name);
         {
-            let file_service = FileService::new(&self.validated_library_path.library_path);
             file_service.create_directory(Path::new(&author_dir_name).to_path_buf())?;
             file_service.create_directory(book_dir_relative_path.clone())?;
         }
@@ -119,6 +120,7 @@ impl CalibreClient {
                 book.id,
                 &primary_author.name,
                 book_dir_relative_path.clone(),
+                &file_service,
             );
             if let Ok(files) = result {
                 created_files = files;
@@ -126,7 +128,6 @@ impl CalibreClient {
 
             let primary_file = &files[0];
             {
-                let file_service = FileService::new(&self.validated_library_path.library_path);
                 let book_file_repo = Box::new(BookFileRepository::new(
                     &self.validated_library_path.database_path,
                 ));
@@ -146,7 +147,6 @@ impl CalibreClient {
         let metadata_opf = MetadataOpf::new(&book, &created_author_list, Utc::now()).format();
         match metadata_opf {
             Ok(contents) => {
-                let file_service = FileService::new(&self.validated_library_path.library_path);
                 let metadata_opf_path = Path::new(&book_dir_relative_path).join("metadata.opf");
                 let _ =
                     file_service.write_to_file(&metadata_opf_path, contents.as_bytes().to_vec());
@@ -293,8 +293,8 @@ impl CalibreClient {
         book_id: i32,
         primary_author_name: &String,
         book_dir_rel_path: PathBuf,
+        file_service: &FileService,
     ) -> Result<Vec<BookFile>, ClientError> {
-        let file_service = FileService::new(&self.validated_library_path.library_path);
         let book_file_repo = Box::new(BookFileRepository::new(
             &self.validated_library_path.database_path,
         ));
