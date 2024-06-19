@@ -1,9 +1,7 @@
+use crate::dtos::author::NewAuthorDto;
 use std::path::PathBuf;
 
-use crate::application::services::domain::{
-    author::dto::NewAuthorDto,
-    book::dto::{NewBookDto, UpdateBookDto},
-};
+use crate::application::services::domain::book::dto::{NewBookDto, UpdateBookDto};
 
 pub struct NewLibraryFileDto {
     pub path: PathBuf,
