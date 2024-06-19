@@ -22,8 +22,6 @@ use crate::application::services::domain::file::service::BookFileService;
 use crate::application::services::domain::file::service::BookFileServiceTrait;
 use crate::application::services::library::dto::NewLibraryEntryDto;
 use crate::application::services::library::dto::UpdateLibraryEntryDto;
-use crate::application::services::library::service::gen_book_folder_name;
-use crate::application::services::library::service::LibSrvcError;
 
 use crate::domain::book::entity::NewBook;
 use crate::domain::book::entity::UpdateBookData;
@@ -219,7 +217,7 @@ impl CalibreClient {
                 let authors = self.client_v2.authors().find_by_id(author_id);
                 match authors {
                     Ok(Some(author)) => Ok(author),
-                    _ => Err(LibSrvcError::NotFoundAuthor),
+                    _ => Err(ClientError::GenericError),
                 }
             })
             .map(|item| item.map_err(|e| e.into()))
@@ -230,10 +228,10 @@ impl CalibreClient {
         let book_file_service = Arc::new(Mutex::new(BookFileService::new(book_file_repo)));
         let mut file_repo_guard = book_file_service
             .lock()
-            .map_err(|_| LibSrvcError::DatabaseLocked)?;
+            .map_err(|_| ClientError::GenericError)?;
         let files = file_repo_guard
             .find_all_for_book_id(book.id)
-            .map_err(|_| LibSrvcError::NotFoundBookFiles)?;
+            .map_err(|_| ClientError::GenericError)?;
 
         Ok(BookWithAuthorsAndFiles {
             book,
@@ -295,7 +293,7 @@ impl CalibreClient {
         book_id: i32,
         primary_author_name: &String,
         book_dir_rel_path: PathBuf,
-    ) -> Result<Vec<BookFile>, LibSrvcError> {
+    ) -> Result<Vec<BookFile>, ClientError> {
         let file_service = FileService::new(&self.validated_library_path.library_path);
         let book_file_repo = Box::new(BookFileRepository::new(
             &self.validated_library_path.database_path,
@@ -312,16 +310,16 @@ impl CalibreClient {
                         book_id,
                         name: book_file_name,
                     })
-                    .map_err(|_| LibSrvcError::InvalidDto)?;
+                    .map_err(|_| ClientError::GenericError)?;
 
                 let book_rel_path = Path::new(&book_dir_rel_path).join(&added_book.as_filename());
                 let _ = file_service
                     .copy_file_to_directory(file.path.as_path(), book_rel_path.as_path())
-                    .map_err(|_| LibSrvcError::InvalidDto);
+                    .map_err(|_| ClientError::GenericError);
 
                 Ok(added_book)
             })
-            .collect::<Result<Vec<BookFile>, LibSrvcError>>()
+            .collect::<Result<Vec<BookFile>, ClientError>>()
     }
 
     /// Updates the library's ID to a new UUID.
@@ -366,6 +364,14 @@ fn gen_book_file_name(book_title: &String, author_name: &String) -> String {
         &"{title} - {author}"
             .replace("{title}", book_title)
             .replace("{author}", author_name),
+    )
+}
+
+fn gen_book_folder_name(book_name: &String, book_id: i32) -> String {
+    sanitise(
+        &"{title} ({id})"
+            .replace("{title}", book_name)
+            .replace("{id}", &book_id.to_string()),
     )
 }
 
@@ -470,3 +476,14 @@ impl<'a> MetadataOpf<'a> {
         )
     }
 }
+
+#[derive(Debug)]
+enum ClientError {
+	GenericError
+}
+impl std::fmt::Display for ClientError {
+	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+		write!(f, "{:?}", self)
+	}
+}
+impl std::error::Error for ClientError {}
