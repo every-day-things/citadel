@@ -5,6 +5,7 @@ use diesel::prelude::*;
 
 use crate::domain::book::entity::NewBook;
 use crate::domain::book::entity::UpdateBookData;
+use crate::domain::book::entity::UpsertBookIdentifier;
 use crate::models::Identifier;
 use crate::Book;
 
@@ -94,17 +95,6 @@ impl BooksHandler {
         }
     }
 
-    pub fn list_identifiers_for_book(&mut self, book_id: i32) -> Result<Vec<Identifier>, ()> {
-        use crate::schema::identifiers::dsl::*;
-        let mut connection = self.client.lock().unwrap();
-
-        identifiers
-            .filter(book.eq(book_id))
-            .select(Identifier::as_returning())
-            .load(&mut *connection)
-            .or(Err(()))
-    }
-
     pub fn link_author_to_book(&mut self, book_id: i32, author_id: i32) -> Result<(), ()> {
         use crate::schema::books_authors_link::dsl::*;
         let mut connection = self.client.lock().unwrap();
@@ -125,6 +115,56 @@ impl BooksHandler {
             .map(|_| ())
             .or(Err(()))
     }
+
+    // === === ===
+    // Identifiers
+    // === === ===
+
+    pub fn list_identifiers_for_book(&mut self, book_id: i32) -> Result<Vec<Identifier>, ()> {
+        use crate::schema::identifiers::dsl::*;
+        let mut connection = self.client.lock().unwrap();
+
+        identifiers
+            .filter(book.eq(book_id))
+            .select(Identifier::as_returning())
+            .load(&mut *connection)
+            .or(Err(()))
+    }
+
+    pub fn upsert_book_identifier(&mut self, update: UpsertBookIdentifier) -> Result<i32, ()> {
+    	match update.id {
+     		Some(update_id) => self.update_book_identifier(update, update_id),
+       	None => self.create_book_identifier(update)
+     }
+    }
+
+    fn update_book_identifier(&mut self, update: UpsertBookIdentifier, identifier_id: i32) -> Result<i32, ()> {
+    use crate::schema::identifiers::dsl::*;
+    let mut connection = self.client.lock().unwrap();
+
+    diesel::update(identifiers)
+        .filter(id.eq(identifier_id))
+        .set((type_.eq(update.label), val.eq(update.value)))
+        .returning(id)
+        .get_result::<i32>(&mut *connection)
+        .or(Err(()))
+    }
+
+    fn create_book_identifier(&mut self, update: UpsertBookIdentifier) -> Result<i32, ()> {
+    use crate::schema::identifiers::dsl::*;
+    let mut connection = self.client.lock().unwrap();
+
+    diesel::insert_into(identifiers)
+        .values((
+            book.eq(update.book_id),
+            type_.eq(update.label),
+            val.eq(update.value),
+        ))
+        .returning(id)
+        .get_result::<i32>(&mut *connection)
+        .or(Err(()))
+    }
+
 }
 
 fn uuid_for_book(conn: &mut SqliteConnection, book_id: i32) -> Option<String> {
