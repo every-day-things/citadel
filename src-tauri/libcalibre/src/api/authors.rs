@@ -6,7 +6,6 @@ use diesel::SelectableHelper;
 
 use crate::application::services::domain::author::dto::NewAuthorDto;
 use crate::domain::author::entity::NewAuthor;
-use crate::domain::author::entity::UpdateAuthorData;
 use crate::Author;
 
 pub struct AuthorsHandler {
