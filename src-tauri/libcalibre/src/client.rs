@@ -17,7 +17,7 @@ use std::sync::Mutex;
 
 use diesel::RunQueryDsl;
 
-use crate::application::services::domain::author::dto::NewAuthorDto;
+use crate::dtos::author::NewAuthorDto;
 use crate::application::services::domain::file::service::BookFileService;
 use crate::application::services::domain::file::service::BookFileServiceTrait;
 use crate::application::services::library::dto::NewLibraryEntryDto;

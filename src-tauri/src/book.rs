@@ -1,10 +1,10 @@
 use std::path::PathBuf;
 
 use chrono::{NaiveDate, NaiveDateTime};
-use libcalibre::application::services::{
-    domain::{author::dto::NewAuthorDto, book::dto::NewBookDto},
+use libcalibre::{application::services::{
+    domain::book::dto::NewBookDto,
     library::dto::{NewLibraryEntryDto, NewLibraryFileDto},
-};
+}, dtos::author::NewAuthorDto};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, specta::Type, Deserialize, Clone)]

@@ -1,4 +1,5 @@
 mod api;
+pub mod dtos;
 pub mod application;
 pub mod client;
 pub mod client_v2;
