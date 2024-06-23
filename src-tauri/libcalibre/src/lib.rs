@@ -1,9 +1,10 @@
 mod api;
-pub mod dtos;
+mod cover_image;
 pub mod application;
 pub mod client;
 pub mod client_v2;
 pub mod domain;
+pub mod dtos;
 pub mod infrastructure;
 pub mod mime_type;
 mod models;

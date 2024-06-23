@@ -4,8 +4,8 @@ use std::sync::Mutex;
 use diesel::prelude::*;
 use diesel::SelectableHelper;
 
-use crate::dtos::author::NewAuthorDto;
 use crate::domain::author::entity::NewAuthor;
+use crate::dtos::author::NewAuthorDto;
 use crate::Author;
 
 pub struct AuthorsHandler {

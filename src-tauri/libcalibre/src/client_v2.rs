@@ -1,6 +1,5 @@
 use crate::api::{
-    authors::{self},
-    books::{self},
+    authors, book_files, books
 };
 use crate::persistence::establish_connection;
 use crate::util::ValidDbPath;
@@ -22,5 +21,9 @@ impl ClientV2 {
 
     pub fn books(&mut self) -> books::BooksHandler {
         books::BooksHandler::new(Arc::clone(&self.connection))
+    }
+    
+    pub fn book_files(&mut self) -> book_files::BookFilesHandler {
+    	book_files::BookFilesHandler::new(Arc::clone(&self.connection))
     }
 }
