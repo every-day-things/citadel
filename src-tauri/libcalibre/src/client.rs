@@ -13,6 +13,8 @@ use sanitise_file_name::sanitise;
 use crate::BookFile;
 
 use std::error::Error;
+use std::fs;
+use std::io;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -22,8 +24,6 @@ use crate::dtos::author::NewAuthorDto;
 
 use crate::domain::book::entity::NewBook;
 use crate::domain::book::entity::UpdateBookData;
-use crate::infrastructure::file_service::FileService;
-use crate::infrastructure::file_service::FileServiceTrait;
 use crate::models::Identifier;
 use crate::persistence::establish_connection;
 use crate::util::ValidDbPath;
@@ -61,8 +61,6 @@ impl CalibreClient {
         &mut self,
         dto: NewLibraryEntryDto,
     ) -> Result<crate::BookWithAuthorsAndFiles, Box<dyn std::error::Error>> {
-        let file_service = FileService::new(&self.validated_library_path.library_path);
-
         // 1. Create Authors & Book, then link them.
         // ======================================
         let created_author_list = self.create_authors(dto.authors)?;
@@ -95,10 +93,8 @@ impl CalibreClient {
 
         let book_dir_name = gen_book_folder_name(&dto.book.title, book.id);
         let book_dir_relative_path = Path::new(&author_dir_name).join(&book_dir_name);
-        {
-            file_service.create_directory(Path::new(&author_dir_name).to_path_buf())?;
-            file_service.create_directory(book_dir_relative_path.clone())?;
-        }
+        library_relative_mkdir(&self.validated_library_path, Path::new(&author_dir_name).to_path_buf())?;
+        library_relative_mkdir(&self.validated_library_path, book_dir_relative_path.clone())?;
         // Update Book with relative path to book folder
         let _ = self
             .client_v2
@@ -116,7 +112,6 @@ impl CalibreClient {
                 book.id,
                 &primary_author.name,
                 book_dir_relative_path.clone(),
-                &file_service,
             );
             if let Ok(files) = result {
                 created_files = files;
@@ -127,7 +122,7 @@ impl CalibreClient {
                 let cover_data = cover_image_data_from_path(primary_file.path.as_path())?;
                 if let Some(cover_data) = cover_data {
                     let cover_path = Path::new(&book_dir_relative_path).join("cover.jpg");
-                    let _ = file_service.write_to_file(&cover_path, cover_data);
+                    let _ = library_relative_write_file(&self.validated_library_path, &cover_path, &cover_data);
                 }
             }
         }
@@ -138,8 +133,7 @@ impl CalibreClient {
         match metadata_opf {
             Ok(contents) => {
                 let metadata_opf_path = Path::new(&book_dir_relative_path).join("metadata.opf");
-                let _ =
-                    file_service.write_to_file(&metadata_opf_path, contents.as_bytes().to_vec());
+                let _ = library_relative_write_file(&self.validated_library_path, &metadata_opf_path, contents.as_bytes());
             }
             Err(_) => (),
         };
@@ -276,7 +270,6 @@ impl CalibreClient {
         book_id: i32,
         primary_author_name: &String,
         book_dir_rel_path: PathBuf,
-        file_service: &FileService,
     ) -> Result<Vec<BookFile>, ClientError> {
         let book_files = self.client_v2.book_files();
 
@@ -293,8 +286,7 @@ impl CalibreClient {
                 .map_err(|_| ClientError::GenericError)?;
 
                 let book_rel_path = Path::new(&book_dir_rel_path).join(&added_book.as_filename());
-                let _ = file_service
-                    .copy_file_to_directory(file.path.as_path(), book_rel_path.as_path())
+                let _ = library_relative_copy_file(&self.validated_library_path, file.path.as_path(), book_rel_path.as_path())
                     .map_err(|_| ClientError::GenericError);
 
                 Ok(added_book)
@@ -467,3 +459,37 @@ impl std::fmt::Display for ClientError {
     }
 }
 impl std::error::Error for ClientError {}
+
+/// Create a new directory at a library-relative path.
+/// Convenience function to avoid having absolute paths for files everywhere.
+fn library_relative_mkdir(valid_db_path: &ValidDbPath, rel_path: PathBuf) -> io::Result<()> {
+	let complete_path = Path::new(&valid_db_path.library_path).join(rel_path);
+
+	match complete_path.exists() {
+		true => Ok(()),
+		_ => fs::create_dir_all(complete_path)
+	}
+}
+
+/// Copy a file from an absolute path to a library-relative path, using a ValidDbPath.
+/// Convenience function to avoid having to create the abs. path yourself.
+fn library_relative_copy_file(valid_db_path: &ValidDbPath, source_abs: &Path, dest_rel: &Path) -> io::Result<()> {
+	match source_abs.exists() {
+		true => {
+			let complete_dest_path = Path::new(&valid_db_path.library_path).join(dest_rel);
+			fs::copy(source_abs, complete_dest_path)
+				.map(|_| ())
+		},
+		false => Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                format!("Source file does not exist: {:?}", source_abs),
+            ))
+	}
+}
+
+/// Write `contents` to a library-relative file path.
+/// Convenience function to avoid having to create the absolute path.
+fn library_relative_write_file(valid_db_path: &ValidDbPath, rel_path: &Path, contents: &[u8]) -> io::Result<()> {
+	let complete_path = Path::new(&valid_db_path.library_path).join(rel_path);
+	fs::write(complete_path, contents)
+}

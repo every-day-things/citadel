@@ -4,7 +4,6 @@ pub mod client;
 pub mod client_v2;
 pub mod domain;
 pub mod dtos;
-pub mod infrastructure;
 pub mod mime_type;
 mod models;
 pub mod persistence;
