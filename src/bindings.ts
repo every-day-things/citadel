@@ -82,7 +82,7 @@ file_contains_cover: boolean }
 export type ImportableBookType = "Epub" | "Pdf" | "Mobi" | "Text"
 export type ImportableFile = { path: string }
 export type LibraryAuthor = { id: string; name: string; sortable_name: string }
-export type LibraryBook = { id: string; uuid: string | null; title: string; author_list: LibraryAuthor[]; sortable_title: string | null; file_list: BookFile[]; cover_image: LocalOrRemoteUrl | null; identifier_list: Identifier[] }
+export type LibraryBook = { id: string; uuid: string | null; title: string; author_list: LibraryAuthor[]; sortable_title: string | null; file_list: BookFile[]; cover_image: LocalOrRemoteUrl | null; identifier_list: Identifier[]; description: string | null }
 export type LocalFile = { 
 /**
  * The absolute path to the file, including extension.

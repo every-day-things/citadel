@@ -49,6 +49,8 @@ pub struct LibraryBook {
     pub cover_image: Option<LocalOrRemoteUrl>,
 
     pub identifier_list: Vec<Identifier>,
+    
+    pub description: Option<String>
 }
 
 #[derive(Serialize, specta::Type, Deserialize, Clone)]

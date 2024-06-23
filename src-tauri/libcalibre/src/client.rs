@@ -152,6 +152,7 @@ impl CalibreClient {
             book,
             authors: created_author_list,
             files: created_files,
+            book_description_html: None
         })
     }
 
@@ -199,6 +200,7 @@ impl CalibreClient {
         book_id: i32,
     ) -> Result<crate::BookWithAuthorsAndFiles, Box<dyn std::error::Error>> {
         let book = self.client_v2.books().find_by_id(book_id).unwrap().unwrap();
+        let book_desc = self.client_v2.books().get_description(book_id).unwrap();
         let author_ids = self
             .client_v2
             .books()
@@ -227,6 +229,7 @@ impl CalibreClient {
             book,
             authors,
             files,
+            book_description_html: book_desc,
         })
     }
 
