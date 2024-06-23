@@ -38,8 +38,6 @@ pub fn sort_book_title(title: String) -> String {
 }
 
 pub fn establish_connection(db_path: &str) -> Result<diesel::SqliteConnection, ()> {
-    // let db_path = db_path.join("metadata.db");
-
     // Setup custom SQL functions. Required because Calibre does this.
     // See: https://github.com/kovidgoyal/calibre/blob/7f3ccb333d906f5867636dd0dc4700b495e5ae6f/src/calibre/library/database.py#L55-L70
     sql_function!(fn title_sort(title: Text) -> Text);
