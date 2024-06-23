@@ -1,4 +1,4 @@
-use crate::domain::author::entity::{NewAuthor, UpdateAuthorData};
+use crate::entities::author::{NewAuthor, UpdateAuthorData};
 
 #[derive(Clone)]
 pub struct NewAuthorDto {
