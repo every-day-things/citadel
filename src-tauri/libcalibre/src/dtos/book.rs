@@ -1,6 +1,6 @@
 use chrono::NaiveDateTime;
 
-use crate::domain::book::entity::{NewBook, UpdateBookData};
+use crate::entities::book::{NewBook, UpdateBookData};
 
 #[derive(Clone)]
 pub struct NewBookDto {

@@ -15,9 +15,9 @@ use diesel::SqliteConnection;
 use std::sync::{Arc, Mutex};
 
 pub use domain::book::aggregate::BookWithAuthorsAndFiles;
-pub use domain::book::entity::Book;
 pub use domain::book_file::entity::BookFile;
 pub use entities::author::Author;
+pub use entities::book::Book;
 
 pub struct ClientV2 {
     connection: Arc<Mutex<SqliteConnection>>,
