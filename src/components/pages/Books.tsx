@@ -310,6 +310,15 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 						</Text>
 					</Stack>
 				</Group>
+				{book.description !== null && book.description.length > 0 && (
+					<>
+						<Divider />
+						<Stack>
+							{/* biome-ignore lint/security/noDangerouslySetInnerHtml: Content comes from the user's own database. */}
+							<div dangerouslySetInnerHTML={{ __html: book.description }} />
+						</Stack>
+					</>
+				)}
 				<Divider />
 				<Stack>
 					{book.identifier_list.length > 0 && (
