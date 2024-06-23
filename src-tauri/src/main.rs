@@ -25,7 +25,6 @@ fn run_tauri_backend() -> std::io::Result<()> {
             .commands(tauri_specta::collect_commands![
                 libs::calibre::clb_query_list_all_books,
                 libs::calibre::clb_query_list_all_authors,
-                libs::calibre::send_to_device::calibre_send_to_device,
                 libs::calibre::clb_query_list_all_filetypes,
                 libs::calibre::init_client,
                 libs::calibre::clb_query_importable_file_metadata,

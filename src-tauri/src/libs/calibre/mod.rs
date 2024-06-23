@@ -15,7 +15,6 @@ use serde::Serialize;
 
 mod author;
 mod book;
-pub mod send_to_device;
 
 use std::path::Path;
 
