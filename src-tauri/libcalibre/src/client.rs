@@ -1,4 +1,6 @@
 use crate::application::services::domain::file::dto::NewFileDto;
+use crate::cover_image::cover_image_data_from_path;
+use crate::domain::book_file::entity::NewBookFile;
 use crate::dtos::library::NewLibraryEntryDto;
 use crate::dtos::library::NewLibraryFileDto;
 use crate::dtos::library::UpdateLibraryEntryDto;
@@ -14,18 +16,12 @@ use std::error::Error;
 use std::path::Path;
 use std::path::PathBuf;
 
-use std::sync::Arc;
-use std::sync::Mutex;
-
 use diesel::RunQueryDsl;
 
 use crate::dtos::author::NewAuthorDto;
-use crate::application::services::domain::file::service::BookFileService;
-use crate::application::services::domain::file::service::BookFileServiceTrait;
 
 use crate::domain::book::entity::NewBook;
 use crate::domain::book::entity::UpdateBookData;
-use crate::infrastructure::domain::book_file::repository::BookFileRepository;
 use crate::infrastructure::file_service::FileService;
 use crate::infrastructure::file_service::FileServiceTrait;
 use crate::models::Identifier;
@@ -65,7 +61,7 @@ impl CalibreClient {
         &mut self,
         dto: NewLibraryEntryDto,
     ) -> Result<crate::BookWithAuthorsAndFiles, Box<dyn std::error::Error>> {
-    		let file_service = FileService::new(&self.validated_library_path.library_path);
+        let file_service = FileService::new(&self.validated_library_path.library_path);
 
         // 1. Create Authors & Book, then link them.
         // ======================================
@@ -128,13 +124,7 @@ impl CalibreClient {
 
             let primary_file = &files[0];
             {
-                let book_file_repo = Box::new(BookFileRepository::new(
-                    &self.validated_library_path.database_path,
-                ));
-                let mut book_file_service = BookFileService::new(book_file_repo);
-
-                let cover_data =
-                    book_file_service.cover_img_data_from_path(primary_file.path.as_path())?;
+                let cover_data = cover_image_data_from_path(primary_file.path.as_path())?;
                 if let Some(cover_data) = cover_data {
                     let cover_path = Path::new(&book_dir_relative_path).join("cover.jpg");
                     let _ = file_service.write_to_file(&cover_path, cover_data);
@@ -223,14 +213,7 @@ impl CalibreClient {
             .map(|item| item.map_err(|e| e.into()))
             .collect::<Result<Vec<Author>, Box<dyn Error>>>()?;
 
-        let database_path = self.validated_library_path.database_path.clone();
-        let book_file_repo = Box::new(BookFileRepository::new(&database_path));
-        let book_file_service = Arc::new(Mutex::new(BookFileService::new(book_file_repo)));
-        let mut file_repo_guard = book_file_service
-            .lock()
-            .map_err(|_| ClientError::GenericError)?;
-        let files = file_repo_guard
-            .find_all_for_book_id(book.id)
+        let files = self.client_v2.book_files().list_all_by_book_id(book.id)
             .map_err(|_| ClientError::GenericError)?;
 
         Ok(BookWithAuthorsAndFiles {
@@ -287,7 +270,7 @@ impl CalibreClient {
     }
 
     fn add_book_files(
-        &self,
+        &mut self,
         files: &Vec<NewLibraryFileDto>,
         book_title: &String,
         book_id: i32,
@@ -295,22 +278,19 @@ impl CalibreClient {
         book_dir_rel_path: PathBuf,
         file_service: &FileService,
     ) -> Result<Vec<BookFile>, ClientError> {
-        let book_file_repo = Box::new(BookFileRepository::new(
-            &self.validated_library_path.database_path,
-        ));
-        let mut book_file_service = BookFileService::new(book_file_repo);
+        let book_files = self.client_v2.book_files();
 
         files
             .iter()
             .map(|file| {
                 let book_file_name = gen_book_file_name(book_title, primary_author_name);
-                let added_book = book_file_service
-                    .create(NewFileDto {
-                        path: file.path.clone(),
-                        book_id,
-                        name: book_file_name,
-                    })
-                    .map_err(|_| ClientError::GenericError)?;
+                let nbf = NewBookFile::try_from(NewFileDto {
+                path: file.path.clone(),
+	                book_id,
+	                name: book_file_name,
+                }).unwrap();
+                let added_book = book_files.create(nbf)
+                .map_err(|_| ClientError::GenericError)?;
 
                 let book_rel_path = Path::new(&book_dir_rel_path).join(&added_book.as_filename());
                 let _ = file_service
@@ -479,11 +459,11 @@ impl<'a> MetadataOpf<'a> {
 
 #[derive(Debug)]
 enum ClientError {
-	GenericError
+    GenericError,
 }
 impl std::fmt::Display for ClientError {
-	fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-		write!(f, "{:?}", self)
-	}
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 impl std::error::Error for ClientError {}
