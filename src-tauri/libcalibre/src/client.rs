@@ -1,5 +1,7 @@
 use crate::application::services::domain::file::dto::NewFileDto;
-use crate::application::services::library::dto::NewLibraryFileDto;
+use crate::dtos::library::NewLibraryEntryDto;
+use crate::dtos::library::NewLibraryFileDto;
+use crate::dtos::library::UpdateLibraryEntryDto;
 use crate::Book;
 use chrono::DateTime;
 use chrono::NaiveDateTime;
@@ -20,8 +22,6 @@ use diesel::RunQueryDsl;
 use crate::dtos::author::NewAuthorDto;
 use crate::application::services::domain::file::service::BookFileService;
 use crate::application::services::domain::file::service::BookFileServiceTrait;
-use crate::application::services::library::dto::NewLibraryEntryDto;
-use crate::application::services::library::dto::UpdateLibraryEntryDto;
 
 use crate::domain::book::entity::NewBook;
 use crate::domain::book::entity::UpdateBookData;
