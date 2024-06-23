@@ -5,9 +5,11 @@ import {
 	Button,
 	Fieldset,
 	Group,
+	Paper,
 	Stack,
 	Text,
 	TextInput,
+	Textarea,
 	Title,
 } from "@mantine/core";
 import { Form, useForm } from "@mantine/form";
@@ -92,6 +94,7 @@ const formValuesFromBook = (book: LibraryBook) => ({
 	sortTitle: book.sortable_title ?? "",
 	authorList: book.author_list.map((author) => author.name),
 	identifierList: book.identifier_list,
+	description: book.description ?? "",
 });
 
 // How much an element has to be offset vertically to account for the lack of a
@@ -202,6 +205,16 @@ const EditBookForm = ({
 								))}
 							</Fieldset>
 						</Group>
+					)}
+					{form.values.description.length > 0 && (
+						<Paper shadow="sm" p="lg">
+							<Text size="lg">Description</Text>
+							<Textarea
+								disabled
+								value={form.values.description}
+								autosize
+							/>
+						</Paper>
 					)}
 				</Stack>
 			</Group>

@@ -58,12 +58,8 @@ const genLocalCalibreClient = async (
 		listAuthors() {
 			return commands.clbQueryListAllAuthors(config.library_path);
 		},
-		sendToDevice: async (book, deviceOptions) => {
-			await commands.calibreSendToDevice(
-				config.library_path,
-				deviceOptions.path,
-				book,
-			);
+		sendToDevice: () => {
+			throw new Error("Not implemented");
 		},
 		updateBook: async (bookId, updates) => {
 			await commands.clbCmdUpdateBook(options.libraryPath, bookId, updates);
