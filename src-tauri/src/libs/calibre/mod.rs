@@ -7,8 +7,8 @@ use crate::book::LibraryBook;
 
 use chrono::NaiveDateTime;
 use libcalibre::application::services::domain::book::dto::UpdateBookDto;
-use libcalibre::application::services::library::dto::UpdateLibraryEntryDto;
 use libcalibre::client::CalibreClient;
+use libcalibre::dtos::library::UpdateLibraryEntryDto;
 use libcalibre::mime_type::MIMETYPE;
 use serde::Deserialize;
 use serde::Serialize;
