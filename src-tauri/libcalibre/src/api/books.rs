@@ -3,9 +3,7 @@ use std::sync::Mutex;
 
 use diesel::prelude::*;
 
-use crate::domain::book::entity::NewBook;
-use crate::domain::book::entity::UpdateBookData;
-use crate::domain::book::entity::UpsertBookIdentifier;
+use crate::entities::book::{NewBook, UpdateBookData, UpsertBookIdentifier};
 use crate::models::Identifier;
 use crate::Book;
 

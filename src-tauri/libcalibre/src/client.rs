@@ -22,8 +22,7 @@ use diesel::RunQueryDsl;
 
 use crate::dtos::author::NewAuthorDto;
 
-use crate::domain::book::entity::NewBook;
-use crate::domain::book::entity::UpdateBookData;
+use crate::entities::book::{NewBook, UpdateBookData};
 use crate::models::Identifier;
 use crate::persistence::establish_connection;
 use crate::util::ValidDbPath;

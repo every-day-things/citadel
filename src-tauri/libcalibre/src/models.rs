@@ -1,6 +1,6 @@
 use diesel::prelude::*;
 
-use crate::domain::book::entity::Book;
+use crate::entities::book::Book;
 
 use super::schema::*;
 
