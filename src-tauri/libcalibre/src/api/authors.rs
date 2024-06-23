@@ -5,6 +5,7 @@ use diesel::prelude::*;
 use diesel::SelectableHelper;
 
 use crate::dtos::author::NewAuthorDto;
+use crate::dtos::author::UpdateAuthorDto;
 use crate::entities::author::NewAuthor;
 use crate::entities::author::UpdateAuthorData;
 use crate::Author;
@@ -28,8 +29,9 @@ impl AuthorsHandler {
             .or(Err(()))
     }
 
-    pub fn create(&mut self, new_author: &NewAuthor) -> Result<Author, ()> {
+    pub fn create(&mut self, dto: NewAuthorDto) -> Result<Author, ()> {
         use crate::schema::authors::dsl::*;
+        let new_author = NewAuthor::try_from(dto)?;
         let mut connection = self.client.lock().unwrap();
 
         diesel::insert_into(authors)
@@ -40,10 +42,9 @@ impl AuthorsHandler {
     }
 
     pub fn create_if_missing(&mut self, dto: NewAuthorDto) -> Result<Author, ()> {
-        let author = NewAuthor::try_from(dto)?;
-        match self.find_by_name(&author.name)? {
+        match self.find_by_name(&dto.full_name)? {
             Some(author) => Ok(author),
-            _ => self.create(&author),
+            _ => self.create(dto),
         }
     }
 
@@ -71,9 +72,10 @@ impl AuthorsHandler {
             .map_err(|_| ())
     }
 
-    pub fn update(&mut self, author_id: i32, author: &UpdateAuthorData) -> Result<Author, ()> {
+    pub fn update(&mut self, author_id: i32, dto: UpdateAuthorDto) -> Result<Author, ()> {
         use crate::schema::authors::dsl::*;
         let mut connection = self.client.lock().unwrap();
+        let author = UpdateAuthorData::try_from(dto)?;
 
         diesel::update(authors)
             .filter(id.eq(author_id))
