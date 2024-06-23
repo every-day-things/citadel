@@ -3,7 +3,7 @@ use std::sync::Mutex;
 
 use diesel::prelude::*;
 
-use crate::domain::book_file::entity::{BookFile, NewBookFile, UpdateBookFile};
+use crate::entities::book_file::{BookFile, NewBookFile, UpdateBookFile};
 
 pub struct BookFilesHandler {
     client: Arc<Mutex<SqliteConnection>>,

@@ -2,7 +2,6 @@ mod api;
 pub mod client;
 pub mod client_v2;
 mod cover_image;
-pub mod domain;
 pub mod dtos;
 mod entities;
 pub mod mime_type;
@@ -14,10 +13,9 @@ pub mod util;
 use diesel::SqliteConnection;
 use std::sync::{Arc, Mutex};
 
-pub use domain::book_file::entity::BookFile;
-pub use entities::author::Author;
-pub use entities::book::Book;
-pub use entities::book_aggregate::BookWithAuthorsAndFiles;
+pub use entities::{
+    author::Author, book::Book, book_aggregate::BookWithAuthorsAndFiles, book_file::BookFile,
+};
 
 pub struct ClientV2 {
     connection: Arc<Mutex<SqliteConnection>>,

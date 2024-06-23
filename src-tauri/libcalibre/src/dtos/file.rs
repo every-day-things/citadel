@@ -1,7 +1,7 @@
 use std::{fs::File, path::PathBuf};
 
 use crate::{
-    domain::book_file::entity::{NewBookFile, UpdateBookFile},
+    entities::book_file::{NewBookFile, UpdateBookFile},
     mime_type::MIMETYPE,
 };
 
