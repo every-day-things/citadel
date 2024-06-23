@@ -1,6 +1,6 @@
-use crate::domain::author::entity::Author;
 use crate::domain::book::entity::Book;
 use crate::domain::book_file::entity::BookFile;
+use crate::entities::author::Author;
 
 #[derive(Debug)]
 pub struct BookWithAuthorsAndFiles {

@@ -58,4 +58,3 @@ impl BookFilesHandler {
             .or(Err(()))
     }
 }
-

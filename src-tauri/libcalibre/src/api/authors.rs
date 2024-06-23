@@ -4,8 +4,9 @@ use std::sync::Mutex;
 use diesel::prelude::*;
 use diesel::SelectableHelper;
 
-use crate::domain::author::entity::NewAuthor;
 use crate::dtos::author::NewAuthorDto;
+use crate::entities::author::NewAuthor;
+use crate::entities::author::UpdateAuthorData;
 use crate::Author;
 
 pub struct AuthorsHandler {
@@ -70,11 +71,7 @@ impl AuthorsHandler {
             .map_err(|_| ())
     }
 
-    pub fn update(
-        &mut self,
-        author_id: i32,
-        author: &crate::domain::author::entity::UpdateAuthorData,
-    ) -> Result<Author, ()> {
+    pub fn update(&mut self, author_id: i32, author: &UpdateAuthorData) -> Result<Author, ()> {
         use crate::schema::authors::dsl::*;
         let mut connection = self.client.lock().unwrap();
 
