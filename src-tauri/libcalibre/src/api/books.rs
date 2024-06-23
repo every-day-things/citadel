@@ -16,18 +16,9 @@ impl BooksHandler {
         Self { client }
     }
 
-    pub fn create(&self, book: NewBook) -> Result<Book, ()> {
+    pub fn create(&self, new_book: NewBook) -> Result<Book, ()> {
         use crate::schema::books::dsl::*;
         let mut connection = self.client.lock().unwrap();
-
-        let new_book = NewBook {
-            title: book.title.clone(),
-            timestamp: book.timestamp,
-            pubdate: book.pubdate,
-            series_index: book.series_index,
-            flags: book.flags,
-            has_cover: book.has_cover,
-        };
 
         let b = diesel::insert_into(books)
             .values(new_book)
