@@ -1,6 +1,6 @@
-use crate::application::services::domain::file::dto::NewFileDto;
 use crate::cover_image::cover_image_data_from_path;
 use crate::domain::book_file::entity::NewBookFile;
+use crate::dtos::file::NewFileDto;
 use crate::dtos::library::NewLibraryEntryDto;
 use crate::dtos::library::NewLibraryFileDto;
 use crate::dtos::library::UpdateLibraryEntryDto;
