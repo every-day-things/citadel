@@ -209,11 +209,7 @@ const EditBookForm = ({
 					{form.values.description.length > 0 && (
 						<Paper shadow="sm" p="lg">
 							<Text size="lg">Description</Text>
-							<Textarea
-								disabled
-								value={form.values.description}
-								autosize
-							/>
+							<Textarea disabled value={form.values.description} autosize />
 						</Paper>
 					)}
 				</Stack>

@@ -10,12 +10,17 @@ pub struct BookWithAuthorsAndFiles {
 }
 
 impl BookWithAuthorsAndFiles {
-    pub fn new(book: Book, authors: Vec<Author>, files: Vec<BookFile>, description: Option<String>) -> Self {
+    pub fn new(
+        book: Book,
+        authors: Vec<Author>,
+        files: Vec<BookFile>,
+        description: Option<String>,
+    ) -> Self {
         Self {
             book,
             authors,
             files,
-            book_description_html: description
+            book_description_html: description,
         }
     }
 }

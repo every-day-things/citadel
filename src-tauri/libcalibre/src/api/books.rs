@@ -157,23 +157,22 @@ impl BooksHandler {
             .get_result::<i32>(&mut *connection)
             .or(Err(()))
     }
-    
+
     // === === ===
     // Descriptions
     // === === ===
-    
-    pub fn get_description(&mut self, book_id: i32) -> Result<Option<String>, ()> {
-    	use crate::schema::comments::dsl::*;
-     	let mut connection = self.client.lock().unwrap();
-      
-      comments
-        .filter(book.eq(book_id))
-        .select(text)
-        .first(&mut *connection)
-        .optional()
-       	.or(Err(()))
-    }
 
+    pub fn get_description(&mut self, book_id: i32) -> Result<Option<String>, ()> {
+        use crate::schema::comments::dsl::*;
+        let mut connection = self.client.lock().unwrap();
+
+        comments
+            .filter(book.eq(book_id))
+            .select(text)
+            .first(&mut *connection)
+            .optional()
+            .or(Err(()))
+    }
 }
 
 fn uuid_for_book(conn: &mut SqliteConnection, book_id: i32) -> Option<String> {

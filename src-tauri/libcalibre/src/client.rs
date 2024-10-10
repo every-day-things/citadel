@@ -152,7 +152,7 @@ impl CalibreClient {
             book,
             authors: created_author_list,
             files: created_files,
-            book_description_html: None
+            book_description_html: None,
         })
     }
 
