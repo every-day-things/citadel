@@ -1,7 +1,11 @@
 use std::path::PathBuf;
 
 use chrono::{NaiveDate, NaiveDateTime};
-use libcalibre::dtos::{author::NewAuthorDto, book::NewBookDto, library::{NewLibraryEntryDto, NewLibraryFileDto}};
+use libcalibre::dtos::{
+    author::NewAuthorDto,
+    book::NewBookDto,
+    library::{NewLibraryEntryDto, NewLibraryFileDto},
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, specta::Type, Deserialize, Clone)]
@@ -49,8 +53,8 @@ pub struct LibraryBook {
     pub cover_image: Option<LocalOrRemoteUrl>,
 
     pub identifier_list: Vec<Identifier>,
-    
-    pub description: Option<String>
+
+    pub description: Option<String>,
 }
 
 #[derive(Serialize, specta::Type, Deserialize, Clone)]

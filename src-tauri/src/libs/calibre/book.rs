@@ -42,7 +42,7 @@ fn to_library_book(
         cover_image: None,
 
         identifier_list: identifer_list.clone(),
-        
+
         description,
     }
 }
@@ -94,7 +94,7 @@ pub fn list_all(library_root: String) -> Vec<LibraryBook> {
                         b.authors.clone(),
                         b.files.clone(),
                         identifer_list,
-                        b.book_description_html.clone()
+                        b.book_description_html.clone(),
                     );
                     calibre_book.cover_image = book_cover_image(&library_root, &b.book);
 
