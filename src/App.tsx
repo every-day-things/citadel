@@ -9,7 +9,7 @@ import { FirstTimeSetup } from "./components/pages/firstTimeSetup";
 import { routeTree } from "./routeTree.gen";
 import {
 	getActiveLibrary,
-	getActiveLibraryFromSchema,
+	isSettingsReady,
 	settings as settingsStore,
 	waitForSettings,
 } from "./stores/settings";
@@ -27,6 +27,8 @@ declare module "@tanstack/react-router" {
 export const App = () => {
 	const [isLoading, setIsLoading] = useState(true);
 	const [libraryPath, setLibraryPath] = useState<string | null>(null);
+	const [previousActiveLibraryId, setPreviousActiveLibraryId] =
+		useState<string>("");
 	const updateLibraryPath = useCallback(async () => {
 		const activeLibrary = await getActiveLibrary(settingsStore);
 		if (activeLibrary.isSome) {
@@ -41,23 +43,45 @@ export const App = () => {
 		const fetchSettings = async () => {
 			await waitForSettings();
 
-			settingsStore.subscribe((settings) => {
-				if (settings !== undefined) {
-					const activeLibrary = getActiveLibraryFromSchema(settings);
-					if (activeLibrary.isSome) {
-						setLibraryPath(activeLibrary.value.absolutePath);
-					} else {
-						setLibraryPath(null);
-					}
-
-					setIsLoading(false);
-				}
-			});
+			const activeLibrary = await getActiveLibrary(settingsStore);
+			if (activeLibrary.isSome) {
+				setLibraryPath(activeLibrary.value.absolutePath);
+			} else {
+				setLibraryPath(null);
+			}
 		};
 
 		safeAsyncEventHandler(fetchSettings)();
 	}, []);
-	safeAsyncEventHandler(setupAppWindow)();
+
+	// Update the library path whenever the settings change (e.g. user changes the
+	// active library)
+	useEffect(() => {
+		// Update the active library's path whenever the activeLibraryId changes
+		const unsub = settingsStore.subscribe((settings) => {
+			if (
+				isSettingsReady() &&
+				settings?.activeLibraryId &&
+				settings?.libraryPaths &&
+				settings.activeLibraryId.length > 0 &&
+				previousActiveLibraryId !== settings.activeLibraryId
+			) {
+				const activeLibrary = settings.libraryPaths.find(
+					(library) => library.id === settings.activeLibraryId,
+				);
+				if (activeLibrary) {
+					setLibraryPath(activeLibrary.absolutePath);
+					setPreviousActiveLibraryId(activeLibrary.id);
+				} else {
+					setLibraryPath(null);
+				}
+			}
+
+			setIsLoading(false);
+		});
+
+		return unsub;
+	}, [previousActiveLibraryId]);
 
 	useEffect(() => {
 		if (!isLoading) {

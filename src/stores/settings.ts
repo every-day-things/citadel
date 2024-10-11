@@ -5,19 +5,20 @@ import {
 	SettingsManager as TauriSettingsManager,
 } from "tauri-settings";
 import type { Path, PathValue } from "tauri-settings/dist/types/dot-notation";
-
 import { type Option, none, some } from "@/lib/option";
+
+export interface LibraryPath {
+	id: string;
+	displayName: string;
+	absolutePath: string;
+}
 
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 export type SettingsSchema = {
 	theme: "dark" | "light";
 	startFullscreen: boolean;
 	activeLibraryId: string;
-	libraryPaths: {
-		displayName: string;
-		absolutePath: string;
-		id: string;
-	}[];
+	libraryPaths: LibraryPath[];
 	// @deprecated Use `activeLibraryId` and `libraryPaths` instead
 	calibreLibraryPath: string;
 };
@@ -30,6 +31,7 @@ interface SettingsManager<T> {
 	settings: T;
 }
 
+let isReady = false;
 let resolveSettingsLoaded: () => void;
 const settingsLoadedPromise = new Promise<void>((resolve) => {
 	resolveSettingsLoaded = resolve;
@@ -84,6 +86,7 @@ const createSettingsStore = () => {
 					settings.update((s) => ({ ...s, [key]: value }));
 				}
 				resolveSettingsLoaded();
+				isReady = true;
 			}),
 		)
 		.catch((e) => {
@@ -107,6 +110,7 @@ const createSettingsStore = () => {
 
 export const waitForSettings = () => settingsLoadedPromise;
 export const settings = createSettingsStore();
+export const isSettingsReady = () => isReady;
 
 // TODO: Replace this with a proper UUID generator
 const uuidv4 = () => {
@@ -123,6 +127,14 @@ export const createSettingsLibrary = async (
 ): Promise<string> => {
 	const libraryId = uuidv4();
 	const displayName = absolutePath.split("/").at(-1) ?? "";
+	const existingLibraryPaths = await store.get("libraryPaths") ?? [];
+
+	const wouldBeDuplicate = existingLibraryPaths.find((library) => library.absolutePath === absolutePath);
+
+	if (wouldBeDuplicate) {
+		return wouldBeDuplicate.id;
+	}
+
 	await store.set("libraryPaths", [
 		...(await store.get("libraryPaths")),
 		{
@@ -139,39 +151,31 @@ export const setActiveLibrary = async (
 	store: typeof settings,
 	libraryId: string,
 ): Promise<void> => {
-	console.log("Setting active library to", libraryId);
-	try {
-		await store.set("activeLibraryId", libraryId);
-	} catch (e) {
-		console.error("Failed to set active library", e);
-	}
+	await store.set("activeLibraryId", libraryId);
 
 	return;
+};
+
+const isActiveLibraryIdSet = (libraryId: string) => {
+	return (libraryId.length > 0);
 };
 
 export const getActiveLibrary = async (
 	store: typeof settings,
 ): Promise<Option<SettingsSchema["libraryPaths"][number]>> => {
 	const activeLibraryId = await store.get("activeLibraryId");
-	if (activeLibraryId === null) return none();
+
+	// Support one-time migration from old schema
+	const calibreLibraryPath = await settings.get("calibreLibraryPath") ?? "";
+	if (!isActiveLibraryIdSet(activeLibraryId) && calibreLibraryPath.length > 0) {
+		const newLibraryId = await createSettingsLibrary(settings, calibreLibraryPath);
+		await setActiveLibrary(settings, newLibraryId);
+		await settings.set("calibreLibraryPath", "");
+	} else if (!isActiveLibraryIdSet(activeLibraryId)) {
+		return none();
+	}
 
 	const activeLibrary = (await store.get("libraryPaths")).find(
-		(library) => library.id === activeLibraryId,
-	);
-	if (activeLibrary !== undefined) return some(activeLibrary);
-
-	return none();
-};
-
-export const getActiveLibraryFromSchema = (
-	settings: SettingsSchema,
-): Option<SettingsSchema["libraryPaths"][number]> => {
-	console.log(settings);
-
-	const activeLibraryId = settings.activeLibraryId;
-	if (activeLibraryId === null) return none();
-
-	const activeLibrary = settings.libraryPaths.find(
 		(library) => library.id === activeLibraryId,
 	);
 	if (activeLibrary !== undefined) return some(activeLibrary);
