@@ -242,12 +242,6 @@ const SidebarPure = ({
 				<Button variant="outline" onPointerDown={switchLibraryHandler}>
 					Switch library
 				</Button>
-				<Button variant="transparent" justify="flex-start">
-					First-time setup
-				</Button>
-				<Button variant="transparent" justify="flex-start">
-					Configure library
-				</Button>
 			</Stack>
 			<Divider my="md" />
 			<Stack>
