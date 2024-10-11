@@ -29,8 +29,8 @@ export const App = () => {
 	}, []);
 	useEffect(() => {
 		settings.subscribe((settings) => {
-			if (settings !== undefined && settings.calibreLibraryPath?.length > 0) {
-				setLibraryPath(settings.calibreLibraryPath);
+			if (settings !== undefined) {
+				setLibraryPath(settings.calibreLibraryPath || null);
 				setIsLoading(false);
 			}
 		});
