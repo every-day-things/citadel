@@ -127,9 +127,11 @@ export const createSettingsLibrary = async (
 ): Promise<string> => {
 	const libraryId = uuidv4();
 	const displayName = absolutePath.split("/").at(-1) ?? "";
-	const existingLibraryPaths = await store.get("libraryPaths") ?? [];
+	const existingLibraryPaths = (await store.get("libraryPaths")) ?? [];
 
-	const wouldBeDuplicate = existingLibraryPaths.find((library) => library.absolutePath === absolutePath);
+	const wouldBeDuplicate = existingLibraryPaths.find(
+		(library) => library.absolutePath === absolutePath,
+	);
 
 	if (wouldBeDuplicate) {
 		return wouldBeDuplicate.id;
@@ -157,7 +159,7 @@ export const setActiveLibrary = async (
 };
 
 const isActiveLibraryIdSet = (libraryId: string) => {
-	return (libraryId.length > 0);
+	return libraryId.length > 0;
 };
 
 export const getActiveLibrary = async (
@@ -166,9 +168,12 @@ export const getActiveLibrary = async (
 	const activeLibraryId = await store.get("activeLibraryId");
 
 	// Support one-time migration from old schema
-	const calibreLibraryPath = await settings.get("calibreLibraryPath") ?? "";
+	const calibreLibraryPath = (await settings.get("calibreLibraryPath")) ?? "";
 	if (!isActiveLibraryIdSet(activeLibraryId) && calibreLibraryPath.length > 0) {
-		const newLibraryId = await createSettingsLibrary(settings, calibreLibraryPath);
+		const newLibraryId = await createSettingsLibrary(
+			settings,
+			calibreLibraryPath,
+		);
 		await setActiveLibrary(settings, newLibraryId);
 		await settings.set("calibreLibraryPath", "");
 	} else if (!isActiveLibraryIdSet(activeLibraryId)) {

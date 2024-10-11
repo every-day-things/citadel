@@ -8,13 +8,17 @@ export const none = <T>(): Option<T> => ({
 	value: null,
 });
 
-export type Option<T> = {
-	isSome: true;
-	value: T;
-} | {
-	isSome: false;
-	value: null;
-};
+export type Option<T> =
+	| {
+			isSome: true;
+			value: T;
+			// eslint-disable-next-line no-mixed-spaces-and-tabs
+	  }
+	| {
+			isSome: false;
+			value: null;
+			// eslint-disable-next-line no-mixed-spaces-and-tabs
+	  };
 
 export const unwrap = <T>(option: Option<T>): T => {
 	if (option.isSome) {
