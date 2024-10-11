@@ -7,7 +7,12 @@ import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { FirstTimeSetup } from "./components/pages/firstTimeSetup";
 import { routeTree } from "./routeTree.gen";
-import { settings } from "./stores/settings";
+import {
+	getActiveLibrary,
+	getActiveLibraryFromSchema,
+	settings as settingsStore,
+	waitForSettings,
+} from "./stores/settings";
 
 const router = createRouter({
 	routeTree,
@@ -23,18 +28,36 @@ export const App = () => {
 	const [isLoading, setIsLoading] = useState(true);
 	const [libraryPath, setLibraryPath] = useState<string | null>(null);
 	const updateLibraryPath = useCallback(async () => {
-		const libPath = await settings.get("calibreLibraryPath");
-		setLibraryPath(libPath);
+		const activeLibrary = await getActiveLibrary(settingsStore);
+		if (activeLibrary.isSome) {
+			setLibraryPath(activeLibrary.value.absolutePath);
+		} else {
+			setLibraryPath(null);
+		}
+
 		setIsLoading(false);
 	}, []);
 	useEffect(() => {
-		settings.subscribe((settings) => {
-			if (settings !== undefined) {
-				setLibraryPath(settings.calibreLibraryPath || null);
-				setIsLoading(false);
-			}
-		});
+		const fetchSettings = async () => {
+			await waitForSettings();
+
+			settingsStore.subscribe((settings) => {
+				if (settings !== undefined) {
+					const activeLibrary = getActiveLibraryFromSchema(settings);
+					if (activeLibrary.isSome) {
+						setLibraryPath(activeLibrary.value.absolutePath);
+					} else {
+						setLibraryPath(null);
+					}
+
+					setIsLoading(false);
+				}
+			});
+		};
+
+		safeAsyncEventHandler(fetchSettings)();
 	}, []);
+	safeAsyncEventHandler(setupAppWindow)();
 
 	useEffect(() => {
 		if (!isLoading) {
@@ -59,7 +82,7 @@ export const App = () => {
 	}
 
 	return (
-		<SettingsProvider value={settings}>
+		<SettingsProvider value={settingsStore}>
 			<LibraryProvider libraryPath={libraryPath}>
 				<ColorSchemeScript defaultColorScheme="auto" />
 				<MantineProvider theme={theme} defaultColorScheme="auto">

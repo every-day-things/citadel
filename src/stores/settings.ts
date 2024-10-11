@@ -1,15 +1,24 @@
 import { safeAsyncEventHandler } from "@/lib/async";
 import { writable } from "svelte/store";
 import {
-	SettingsManager as TauriSettingsManager,
 	type ConfigOptions,
+	SettingsManager as TauriSettingsManager,
 } from "tauri-settings";
 import type { Path, PathValue } from "tauri-settings/dist/types/dot-notation";
+
+import { type Option, none, some } from "@/lib/option";
 
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 export type SettingsSchema = {
 	theme: "dark" | "light";
 	startFullscreen: boolean;
+	activeLibraryId: string;
+	libraryPaths: {
+		displayName: string;
+		absolutePath: string;
+		id: string;
+	}[];
+	// @deprecated Use `activeLibraryId` and `libraryPaths` instead
 	calibreLibraryPath: string;
 };
 
@@ -59,7 +68,10 @@ const createSettingsStore = () => {
 	const defaultSettings: SettingsSchema = {
 		theme: "light",
 		startFullscreen: false,
+		// @deprecated Use `activeLibraryId` and `libraryPaths` instead
 		calibreLibraryPath: "",
+		activeLibraryId: "",
+		libraryPaths: [],
 	};
 	const settings = writable<SettingsSchema>();
 	const manager = genSettingsManager(defaultSettings, {});
@@ -95,3 +107,74 @@ const createSettingsStore = () => {
 
 export const waitForSettings = () => settingsLoadedPromise;
 export const settings = createSettingsStore();
+
+// TODO: Replace this with a proper UUID generator
+const uuidv4 = () => {
+	return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+		const r = (Math.random() * 16) | 0;
+		const v = c === "x" ? r : (r & 0x3) | 0x8;
+		return v.toString(16);
+	});
+};
+
+export const createSettingsLibrary = async (
+	store: typeof settings,
+	absolutePath: string,
+): Promise<string> => {
+	const libraryId = uuidv4();
+	const displayName = absolutePath.split("/").at(-1) ?? "";
+	await store.set("libraryPaths", [
+		...(await store.get("libraryPaths")),
+		{
+			id: libraryId,
+			displayName,
+			absolutePath,
+		},
+	]);
+
+	return libraryId;
+};
+
+export const setActiveLibrary = async (
+	store: typeof settings,
+	libraryId: string,
+): Promise<void> => {
+	console.log("Setting active library to", libraryId);
+	try {
+		await store.set("activeLibraryId", libraryId);
+	} catch (e) {
+		console.error("Failed to set active library", e);
+	}
+
+	return;
+};
+
+export const getActiveLibrary = async (
+	store: typeof settings,
+): Promise<Option<SettingsSchema["libraryPaths"][number]>> => {
+	const activeLibraryId = await store.get("activeLibraryId");
+	if (activeLibraryId === null) return none();
+
+	const activeLibrary = (await store.get("libraryPaths")).find(
+		(library) => library.id === activeLibraryId,
+	);
+	if (activeLibrary !== undefined) return some(activeLibrary);
+
+	return none();
+};
+
+export const getActiveLibraryFromSchema = (
+	settings: SettingsSchema,
+): Option<SettingsSchema["libraryPaths"][number]> => {
+	console.log(settings);
+
+	const activeLibraryId = settings.activeLibraryId;
+	if (activeLibraryId === null) return none();
+
+	const activeLibrary = settings.libraryPaths.find(
+		(library) => library.id === activeLibraryId,
+	);
+	if (activeLibrary !== undefined) return some(activeLibrary);
+
+	return none();
+};
