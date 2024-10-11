@@ -5,7 +5,7 @@ pub struct BookWithAuthorsAndFiles {
     pub book: Book,
     pub authors: Vec<Author>,
     pub files: Vec<BookFile>,
-    /// An partially HTML-formatted description of the book. User-editable.
+    /// A partially HTML-formatted description of the book. User-editable.
     pub book_description_html: Option<String>,
 }
 
