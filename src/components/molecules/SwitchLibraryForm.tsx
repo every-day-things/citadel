@@ -1,5 +1,13 @@
 import { safeAsyncEventHandler } from "@/lib/async";
-import { Button, Code, SimpleGrid, Stack, Text, TextInput, Title } from "@mantine/core";
+import {
+	Button,
+	Code,
+	SimpleGrid,
+	Stack,
+	Text,
+	TextInput,
+	Title,
+} from "@mantine/core";
 import { Form, useForm } from "@mantine/form";
 
 export interface SwitchLibraryForm {
@@ -50,22 +58,22 @@ export const SwitchLibraryForm = ({
 			{libraries.length > 1 && (
 				<>
 					<Title size={"sm"}>Select an existing library to switch to</Title>
-						<SimpleGrid cols={3}>
-							{libraries.map((library) => (
-								<Button
-									key={library.id}
-									variant="light"
-									color="blue"
-									disabled={library.id === currentLibraryId}
-									onPointerUp={safeAsyncEventHandler(async () => {
-										if (library.id === currentLibraryId) return;
-										await selectExistingLibrary(library.id);
-									})}
-								>
-									{library.displayName}
-								</Button>
-							))}
-						</SimpleGrid>
+					<SimpleGrid cols={3}>
+						{libraries.map((library) => (
+							<Button
+								key={library.id}
+								variant="light"
+								color="blue"
+								disabled={library.id === currentLibraryId}
+								onPointerUp={safeAsyncEventHandler(async () => {
+									if (library.id === currentLibraryId) return;
+									await selectExistingLibrary(library.id);
+								})}
+							>
+								{library.displayName}
+							</Button>
+						))}
+					</SimpleGrid>
 				</>
 			)}
 			<AddNewLibraryPathForm {...props} />
@@ -121,7 +129,13 @@ const AddNewLibraryPathForm = ({
 						form.setFieldValue("libraryPath", libPath);
 					})}
 				/>
-				<Button mt="mg" variant="filled" fullWidth type="submit" disabled={!form.values.libraryPath}>
+				<Button
+					mt="mg"
+					variant="filled"
+					fullWidth
+					type="submit"
+					disabled={!form.values.libraryPath}
+				>
 					Add library
 				</Button>
 			</Stack>

@@ -2,7 +2,11 @@ import { commands } from "@/bindings";
 import { safeAsyncEventHandler } from "@/lib/async";
 import { pickLibrary } from "@/lib/services/library";
 import { createLibrary } from "@/lib/services/library/_internal/pickLibrary";
-import { createSettingsLibrary, setActiveLibrary, settings } from "@/stores/settings";
+import {
+	createSettingsLibrary,
+	setActiveLibrary,
+	settings,
+} from "@/stores/settings";
 import { Button, Stack, Text, Title } from "@mantine/core";
 
 const openFilePicker = async (): Promise<
@@ -42,7 +46,10 @@ export const FirstTimeSetup = ({
 					if (returnStatus.type === "new library selected") {
 						await createLibrary(returnStatus.path);
 					}
-					const newLibraryId = await createSettingsLibrary(settings, returnStatus.path);
+					const newLibraryId = await createSettingsLibrary(
+						settings,
+						returnStatus.path,
+					);
 					await setActiveLibrary(settings, newLibraryId);
 					onLibraryPathPicked();
 				})}
