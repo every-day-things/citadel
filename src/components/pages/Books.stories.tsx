@@ -24,6 +24,7 @@ const MOCK_BOOK: LibraryBook = {
 	id: "0000004JFGPMWM6WMEEFXRKXK8",
 	uuid: "01901f97-c2c5-7ce8-9546-36455c321691",
 	author_list: [Bugliacci],
+	description: "",
 	file_list: [
 		{
 			Local: {
@@ -37,6 +38,7 @@ const MOCK_BOOK: LibraryBook = {
 	sortable_title: "Day I Bug'd, The",
 	identifier_list: [
 		{
+			id: 123,
 			label: "ISBN",
 			value: "987654321",
 		},
