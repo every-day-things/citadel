@@ -1,11 +1,21 @@
-import { ImportableBookMetadata, LibraryAuthor, commands } from "@/bindings";
+import {
+	type ImportableBookMetadata,
+	type LibraryAuthor,
+	commands,
+} from "@/bindings";
 import { LibraryState, useLibrary } from "@/lib/contexts/library";
 import { useSettings } from "@/lib/contexts/settings";
 import {
 	commitAddBook,
-	promptToAddBook,
 	pickLibrary,
+	promptToAddBook,
 } from "@/lib/services/library";
+import {
+	type LibraryPath,
+	createSettingsLibrary,
+	setActiveLibrary,
+	settings,
+} from "@/stores/settings";
 import { Button, Divider, Modal, Stack, Title } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { Link } from "@tanstack/react-router";
@@ -14,18 +24,16 @@ import {
 	AddBookForm,
 	title as addBookFormTitle,
 } from "../molecules/AddBookForm";
-import {
-	SWITCH_LIBRARY_TITLE as SwitchLibraryFormTitle,
-	SwitchLibraryForm,
-} from "../molecules/SwitchLibraryForm";
+import { SwitchLibraryForm } from "../molecules/SwitchLibraryForm";
 
 export const Sidebar = () => {
 	const { library, state, eventEmitter } = useLibrary();
 	const { set, subscribe } = useSettings();
 
 	const [metadata, setMetadata] = useState<ImportableBookMetadata | null>();
-	const [currentLibraryPath, setCurrentLibraryPath] = useState<string>();
+	const [activeLibraryId, setActiveLibraryId] = useState<string>();
 	const [authorList, setAuthorList] = useState<string[]>([]);
+	const [libraries, setLibraries] = useState<LibraryPath[]>([]);
 
 	const [
 		isAddBookModalOpen,
@@ -47,7 +55,13 @@ export const Sidebar = () => {
 	}, [library]);
 	useEffect(() => {
 		return subscribe((update) => {
-			setCurrentLibraryPath(update.calibreLibraryPath);
+			setLibraries(update.libraryPaths);
+			const activeLibrary = update.libraryPaths.find(
+				(library) => library.id === update.activeLibraryId,
+			);
+			if (activeLibrary) {
+				setActiveLibraryId(activeLibrary.id);
+			}
 		});
 	}, [subscribe]);
 
@@ -86,19 +100,30 @@ export const Sidebar = () => {
 				console.error("Failed to add book to database", error);
 			});
 	};
-	const setNewLibraryPath = useCallback(
+	const addNewLibraryByPath = useCallback(
 		async (form: SwitchLibraryForm) => {
-			const selectedIsValid = await commands.clbQueryIsPathValidLibrary(
+			const isPathValidLibrary = await commands.clbQueryIsPathValidLibrary(
 				form.libraryPath,
 			);
 
-			if (selectedIsValid) {
-				await set("calibreLibraryPath", form.libraryPath);
+			if (isPathValidLibrary) {
+				const newLibraryId = await createSettingsLibrary(
+					settings,
+					form.libraryPath,
+				);
+				await setActiveLibrary(settings, newLibraryId);
 				closeSwitchLibraryModal();
 			} else {
 				// TODO: You could create a new library, if you like.
 				console.error("Invalid library path selected");
 			}
+		},
+		[closeSwitchLibraryModal],
+	);
+	const selectExistingLibrary = useCallback(
+		async (id: string) => {
+			await set("activeLibraryId", id);
+			closeSwitchLibraryModal();
 		},
 		[closeSwitchLibraryModal, set],
 	);
@@ -107,7 +132,7 @@ export const Sidebar = () => {
 		return null;
 	}
 
-	if (currentLibraryPath === undefined) {
+	if (activeLibraryId === undefined) {
 		return <p>Something went wrong!</p>;
 	}
 
@@ -127,10 +152,11 @@ export const Sidebar = () => {
 				onClose={closeSwitchLibraryModal}
 			>
 				<SwitchLibraryForm
-					hideTitle={true}
-					currentLibraryPath={currentLibraryPath}
-					onSubmit={(form) => void setNewLibraryPath(form)}
-					selectLibraryDirectory={pickLibrary}
+					currentLibraryId={activeLibraryId}
+					libraries={libraries}
+					onSubmit={(form) => void addNewLibraryByPath(form)}
+					selectExistingLibrary={selectExistingLibrary}
+					selectNewLibrary={pickLibrary}
 				/>
 			</SwitchLibraryPathModalPure>
 			<SidebarPure
@@ -205,7 +231,7 @@ const SwitchLibraryPathModalPure = ({
 			<Modal.Overlay blur={3} backgroundOpacity={0.35} />
 			<Modal.Content>
 				<Modal.Header>
-					<Modal.Title>{SwitchLibraryFormTitle}</Modal.Title>
+					<Modal.Title>Switch library</Modal.Title>
 					<Modal.CloseButton />
 				</Modal.Header>
 				<Modal.Body>{children}</Modal.Body>
