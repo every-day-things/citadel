@@ -44,15 +44,23 @@ fn run_tauri_backend() -> std::io::Result<()> {
 
     tauri::Builder::default()
         .setup(|app| {
-            let main_window =
-                tauri::WindowBuilder::new(app, "main", tauri::WindowUrl::App("index.html".into()))
-                    // Hide main app window until UI app is ready & makes visible
-                    .visible(false)
-                    // UI app controls custom window decorations
-                    .title_bar_style(tauri::TitleBarStyle::Overlay)
-                    .title("")
-                    .build()
-                    .expect("failed to create main window");
+            let main_window = {
+                let mut builder = tauri::WindowBuilder::new(
+                    app,
+                    "main",
+                    tauri::WindowUrl::App("index.html".into()),
+                )
+                // Hide main app window until UI app is ready & makes visible
+                .visible(false)
+                .title("");
+
+                #[cfg(target_os = "macos")]
+                {
+                    builder = builder.title_bar_style(tauri::TitleBarStyle::Overlay);
+                }
+
+                builder.build().expect("failed to create main window")
+            };
             main_window.center().unwrap();
 
             Ok(())
