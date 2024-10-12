@@ -8,7 +8,7 @@ import { path } from "@tauri-apps/api";
  * If possible, prefer async `@tauri-apps/api.path.join` instead.
  *
  * @param paths Path parts to join
- * @returns One string joining all parts, using platform-specific delimeter.
+ * @returns One string joining all parts, using platform-specific delimiter.
  *
  * @example
  * ```typescript

@@ -42,7 +42,7 @@ jobs:
 
       - name: List installed versions
         run: |
-          bun --verison;
+          bun --version;
           cargo --version;
           bun tauri --version
 

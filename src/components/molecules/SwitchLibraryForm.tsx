@@ -81,7 +81,7 @@ export const SwitchLibraryForm = ({
 	);
 };
 
-interface AddNewLibraryPathFomProps {
+interface AddNewLibraryPathFromProps {
 	onSubmit: (formData: SwitchLibraryForm) => void;
 	selectNewLibrary: () => Promise<string | undefined>;
 }
@@ -89,7 +89,7 @@ interface AddNewLibraryPathFomProps {
 const AddNewLibraryPathForm = ({
 	onSubmit,
 	selectNewLibrary: addNewLibraryByPath,
-}: AddNewLibraryPathFomProps) => {
+}: AddNewLibraryPathFromProps) => {
 	const form = useForm<SwitchLibraryForm>({
 		initialValues: {
 			libraryPath: "",

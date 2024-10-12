@@ -15,7 +15,7 @@ fn to_library_book(
     book: &libcalibre::Book,
     author_list: Vec<Author>,
     file_list: Vec<libcalibre::BookFile>,
-    identifer_list: Vec<Identifier>,
+    identifier_list: Vec<Identifier>,
     description: Option<String>,
 ) -> LibraryBook {
     LibraryBook {
@@ -41,7 +41,7 @@ fn to_library_book(
 
         cover_image: None,
 
-        identifier_list: identifer_list.clone(),
+        identifier_list: identifier_list.clone(),
 
         description,
     }
@@ -77,7 +77,7 @@ pub fn list_all(library_root: String) -> Vec<LibraryBook> {
             results
                 .iter()
                 .map(|b| {
-                    let identifer_list: Vec<_> = calibre
+                    let identifier_list: Vec<_> = calibre
                         .list_identifiers_for_book(b.book.id)
                         .unwrap_or(Vec::new())
                         .iter()
@@ -93,7 +93,7 @@ pub fn list_all(library_root: String) -> Vec<LibraryBook> {
                         &b.book,
                         b.authors.clone(),
                         b.files.clone(),
-                        identifer_list,
+                        identifier_list,
                         b.book_description_html.clone(),
                     );
                     calibre_book.cover_image = book_cover_image(&library_root, &b.book);

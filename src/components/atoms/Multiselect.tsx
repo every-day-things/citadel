@@ -67,7 +67,7 @@ export function MultiSelectCreatable({
 	};
 
 	const handleValueRemove = (val: string) => {
-		// TODO: Test that deselcting elements in the pick list AND by pill removes
+		// TODO: Test that deselecting elements in the pick list AND by pill removes
 		// them from the list of pills
 		setValue(_value.filter((v) => v !== val));
 		// TODO: Test that deselecting new elements that are not in `selectOptions`
