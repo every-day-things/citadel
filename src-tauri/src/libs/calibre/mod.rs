@@ -10,6 +10,7 @@ use libcalibre::client::CalibreClient;
 use libcalibre::dtos::book::UpdateBookDto;
 use libcalibre::dtos::library::UpdateLibraryEntryDto;
 use libcalibre::mime_type::MIMETYPE;
+use libcalibre::UpsertBookIdentifier;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -107,6 +108,52 @@ pub fn clb_cmd_create_book(library_root: String, md: ImportableBookMetadata) {
     }
 }
 
+#[tauri::command]
+#[specta::specta]
+pub fn clb_cmd_upsert_book_identifier(
+    library_root: String,
+    book_id: String,
+    label: String,
+    value: String,
+    existing_id: Option<i32>,
+) -> Result<(), ()> {
+    match libcalibre::util::get_db_path(&library_root) {
+        None => Err(()),
+        Some(database_path) => {
+            let mut calibre = CalibreClient::new(database_path);
+
+            let book_id_int = book_id.parse::<i32>().unwrap();
+            let result = calibre.upsert_book_identifier(UpsertBookIdentifier {
+                book_id: book_id_int,
+                id: existing_id,
+                label,
+                value,
+            });
+
+            result.map(|_| ()).map_err(|_| ())
+        }
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn clb_cmd_delete_book_identifier(
+    library_root: String,
+    book_id: String,
+    identifier_id: i32,
+) -> Result<(), ()> {
+    match libcalibre::util::get_db_path(&library_root) {
+        None => Err(()),
+        Some(database_path) => {
+            let mut calibre = CalibreClient::new(database_path);
+
+            let book_id_int = book_id.parse::<i32>().unwrap();
+            let result = calibre.delete_book_identifier(book_id_int, identifier_id);
+            result.map(|_| ()).map_err(|_| ())
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, specta::Type, Debug)]
 pub struct BookUpdate {
     pub author_id_list: Option<Vec<String>>,
@@ -114,8 +161,6 @@ pub struct BookUpdate {
     pub timestamp: Option<NaiveDateTime>,
     pub publication_date: Option<NaiveDateTime>,
     pub is_read: Option<bool>,
-    // pub tags: Option<String>,
-    // pub ext_id_list: Option<Vec<String>>,
 }
 
 impl BookUpdate {

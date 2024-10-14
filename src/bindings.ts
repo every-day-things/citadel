@@ -20,6 +20,22 @@ try {
     else return { status: "error", error: e  as any };
 }
 },
+async clbCmdUpsertBookIdentifier(libraryRoot: string, bookId: string, label: string, value: string, existingId: number | null) : Promise<__Result__<null, null>> {
+try {
+    return { status: "ok", data: await TAURI_INVOKE("plugin:tauri-specta|clb_cmd_upsert_book_identifier", { libraryRoot, bookId, label, value, existingId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async clbCmdDeleteBookIdentifier(libraryRoot: string, bookId: string, identifierId: number) : Promise<__Result__<null, null>> {
+try {
+    return { status: "ok", data: await TAURI_INVOKE("plugin:tauri-specta|clb_cmd_delete_book_identifier", { libraryRoot, bookId, identifierId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async clbQueryImportableFileMetadata(file: ImportableFile) : Promise<{ file_type: ImportableBookType; title: string; author_names: string[] | null; identifier: string | null; publisher: string | null; language: string | null; tags: string[]; path: string; publication_date: string | null; file_contains_cover: boolean } | null> {
 return await TAURI_INVOKE("plugin:tauri-specta|clb_query_importable_file_metadata", { file });
 },

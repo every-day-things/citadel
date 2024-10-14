@@ -167,6 +167,16 @@ impl BooksHandler {
             .or(Err(()))
     }
 
+    pub fn delete_book_identifier(&mut self, book_id: i32, identifier_id: i32) -> Result<(), ()> {
+        use crate::schema::identifiers::dsl::*;
+        let mut connection = self.client.lock().unwrap();
+
+        diesel::delete(identifiers.filter(book.eq(book_id).and(id.eq(identifier_id))))
+            .execute(&mut *connection)
+            .map(|_| ())
+            .or(Err(()))
+    }
+
     // === === ===
     // Descriptions
     // === === ===
