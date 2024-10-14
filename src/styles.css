@@ -20,3 +20,8 @@ body {
 * {
 	cursor: default !important;
 }
+
+a:any-link {
+	text-decoration-line: none;
+	text-decoration: none;
+}

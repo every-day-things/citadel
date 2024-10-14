@@ -274,7 +274,7 @@ const SidebarPure = ({
 				<Title order={5}>My shelves</Title>
 				{shelves.map(({ title, LinkComponent }) => (
 					<LinkComponent key={title}>
-						<Button variant="transparent" justify="flex-start">
+						<Button variant="subtle" justify="flex-start" fullWidth>
 							{title}
 						</Button>
 					</LinkComponent>
