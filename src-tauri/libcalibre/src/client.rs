@@ -5,6 +5,7 @@ use crate::dtos::library::NewLibraryFileDto;
 use crate::dtos::library::UpdateLibraryEntryDto;
 use crate::entities::book_file::NewBookFile;
 use crate::Book;
+use crate::UpsertBookIdentifier;
 use chrono::DateTime;
 use chrono::Utc;
 use sanitise_file_name::sanitise;
@@ -330,6 +331,18 @@ impl CalibreClient {
                 Ok(added_book)
             })
             .collect::<Result<Vec<BookFile>, ClientError>>()
+    }
+
+    // === Identifiers ===
+
+    pub fn upsert_book_identifier(&mut self, update: UpsertBookIdentifier) -> Result<i32, ()> {
+        self.client_v2.books().upsert_book_identifier(update)
+    }
+
+    pub fn delete_book_identifier(&mut self, book_id: i32, identifier_id: i32) -> Result<(), ()> {
+        self.client_v2
+            .books()
+            .delete_book_identifier(book_id, identifier_id)
     }
 
     /// Updates the library's ID to a new UUID.
