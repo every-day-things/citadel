@@ -155,11 +155,12 @@ impl BooksHandler {
     fn create_book_identifier(&mut self, update: UpsertBookIdentifier) -> Result<i32, ()> {
         use crate::schema::identifiers::dsl::*;
         let mut connection = self.client.lock().unwrap();
+        let lowercased_label = update.label.to_lowercase();
 
         diesel::insert_into(identifiers)
             .values((
                 book.eq(update.book_id),
-                type_.eq(update.label),
+                type_.eq(lowercased_label),
                 val.eq(update.value),
             ))
             .returning(id)

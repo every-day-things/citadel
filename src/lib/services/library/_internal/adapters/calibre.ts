@@ -64,6 +64,22 @@ const genLocalCalibreClient = async (
 		updateBook: async (bookId, updates) => {
 			await commands.clbCmdUpdateBook(options.libraryPath, bookId, updates);
 		},
+		upsertBookIdentifier: async (bookId, identifierId, label, value) => {
+			await commands.clbCmdUpsertBookIdentifier(
+				options.libraryPath,
+				bookId,
+				label,
+				value,
+				identifierId,
+			);
+		},
+		deleteBookIdentifier: async (bookId, identifierId) => {
+			await commands.clbCmdDeleteBookIdentifier(
+				options.libraryPath,
+				bookId,
+				identifierId,
+			);
+		},
 		getCoverPathForBook: (bookId) => {
 			return bookCoverCache.get(bookId)?.localPath;
 		},
@@ -132,6 +148,12 @@ const genRemoteCalibreClient = async (
 			throw new Error("Not implemented");
 		},
 		updateBook: () => {
+			throw new Error("Not implemented");
+		},
+		upsertBookIdentifier: () => {
+			throw new Error("Not implemented");
+		},
+		deleteBookIdentifier: () => {
 			throw new Error("Not implemented");
 		},
 		// The interface requires we accept param.
