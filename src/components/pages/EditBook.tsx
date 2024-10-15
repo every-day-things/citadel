@@ -14,7 +14,7 @@ import {
 	Title,
 } from "@mantine/core";
 import { Form, useForm } from "@mantine/form";
-import { type HTMLProps, useEffect, useMemo } from "react";
+import { type HTMLProps, useEffect, useMemo, useState } from "react";
 import { BookCover } from "../atoms/BookCover";
 import { MultiSelectCreatable } from "../atoms/Multiselect";
 
@@ -22,21 +22,22 @@ interface BookPageProps {
 	book: LibraryBook;
 	allAuthorList: LibraryAuthor[];
 	onSave: (bookUpdate: BookUpdate) => Promise<void>;
+	onDeleteIdentifier: (bookId: string, identifierId: number) => Promise<void>;
+	onUpsertIdentifier: (
+		bookId: string,
+		identifierId: number | null,
+		label: string,
+		value: string,
+	) => Promise<void>;
 }
 
-export const BookPage = ({ book, allAuthorList, onSave }: BookPageProps) => {
-	return (
-		<BookPagePure book={book} allAuthorList={allAuthorList} onSave={onSave} />
-	);
-};
-
-interface BookPagePureProps {
-	book: LibraryBook;
-	allAuthorList: LibraryAuthor[];
-	onSave: (bookUpdate: BookUpdate) => Promise<void>;
-}
-
-const BookPagePure = ({ book, allAuthorList, onSave }: BookPagePureProps) => {
+export const BookPage = ({
+	book,
+	allAuthorList,
+	onSave,
+	onUpsertIdentifier,
+	onDeleteIdentifier,
+}: BookPageProps) => {
 	return (
 		<Stack h={"100%"}>
 			<Title size="md">
@@ -45,7 +46,13 @@ const BookPagePure = ({ book, allAuthorList, onSave }: BookPagePureProps) => {
 				</Text>{" "}
 				– {book.title}
 			</Title>
-			<EditBookForm book={book} allAuthorList={allAuthorList} onSave={onSave} />
+			<EditBookForm
+				book={book}
+				allAuthorList={allAuthorList}
+				onSave={onSave}
+				onDeleteIdentifier={onDeleteIdentifier}
+				onUpsertIdentifier={onUpsertIdentifier}
+			/>
 		</Stack>
 	);
 };
@@ -99,10 +106,19 @@ const EditBookForm = ({
 	book,
 	allAuthorList,
 	onSave,
+	onUpsertIdentifier,
+	onDeleteIdentifier,
 }: {
 	book: LibraryBook;
 	allAuthorList: LibraryAuthor[];
 	onSave: (update: BookUpdate) => Promise<void>;
+	onDeleteIdentifier: (bookId: string, identifierId: number) => Promise<void>;
+	onUpsertIdentifier: (
+		bookId: string,
+		identifierId: number | null,
+		label: string,
+		value: string,
+	) => Promise<void>;
 }) => {
 	const initialValues = useMemo(() => {
 		return formValuesFromBook(book);
@@ -114,6 +130,7 @@ const EditBookForm = ({
 		() => allAuthorList.map((author) => author.name),
 		[allAuthorList],
 	);
+	const [newBookIdentifierLabel, setNewBookIdentifierLabel] = useState("");
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Re-rendering when Form is updated causes infinite loops.
 	useEffect(() => {
@@ -217,16 +234,61 @@ const EditBookForm = ({
 						{form.values.identifierList.length > 0 && (
 							<Group flex={1}>
 								<Fieldset legend="Identifiers">
-									{form.values.identifierList.map(({ label, value }) => (
-										<Group key={`${label}-${value}`} flex={1} align="center">
+									{form.values.identifierList.map(({ label, id }, index) => (
+										<Group key={id} flex={1} align="center">
 											<TextInput
 												flex={"15ch"}
 												label={label.toUpperCase()}
-												value={value}
-												disabled
+												{...form.getInputProps(`identifierList.${index}.value`)}
+												onBlur={(event) => {
+													onUpsertIdentifier(
+														book.id,
+														id,
+														label,
+														event.target.value,
+													).catch(console.error);
+												}}
 											/>
+											<ActionIcon
+												variant="outline"
+												color="red"
+												onClick={() => {
+													onDeleteIdentifier(book.id, id).catch(console.error);
+												}}
+												mt={LABEL_OFFSET_MARGIN}
+											>
+												×
+											</ActionIcon>
 										</Group>
 									))}
+									<hr style={{ color: "lightgrey" }} />
+									<Group>
+										<TextInput
+											label="Identifier label"
+											placeholder="ISBN"
+											value={newBookIdentifierLabel}
+											onChange={(event) =>
+												setNewBookIdentifierLabel(event.target.value)
+											}
+										/>
+										<Button
+											onClick={() => {
+												onUpsertIdentifier(
+													book.id,
+													null,
+													newBookIdentifierLabel,
+													"",
+												)
+													.then(() => setNewBookIdentifierLabel(""))
+													.catch(console.error);
+											}}
+											variant="outline"
+											color="blue"
+											mt={LABEL_OFFSET_MARGIN}
+										>
+											Add identifier
+										</Button>
+									</Group>
 								</Fieldset>
 							</Group>
 						)}

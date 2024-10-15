@@ -71,6 +71,40 @@ const EditBookRoute = () => {
 		[library, bookId, eventEmitter],
 	);
 
+	const onUpsertIdentifier = useCallback(
+		async (
+			bookId: string,
+			identifierId: number | null,
+			label: string,
+			value: string,
+		) => {
+			await library?.upsertBookIdentifier(bookId, identifierId, label, value);
+
+			if (bookId) {
+				eventEmitter?.emit(LibraryEventNames.LIBRARY_BOOK_UPDATED, {
+					book: bookId,
+				});
+			}
+
+			return Promise.resolve();
+		},
+		[library, eventEmitter],
+	);
+	const onDeleteIdentifier = useCallback(
+		async (bookId: string, identifierId: number) => {
+			await library?.deleteBookIdentifier(bookId, identifierId);
+
+			if (bookId) {
+				eventEmitter?.emit(LibraryEventNames.LIBRARY_BOOK_UPDATED, {
+					book: bookId,
+				});
+			}
+
+			return Promise.resolve();
+		},
+		[library, eventEmitter],
+	);
+
 	if (state !== LibraryState.ready) {
 		return <div>Loading...</div>;
 	}
@@ -78,7 +112,15 @@ const EditBookRoute = () => {
 		return <div>Book not found</div>;
 	}
 
-	return <BookPage book={book} allAuthorList={allAuthorList} onSave={onSave} />;
+	return (
+		<BookPage
+			book={book}
+			allAuthorList={allAuthorList}
+			onSave={onSave}
+			onUpsertIdentifier={onUpsertIdentifier}
+			onDeleteIdentifier={onDeleteIdentifier}
+		/>
+	);
 };
 
 export const Route = createFileRoute("/books/$bookId")({
