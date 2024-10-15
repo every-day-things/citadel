@@ -26,6 +26,8 @@ fn run_tauri_backend() -> std::io::Result<()> {
                 libs::calibre::clb_cmd_create_book,
                 libs::calibre::clb_cmd_create_library,
                 libs::calibre::clb_cmd_update_book,
+                libs::calibre::clb_cmd_upsert_book_identifier,
+                libs::calibre::clb_cmd_delete_book_identifier,
                 libs::calibre::clb_query_importable_file_metadata,
                 libs::calibre::clb_query_is_file_importable,
                 libs::calibre::clb_query_is_path_valid_library,
