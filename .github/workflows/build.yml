@@ -14,7 +14,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-22.04, macos-12]
+        platform: [ubuntu-22.04, macos-latest, windows-latest]
+
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
@@ -23,7 +24,13 @@ jobs:
         with:
           bun-version: latest
 
-      - run: rustup toolchain install stable --profile minimal
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          # Those targets are only used on macos runners so it's in an `if` to
+          # slightly speed up Windows and Linux builds.
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -42,7 +49,7 @@ jobs:
 
       - name: List installed versions
         run: |
-          bun --verison;
+          bun --version;
           cargo --version;
           bun tauri --version
 
@@ -69,3 +76,11 @@ jobs:
           path: |
             src-tauri/target/release/bundle/macos/Citadel.app
             src-tauri/target/release/bundle/dmg/Citadel_0.3.0_x64.dmg
+
+      - name: (Windows only) Upload build artifacts
+        if: matrix.platform == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-msi
+          path: |
+            src-tauri/target/release/bundle/msi/citadel_0.3.0_x64_en-US.msi
