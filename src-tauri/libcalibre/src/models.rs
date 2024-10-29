@@ -4,6 +4,36 @@ use crate::entities::book::Book;
 
 use super::schema::*;
 
+#[derive(Queryable, Selectable, Identifiable, Insertable)]
+#[diesel(table_name = authors)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+pub struct Author {
+    pub id: i32,
+    pub name: String,
+    pub sort: Option<String>,
+    pub link: String,
+}
+
+#[derive(Identifiable, Associations, Queryable, Selectable, Insertable)]
+#[diesel(belongs_to(Book, foreign_key = book))]
+#[diesel(belongs_to(Author, foreign_key = author))]
+#[diesel(table_name = books_authors_link)]
+pub struct BookAuthorLink {
+    pub id: Option<i32>,
+    pub book: i32,
+    pub author: i32,
+}
+
+#[derive(Queryable, Selectable)]
+#[diesel(table_name = identifiers)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+pub struct Identifier {
+    pub id: i32,
+    pub book: i32,
+    pub type_: String,
+    pub val: String,
+}
+
 // #[derive(Queryable, Selectable)]
 // #[diesel(table_name = annotations)]
 // #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
@@ -20,15 +50,6 @@ use super::schema::*;
 //     pub searchable_text: String,
 // }
 
-#[derive(Queryable, Selectable, Identifiable, Insertable)]
-#[diesel(table_name = authors)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
-pub struct Author {
-    pub id: i32,
-    pub name: String,
-    pub sort: Option<String>,
-    pub link: String,
-}
 
 // #[derive(Queryable, Selectable)]
 // #[diesel(table_name = comments)]
@@ -72,16 +93,6 @@ pub struct Author {
 //     pub title: String,
 //     pub script: String,
 // }
-
-#[derive(Queryable, Selectable)]
-#[diesel(table_name = identifiers)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
-pub struct Identifier {
-    pub id: i32,
-    pub book: i32,
-    pub type_: String,
-    pub val: String,
-}
 
 // #[derive(Queryable, Selectable)]
 // #[diesel(table_name = languages)]
@@ -164,15 +175,6 @@ pub struct Identifier {
 //     pub name: String,
 // }
 
-#[derive(Identifiable, Associations, Queryable, Selectable, Insertable)]
-#[diesel(belongs_to(Book, foreign_key = book))]
-#[diesel(belongs_to(Author, foreign_key = author))]
-#[diesel(table_name = books_authors_link)]
-pub struct BookAuthorLink {
-    pub id: Option<i32>,
-    pub book: i32,
-    pub author: i32,
-}
 
 // #[derive(Queryable, Selectable)]
 // #[diesel(table_name = books_languages_link)]
