@@ -6,15 +6,12 @@ use mobi::{headers::Language, Mobi};
 pub struct MobiMetadata {
     pub title: String,
     pub author: String,
-    pub contributor: String,
-    pub isbn: String,
     pub publisher: String,
     pub pub_date: Option<NaiveDate>,
-    pub cover_image_data: Option<Vec<u8>>,
     pub language: String,
     pub subjects: Vec<String>,
-
-    pub desc: String,
+    pub cover_image_data: Option<Vec<u8>>,
+    pub isbn: String,
 }
 
 fn language_to_string(lang: &Language) -> String {
@@ -118,10 +115,8 @@ pub fn read_metadata(path: &Path) -> Option<MobiMetadata> {
                 title: m.title(),
                 author: m.author().unwrap_or_default(),
                 publisher: m.publisher().unwrap_or_default(),
-                desc: m.description().unwrap_or_default(),
-                isbn: m.isbn().unwrap_or_default(),
+                isbn: m.isbn().map(|isbn| format!("ISBN:{}", isbn)).unwrap_or_default(),
                 pub_date: date,
-                contributor: m.contributor().unwrap_or_default(),
                 language: language_to_string(&m.language()),
                 subjects: m.metadata.subjects().unwrap_or_default(),
                 cover_image_data: cover_image,
