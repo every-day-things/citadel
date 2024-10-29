@@ -6,7 +6,6 @@ use crate::dtos::library::UpdateLibraryEntryDto;
 use crate::entities::book_file::NewBookFile;
 use crate::Book;
 use chrono::DateTime;
-use chrono::NaiveDateTime;
 use chrono::Utc;
 use sanitise_file_name::sanitise;
 
@@ -460,7 +459,7 @@ impl<'a> MetadataOpf<'a> {
             authors = authors_string,
             pub_date = book
                 .pubdate
-                .unwrap_or(NaiveDateTime::from_timestamp_millis(0).unwrap())
+                .unwrap_or(DateTime::from_timestamp_millis(0).unwrap().naive_utc())
                 .to_string()
                 .as_str(),
             language_iso_639_2 = "en",
