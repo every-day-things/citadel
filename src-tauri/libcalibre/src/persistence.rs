@@ -40,14 +40,14 @@ pub fn sort_book_title(title: String) -> String {
 pub fn establish_connection(db_path: &str) -> Result<diesel::SqliteConnection, ()> {
     // Setup custom SQL functions. Required because Calibre does this.
     // See: https://github.com/kovidgoyal/calibre/blob/7f3ccb333d906f5867636dd0dc4700b495e5ae6f/src/calibre/library/database.py#L55-L70
-    sql_function!(fn title_sort(title: Text) -> Text);
-    sql_function!(fn uuid4() -> Text);
+    define_sql_function!(fn title_sort(title: Text) -> Text);
+    define_sql_function!(fn uuid4() -> Text);
 
     let mut connection = diesel::SqliteConnection::establish(db_path).or(Err(()))?;
 
     // Register SQL function implementations. Ignore any errors.
-    let _ = title_sort::register_impl(&mut connection, sort_book_title);
-    let _ = uuid4::register_impl(&connection, || uuid::Uuid::new_v4().to_string());
+    let _ = title_sort_utils::register_impl(&mut connection, sort_book_title);
+    let _ = uuid4_utils::register_impl(&connection, || uuid::Uuid::new_v4().to_string());
 
     Ok(connection)
 }
