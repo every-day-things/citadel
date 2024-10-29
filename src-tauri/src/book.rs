@@ -136,11 +136,6 @@ impl ImportableBookMetadata {
     }
 }
 
-pub trait Library {
-    fn list_books(&self) -> Vec<LibraryBook>;
-    fn list_authors(&self) -> Vec<LibraryAuthor>;
-}
-
 /// Book identifiers, such as ISBN, DOI, Google Books ID, etc.
 #[derive(Serialize, Deserialize, Clone, specta::Type)]
 pub struct Identifier {
