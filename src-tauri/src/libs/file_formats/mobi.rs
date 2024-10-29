@@ -115,7 +115,10 @@ pub fn read_metadata(path: &Path) -> Option<MobiMetadata> {
                 title: m.title(),
                 author: m.author().unwrap_or_default(),
                 publisher: m.publisher().unwrap_or_default(),
-                isbn: m.isbn().map(|isbn| format!("ISBN:{}", isbn)).unwrap_or_default(),
+                isbn: m
+                    .isbn()
+                    .map(|isbn| format!("ISBN:{}", isbn))
+                    .unwrap_or_default(),
                 pub_date: date,
                 language: language_to_string(&m.language()),
                 subjects: m.metadata.subjects().unwrap_or_default(),
