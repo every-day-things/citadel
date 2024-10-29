@@ -50,7 +50,6 @@ pub struct Identifier {
 //     pub searchable_text: String,
 // }
 
-
 // #[derive(Queryable, Selectable)]
 // #[diesel(table_name = comments)]
 // #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
@@ -174,7 +173,6 @@ pub struct Identifier {
 //     pub id: i32,
 //     pub name: String,
 // }
-
 
 // #[derive(Queryable, Selectable)]
 // #[diesel(table_name = books_languages_link)]
