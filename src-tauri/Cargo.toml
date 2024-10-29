@@ -1,6 +1,6 @@
 [package]
 name = "citadel-rs"
-version = "0.2.0"
+version = "0.3.0"
 description = "Backend for Citadel, embedded into the Tauri app or run stand-alone."
 authors = ["Phil Denhoff"]
 license = "MIT"

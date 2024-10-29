@@ -18,8 +18,8 @@ FROM scratch AS artifacts
 
 ARG WORKDIR
 COPY --from=build \
-    "${WORKDIR}/src-tauri/target/release/bundle/appimage/citadel_0.2.0_amd64.AppImage" \
+    "${WORKDIR}/src-tauri/target/release/bundle/appimage/citadel_0.3.0_amd64.AppImage" \
     .
 COPY --from=build \
-    "${WORKDIR}/src-tauri/target/release/bundle/deb/citadel_0.2.0_amd64.deb" \
+    "${WORKDIR}/src-tauri/target/release/bundle/deb/citadel_0.3.0_amd64.deb" \
     .
