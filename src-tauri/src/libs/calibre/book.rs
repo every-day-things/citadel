@@ -17,6 +17,7 @@ fn to_library_book(
     file_list: Vec<libcalibre::BookFile>,
     identifer_list: Vec<Identifier>,
     description: Option<String>,
+    is_read: Option<bool>,
 ) -> LibraryBook {
     LibraryBook {
         title: book.title.clone(),
@@ -44,6 +45,8 @@ fn to_library_book(
         identifier_list: identifer_list.clone(),
 
         description,
+
+        is_read: is_read.unwrap_or(false),
     }
 }
 
@@ -95,6 +98,7 @@ pub fn list_all(library_root: String) -> Vec<LibraryBook> {
                         b.files.clone(),
                         identifer_list,
                         b.book_description_html.clone(),
+                        Some(b.is_read),
                     );
                     calibre_book.cover_image = book_cover_image(&library_root, &b.book);
 
