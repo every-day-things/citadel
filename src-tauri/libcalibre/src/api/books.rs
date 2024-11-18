@@ -186,34 +186,66 @@ impl BooksHandler {
     // === === ===
     // Read state
     // === === ===
-    pub fn get_book_read_state_for_user(&self, book_id: i32) -> Result<Option<bool>, ()> {
+    fn get_or_create_read_state_custom_column(
+        &self,
+        connection: &mut SqliteConnection,
+    ) -> Result<i32, ()> {
         use crate::schema::custom_columns::dsl::*;
-        let mut connection = self.client.lock().unwrap();
 
-        // 1. Get the list of Custom Columns from the `custom_columns` table
-        // 2. Find the ID of the custom column that has the label `read`
-        // 3. Make sure the `datatype` is `bool`
         let custom_column_id = custom_columns
             .select(id)
             .filter(label.eq("read"))
             .filter(datatype.eq("bool"))
-            .first::<i32>(&mut *connection)
-            .expect("Error loading custom column IDs");
+            .first::<i32>(connection)
+            .optional()
+            .or(Err(()))?;
 
-        // 4. Get the record from the `custom_column_${id}` table
+        if custom_column_id.is_none() {
+            let column_id = diesel::insert_into(custom_columns)
+                .values((
+                    label.eq("read"),
+                    name.eq("Read"),
+                    datatype.eq("bool"),
+                    mark_for_delete.eq(false),
+                    editable.eq(true),
+                    is_multiple.eq(false),
+                    normalized.eq(false),
+                    display.eq("{}"),
+                ))
+                .returning(id)
+                .get_result::<i32>(connection)
+                .or(Err(()))?;
+
+            sql_query(format!(
+                "CREATE TABLE custom_column_{column_id} (id INTEGER PRIMARY KEY, book INTEGER NOT NULL, value INTEGER NOT NULL);"
+            ))
+            .execute(connection)
+            .or(Err(()))?;
+
+            Ok(column_id)
+        } else {
+            Ok(custom_column_id.unwrap())
+        }
+    }
+
+    pub fn get_book_read_state_for_user(&self, book_id: i32) -> Result<Option<bool>, ()> {
+        let mut connection = self.client.lock().unwrap();
+
+        let read_state_column_id = self.get_or_create_read_state_custom_column(&mut *connection)?;
         let value = sql_query(format!(
-            "SELECT value FROM custom_column_{custom_column_id} WHERE book = ?"
+            "SELECT value FROM custom_column_{read_state_column_id} WHERE book = ?"
         ))
         .bind::<Integer, _>(book_id)
         .get_result::<CustomValue>(&mut *connection)
         .map(|v| v.value)
-        .or(Err(()))?;
+        .or(Err(()));
 
-        // 5. Return true if the value is 1, false if it's 0
-        if value == 1 {
-            Ok(Some(true))
-        } else {
-            Ok(Some(false))
+        match value {
+            Ok(v) => match v {
+                1 => Ok(Some(true)),
+                _ => Ok(Some(false)),
+            },
+            Err(_) => Ok(Some(false)),
         }
     }
 }
