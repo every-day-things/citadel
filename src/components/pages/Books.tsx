@@ -13,6 +13,7 @@ import {
 	SegmentedControl,
 	Select,
 	Stack,
+	Switch,
 	Text,
 	TextInput,
 	rem,
@@ -36,11 +37,13 @@ export const Books = () => {
 		query: string;
 		sortOrder: keyof typeof LibraryBookSortOrder;
 		view: "covers" | "list";
+		hideRead: boolean;
 	}>({
 		initialValues: {
 			query: "",
 			sortOrder: "authorAz",
 			view: "covers",
+			hideRead: false,
 		},
 		onValuesChange: (values) => {
 			window.localStorage.setItem(BOOK_FORM_PREFS_KEY, JSON.stringify(values));
@@ -67,8 +70,8 @@ export const Books = () => {
 	const [loading, books] = useLoadBooks();
 
 	const filteredBooks = useMemo(
-		() => filterBooksByQuery(books, form.values.query),
-		[books, form.values.query],
+		() => filterBooksByQuery(books, form.values),
+		[books, form.values],
 	);
 
 	const sortedBooks = useMemo(() => {
@@ -116,7 +119,11 @@ export const Books = () => {
 
 	return (
 		<Stack>
-			<Header form={form} bookCount={sortedBooks.length} />
+			<Header
+				form={form}
+				viewBookCount={sortedBooks.length}
+				totalBookCount={books.length}
+			/>
 			{form.values.view === "covers" ? (
 				<BookGrid
 					bookList={sortedBooks}
@@ -207,6 +214,7 @@ type BookViewForm = UseFormReturnType<{
 	query: string;
 	sortOrder: keyof typeof LibraryBookSortOrder;
 	view: "covers" | "list";
+	hideRead: boolean;
 }>;
 
 function FilterControls({ form }: { form: BookViewForm }) {
@@ -274,22 +282,26 @@ function FilterControls({ form }: { form: BookViewForm }) {
 			/>
 
 			<SegmentedControl data={viewControls} {...form.getInputProps("view")} />
+
+			<Switch label="Hide read" {...form.getInputProps("hideRead")} />
 		</Flex>
 	);
 }
 
 function Header({
 	form,
-	bookCount,
+	viewBookCount,
+	totalBookCount,
 }: {
 	form: BookViewForm;
-	bookCount: number;
+	viewBookCount: number;
+	totalBookCount: number;
 }) {
 	return (
 		<Stack>
 			<FilterControls form={form} />
 			<p>
-				Showing 1-{bookCount} of {bookCount} items
+				Showing {viewBookCount} of {totalBookCount} items
 			</p>
 		</Stack>
 	);
@@ -447,11 +459,16 @@ export interface BookViewOptions {
 	searchQuery: string;
 }
 
-const filterBooksByQuery = (books: LibraryBook[], query: string) => {
-	const lowerQuery = query.toLowerCase();
-	return books.filter(
-		({ title, author_list }) =>
-			title.toLowerCase().includes(lowerQuery) ||
-			author_list.some(({ name }) => name.toLowerCase().includes(lowerQuery)),
-	);
+const filterBooksByQuery = (
+	books: LibraryBook[],
+	formValues: BookViewForm["values"],
+) => {
+	const lowerQuery = formValues.query.toLowerCase();
+	return books
+		.filter(
+			({ title, author_list }) =>
+				title.toLowerCase().includes(lowerQuery) ||
+				author_list.some(({ name }) => name.toLowerCase().includes(lowerQuery)),
+		)
+		.filter((book) => (formValues.hideRead ? !book.is_read : true));
 };
