@@ -152,6 +152,7 @@ impl CalibreClient {
             authors: created_author_list,
             files: created_files,
             book_description_html: None,
+            is_read: false,
         })
     }
 
@@ -224,11 +225,19 @@ impl CalibreClient {
             .list_all_by_book_id(book.id)
             .map_err(|_| ClientError::GenericError)?;
 
+        let is_read = self
+            .client_v2
+            .books()
+            .get_book_read_state_for_user(book.id)
+            .unwrap_or(Some(false))
+            .unwrap_or(false);
+
         Ok(BookWithAuthorsAndFiles {
             book,
             authors,
             files,
             book_description_html: book_desc,
+            is_read,
         })
     }
 

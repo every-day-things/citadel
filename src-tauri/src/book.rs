@@ -55,6 +55,8 @@ pub struct LibraryBook {
     pub identifier_list: Vec<Identifier>,
 
     pub description: Option<String>,
+
+    pub is_read: bool,
 }
 
 #[derive(Serialize, specta::Type, Deserialize, Clone)]

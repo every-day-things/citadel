@@ -2,10 +2,19 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 use diesel::prelude::*;
+use diesel::sql_query;
+use diesel::sql_types::Integer;
+use diesel::QueryableByName;
 
 use crate::entities::book::{NewBook, UpdateBookData, UpsertBookIdentifier};
 use crate::models::Identifier;
 use crate::Book;
+
+#[derive(QueryableByName)]
+struct CustomValue {
+    #[diesel(sql_type = Integer)]
+    value: i32,
+}
 
 pub struct BooksHandler {
     client: Arc<Mutex<SqliteConnection>>,
@@ -172,6 +181,40 @@ impl BooksHandler {
             .first(&mut *connection)
             .optional()
             .or(Err(()))
+    }
+
+    // === === ===
+    // Read state
+    // === === ===
+    pub fn get_book_read_state_for_user(&self, book_id: i32) -> Result<Option<bool>, ()> {
+        use crate::schema::custom_columns::dsl::*;
+        let mut connection = self.client.lock().unwrap();
+
+        // 1. Get the list of Custom Columns from the `custom_columns` table
+        // 2. Find the ID of the custom column that has the label `read`
+        // 3. Make sure the `datatype` is `bool`
+        let custom_column_id = custom_columns
+            .select(id)
+            .filter(label.eq("read"))
+            .filter(datatype.eq("bool"))
+            .first::<i32>(&mut *connection)
+            .expect("Error loading custom column IDs");
+
+        // 4. Get the record from the `custom_column_${id}` table
+        let value = sql_query(format!(
+            "SELECT value FROM custom_column_{custom_column_id} WHERE book = ?"
+        ))
+        .bind::<Integer, _>(book_id)
+        .get_result::<CustomValue>(&mut *connection)
+        .map(|v| v.value)
+        .or(Err(()))?;
+
+        // 5. Return true if the value is 1, false if it's 0
+        if value == 1 {
+            Ok(Some(true))
+        } else {
+            Ok(Some(false))
+        }
     }
 }
 
