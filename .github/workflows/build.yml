@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ubuntu-22.04, macos-12]
+        platform: [ubuntu-22.04, macos-15]
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
@@ -62,7 +62,7 @@ jobs:
             src-tauri/target/release/bundle/appimage/citadel_0.3.0_amd64.AppImage
 
       - name: (macOS only) Upload build artifacts
-        if: matrix.platform == 'macos-12'
+        if: matrix.platform == 'macos-15'
         uses: actions/upload-artifact@v4
         with:
           name: macos-app-and-dmg
