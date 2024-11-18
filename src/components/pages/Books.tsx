@@ -300,7 +300,7 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 		<>
 			<Stack h={"100%"}>
 				<Group wrap={"nowrap"} align="flex-start">
-					<BookCover book={book} />
+					<BookCover book={book} disableFade />
 					<Stack ml={"sm"} align="flex-start" justify="flex-start">
 						<Text size="xl" fw={"700"}>
 							{book.title}

@@ -36,6 +36,7 @@ const MOCK_BOOK: LibraryBook = {
 	cover_image: null,
 	title: "The Day I Bug'd",
 	sortable_title: "Day I Bug'd, The",
+	is_read: false,
 	identifier_list: [
 		{
 			id: 123,
