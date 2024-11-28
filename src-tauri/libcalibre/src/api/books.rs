@@ -228,7 +228,7 @@ impl BooksHandler {
         }
     }
 
-    pub fn get_book_read_state_for_user(&self, book_id: i32) -> Result<Option<bool>, ()> {
+    pub fn get_book_read_state(&self, book_id: i32) -> Result<Option<bool>, ()> {
         let mut connection = self.client.lock().unwrap();
 
         let read_state_column_id = self.get_or_create_read_state_custom_column(&mut *connection)?;
@@ -247,6 +247,22 @@ impl BooksHandler {
             },
             Err(_) => Ok(Some(false)),
         }
+    }
+
+    pub fn set_book_read_state(&mut self, book_id: i32, read_state: bool) -> Result<(), ()> {
+        let mut connection = self.client.lock().unwrap();
+
+        let read_state_column_id = self.get_or_create_read_state_custom_column(&mut *connection)?;
+        let value = if read_state { 1 } else { 0 };
+
+        sql_query(format!(
+            "INSERT OR REPLACE INTO custom_column_{read_state_column_id} (book, value) VALUES (?, ?)"
+        ))
+        .bind::<Integer, _>(book_id)
+        .bind::<Integer, _>(value)
+        .execute(&mut *connection)
+        .map(|_| ())
+        .or(Err(()))
     }
 }
 

@@ -52,7 +52,7 @@ return await TAURI_INVOKE("plugin:tauri-specta|init_client", { libraryPath });
 /** user-defined types **/
 
 export type BookFile = { Local: LocalFile } | { Remote: RemoteFile }
-export type BookUpdate = { author_id_list: string[] | null; title: string | null; timestamp: string | null; publication_date: string | null }
+export type BookUpdate = { author_id_list: string[] | null; title: string | null; timestamp: string | null; publication_date: string | null; is_read: boolean | null }
 export type CalibreClientConfig = { library_path: string }
 /**
  * Book identifiers, such as ISBN, DOI, Google Books ID, etc.
