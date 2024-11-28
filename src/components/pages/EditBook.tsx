@@ -7,6 +7,7 @@ import {
 	Group,
 	Paper,
 	Stack,
+	Switch,
 	Text,
 	TextInput,
 	Textarea,
@@ -77,16 +78,8 @@ const Formats = ({
 	);
 };
 
-const Cover = ({
-	book,
-	style,
-}: { book: LibraryBook } & HTMLProps<HTMLDivElement>) => {
-	return (
-		<div style={style}>
-			<Text size="xl">Cover</Text>
-			<BookCover book={book} />
-		</div>
-	);
+const Cover = ({ book }: { book: LibraryBook } & HTMLProps<HTMLDivElement>) => {
+	return <BookCover book={book} disableFade />;
 };
 
 const formValuesFromBook = (book: LibraryBook) => ({
@@ -95,6 +88,7 @@ const formValuesFromBook = (book: LibraryBook) => ({
 	authorList: book.author_list.map((author) => author.name),
 	identifierList: book.identifier_list,
 	description: book.description ?? "",
+	isRead: book.is_read,
 });
 
 // How much an element has to be offset vertically to account for the lack of a
@@ -144,24 +138,35 @@ const EditBookForm = ({
 					author_id_list: authorIdsFromName,
 					timestamp: null,
 					publication_date: null,
+					is_read: form.values.isRead,
 				};
 
 				await onSave(bookUpdate);
+
+				form.resetDirty();
+				form.resetTouched();
 			})}
 			style={{
 				// Additional `flex: 1` on the form prevents the element from
 				// overflowing when a second+ author is selected
 				display: "grid",
 				gridTemplateColumns: "0.3fr 1.8fr",
-				gridTemplateRows: "1.4fr 1.4fr 0.2fr",
+				gridTemplateRows: "1.4fr 1.4fr",
 				gridTemplateAreas: `"Cover BookInfo"
-				 "Format BookInfo"
-				 "Buttons Buttons"`,
+				 "Format BookInfo"`,
 				gap: "0px 1rem",
 				height: "100%",
 			}}
 		>
-			<Cover book={book} style={{ gridArea: "Cover" }} />
+			<div style={{ gridArea: "Cover" }}>
+				<Stack>
+					<Cover book={book} />
+					<Switch
+						label="Finished"
+						{...form.getInputProps("isRead", { type: "checkbox" })}
+					/>
+				</Stack>
+			</div>
 			<Formats book={book} style={{ gridArea: "Format" }} />
 			<Group
 				align="flex-start"
@@ -169,7 +174,25 @@ const EditBookForm = ({
 				style={{ gridArea: "BookInfo" }}
 			>
 				<Stack flex={1}>
-					<Text size="xl">Book info</Text>
+					<Group flex={1} justify="space-between">
+						<Text size="xl" p="1" h="36">
+							Book info
+						</Text>
+						{form.isDirty() && form.isTouched() && (
+							<Group justify="space-between">
+								<Button
+									variant="subtle"
+									onClick={() => form.reset()}
+									color="red"
+								>
+									Clear
+								</Button>
+								<Button type="submit" component="button">
+									Save
+								</Button>
+							</Group>
+						)}
+					</Group>
 					<Group flex={1}>
 						<TextInput
 							label="Title"
@@ -190,22 +213,24 @@ const EditBookForm = ({
 						selectOptions={allAuthorNames}
 						{...form.getInputProps("authorList")}
 					/>
-					{form.values.identifierList.length > 0 && (
-						<Group flex={1}>
-							<Fieldset legend="Identifiers">
-								{form.values.identifierList.map(({ label, value }) => (
-									<Group key={`${label}-${value}`} flex={1} align="center">
-										<TextInput
-											flex={"15ch"}
-											label={label.toUpperCase()}
-											value={value}
-											disabled
-										/>
-									</Group>
-								))}
-							</Fieldset>
-						</Group>
-					)}
+					<Group flex={1}>
+						{form.values.identifierList.length > 0 && (
+							<Group flex={1}>
+								<Fieldset legend="Identifiers">
+									{form.values.identifierList.map(({ label, value }) => (
+										<Group key={`${label}-${value}`} flex={1} align="center">
+											<TextInput
+												flex={"15ch"}
+												label={label.toUpperCase()}
+												value={value}
+												disabled
+											/>
+										</Group>
+									))}
+								</Fieldset>
+							</Group>
+						)}
+					</Group>
 					{form.values.description.length > 0 && (
 						<Paper shadow="sm" p="lg">
 							<Text size="lg">Description</Text>
@@ -213,19 +238,6 @@ const EditBookForm = ({
 						</Paper>
 					)}
 				</Stack>
-			</Group>
-			<Group
-				justify="flex-end"
-				mt="md"
-				gap="80px"
-				style={{ gridArea: "3 / 1 / 4 / 3" }}
-			>
-				<Button variant="subtle" onClick={() => form.reset()} color="red">
-					Cancel
-				</Button>
-				<Button type="submit" component="button">
-					Save
-				</Button>
 			</Group>
 		</Form>
 	);

@@ -162,8 +162,16 @@ impl CalibreClient {
         updates: UpdateLibraryEntryDto,
     ) -> Result<crate::BookWithAuthorsAndFiles, Box<dyn std::error::Error>> {
         // Write new updates to book
+        let is_read = updates.book.is_read;
         let book_update = UpdateBookData::try_from(updates.book).unwrap();
         let _book = self.client_v2.books().update(book_id, book_update);
+
+        if is_read.is_some() {
+            let _set_book_result = self
+                .client_v2
+                .books()
+                .set_book_read_state(book_id, is_read.unwrap());
+        }
 
         match updates.author_id_list {
             Some(author_id_list) => {
@@ -228,7 +236,7 @@ impl CalibreClient {
         let is_read = self
             .client_v2
             .books()
-            .get_book_read_state_for_user(book.id)
+            .get_book_read_state(book.id)
             .unwrap_or(Some(false))
             .unwrap_or(false);
 
