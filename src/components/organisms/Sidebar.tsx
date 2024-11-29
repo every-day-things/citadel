@@ -25,6 +25,8 @@ import {
 	title as addBookFormTitle,
 } from "../molecules/AddBookForm";
 import { SwitchLibraryForm } from "../molecules/SwitchLibraryForm";
+import { appWindow } from "@tauri-apps/api/window";
+import { addBookByDragDrop } from "@/lib/services/library/_internal/addBook";
 
 export const Sidebar = () => {
 	const { library, state, eventEmitter } = useLibrary();
@@ -44,6 +46,38 @@ export const Sidebar = () => {
 		isSwitchLibraryModalOpen,
 		{ close: closeSwitchLibraryModal, open: openSwitchLibraryModal },
 	] = useDisclosure(false);
+
+	useEffect(() => {
+		let unlisten: (() => void) | undefined;
+
+		const setupFileDropListener = async () => {
+			unlisten = await appWindow.onFileDropEvent((event) => {
+				if (!library) return;
+
+				void (async () => {
+					if (event.payload.type === "drop") {
+						const metadataList = await addBookByDragDrop(
+							library,
+							event.payload.paths,
+						);
+						const firstItem = metadataList[0];
+						if (firstItem) {
+							setMetadata(firstItem);
+							openAddBookModal();
+						}
+					}
+				})();
+			});
+		};
+
+		void setupFileDropListener();
+
+		return () => {
+			if (unlisten) {
+				unlisten();
+			}
+		};
+	}, [library, openAddBookModal]);
 
 	useEffect(() => {
 		void (async () => {
