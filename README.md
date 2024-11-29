@@ -1,5 +1,9 @@
 # Citadel
 
+[![Quality checks](https://github.com/every-day-things/citadel/actions/workflows/quality.yml/badge.svg)](https://github.com/every-day-things/citadel/actions/workflows/quality.yml)
+[![Build](https://github.com/every-day-things/citadel/actions/workflows/build.yml/badge.svg)](https://github.com/every-day-things/citadel/actions/workflows/build.yml)
+[![](https://dcbadge.limes.pink/api/server/Hh6gRmqBbC?style=flat)](https://discord.gg/Hh6gRmqBbC)
+
 Manage your ebook library with Citadel. Backwards compatible with Calibre.
 
 https://github.com/every-day-things/citadel/assets/17505728/a3879896-8404-4333-98cb-5e1e0060b42e
