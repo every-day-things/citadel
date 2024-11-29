@@ -16,10 +16,10 @@ import {
 	setActiveLibrary,
 	settings,
 } from "@/stores/settings";
-import { Button, Divider, Modal, Stack, Title } from "@mantine/core";
+import { Button, Divider, Modal, NavLink, Stack, Title } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
 	AddBookForm,
 	title as addBookFormTitle,
@@ -29,6 +29,7 @@ import { SwitchLibraryForm } from "../molecules/SwitchLibraryForm";
 export const Sidebar = () => {
 	const { library, state, eventEmitter } = useLibrary();
 	const { set, subscribe } = useSettings();
+	const { location } = useRouterState();
 
 	const [metadata, setMetadata] = useState<ImportableBookMetadata | null>();
 	const [activeLibraryId, setActiveLibraryId] = useState<string>();
@@ -127,6 +128,15 @@ export const Sidebar = () => {
 		},
 		[closeSwitchLibraryModal, set],
 	);
+	const shelves = useMemo(() => {
+		return [
+			{
+				title: "All books",
+				path: "/",
+				isActive: () => location.pathname === "/",
+			},
+		];
+	}, [location]);
 
 	if (state !== LibraryState.ready) {
 		return null;
@@ -162,14 +172,7 @@ export const Sidebar = () => {
 			<SidebarPure
 				addBookHandler={selectAndEditBookFile}
 				switchLibraryHandler={switchLibrary}
-				shelves={[
-					{
-						title: "All Books",
-						LinkComponent: ({ children }: React.PropsWithChildren<unknown>) => (
-							<Link to={"/"}>{children}</Link>
-						),
-					},
-				]}
+				shelves={shelves}
 			/>
 		</>
 	);
@@ -249,7 +252,8 @@ interface SidebarPureProps {
 	switchLibraryHandler: () => void;
 	shelves: {
 		title: string;
-		LinkComponent: React.FunctionComponent<React.PropsWithChildren<unknown>>;
+		path: string;
+		isActive: () => boolean;
 	}[];
 }
 
@@ -271,13 +275,15 @@ const SidebarPure = ({
 			</Stack>
 			<Divider my="md" />
 			<Stack>
-				<Title order={5}>My shelves</Title>
-				{shelves.map(({ title, LinkComponent }) => (
-					<LinkComponent key={title}>
-						<Button variant="subtle" justify="flex-start" fullWidth>
-							{title}
-						</Button>
-					</LinkComponent>
+				<Title order={5}>Shelves</Title>
+				{shelves.map(({ title, path, isActive }) => (
+					<NavLink
+						key={path}
+						label={title}
+						component={Link}
+						to={path}
+						active={isActive()}
+					/>
 				))}
 			</Stack>
 		</>
