@@ -31,6 +31,7 @@ import { BookGrid } from "../molecules/BookGrid";
 import { BookTable } from "../molecules/BookTable";
 import { TablerCopy } from "../icons/TablerCopy";
 import { LibraryEventNames } from "@/lib/contexts/library/context";
+import { F7Pencil } from "../icons/F7Pencil";
 
 export const Books = () => {
 	const form = useForm<{
@@ -313,13 +314,34 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 			<Stack h={"100%"}>
 				<Group wrap={"nowrap"} align="flex-start">
 					<BookCover book={book} disableFade />
-					<Stack ml={"sm"} align="flex-start" justify="flex-start">
-						<Text size="xl" fw={"700"}>
-							{book.title}
-						</Text>
-						<Text size="md">
-							{book.author_list.map((author) => author.name).join(", ")}
-						</Text>
+					<Stack justify="space-between" mih={"200px"}>
+						<Stack ml={"sm"} align="flex-start" justify="flex-start">
+							<Text size="xl" fw={"700"}>
+								{book.title}
+							</Text>
+							<Text size="md">
+								{book.author_list.map((author) => author.name).join(", ")}
+							</Text>
+						</Stack>
+						<Group justify="space-evenly" w={"100%"}>
+							<Button
+								variant="subtle"
+								onPointerDown={safeAsyncEventHandler(async () => {
+									const firstFile = book.file_list[0];
+									if (firstFile === undefined) return;
+
+									const isLocal = "Local" in firstFile;
+									if (!isLocal) return;
+
+									await open(firstFile.Local.path);
+								})}
+							>
+								Read
+							</Button>
+							<Link to={`/books/${book.id}`}>
+								<Button leftSection={<F7Pencil />}>Edit</Button>
+							</Link>
+						</Group>
 					</Stack>
 				</Group>
 				{book.description !== null && book.description.length > 0 && (
@@ -354,26 +376,6 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 								</span>
 							))}
 					</p>
-				</Stack>
-				<Stack justify="flex-end" align="flex-end" style={{ flexGrow: 1 }}>
-					<Group>
-						<Button
-							onPointerDown={safeAsyncEventHandler(async () => {
-								const firstFile = book.file_list[0];
-								if (firstFile === undefined) return;
-
-								const isLocal = "Local" in firstFile;
-								if (!isLocal) return;
-
-								await open(firstFile.Local.path);
-							})}
-						>
-							Read
-						</Button>
-						<Link to={`/books/${book.id}`}>
-							<Button>Edit</Button>
-						</Link>
-					</Group>
 				</Stack>
 			</Stack>
 		</>
