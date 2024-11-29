@@ -155,15 +155,26 @@ impl BooksHandler {
     fn create_book_identifier(&mut self, update: UpsertBookIdentifier) -> Result<i32, ()> {
         use crate::schema::identifiers::dsl::*;
         let mut connection = self.client.lock().unwrap();
+        let lowercased_label = update.label.to_lowercase();
 
         diesel::insert_into(identifiers)
             .values((
                 book.eq(update.book_id),
-                type_.eq(update.label),
+                type_.eq(lowercased_label),
                 val.eq(update.value),
             ))
             .returning(id)
             .get_result::<i32>(&mut *connection)
+            .or(Err(()))
+    }
+
+    pub fn delete_book_identifier(&mut self, book_id: i32, identifier_id: i32) -> Result<(), ()> {
+        use crate::schema::identifiers::dsl::*;
+        let mut connection = self.client.lock().unwrap();
+
+        diesel::delete(identifiers.filter(book.eq(book_id).and(id.eq(identifier_id))))
+            .execute(&mut *connection)
+            .map(|_| ())
             .or(Err(()))
     }
 

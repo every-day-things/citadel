@@ -28,6 +28,13 @@ export interface Library {
 		},
 	): Promise<void>;
 	updateBook(bookId: string, updates: BookUpdate): Promise<void>;
+	deleteBookIdentifier(bookId: string, identifierId: number): Promise<void>;
+	upsertBookIdentifier(
+		bookId: string,
+		identifierId: number | null,
+		label: string,
+		value: string,
+	): Promise<void>;
 
 	/**
 	 * Returns the path to the cover image for the book with the given ID.
