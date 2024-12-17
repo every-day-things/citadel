@@ -64,6 +64,9 @@ const genLocalCalibreClient = async (
 		updateBook: async (bookId, updates) => {
 			await commands.clbCmdUpdateBook(options.libraryPath, bookId, updates);
 		},
+		updateAuthor: async (authorId, updates) => {
+			await commands.clbCmdUpdateAuthor(options.libraryPath, authorId, updates);
+		},
 		upsertBookIdentifier: async (bookId, identifierId, label, value) => {
 			await commands.clbCmdUpsertBookIdentifier(
 				options.libraryPath,
@@ -148,6 +151,9 @@ const genRemoteCalibreClient = async (
 			throw new Error("Not implemented");
 		},
 		updateBook: () => {
+			throw new Error("Not implemented");
+		},
+		updateAuthor: () => {
 			throw new Error("Not implemented");
 		},
 		upsertBookIdentifier: () => {

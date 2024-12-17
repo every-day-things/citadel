@@ -7,6 +7,7 @@ use crate::book::LibraryBook;
 
 use chrono::NaiveDateTime;
 use libcalibre::client::CalibreClient;
+use libcalibre::dtos::author::UpdateAuthorDto;
 use libcalibre::dtos::book::UpdateBookDto;
 use libcalibre::dtos::library::UpdateLibraryEntryDto;
 use libcalibre::mime_type::MIMETYPE;
@@ -154,6 +155,26 @@ pub fn clb_cmd_delete_book_identifier(
     }
 }
 
+#[tauri::command]
+#[specta::specta]
+pub fn clb_cmd_update_author(
+    library_root: String,
+    author_id: String,
+    updates: AuthorUpdate,
+) -> Result<i32, ()> {
+    match libcalibre::util::get_db_path(&library_root) {
+        None => Err(()),
+        Some(database_path) => {
+            let mut calibre = CalibreClient::new(database_path);
+
+            let author_id_int = author_id.parse::<i32>().unwrap();
+            let result = calibre.update_author(author_id_int, updates.to_dto());
+
+            result.map(|entry| entry.id).map_err(|_| ())
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, specta::Type, Debug)]
 pub struct BookUpdate {
     pub author_id_list: Option<Vec<String>>,
@@ -174,6 +195,23 @@ impl BookUpdate {
                 ..UpdateBookDto::default()
             },
             author_id_list: self.author_id_list.clone(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, specta::Type, Debug)]
+pub struct AuthorUpdate {
+    pub full_name: Option<String>,
+    pub sortable_name: Option<String>,
+    pub external_url: Option<String>,
+}
+
+impl AuthorUpdate {
+    pub fn to_dto(&self) -> UpdateAuthorDto {
+        UpdateAuthorDto {
+            full_name: self.full_name.clone(),
+            sortable_name: self.sortable_name.clone(),
+            external_url: self.external_url.clone(),
         }
     }
 }
