@@ -1,9 +1,9 @@
 import { Books } from "@/components/pages/Books";
 import { createFileRoute, useSearch } from "@tanstack/react-router";
 
-type BookSearch = {
+interface BookSearch {
 	search_for_author?: string;
-};
+}
 
 export const Route = createFileRoute("/")({
 	component: Index,
@@ -16,6 +16,6 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-	const { search_for_author } = useSearch({from: "/"});
+	const { search_for_author } = useSearch({ from: "/" });
 	return <Books search_for_author={search_for_author} />;
 }

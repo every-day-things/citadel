@@ -37,9 +37,7 @@ interface BookSearchOptions {
 	search_for_author?: string;
 }
 
-export const Books = ({
-	search_for_author,
-}: BookSearchOptions) => {
+export const Books = ({ search_for_author }: BookSearchOptions) => {
 	const form = useForm<{
 		query: string;
 		sortOrder: keyof typeof LibraryBookSortOrder;
@@ -47,7 +45,7 @@ export const Books = ({
 		hideRead: boolean;
 	}>({
 		initialValues: {
-			query: search_for_author ?? '',
+			query: search_for_author ?? "",
 			sortOrder: "authorAz",
 			view: "covers",
 			hideRead: false,

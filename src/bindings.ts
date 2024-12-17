@@ -20,6 +20,14 @@ try {
     else return { status: "error", error: e  as any };
 }
 },
+async clbCmdUpdateAuthor(libraryRoot: string, authorId: string, updates: AuthorUpdate) : Promise<__Result__<number, null>> {
+try {
+    return { status: "ok", data: await TAURI_INVOKE("plugin:tauri-specta|clb_cmd_update_author", { libraryRoot, authorId, updates }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async clbCmdUpsertBookIdentifier(libraryRoot: string, bookId: string, label: string, value: string, existingId: number | null) : Promise<__Result__<null, null>> {
 try {
     return { status: "ok", data: await TAURI_INVOKE("plugin:tauri-specta|clb_cmd_upsert_book_identifier", { libraryRoot, bookId, label, value, existingId }) };
@@ -67,6 +75,7 @@ return await TAURI_INVOKE("plugin:tauri-specta|init_client", { libraryPath });
 
 /** user-defined types **/
 
+export type AuthorUpdate = { full_name: string | null; sortable_name: string | null; external_url: string | null }
 export type BookFile = { Local: LocalFile } | { Remote: RemoteFile }
 export type BookUpdate = { author_id_list: string[] | null; title: string | null; timestamp: string | null; publication_date: string | null; is_read: boolean | null }
 export type CalibreClientConfig = { library_path: string }

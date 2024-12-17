@@ -1,4 +1,5 @@
 use crate::cover_image::cover_image_data_from_path;
+use crate::dtos::author::UpdateAuthorDto;
 use crate::dtos::file::NewFileDto;
 use crate::dtos::library::NewLibraryEntryDto;
 use crate::dtos::library::NewLibraryFileDto;
@@ -282,6 +283,14 @@ impl CalibreClient {
             .books()
             .list_identifiers_for_book(book_id)
             .map_err(|_| Box::new(CalibreError::DatabaseError) as Box<dyn std::error::Error>)
+    }
+
+    pub fn update_author(
+        &mut self,
+        author_id: i32,
+        updates: UpdateAuthorDto,
+    ) -> Result<crate::Author, ()> {
+        self.client_v2.authors().update(author_id, updates)
     }
 
     fn create_authors(
