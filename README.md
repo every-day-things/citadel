@@ -35,6 +35,16 @@ Development builds are available from [GitHub actions](https://github.com/every-
 
 Please report any issues or crashes you experience while using any version of Citadel!
 
+### Installing on macOS
+
+Builds aren't signed (yet) — if you open Citadel.app directly, you'll get a warning that the file is "damaged".
+
+[Removing the Quarantine attribute from the file](https://superuser.com/questions/526920/how-to-remove-quarantine-from-file-permissions-in-os-x) resolves this. For example,
+
+```fish
+xattr -d com.apple.quarantine /Applications/Citadel.app/
+```
+
 ## Developing
 
 As a prerequisite, you'll need to install [Bun](https://bun.sh), Node[^1], and [Rust](https://www.rust-lang.org/tools/install).
