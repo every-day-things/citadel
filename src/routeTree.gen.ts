@@ -11,10 +11,16 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as AuthorsImport } from './routes/authors'
 import { Route as IndexImport } from './routes/index'
 import { Route as BooksBookIdImport } from './routes/books.$bookId'
 
 // Create/Update Routes
+
+const AuthorsRoute = AuthorsImport.update({
+  path: '/authors',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const IndexRoute = IndexImport.update({
   path: '/',
@@ -34,6 +40,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
+    '/authors': {
+      preLoaderRoute: typeof AuthorsImport
+      parentRoute: typeof rootRoute
+    }
     '/books/$bookId': {
       preLoaderRoute: typeof BooksBookIdImport
       parentRoute: typeof rootRoute
@@ -43,6 +53,10 @@ declare module '@tanstack/react-router' {
 
 // Create and export the route tree
 
-export const routeTree = rootRoute.addChildren([IndexRoute, BooksBookIdRoute])
+export const routeTree = rootRoute.addChildren([
+  IndexRoute,
+  AuthorsRoute,
+  BooksBookIdRoute,
+])
 
 /* prettier-ignore-end */

@@ -1,6 +1,5 @@
 import type { Identifier, LibraryBook, LocalFile } from "@/bindings";
 import { safeAsyncEventHandler } from "@/lib/async";
-import { LibraryState, useLibrary } from "@/lib/contexts/library";
 import { useBreakpoint } from "@/lib/hooks/use-breakpoint";
 import {
 	ActionIcon,
@@ -16,6 +15,7 @@ import {
 	Switch,
 	Text,
 	TextInput,
+	Title,
 	rem,
 } from "@mantine/core";
 import { type UseFormReturnType, useForm } from "@mantine/form";
@@ -30,10 +30,16 @@ import { F7SquareGrid2x2 } from "../icons/F7SquareGrid2x2";
 import { BookGrid } from "../molecules/BookGrid";
 import { BookTable } from "../molecules/BookTable";
 import { TablerCopy } from "../icons/TablerCopy";
-import { LibraryEventNames } from "@/lib/contexts/library/context";
 import { F7Pencil } from "../icons/F7Pencil";
+import { useLoadBooks } from "@/lib/hooks/use-load-books";
 
-export const Books = () => {
+interface BookSearchOptions {
+	search_for_author?: string;
+}
+
+export const Books = ({
+	search_for_author,
+}: BookSearchOptions) => {
 	const form = useForm<{
 		query: string;
 		sortOrder: keyof typeof LibraryBookSortOrder;
@@ -41,7 +47,7 @@ export const Books = () => {
 		hideRead: boolean;
 	}>({
 		initialValues: {
-			query: "",
+			query: search_for_author ?? '',
 			sortOrder: "authorAz",
 			view: "covers",
 			hideRead: false,
@@ -60,6 +66,10 @@ export const Books = () => {
 				const savedPreferences: typeof form.values = JSON.parse(
 					storedValue,
 				) as unknown as typeof form.values;
+				if (search_for_author) {
+					savedPreferences.query = search_for_author;
+				}
+
 				form.setValues(savedPreferences);
 			} catch (e) {
 				console.error("Failed to parse stored value");
@@ -152,54 +162,6 @@ export const Books = () => {
 			</Drawer>
 		</Stack>
 	);
-};
-
-const useLoadBooks = () => {
-	const [loading, setLoading] = useState(true);
-	const [books, setBooks] = useState<LibraryBook[]>([]);
-	const { library, state, eventEmitter } = useLibrary();
-	const updateBooklist = useCallback(() => {
-		setLoading(true);
-		void (async () => {
-			if (state !== LibraryState.ready) {
-				return;
-			}
-
-			const books = await library.listBooks();
-			setBooks(books);
-			setLoading(false);
-		})();
-	}, [library, state]);
-
-	useEffect(() => {
-		updateBooklist();
-	}, [updateBooklist]);
-
-	useEffect(() => {
-		if (state !== LibraryState.ready) {
-			return;
-		}
-
-		const unsubNewBook = eventEmitter.listen(
-			LibraryEventNames.LIBRARY_BOOK_CREATED,
-			() => {
-				updateBooklist();
-			},
-		);
-		const unsubUpdatedBook = eventEmitter.listen(
-			LibraryEventNames.LIBRARY_BOOK_UPDATED,
-			() => {
-				updateBooklist();
-			},
-		);
-
-		return () => {
-			unsubNewBook();
-			unsubUpdatedBook();
-		};
-	}, [state, eventEmitter, updateBooklist]);
-
-	return [loading, books] as const;
 };
 
 const BOOK_FORM_PREFS_KEY = "book-form-prefs";
@@ -300,10 +262,13 @@ function Header({
 }) {
 	return (
 		<Stack>
+			<Title order={1} mb="xs">
+				Books
+			</Title>
 			<FilterControls form={form} />
-			<p>
-				Showing {viewBookCount} of {totalBookCount} items
-			</p>
+			<Text>
+				Showing {viewBookCount} of {totalBookCount} books
+			</Text>
 		</Stack>
 	);
 }

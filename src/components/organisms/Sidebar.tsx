@@ -306,6 +306,12 @@ const SidebarPure = ({
 				<Button variant="outline" onPointerDown={switchLibraryHandler}>
 					Switch library
 				</Button>
+				<NavLink
+					label="Authors"
+					component={Link}
+					to="/authors"
+					active={location.pathname === "/authors"}
+				/>
 			</Stack>
 			<Divider my="md" />
 			<Stack>

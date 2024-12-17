@@ -1,7 +1,7 @@
 import { createContext } from "react";
 import { Library } from "../../services/library";
 import { EventEmitter } from "@/lib/event";
-import { LibraryBook } from "@/bindings";
+import { LibraryAuthor, LibraryBook } from "@/bindings";
 
 export enum LibraryState {
 	ready = 0,
@@ -14,6 +14,8 @@ export enum LibraryState {
 export const LibraryEventNames = {
 	LIBRARY_BOOK_CREATED: "018fdbce-b150-7987-9678-e9844fb6d8b3",
 	LIBRARY_BOOK_UPDATED: "018fdbce-92b8-755e-a207-10f537d15c0c",
+	LIBRARY_AUTHOR_CREATED: "0193d2c9-83ef-7aa9-a0da-0566b6959d89",
+	LIBRARY_AUTHOR_UPDATED: "0193d2c9-9891-7dd1-9c96-6fc9abde43cb",
 } as const;
 
 // LibraryEvents must match a Record<string, {}>, which is why we use a type,
@@ -21,6 +23,8 @@ export const LibraryEventNames = {
 export type LibraryEvents = {
 	[LibraryEventNames.LIBRARY_BOOK_CREATED]: { bookname: string };
 	[LibraryEventNames.LIBRARY_BOOK_UPDATED]: { book: LibraryBook["id"] };
+	[LibraryEventNames.LIBRARY_AUTHOR_CREATED]: { authorname: string };
+	[LibraryEventNames.LIBRARY_AUTHOR_UPDATED]: { author: LibraryAuthor["id"] };
 };
 
 interface CtxClosed {
