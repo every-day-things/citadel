@@ -139,7 +139,7 @@ const EditAuthorModal = ({
 				<Stack>
 					<TextInput
 						label="Full name"
-						description="How the author is displayed in Citadel"
+						description="How the author's name is displayed"
 						{...form.getInputProps("displayName")}
 					/>
 					<TextInput
@@ -159,6 +159,9 @@ const EditAuthorModal = ({
 	);
 };
 
+const pluralize = (single: string, multiple: string, count: number): string =>
+	count === 1 ? single : multiple;
+
 const AuthorCard = ({
 	author,
 	books,
@@ -168,6 +171,9 @@ const AuthorCard = ({
 	books: LibraryBook[];
 	onEditAuthor: (authorId: string) => void;
 }) => {
+	const numBooksByAuthor = books.filter((book) =>
+		new Set(book.author_list.map((a) => a.id)).has(author.id),
+	).length;
 	return (
 		<Card w={"480"} key={author.id}>
 			<Group justify="space-between" mb="xs">
@@ -210,12 +216,7 @@ const AuthorCard = ({
 				component={Link}
 			>
 				<Text size="sm">
-					{
-						books.filter((book) =>
-							new Set(book.author_list.map((a) => a.id)).has(author.id),
-						).length
-					}{" "}
-					books
+					{numBooksByAuthor} {pluralize("book", "books", numBooksByAuthor)}
 				</Text>
 			</Anchor>
 		</Card>
