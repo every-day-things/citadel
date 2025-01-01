@@ -1,8 +1,15 @@
 import { shortenToChars } from "$lib/domain/book";
 import { LibraryBook } from "@/bindings";
 import { AspectRatio, Overlay, Text, Transition } from "@mantine/core";
-import { HTMLAttributes, useState } from "react";
+import { HTMLAttributes, useEffect, useState } from "react";
 import { formatAuthorList } from "@/lib/authors";
+import { selectByStringHash } from "@/lib/hash-string";
+
+import img1Url from "../../assets/1.jpg";
+import img2Url from "../../assets/2.jpg";
+import img3Url from "../../assets/3.jpg";
+import img4Url from "../../assets/4.jpg";
+import img5Url from "../../assets/5.jpg";
 
 type LibraryBookWithCoverImage = LibraryBook & {
 	cover_image: NonNullable<LibraryBook["cover_image"]>;
@@ -65,10 +72,16 @@ const BookCoverWithPlaceholder = ({
 } & HTMLAttributes<HTMLDivElement>) => {
 	const [isHovering, setIsHovering] = useState(false);
 
+	const imgUrl = selectByStringHash(
+		[img1Url, img2Url, img3Url, img4Url, img5Url],
+		book.title,
+	);
+
 	return (
 		<AspectRatio
+			ratio={9 / 6}
 			h={200}
-			w={150}
+			w={133}
 			m="xs"
 			onPointerOver={() => {
 				setIsHovering(true);
@@ -80,29 +93,44 @@ const BookCoverWithPlaceholder = ({
 			<div
 				{...props}
 				style={{
-					width: "150px",
+					width: "133px",
 					height: "200px",
-					background: "linear-gradient(#555, #111)",
-					backgroundColor: "#555",
-					padding: "0.5rem",
+					display: "grid",
+					gridTemplateAreas: "overlap",
 				}}
 			>
+				<img
+					alt="App-provided placeholder cover."
+					src={imgUrl}
+					style={{
+						width: "inherit",
+						height: "inherit",
+						gridArea: "overlap",
+						filter: "brightness(0.7)",
+					}}
+				/>
 				<div
 					style={{
-						border: "2px solid #888",
 						height: "100%",
+						width: "auto",
 						display: "flex",
 						flexDirection: "column",
-						alignContent: "center",
-						justifyContent: "space-between",
-						textAlign: "center",
-						padding: "0.5rem",
+						alignContent: "flex-start",
+						justifyContent: "flex-end",
+						gridArea: "overlap",
+						padding: "0.3rem",
+						zIndex: 1,
 					}}
 				>
-					<Text size="sm" c="white">
-						{shortenToChars(book.title, 50)}
+					<Text
+						size="lg"
+						fw="bolder"
+						c="white"
+						style={{ textShadow: "0px 1px #888" }}
+					>
+						{shortenToChars(book.title, 45)}
 					</Text>
-					<Text size="sm" c="white">
+					<Text size="md" c="#ccc" style={{ textShadow: "0px 2px #222" }}>
 						{formatAuthorList(book.author_list)}
 					</Text>
 					<Transition

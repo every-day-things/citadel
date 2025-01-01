@@ -277,7 +277,11 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 			<Stack h={"100%"}>
 				<Group wrap={"nowrap"} align="flex-start">
 					<BookCover book={book} disableFade />
-					<Stack justify="space-between" mih={"200px"}>
+					<Stack
+						justify="space-between"
+						mih={"200px"}
+						maw="calc(400px - 133px)"
+					>
 						<Stack ml={"sm"} align="flex-start" justify="flex-start">
 							<Text size="xl" fw={"700"}>
 								{book.title}
