@@ -174,8 +174,9 @@ const AuthorCard = ({
 	const numBooksByAuthor = books.filter((book) =>
 		new Set(book.author_list.map((a) => a.id)).has(author.id),
 	).length;
+
 	return (
-		<Card w={"480"} key={author.id}>
+		<Card w={"480"} key={author.id} shadow="sm" withBorder>
 			<Group justify="space-between" mb="xs">
 				<Group mb="sm">
 					<Stack gap="xs">
