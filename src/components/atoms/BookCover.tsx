@@ -1,7 +1,7 @@
 import { shortenToChars } from "$lib/domain/book";
 import { LibraryBook } from "@/bindings";
 import { AspectRatio, Overlay, Text, Transition } from "@mantine/core";
-import { HTMLAttributes, useEffect, useState } from "react";
+import { HTMLAttributes, useState } from "react";
 import { formatAuthorList } from "@/lib/authors";
 import { selectByStringHash } from "@/lib/hash-string";
 
