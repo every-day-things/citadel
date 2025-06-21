@@ -16,6 +16,7 @@ export const LibraryEventNames = {
 	LIBRARY_BOOK_UPDATED: "018fdbce-92b8-755e-a207-10f537d15c0c",
 	LIBRARY_AUTHOR_CREATED: "0193d2c9-83ef-7aa9-a0da-0566b6959d89",
 	LIBRARY_AUTHOR_UPDATED: "0193d2c9-9891-7dd1-9c96-6fc9abde43cb",
+	LIBRARY_AUTHOR_DELETED: "0193d2c9-a5c3-8ee2-b789-7dc45fe12d3a",
 } as const;
 
 // LibraryEvents must match a Record<string, {}>, which is why we use a type,
@@ -25,6 +26,7 @@ export type LibraryEvents = {
 	[LibraryEventNames.LIBRARY_BOOK_UPDATED]: { book: LibraryBook["id"] };
 	[LibraryEventNames.LIBRARY_AUTHOR_CREATED]: { authorname: string };
 	[LibraryEventNames.LIBRARY_AUTHOR_UPDATED]: { author: LibraryAuthor["id"] };
+	[LibraryEventNames.LIBRARY_AUTHOR_DELETED]: { author: LibraryAuthor["id"] };
 };
 
 interface CtxClosed {

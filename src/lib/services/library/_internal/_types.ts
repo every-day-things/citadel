@@ -30,6 +30,7 @@ export interface Library {
 	): Promise<void>;
 	updateBook(bookId: string, updates: BookUpdate): Promise<void>;
 	updateAuthor(bookId: string, updates: AuthorUpdate): Promise<void>;
+	deleteAuthor(authorId: string): Promise<void>;
 	deleteBookIdentifier(bookId: string, identifierId: number): Promise<void>;
 	upsertBookIdentifier(
 		bookId: string,

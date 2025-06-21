@@ -28,6 +28,14 @@ try {
     else return { status: "error", error: e  as any };
 }
 },
+async clbCmdDeleteAuthor(libraryRoot: string, authorId: string) : Promise<__Result__<null, null>> {
+try {
+    return { status: "ok", data: await TAURI_INVOKE("plugin:tauri-specta|clb_cmd_delete_author", { libraryRoot, authorId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async clbCmdUpsertBookIdentifier(libraryRoot: string, bookId: string, label: string, value: string, existingId: number | null) : Promise<__Result__<null, null>> {
 try {
     return { status: "ok", data: await TAURI_INVOKE("plugin:tauri-specta|clb_cmd_upsert_book_identifier", { libraryRoot, bookId, label, value, existingId }) };

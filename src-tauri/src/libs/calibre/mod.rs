@@ -175,6 +175,23 @@ pub fn clb_cmd_update_author(
     }
 }
 
+#[tauri::command]
+#[specta::specta]
+pub fn clb_cmd_delete_author(
+    library_root: String,
+    author_id: String,
+) -> Result<(), ()> {
+    match libcalibre::util::get_db_path(&library_root) {
+        None => Err(()),
+        Some(database_path) => {
+            let mut calibre = CalibreClient::new(database_path);
+
+            let author_id_int = author_id.parse::<i32>().unwrap();
+            calibre.delete_author(author_id_int)
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, specta::Type, Debug)]
 pub struct BookUpdate {
     pub author_id_list: Option<Vec<String>>,

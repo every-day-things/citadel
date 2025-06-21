@@ -45,10 +45,17 @@ export const useLoadAuthors = () => {
 				updateAuthorList();
 			},
 		);
+		const unsubDeletedAuthor = eventEmitter.listen(
+			LibraryEventNames.LIBRARY_AUTHOR_DELETED,
+			() => {
+				updateAuthorList();
+			},
+		);
 
 		return () => {
 			unsubNewAuthor();
 			unsubUpdatedAuthor();
+			unsubDeletedAuthor();
 		};
 	}, [state, eventEmitter, updateAuthorList]);
 

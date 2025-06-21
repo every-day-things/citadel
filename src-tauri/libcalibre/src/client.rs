@@ -293,6 +293,13 @@ impl CalibreClient {
         self.client_v2.authors().update(author_id, updates)
     }
 
+    pub fn delete_author(
+        &mut self,
+        author_id: i32,
+    ) -> Result<(), ()> {
+        self.client_v2.authors().delete(author_id)
+    }
+
     fn create_authors(
         &mut self,
         authors: Vec<NewAuthorDto>,

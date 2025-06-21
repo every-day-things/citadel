@@ -24,6 +24,7 @@ import { LibraryEventNames } from "@/lib/contexts/library/context";
 
 import { F7Ellipsis } from "../icons/F7Ellipsis";
 import { F7Pencil } from "../icons/F7Pencil";
+import { F7Trash } from "../icons/F7Trash";
 import { useDisclosure } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
 
@@ -32,8 +33,10 @@ export const Authors = () => {
 	const [loadingAuthors, authors] = useLoadAuthors();
 	const [loadingBooks, books] = useLoadBooks();
 
-	const [opened, { open, close }] = useDisclosure(false);
+	const [editModalOpened, { open: openEditModal, close: closeEditModal }] = useDisclosure(false);
+	const [deleteModalOpened, { open: openDeleteModal, close: closeDeleteModal }] = useDisclosure(false);
 	const [authorToEdit, setAuthorToEdit] = useState<LibraryAuthor | null>(null);
+	const [authorToDelete, setAuthorToDelete] = useState<LibraryAuthor | null>(null);
 
 	const onSubmitEdit = useCallback(
 		(authorId: LibraryAuthor["id"], authorUpdate: AuthorUpdate): void => {
@@ -49,9 +52,30 @@ export const Authors = () => {
 	const onOpenEditAuthorModal = useCallback(
 		(authorId: string): void => {
 			setAuthorToEdit(authors.find(({ id }) => id === authorId) ?? null);
-			open();
+			openEditModal();
 		},
-		[open, authors],
+		[openEditModal, authors],
+	);
+
+	const onOpenDeleteAuthorModal = useCallback(
+		(authorId: string): void => {
+			setAuthorToDelete(authors.find(({ id }) => id === authorId) ?? null);
+			openDeleteModal();
+		},
+		[openDeleteModal, authors],
+	);
+
+	const onConfirmDeleteAuthor = useCallback(
+		(): void => {
+			if (authorToDelete) {
+				void library?.deleteAuthor(authorToDelete.id);
+				eventEmitter?.emit(LibraryEventNames.LIBRARY_AUTHOR_DELETED, {
+					author: authorToDelete.id,
+				});
+				closeDeleteModal();
+			}
+		},
+		[eventEmitter, library, authorToDelete, closeDeleteModal],
 	);
 
 	if (loadingAuthors || loadingBooks) {
@@ -60,14 +84,27 @@ export const Authors = () => {
 
 	return (
 		<>
-			<Modal opened={opened} onClose={close} title="Edit author">
+			<Modal opened={editModalOpened} onClose={closeEditModal} title="Edit author">
 				{authorToEdit && (
 					<EditAuthorModal
-						opened={opened}
-						onClose={close}
+						opened={editModalOpened}
+						onClose={closeEditModal}
 						authorToEdit={authorToEdit}
 						onSubmitEdit={onSubmitEdit}
 					/>
+				)}
+			</Modal>
+			<Modal opened={deleteModalOpened} onClose={closeDeleteModal} title="Delete author">
+				{authorToDelete && (
+					<Stack>
+						<Text>
+							Are you sure you want to delete the author &quot;{authorToDelete.name}&quot;?
+						</Text>
+						<Group gap="lg" grow mt="md">
+							<Button color="red" onClick={onConfirmDeleteAuthor}>Delete</Button>
+							<Button onClick={closeDeleteModal} variant="outline">Cancel</Button>
+						</Group>
+					</Stack>
 				)}
 			</Modal>
 			<Stack gap="xs">
@@ -85,6 +122,7 @@ export const Authors = () => {
 							books={books}
 							key={author.id}
 							onEditAuthor={onOpenEditAuthorModal}
+							onDeleteAuthor={onOpenDeleteAuthorModal}
 						/>
 					))}
 				</Stack>
@@ -166,10 +204,12 @@ const AuthorCard = ({
 	author,
 	books,
 	onEditAuthor,
+	onDeleteAuthor,
 }: {
 	author: LibraryAuthor;
 	books: LibraryBook[];
 	onEditAuthor: (authorId: string) => void;
+	onDeleteAuthor: (authorId: string) => void;
 }) => {
 	const numBooksByAuthor = books.filter((book) =>
 		new Set(book.author_list.map((a) => a.id)).has(author.id),
@@ -205,6 +245,15 @@ const AuthorCard = ({
 						>
 							Edit
 						</Menu.Item>
+						{numBooksByAuthor === 0 && (
+							<Menu.Item
+								leftSection={<F7Trash />}
+								onPointerDown={() => onDeleteAuthor(author.id)}
+								color="red"
+							>
+								Delete
+							</Menu.Item>
+						)}
 					</Menu.Dropdown>
 				</Menu>
 			</Group>
