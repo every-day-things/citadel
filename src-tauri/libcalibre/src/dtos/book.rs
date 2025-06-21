@@ -22,6 +22,7 @@ pub struct UpdateBookDto {
     pub flags: Option<i32>,
     pub has_cover: Option<bool>,
     pub is_read: Option<bool>,
+    pub description: Option<String>,
 }
 
 impl UpdateBookDto {
@@ -36,6 +37,7 @@ impl UpdateBookDto {
             flags: None,
             has_cover: None,
             is_read: None,
+            description: None,
         }
     }
 }

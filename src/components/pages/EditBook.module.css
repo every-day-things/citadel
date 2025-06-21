@@ -1,0 +1,152 @@
+.richTextEditorContainer {
+  margin-top: 20px;
+  position: relative;
+}
+
+.editorHint {
+  font-size: 14px;
+  color: #6c757d;
+  margin-bottom: 10px;
+  font-style: italic;
+}
+
+.editorWrapper {
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  margin-top: 5px;
+}
+
+/* Override Mantine RichTextEditor styles */
+.editorWrapper :global(.mantine-RichTextEditor-toolbar) {
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e9ecef;
+  padding: 8px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.editorWrapper :global(.mantine-RichTextEditor-content) {
+  padding: 12px;
+  min-height: 200px;
+  font-family: inherit;
+  background-color: #fff;
+}
+
+.editorWrapper :global(.mantine-RichTextEditor-controlsGroup) {
+  display: flex;
+  margin: 0 4px;
+  gap: 2px;
+}
+
+/* Fix the button width and styling issues */
+.editorWrapper :global(.mantine-RichTextEditor-control) {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer !important;
+  padding: 0 !important;
+  margin: 0 2px;
+  background-color: #fff;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  color: #495057;
+  font-size: 14px;
+}
+
+.editorWrapper :global(.mantine-RichTextEditor-control:hover) {
+  background-color: #f8f9fa;
+  border-color: #adb5bd;
+}
+
+.editorWrapper :global(.mantine-RichTextEditor-control[data-active]) {
+  background-color: #e9ecef;
+  color: #228be6;
+  border-color: #228be6;
+}
+
+.editorWrapper :global(.mantine-RichTextEditor-control svg) {
+  width: 18px !important;
+  height: 18px !important;
+  display: block;
+}
+
+/* ProseMirror specific styles */
+.editorWrapper :global(.ProseMirror) {
+  min-height: 180px;
+  outline: none;
+  padding: 10px;
+  border: 2px solid transparent;
+  cursor: text !important;
+  border-radius: 4px;
+}
+
+.editorWrapper :global(.ProseMirror:focus) {
+  border-color: #228be6;
+  background-color: #fff;
+}
+
+.editorWrapper :global(.ProseMirror p) {
+  margin: 0.5em 0;
+}
+
+.editorWrapper :global(.ProseMirror h1),
+.editorWrapper :global(.ProseMirror h2),
+.editorWrapper :global(.ProseMirror h3) {
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+}
+
+.editorWrapper :global(.ProseMirror ul),
+.editorWrapper :global(.ProseMirror ol) {
+  margin-left: 1.5em;
+  margin-bottom: 1em;
+}
+
+.editorWrapper :global(.ProseMirror li) {
+  margin-bottom: 0.25em;
+}
+
+/* Description HTML Display */
+.descriptionHtml {
+  padding: 10px;
+  line-height: 1.5;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  min-height: 100px;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  background-color: #fff;
+}
+
+.descriptionHtml h1,
+.descriptionHtml h2,
+.descriptionHtml h3 {
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+}
+
+.descriptionHtml p {
+  margin-bottom: 1em;
+}
+
+.descriptionHtml a {
+  color: #228be6;
+  text-decoration: underline;
+  cursor: pointer !important;
+}
+
+.descriptionHtml ul,
+.descriptionHtml ol {
+  margin-left: 1.5em;
+  margin-bottom: 1em;
+}
+
+.descriptionHtml li {
+  margin-bottom: 0.25em;
+}

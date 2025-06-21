@@ -194,6 +194,38 @@ impl BooksHandler {
             .or(Err(()))
     }
 
+    pub fn set_description(&mut self, book_id: i32, description: &str) -> Result<(), ()> {
+        use crate::schema::comments::dsl::*;
+        let mut connection = self.client.lock().unwrap();
+
+        // Check if a comment already exists for this book
+        let existing = comments
+            .filter(book.eq(book_id))
+            .select(id)
+            .first::<i32>(&mut *connection)
+            .optional()
+            .or(Err(()))?;
+
+        match existing {
+            Some(comment_id) => {
+                // Update existing comment
+                diesel::update(comments.filter(id.eq(comment_id)))
+                    .set(text.eq(description))
+                    .execute(&mut *connection)
+                    .map(|_| ())
+                    .or(Err(()))
+            }
+            None => {
+                // Insert new comment
+                diesel::insert_into(comments)
+                    .values((book.eq(book_id), text.eq(description)))
+                    .execute(&mut *connection)
+                    .map(|_| ())
+                    .or(Err(()))
+            }
+        }
+    }
+
     // === === ===
     // Read state
     // === === ===

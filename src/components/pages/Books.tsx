@@ -1,6 +1,7 @@
 import type { Identifier, LibraryBook, LocalFile } from "@/bindings";
 import { safeAsyncEventHandler } from "@/lib/async";
 import { useBreakpoint } from "@/lib/hooks/use-breakpoint";
+import DOMPurify from "dompurify";
 import {
 	ActionIcon,
 	Button,
@@ -315,8 +316,13 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 					<>
 						<Divider />
 						<Stack>
-							{/* biome-ignore lint/security/noDangerouslySetInnerHtml: Content comes from the user's own database. */}
-							<div dangerouslySetInnerHTML={{ __html: book.description }} />
+							{/* We're using DOMPurify to sanitize the HTML before rendering */}
+							<div 
+								className="description-html"
+								dangerouslySetInnerHTML={{ 
+									__html: DOMPurify.sanitize(book.description)
+								}} 
+							/>
 						</Stack>
 					</>
 				)}

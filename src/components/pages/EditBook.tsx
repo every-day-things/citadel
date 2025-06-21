@@ -10,13 +10,19 @@ import {
 	Switch,
 	Text,
 	TextInput,
-	Textarea,
 	Title,
+	Box,
 } from "@mantine/core";
+import { RichTextEditor } from '@mantine/tiptap';
+import { Link } from '@tiptap/extension-link';
+import { useEditor } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import DOMPurify from "dompurify";
 import { Form, useForm } from "@mantine/form";
 import { type HTMLProps, useEffect, useMemo, useState } from "react";
 import { BookCover } from "../atoms/BookCover";
 import { MultiSelectCreatable } from "../atoms/Multiselect";
+import styles from './EditBook.module.css';
 
 interface BookPageProps {
 	book: LibraryBook;
@@ -96,6 +102,7 @@ const formValuesFromBook = (book: LibraryBook) => ({
 	identifierList: book.identifier_list,
 	description: book.description ?? "",
 	isRead: book.is_read,
+	isEditingDescription: false,
 });
 
 // How much an element has to be offset vertically to account for the lack of a
@@ -132,12 +139,47 @@ const EditBookForm = ({
 	);
 	const [newBookIdentifierLabel, setNewBookIdentifierLabel] = useState("");
 
+	const editor = useEditor({
+		extensions: [
+			StarterKit,
+			Link.configure({
+				openOnClick: false,
+				HTMLAttributes: {
+					target: '_blank',
+					rel: 'noopener noreferrer nofollow'
+				}
+			}),
+		],
+		content: form.values.description || "<p></p>",
+		onUpdate: ({ editor }) => {
+			const html = editor.getHTML();
+			// Only update if content has actual text content, not just empty tags
+			if (html && (html !== "<p></p>" || form.values.description !== "")) {
+				form.setFieldValue('description', html);
+			}
+		},
+	});
+
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Re-rendering when Form is updated causes infinite loops.
 	useEffect(() => {
 		form.setValues(formValuesFromBook(book));
 		// Re-rendering when `form` is updated causes infinite loops
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [book]);
+
+	useEffect(() => {
+		if (editor && form.values.isEditingDescription) {
+			const currentHTML = editor.getHTML();
+			const formDesc = form.values.description || "<p></p>";
+
+			if (currentHTML !== formDesc) {
+				editor.commands.setContent(formDesc);
+			}
+
+			// Focus the editor when switching to edit mode
+			setTimeout(() => editor.commands.focus(), 1);
+		}
+	}, [editor, form.values.description, form.values.isEditingDescription]);
 
 	return (
 		<Form
@@ -156,6 +198,7 @@ const EditBookForm = ({
 					timestamp: null,
 					publication_date: null,
 					is_read: form.values.isRead,
+					description: form.values.description === "<p></p>" ? "" : form.values.description,
 				};
 
 				await onSave(bookUpdate);
@@ -293,12 +336,64 @@ const EditBookForm = ({
 							</Group>
 						)}
 					</Group>
-					{form.values.description.length > 0 && (
-						<Paper shadow="sm" p="lg">
+					<Paper shadow="sm" p="lg">
+						<Group justify="space-between">
 							<Text size="lg">Description</Text>
-							<Textarea disabled value={form.values.description} autosize />
-						</Paper>
-					)}
+							<Button
+								variant="subtle"
+								onClick={() => form.setFieldValue('isEditingDescription', !form.values.isEditingDescription)}
+							>
+								{form.values.isEditingDescription ? 'Preview' : 'Edit'}
+							</Button>
+						</Group>
+
+						{form.values.isEditingDescription ? (
+							<Box mt="sm" className={styles.richTextEditorContainer}>
+								<Text className={styles.editorHint}>Type your description here. Use the formatting tools above.</Text>
+								<RichTextEditor editor={editor} className={styles.editorWrapper}>
+									<RichTextEditor.Toolbar sticky stickyOffset={60}>
+										<RichTextEditor.ControlsGroup>
+											<RichTextEditor.Bold />
+											<RichTextEditor.Italic />
+											<RichTextEditor.Underline />
+											<RichTextEditor.Link />
+										</RichTextEditor.ControlsGroup>
+
+										<RichTextEditor.ControlsGroup>
+											<RichTextEditor.BulletList />
+											<RichTextEditor.OrderedList />
+										</RichTextEditor.ControlsGroup>
+
+										<RichTextEditor.ControlsGroup>
+											<RichTextEditor.H1 />
+											<RichTextEditor.H2 />
+											<RichTextEditor.H3 />
+										</RichTextEditor.ControlsGroup>
+
+										<RichTextEditor.ControlsGroup>
+											<RichTextEditor.Undo />
+											<RichTextEditor.Redo />
+										</RichTextEditor.ControlsGroup>
+									</RichTextEditor.Toolbar>
+
+									<RichTextEditor.Content />
+								</RichTextEditor>
+							</Box>
+						) : (
+							<Box mt="sm">
+								{form.values.description ? (
+									<div
+										className={styles.descriptionHtml}
+										dangerouslySetInnerHTML={{
+											__html: DOMPurify.sanitize(form.values.description)
+										}}
+									/>
+								) : (
+									<Text c="dimmed" fs="italic">No description available. Click "Edit" to add one.</Text>
+								)}
+							</Box>
+						)}
+					</Paper>
 				</Stack>
 			</Group>
 		</Form>

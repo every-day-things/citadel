@@ -165,6 +165,7 @@ impl CalibreClient {
     ) -> Result<crate::BookWithAuthorsAndFiles, Box<dyn std::error::Error>> {
         // Write new updates to book
         let is_read = updates.book.is_read;
+        let description = updates.book.description.clone();
         let book_update = UpdateBookData::try_from(updates.book).unwrap();
         let _book = self.client_v2.books().update(book_id, book_update);
 
@@ -173,6 +174,13 @@ impl CalibreClient {
                 .client_v2
                 .books()
                 .set_book_read_state(book_id, is_read.unwrap());
+        }
+
+        if let Some(desc) = description {
+            let _set_desc_result = self
+                .client_v2
+                .books()
+                .set_description(book_id, &desc);
         }
 
         match updates.author_id_list {

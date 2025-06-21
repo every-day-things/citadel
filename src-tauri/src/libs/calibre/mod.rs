@@ -199,6 +199,7 @@ pub struct BookUpdate {
     pub timestamp: Option<NaiveDateTime>,
     pub publication_date: Option<NaiveDateTime>,
     pub is_read: Option<bool>,
+    pub description: Option<String>,
 }
 
 impl BookUpdate {
@@ -209,6 +210,7 @@ impl BookUpdate {
                 timestamp: self.timestamp,
                 pubdate: self.publication_date,
                 is_read: self.is_read,
+                description: self.description.clone(),
                 ..UpdateBookDto::default()
             },
             author_id_list: self.author_id_list.clone(),
