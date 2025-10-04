@@ -16,7 +16,16 @@ import {
 	setActiveLibrary,
 	settings,
 } from "@/stores/settings";
-import { Button, Divider, Modal, NavLink, Stack, Title } from "@mantine/core";
+import {
+	ActionIcon,
+	Button,
+	Divider,
+	Menu,
+	Modal,
+	NavLink,
+	Stack,
+	Title,
+} from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -27,6 +36,9 @@ import {
 import { SwitchLibraryForm } from "../molecules/SwitchLibraryForm";
 import { appWindow } from "@tauri-apps/api/window";
 import { addBookByDragDrop } from "@/lib/services/library/_internal/addBook";
+import { F7SunMaxFill } from "@/components/icons/F7SunMaxFill";
+import { F7Gear } from "@/components/icons/F7Gear";
+import { useThemeModal } from "@/lib/contexts/modal-theme/hooks";
 
 export const Sidebar = () => {
 	const { library, state, eventEmitter } = useLibrary();
@@ -46,6 +58,8 @@ export const Sidebar = () => {
 		isSwitchLibraryModalOpen,
 		{ close: closeSwitchLibraryModal, open: openSwitchLibraryModal },
 	] = useDisclosure(false);
+
+	const [, { open: openThemeModal }] = useThemeModal();
 
 	useEffect(() => {
 		let unlisten: (() => void) | undefined;
@@ -207,6 +221,7 @@ export const Sidebar = () => {
 				addBookHandler={selectAndEditBookFile}
 				switchLibraryHandler={switchLibrary}
 				shelves={shelves}
+				openThemeModal={openThemeModal}
 			/>
 		</>
 	);
@@ -289,15 +304,17 @@ interface SidebarPureProps {
 		path: string;
 		isActive: () => boolean;
 	}[];
+	openThemeModal: () => void;
 }
 
 const SidebarPure = ({
 	addBookHandler,
 	switchLibraryHandler,
 	shelves,
+	openThemeModal,
 }: SidebarPureProps) => {
 	return (
-		<>
+		<Stack justify="space-between" h="100%">
 			<Stack>
 				<Title order={5}>My library</Title>
 				<Button variant="filled" onPointerDown={addBookHandler}>
@@ -312,9 +329,7 @@ const SidebarPure = ({
 					to="/authors"
 					active={location.pathname === "/authors"}
 				/>
-			</Stack>
-			<Divider my="md" />
-			<Stack>
+				<Divider my="md" />
 				<Title order={5}>Shelves</Title>
 				{shelves.map(({ title, path, isActive }) => (
 					<NavLink
@@ -326,6 +341,24 @@ const SidebarPure = ({
 					/>
 				))}
 			</Stack>
-		</>
+			<Stack>
+				<Menu shadow="md" width={180}>
+					<Menu.Target>
+						<ActionIcon color={"text"} aria-label="Settings" size={"sm"}>
+							<F7Gear style={{ color: "var(--mantine-color-text)" }} />{" "}
+						</ActionIcon>
+					</Menu.Target>
+
+					<Menu.Dropdown ml="xs">
+						<Menu.Item
+							leftSection={<F7SunMaxFill title="Colour scheme" />}
+							onClick={openThemeModal}
+						>
+							Change theme
+						</Menu.Item>
+					</Menu.Dropdown>
+				</Menu>
+			</Stack>
+		</Stack>
 	);
 };

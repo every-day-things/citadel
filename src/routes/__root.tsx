@@ -1,20 +1,10 @@
-import { F7CircleRighthalfFill } from "@/components/icons/F7CircleRightHalfFill";
-import { F7MoonFill } from "@/components/icons/F7MoonFill";
 import { F7SidebarLeft } from "@/components/icons/F7SidebarLeft";
-import { F7SunMaxFill } from "@/components/icons/F7SunMaxFill";
 import { Sidebar } from "@/components/organisms/Sidebar";
-import {
-	ActionIcon,
-	AppShell,
-	Burger,
-	Button,
-	Group,
-	Modal,
-	useMantineColorScheme,
-} from "@mantine/core";
+import { ThemeModal } from "@/components/organisms/ThemeModal";
+import { ThemeModalProvider } from "@/lib/contexts/modal-theme/Provider";
+import { ActionIcon, AppShell, Burger, Group } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
-import { useMemo } from "react";
 
 const Root = () => {
 	const [mobileOpened, { toggle: toggleMobile }] = useDisclosure(false);
@@ -45,24 +35,12 @@ interface MainPureProps {
 	isSidebarOpenMobile: boolean;
 	toggleMobile: () => void;
 	toggleDesktop: () => void;
-	isThemeSettingsOpen: boolean;
-	openThemeSettings: () => void;
-	closeThemeSettings: () => void;
-	colorSchemeSetters: {
-		dark: () => void;
-		light: () => void;
-		auto: () => void;
-	};
 }
 
 const MainPure = ({
 	toggleMobile,
 	toggleDesktop,
 	isSidebarOpenMobile,
-	openThemeSettings,
-	isThemeSettingsOpen,
-	closeThemeSettings,
-	colorSchemeSetters,
 }: MainPureProps) => {
 	return (
 		<>
@@ -89,49 +67,10 @@ const MainPure = ({
 					>
 						<F7SidebarLeft title="Toggle sidebar" />
 					</ActionIcon>
-					<ActionIcon
-						variant="transparent"
-						color={"text"}
-						aria-label="Settings"
-						size={"xs"}
-						onClick={openThemeSettings}
-					>
-						<F7SunMaxFill title="Colour scheme" />
-					</ActionIcon>
 				</Group>
 			</AppShell.Header>
-			<Modal
-				opened={isThemeSettingsOpen}
-				onClose={closeThemeSettings}
-				overlayProps={{
-					backgroundOpacity: 0,
-				}}
-				title="Choose theme"
-			>
-				<Group justify="space-around">
-					<Button
-						leftSection={<F7CircleRighthalfFill />}
-						onPointerDown={colorSchemeSetters.auto}
-						variant="default"
-					>
-						Auto
-					</Button>
-					<Button
-						leftSection={<F7SunMaxFill title="" />}
-						onPointerDown={colorSchemeSetters.light}
-						variant="default"
-					>
-						Light
-					</Button>
-					<Button
-						leftSection={<F7MoonFill />}
-						onPointerDown={colorSchemeSetters.dark}
-						variant="default"
-					>
-						Dark
-					</Button>
-				</Group>
-			</Modal>
+
+			<ThemeModal />
 
 			<AppShell.Navbar p="md">
 				<Sidebar />
@@ -160,29 +99,15 @@ const Main = ({
 	toggleDesktop,
 	toggleMobile,
 }: MainProps) => {
-	const { setColorScheme } = useMantineColorScheme();
-	const [isThemeModalOpen, { open: openThemeModal, close: closeThemeModal }] =
-		useDisclosure(false);
-
-	const colorSchemeSetters = useMemo(() => {
-		return {
-			dark: () => setColorScheme("dark"),
-			light: () => setColorScheme("light"),
-			auto: () => setColorScheme("auto"),
-		};
-	}, [setColorScheme]);
-
 	return (
 		<>
-			<MainPure
-				toggleDesktop={toggleDesktop}
-				isSidebarOpenMobile={isSidebarOpenMobile}
-				toggleMobile={toggleMobile}
-				isThemeSettingsOpen={isThemeModalOpen}
-				openThemeSettings={openThemeModal}
-				closeThemeSettings={closeThemeModal}
-				colorSchemeSetters={colorSchemeSetters}
-			/>
+			<ThemeModalProvider>
+				<MainPure
+					toggleDesktop={toggleDesktop}
+					isSidebarOpenMobile={isSidebarOpenMobile}
+					toggleMobile={toggleMobile}
+				/>
+			</ThemeModalProvider>
 		</>
 	);
 };
