@@ -29,5 +29,6 @@ dist-ssr
 .env.*
 !.env.example
 .output
+.eslintcache
 
 test-library/metadata.db
