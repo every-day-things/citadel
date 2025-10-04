@@ -319,6 +319,7 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 							{/* We're using DOMPurify to sanitize the HTML before rendering */}
 							<div
 								className="description-html"
+								// biome-ignore lint/security/noDangerouslySetInnerHtml: We sanitize with DOMPurify
 								dangerouslySetInnerHTML={{
 									__html: DOMPurify.sanitize(book.description),
 								}}

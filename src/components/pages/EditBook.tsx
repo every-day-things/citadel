@@ -397,13 +397,14 @@ const EditBookForm = ({
 								{form.values.description ? (
 									<div
 										className={styles.descriptionHtml}
+										// biome-ignore lint/security/noDangerouslySetInnerHtml: We sanitize with DOMPurify
 										dangerouslySetInnerHTML={{
 											__html: DOMPurify.sanitize(form.values.description),
 										}}
 									/>
 								) : (
 									<Text c="dimmed" fs="italic">
-										No description available. Click "Edit" to add one.
+										No description available. Click &quot;Edit&quot; to add one.
 									</Text>
 								)}
 							</Box>
