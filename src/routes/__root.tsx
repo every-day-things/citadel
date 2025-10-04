@@ -14,49 +14,32 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
-import React from "react";
-import { Suspense, useMemo } from "react";
+import { useMemo } from "react";
 
 const Root = () => {
 	const [mobileOpened, { toggle: toggleMobile }] = useDisclosure(false);
 	const [desktopOpened, { toggle: toggleDesktop }] = useDisclosure(true);
 
 	return (
-		<>
-			<AppShell
-				padding="md"
-				header={{ height: 36 }}
-				navbar={{
-					width: 200,
-					breakpoint: "sm",
-					collapsed: { mobile: !mobileOpened, desktop: !desktopOpened },
-				}}
-				h={"100vh"}
-				style={{ overflowY: "scroll" }}
-			>
-				<Main
-					toggleMobile={toggleMobile}
-					toggleDesktop={toggleDesktop}
-					isSidebarOpenMobile={mobileOpened}
-				/>
-			</AppShell>
-			<Suspense>
-				<RouterDevTools />
-			</Suspense>
-		</>
+		<AppShell
+			padding="md"
+			header={{ height: 36 }}
+			navbar={{
+				width: 200,
+				breakpoint: "sm",
+				collapsed: { mobile: !mobileOpened, desktop: !desktopOpened },
+			}}
+			h={"100vh"}
+			style={{ overflowY: "scroll" }}
+		>
+			<Main
+				toggleMobile={toggleMobile}
+				toggleDesktop={toggleDesktop}
+				isSidebarOpenMobile={mobileOpened}
+			/>
+		</AppShell>
 	);
 };
-
-const lazyLoadTanstackDevTools = () => {
-	return import("@tanstack/router-devtools").then((res) => ({
-		default: res.TanStackRouterDevtools,
-	}));
-};
-
-const RouterDevTools =
-	process.env.NODE_ENV === "production"
-		? () => null // Render nothing in production
-		: React.lazy(lazyLoadTanstackDevTools);
 
 interface MainPureProps {
 	isSidebarOpenMobile: boolean;
