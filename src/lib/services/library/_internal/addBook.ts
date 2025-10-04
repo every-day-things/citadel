@@ -32,7 +32,7 @@ export const promptToAddBook = async (
 	const validExtensions = (await library.listValidFileTypes()).map(
 		(type) => type.extension,
 	);
-	let filePath = await dialog.open({
+	const filePath = await dialog.open({
 		multiple: false,
 		directory: false,
 		filters: [
@@ -42,12 +42,15 @@ export const promptToAddBook = async (
 			},
 		],
 	});
+
 	if (!filePath) {
 		return;
 	}
-	if (typeof filePath === "object") {
-		filePath = filePath[0];
+
+	if (Array.isArray(filePath)) {
+		throw new Error("Multiple file selection not supported");
 	}
+
 	const importableFile = await library.checkFileImportable(filePath);
 	if (!importableFile) {
 		console.error(`File ${filePath} not importable`);
