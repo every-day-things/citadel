@@ -1,6 +1,6 @@
 import { createContext } from "react";
 
-export const ThemeModalOpenContext = createContext(
+export const ThemeModalContext = createContext(
 	{} as readonly [
 		boolean,
 		{

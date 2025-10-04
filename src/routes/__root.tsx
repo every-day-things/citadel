@@ -1,6 +1,8 @@
 import { F7SidebarLeft } from "@/components/icons/F7SidebarLeft";
+import { LibrarySelectModal } from "@/components/organisms/LibrarySelectModal";
 import { Sidebar } from "@/components/organisms/Sidebar";
 import { ThemeModal } from "@/components/organisms/ThemeModal";
+import { LibrarySelectModalProvider } from "@/lib/contexts/modal-library-select/Provider";
 import { ThemeModalProvider } from "@/lib/contexts/modal-theme/Provider";
 import { ActionIcon, AppShell, Burger, Group } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
@@ -71,6 +73,7 @@ const MainPure = ({
 			</AppShell.Header>
 
 			<ThemeModal />
+			<LibrarySelectModal />
 
 			<AppShell.Navbar p="md">
 				<Sidebar />
@@ -102,11 +105,13 @@ const Main = ({
 	return (
 		<>
 			<ThemeModalProvider>
-				<MainPure
-					toggleDesktop={toggleDesktop}
-					isSidebarOpenMobile={isSidebarOpenMobile}
-					toggleMobile={toggleMobile}
-				/>
+				<LibrarySelectModalProvider>
+					<MainPure
+						toggleDesktop={toggleDesktop}
+						isSidebarOpenMobile={isSidebarOpenMobile}
+						toggleMobile={toggleMobile}
+					/>
+				</LibrarySelectModalProvider>
 			</ThemeModalProvider>
 		</>
 	);

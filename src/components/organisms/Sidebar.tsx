@@ -1,21 +1,6 @@
-import {
-	type ImportableBookMetadata,
-	type LibraryAuthor,
-	commands,
-} from "@/bindings";
+import { type ImportableBookMetadata, type LibraryAuthor } from "@/bindings";
 import { LibraryState, useLibrary } from "@/lib/contexts/library";
-import { useSettings } from "@/lib/contexts/settings";
-import {
-	commitAddBook,
-	pickLibrary,
-	promptToAddBook,
-} from "@/lib/services/library";
-import {
-	type LibraryPath,
-	createSettingsLibrary,
-	setActiveLibrary,
-	settings,
-} from "@/stores/settings";
+import { commitAddBook, promptToAddBook } from "@/lib/services/library";
 import {
 	ActionIcon,
 	Button,
@@ -33,30 +18,25 @@ import {
 	AddBookForm,
 	title as addBookFormTitle,
 } from "../molecules/AddBookForm";
-import { SwitchLibraryForm } from "../molecules/SwitchLibraryForm";
 import { appWindow } from "@tauri-apps/api/window";
 import { addBookByDragDrop } from "@/lib/services/library/_internal/addBook";
 import { F7SunMaxFill } from "@/components/icons/F7SunMaxFill";
 import { F7Gear } from "@/components/icons/F7Gear";
 import { useThemeModal } from "@/lib/contexts/modal-theme/hooks";
+import { useLibrarySelectModal } from "@/lib/contexts/modal-library-select/hooks";
+import { FluentLibraryFilled } from "@/components/icons/FluentLibraryFilled";
 
 export const Sidebar = () => {
 	const { library, state, eventEmitter } = useLibrary();
-	const { set, subscribe } = useSettings();
 	const { location } = useRouterState();
+	const { open: openLibrarySelectModal } = useLibrarySelectModal();
 
 	const [metadata, setMetadata] = useState<ImportableBookMetadata | null>();
-	const [activeLibraryId, setActiveLibraryId] = useState<string>();
 	const [authorList, setAuthorList] = useState<string[]>([]);
-	const [libraries, setLibraries] = useState<LibraryPath[]>([]);
 
 	const [
 		isAddBookModalOpen,
 		{ close: closeAddBookModal, open: openAddBookModal },
-	] = useDisclosure(false);
-	const [
-		isSwitchLibraryModalOpen,
-		{ close: closeSwitchLibraryModal, open: openSwitchLibraryModal },
 	] = useDisclosure(false);
 
 	const [, { open: openThemeModal }] = useThemeModal();
@@ -102,17 +82,6 @@ export const Sidebar = () => {
 			);
 		})();
 	}, [library]);
-	useEffect(() => {
-		return subscribe((update) => {
-			setLibraries(update.libraryPaths);
-			const activeLibrary = update.libraryPaths.find(
-				(library) => library.id === update.activeLibraryId,
-			);
-			if (activeLibrary) {
-				setActiveLibraryId(activeLibrary.id);
-			}
-		});
-	}, [subscribe]);
 
 	const selectAndEditBookFile = useCallback(() => {
 		if (state !== LibraryState.ready) return;
@@ -128,10 +97,6 @@ export const Sidebar = () => {
 				console.error("failed to import new book: ", failure);
 			});
 	}, [library, state, openAddBookModal]);
-
-	const switchLibrary = useCallback(() => {
-		openSwitchLibraryModal();
-	}, [openSwitchLibraryModal]);
 
 	const addBookByMetadataWithEffects = (form: AddBookForm) => {
 		if (!metadata || state !== LibraryState.ready) return;
@@ -149,33 +114,6 @@ export const Sidebar = () => {
 				console.error("Failed to add book to database", error);
 			});
 	};
-	const addNewLibraryByPath = useCallback(
-		async (form: SwitchLibraryForm) => {
-			const isPathValidLibrary = await commands.clbQueryIsPathValidLibrary(
-				form.libraryPath,
-			);
-
-			if (isPathValidLibrary) {
-				const newLibraryId = await createSettingsLibrary(
-					settings,
-					form.libraryPath,
-				);
-				await setActiveLibrary(settings, newLibraryId);
-				closeSwitchLibraryModal();
-			} else {
-				// TODO: You could create a new library, if you like.
-				console.error("Invalid library path selected");
-			}
-		},
-		[closeSwitchLibraryModal],
-	);
-	const selectExistingLibrary = useCallback(
-		async (id: string) => {
-			await set("activeLibraryId", id);
-			closeSwitchLibraryModal();
-		},
-		[closeSwitchLibraryModal, set],
-	);
 	const shelves = useMemo(() => {
 		return [
 			{
@@ -190,10 +128,6 @@ export const Sidebar = () => {
 		return null;
 	}
 
-	if (activeLibraryId === undefined) {
-		return <p>Something went wrong!</p>;
-	}
-
 	return (
 		<>
 			{metadata && (
@@ -205,21 +139,9 @@ export const Sidebar = () => {
 					authorNameList={authorList}
 				/>
 			)}
-			<SwitchLibraryPathModalPure
-				isOpen={isSwitchLibraryModalOpen}
-				onClose={closeSwitchLibraryModal}
-			>
-				<SwitchLibraryForm
-					currentLibraryId={activeLibraryId}
-					libraries={libraries}
-					onSubmit={(form) => void addNewLibraryByPath(form)}
-					selectExistingLibrary={selectExistingLibrary}
-					selectNewLibrary={pickLibrary}
-				/>
-			</SwitchLibraryPathModalPure>
 			<SidebarPure
 				addBookHandler={selectAndEditBookFile}
-				switchLibraryHandler={switchLibrary}
+				switchLibraryHandler={openLibrarySelectModal}
 				shelves={shelves}
 				openThemeModal={openThemeModal}
 			/>
@@ -267,31 +189,6 @@ const AddBookModalPure = ({
 	);
 };
 
-interface SwitchLibraryPathModalPureProps {
-	isOpen: boolean;
-	onClose: () => void;
-	children: React.ReactNode;
-}
-
-const SwitchLibraryPathModalPure = ({
-	isOpen,
-	onClose,
-	children,
-}: SwitchLibraryPathModalPureProps) => {
-	return (
-		<Modal.Root opened={isOpen} onClose={onClose} size={"lg"}>
-			<Modal.Overlay blur={3} backgroundOpacity={0.35} />
-			<Modal.Content>
-				<Modal.Header>
-					<Modal.Title>Switch library</Modal.Title>
-					<Modal.CloseButton />
-				</Modal.Header>
-				<Modal.Body>{children}</Modal.Body>
-			</Modal.Content>
-		</Modal.Root>
-	);
-};
-
 const sortAuthors = (a: LibraryAuthor, b: LibraryAuthor) => {
 	return a.sortable_name.localeCompare(b.sortable_name);
 };
@@ -319,9 +216,6 @@ const SidebarPure = ({
 				<Title order={5}>My library</Title>
 				<Button variant="filled" onPointerDown={addBookHandler}>
 					⊕ Add book
-				</Button>
-				<Button variant="outline" onPointerDown={switchLibraryHandler}>
-					Switch library
 				</Button>
 				<NavLink
 					label="Authors"
@@ -354,7 +248,14 @@ const SidebarPure = ({
 							leftSection={<F7SunMaxFill title="Colour scheme" />}
 							onClick={openThemeModal}
 						>
-							Change theme
+							Theme
+						</Menu.Item>
+
+						<Menu.Item
+							leftSection={<FluentLibraryFilled />}
+							onClick={switchLibraryHandler}
+						>
+							Switch library
 						</Menu.Item>
 					</Menu.Dropdown>
 				</Menu>
