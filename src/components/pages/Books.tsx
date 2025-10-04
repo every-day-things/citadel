@@ -317,11 +317,11 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 						<Divider />
 						<Stack>
 							{/* We're using DOMPurify to sanitize the HTML before rendering */}
-							<div 
+							<div
 								className="description-html"
-								dangerouslySetInnerHTML={{ 
-									__html: DOMPurify.sanitize(book.description)
-								}} 
+								dangerouslySetInnerHTML={{
+									__html: DOMPurify.sanitize(book.description),
+								}}
 							/>
 						</Stack>
 					</>

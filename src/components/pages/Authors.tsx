@@ -33,10 +33,16 @@ export const Authors = () => {
 	const [loadingAuthors, authors] = useLoadAuthors();
 	const [loadingBooks, books] = useLoadBooks();
 
-	const [editModalOpened, { open: openEditModal, close: closeEditModal }] = useDisclosure(false);
-	const [deleteModalOpened, { open: openDeleteModal, close: closeDeleteModal }] = useDisclosure(false);
+	const [editModalOpened, { open: openEditModal, close: closeEditModal }] =
+		useDisclosure(false);
+	const [
+		deleteModalOpened,
+		{ open: openDeleteModal, close: closeDeleteModal },
+	] = useDisclosure(false);
 	const [authorToEdit, setAuthorToEdit] = useState<LibraryAuthor | null>(null);
-	const [authorToDelete, setAuthorToDelete] = useState<LibraryAuthor | null>(null);
+	const [authorToDelete, setAuthorToDelete] = useState<LibraryAuthor | null>(
+		null,
+	);
 
 	const onSubmitEdit = useCallback(
 		(authorId: LibraryAuthor["id"], authorUpdate: AuthorUpdate): void => {
@@ -65,18 +71,15 @@ export const Authors = () => {
 		[openDeleteModal, authors],
 	);
 
-	const onConfirmDeleteAuthor = useCallback(
-		(): void => {
-			if (authorToDelete) {
-				void library?.deleteAuthor(authorToDelete.id);
-				eventEmitter?.emit(LibraryEventNames.LIBRARY_AUTHOR_DELETED, {
-					author: authorToDelete.id,
-				});
-				closeDeleteModal();
-			}
-		},
-		[eventEmitter, library, authorToDelete, closeDeleteModal],
-	);
+	const onConfirmDeleteAuthor = useCallback((): void => {
+		if (authorToDelete) {
+			void library?.deleteAuthor(authorToDelete.id);
+			eventEmitter?.emit(LibraryEventNames.LIBRARY_AUTHOR_DELETED, {
+				author: authorToDelete.id,
+			});
+			closeDeleteModal();
+		}
+	}, [eventEmitter, library, authorToDelete, closeDeleteModal]);
 
 	if (loadingAuthors || loadingBooks) {
 		return null;
@@ -84,7 +87,11 @@ export const Authors = () => {
 
 	return (
 		<>
-			<Modal opened={editModalOpened} onClose={closeEditModal} title="Edit author">
+			<Modal
+				opened={editModalOpened}
+				onClose={closeEditModal}
+				title="Edit author"
+			>
 				{authorToEdit && (
 					<EditAuthorModal
 						opened={editModalOpened}
@@ -94,15 +101,24 @@ export const Authors = () => {
 					/>
 				)}
 			</Modal>
-			<Modal opened={deleteModalOpened} onClose={closeDeleteModal} title="Delete author">
+			<Modal
+				opened={deleteModalOpened}
+				onClose={closeDeleteModal}
+				title="Delete author"
+			>
 				{authorToDelete && (
 					<Stack>
 						<Text>
-							Are you sure you want to delete the author &quot;{authorToDelete.name}&quot;?
+							Are you sure you want to delete the author &quot;
+							{authorToDelete.name}&quot;?
 						</Text>
 						<Group gap="lg" grow mt="md">
-							<Button color="red" onClick={onConfirmDeleteAuthor}>Delete</Button>
-							<Button onClick={closeDeleteModal} variant="outline">Cancel</Button>
+							<Button color="red" onClick={onConfirmDeleteAuthor}>
+								Delete
+							</Button>
+							<Button onClick={closeDeleteModal} variant="outline">
+								Cancel
+							</Button>
 						</Group>
 					</Stack>
 				)}

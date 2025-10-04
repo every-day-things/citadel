@@ -13,16 +13,16 @@ import {
 	Title,
 	Box,
 } from "@mantine/core";
-import { RichTextEditor } from '@mantine/tiptap';
-import { Link } from '@tiptap/extension-link';
-import { useEditor } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
+import { RichTextEditor } from "@mantine/tiptap";
+import { Link } from "@tiptap/extension-link";
+import { useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
 import DOMPurify from "dompurify";
 import { Form, useForm } from "@mantine/form";
 import { type HTMLProps, useEffect, useMemo, useState } from "react";
 import { BookCover } from "../atoms/BookCover";
 import { MultiSelectCreatable } from "../atoms/Multiselect";
-import styles from './EditBook.module.css';
+import styles from "./EditBook.module.css";
 
 interface BookPageProps {
 	book: LibraryBook;
@@ -145,9 +145,9 @@ const EditBookForm = ({
 			Link.configure({
 				openOnClick: false,
 				HTMLAttributes: {
-					target: '_blank',
-					rel: 'noopener noreferrer nofollow'
-				}
+					target: "_blank",
+					rel: "noopener noreferrer nofollow",
+				},
 			}),
 		],
 		content: form.values.description || "<p></p>",
@@ -155,7 +155,7 @@ const EditBookForm = ({
 			const html = editor.getHTML();
 			// Only update if content has actual text content, not just empty tags
 			if (html && (html !== "<p></p>" || form.values.description !== "")) {
-				form.setFieldValue('description', html);
+				form.setFieldValue("description", html);
 			}
 		},
 	});
@@ -198,7 +198,10 @@ const EditBookForm = ({
 					timestamp: null,
 					publication_date: null,
 					is_read: form.values.isRead,
-					description: form.values.description === "<p></p>" ? "" : form.values.description,
+					description:
+						form.values.description === "<p></p>"
+							? ""
+							: form.values.description,
 				};
 
 				await onSave(bookUpdate);
@@ -341,16 +344,26 @@ const EditBookForm = ({
 							<Text size="lg">Description</Text>
 							<Button
 								variant="subtle"
-								onClick={() => form.setFieldValue('isEditingDescription', !form.values.isEditingDescription)}
+								onClick={() =>
+									form.setFieldValue(
+										"isEditingDescription",
+										!form.values.isEditingDescription,
+									)
+								}
 							>
-								{form.values.isEditingDescription ? 'Preview' : 'Edit'}
+								{form.values.isEditingDescription ? "Preview" : "Edit"}
 							</Button>
 						</Group>
 
 						{form.values.isEditingDescription ? (
 							<Box mt="sm" className={styles.richTextEditorContainer}>
-								<Text className={styles.editorHint}>Type your description here. Use the formatting tools above.</Text>
-								<RichTextEditor editor={editor} className={styles.editorWrapper}>
+								<Text className={styles.editorHint}>
+									Type your description here. Use the formatting tools above.
+								</Text>
+								<RichTextEditor
+									editor={editor}
+									className={styles.editorWrapper}
+								>
 									<RichTextEditor.Toolbar sticky stickyOffset={60}>
 										<RichTextEditor.ControlsGroup>
 											<RichTextEditor.Bold />
@@ -385,11 +398,13 @@ const EditBookForm = ({
 									<div
 										className={styles.descriptionHtml}
 										dangerouslySetInnerHTML={{
-											__html: DOMPurify.sanitize(form.values.description)
+											__html: DOMPurify.sanitize(form.values.description),
 										}}
 									/>
 								) : (
-									<Text c="dimmed" fs="italic">No description available. Click "Edit" to add one.</Text>
+									<Text c="dimmed" fs="italic">
+										No description available. Click "Edit" to add one.
+									</Text>
 								)}
 							</Box>
 						)}
