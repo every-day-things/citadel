@@ -177,10 +177,7 @@ impl CalibreClient {
         }
 
         if let Some(desc) = description {
-            let _set_desc_result = self
-                .client_v2
-                .books()
-                .set_description(book_id, &desc);
+            let _set_desc_result = self.client_v2.books().set_description(book_id, &desc);
         }
 
         match updates.author_id_list {
@@ -301,10 +298,7 @@ impl CalibreClient {
         self.client_v2.authors().update(author_id, updates)
     }
 
-    pub fn delete_author(
-        &mut self,
-        author_id: i32,
-    ) -> Result<(), ()> {
+    pub fn delete_author(&mut self, author_id: i32) -> Result<(), ()> {
         self.client_v2.authors().delete(author_id)
     }
 

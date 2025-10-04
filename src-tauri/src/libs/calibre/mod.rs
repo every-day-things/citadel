@@ -177,10 +177,7 @@ pub fn clb_cmd_update_author(
 
 #[tauri::command]
 #[specta::specta]
-pub fn clb_cmd_delete_author(
-    library_root: String,
-    author_id: String,
-) -> Result<(), ()> {
+pub fn clb_cmd_delete_author(library_root: String, author_id: String) -> Result<(), ()> {
     match libcalibre::util::get_db_path(&library_root) {
         None => Err(()),
         Some(database_path) => {

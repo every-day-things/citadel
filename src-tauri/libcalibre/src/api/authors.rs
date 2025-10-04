@@ -91,8 +91,8 @@ impl AuthorsHandler {
 
     pub fn delete(&mut self, author_id: i32) -> Result<(), ()> {
         use crate::schema::authors::dsl::*;
-        use crate::schema::books_authors_link::dsl::{books_authors_link, author as link_author};
-        
+        use crate::schema::books_authors_link::dsl::{author as link_author, books_authors_link};
+
         let mut connection = self.client.lock().unwrap();
 
         // First, check if the author has any linked books
@@ -101,7 +101,7 @@ impl AuthorsHandler {
             .count()
             .get_result(&mut *connection)
             .map_err(|_| ())?;
-        
+
         // Only delete if the author has no books
         if book_count == 0 {
             diesel::delete(authors.filter(id.eq(author_id)))
