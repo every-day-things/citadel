@@ -86,15 +86,14 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 
 	const sortedBooks = useMemo(() => {
 		const compare = (a: LibraryBook, b: LibraryBook) => {
+			const authorA = a.author_list[0]?.sortable_name ?? "";
+			const authorB = b.author_list[0]?.sortable_name ?? "";
+
 			switch (form.values.sortOrder) {
 				case "authorAz":
-					return a.author_list[0].sortable_name.localeCompare(
-						b.author_list[0].sortable_name,
-					);
+					return authorA.localeCompare(authorB);
 				case "authorZa":
-					return b.author_list[0].sortable_name.localeCompare(
-						a.author_list[0].sortable_name,
-					);
+					return authorB.localeCompare(authorA);
 				case "nameAz":
 					return (a.sortable_title ?? a.title).localeCompare(
 						b.sortable_title ?? b.title,

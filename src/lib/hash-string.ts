@@ -15,7 +15,18 @@ export const selectByStringHash = <T>(options: T[], key: string): T => {
 
 	const hash = hashString(key);
 	const index = hash % options.length;
-	return options[index];
+
+	const option = options[index];
+
+	if (option === undefined) {
+		throw new Error(
+			`Computed index is out of bounds: ${index} is not an index of [${options.join(
+				", ",
+			)}]`,
+		);
+	}
+
+	return option;
 };
 
 /**

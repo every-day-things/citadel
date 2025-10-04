@@ -185,13 +185,12 @@ const EditBookForm = ({
 		<Form
 			form={form}
 			onSubmit={safeAsyncEventHandler(async () => {
-				const authorIdsFromName = form.values.authorList
-					.map(
-						(authorName) =>
-							allAuthorList.find((author) => author.name === authorName)?.id ??
-							"-1",
-					)
-					.filter((id) => id !== "-1");
+				const authorIdsFromName = form.values.authorList.map(
+					(authorName) =>
+						allAuthorList.find((author) => author.name === authorName)?.id ??
+						"-1",
+				);
+				console.log(authorIdsFromName);
 				const bookUpdate: BookUpdate = {
 					title: form.values.title,
 					author_id_list: authorIdsFromName,
