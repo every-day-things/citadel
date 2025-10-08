@@ -5,6 +5,7 @@ import type {
 	ImportableFile,
 	LibraryAuthor,
 	LibraryBook,
+	NewAuthor,
 } from "@/bindings";
 
 export const DeviceType = {
@@ -17,6 +18,7 @@ export interface FileType {
 }
 
 export interface Library {
+	createAuthors(newAuthors: NewAuthor[]): Promise<LibraryAuthor[]>;
 	listBooks(): Promise<LibraryBook[]>;
 	listAuthors(): Promise<LibraryAuthor[]>;
 	sendToDevice(

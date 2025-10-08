@@ -4,6 +4,7 @@ import {
 	type ImportableBookMetadata,
 	type LibraryBook,
 	type RemoteFile,
+	NewAuthor,
 } from "@/bindings";
 import type {
 	Library,
@@ -32,6 +33,14 @@ const genLocalCalibreClient = async (
 	>();
 
 	return {
+		createAuthors: async (authorList: NewAuthor[]) => {
+			const results = await commands.clbCmdCreateAuthors(
+				config.library_path,
+				authorList,
+			);
+
+			return results;
+		},
 		listBooks: async () => {
 			const results = await commands.clbQueryListAllBooks(config.library_path);
 
@@ -134,6 +143,9 @@ const genRemoteCalibreClient = async (
 	const bookCache = new Map<LibraryBook["id"], LibraryBook>();
 
 	return {
+		createAuthors() {
+			throw new Error("Not implemented");
+		},
 		listBooks: async () => {
 			const res = await fetch(`${baseUrl}/books`)
 				.then((res) => res.json() as unknown as { items: LibraryBook[] })
