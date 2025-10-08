@@ -12,6 +12,9 @@ try {
     else return { status: "error", error: e  as any };
 }
 },
+async clbCmdCreateAuthors(libraryRoot: string, newAuthors: NewAuthor[]) : Promise<LibraryAuthor[]> {
+return await TAURI_INVOKE("plugin:tauri-specta|clb_cmd_create_authors", { libraryRoot, newAuthors });
+},
 async clbCmdUpdateBook(libraryRoot: string, bookId: string, updates: BookUpdate) : Promise<__Result__<number, null>> {
 try {
     return { status: "ok", data: await TAURI_INVOKE("plugin:tauri-specta|clb_cmd_update_book", { libraryRoot, bookId, updates }) };
@@ -127,6 +130,7 @@ path: string;
 mime_type: string }
 export type LocalOrRemote = "Local" | "Remote"
 export type LocalOrRemoteUrl = { kind: LocalOrRemote; url: string; local_path: string | null }
+export type NewAuthor = { name: string; sortable_name: string | null }
 export type RemoteFile = { url: string }
 
 /** tauri-specta globals **/

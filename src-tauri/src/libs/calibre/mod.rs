@@ -5,6 +5,7 @@ use crate::book::ImportableBookMetadata;
 use crate::book::LibraryAuthor;
 use crate::book::LibraryBook;
 
+use author::NewAuthor;
 use chrono::NaiveDateTime;
 use libcalibre::client::CalibreClient;
 use libcalibre::dtos::author::UpdateAuthorDto;
@@ -187,6 +188,15 @@ pub fn clb_cmd_delete_author(library_root: String, author_id: String) -> Result<
             calibre.delete_author(author_id_int)
         }
     }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn clb_cmd_create_authors(
+    library_root: String,
+    new_authors: Vec<NewAuthor>,
+) -> Vec<LibraryAuthor> {
+    author::create_authors(library_root, new_authors)
 }
 
 #[derive(Serialize, Deserialize, specta::Type, Debug)]

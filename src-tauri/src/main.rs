@@ -25,6 +25,7 @@ fn run_tauri_backend() -> std::io::Result<()> {
             .commands(tauri_specta::collect_commands![
                 libs::calibre::clb_cmd_create_book,
                 libs::calibre::clb_cmd_create_library,
+                libs::calibre::clb_cmd_create_authors,
                 libs::calibre::clb_cmd_update_book,
                 libs::calibre::clb_cmd_update_author,
                 libs::calibre::clb_cmd_delete_author,

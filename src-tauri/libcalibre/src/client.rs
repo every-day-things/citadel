@@ -302,7 +302,7 @@ impl CalibreClient {
         self.client_v2.authors().delete(author_id)
     }
 
-    fn create_authors(
+    pub fn create_authors(
         &mut self,
         authors: Vec<NewAuthorDto>,
     ) -> Result<Vec<Author>, Box<dyn Error>> {
