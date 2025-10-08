@@ -1,4 +1,8 @@
-import { type ImportableBookMetadata, type LibraryAuthor } from "@/bindings";
+import {
+	NewAuthor,
+	type ImportableBookMetadata,
+	type LibraryAuthor,
+} from "@/bindings";
 import { LibraryState, useLibrary } from "@/lib/contexts/library";
 import { commitAddBook, promptToAddBook } from "@/lib/services/library";
 import {
@@ -10,6 +14,7 @@ import {
 	NavLink,
 	Stack,
 	Title,
+	noop,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { Link, useRouterState } from "@tanstack/react-router";
@@ -40,6 +45,18 @@ export const Sidebar = () => {
 	] = useDisclosure(false);
 
 	const [, { open: openThemeModal }] = useThemeModal();
+
+	const onCreateAuthor = useCallback(
+		(newAuthorName: string) => {
+			const newAuthor: NewAuthor = {
+				name: newAuthorName,
+				sortable_name: newAuthorName,
+			};
+
+			library?.createAuthors([newAuthor]).catch(noop);
+		},
+		[library],
+	);
 
 	useEffect(() => {
 		let unlisten: (() => void) | undefined;
@@ -132,11 +149,12 @@ export const Sidebar = () => {
 		<>
 			{metadata && (
 				<AddBookModalPure
-					isOpen={isAddBookModalOpen}
-					onClose={closeAddBookModal}
-					metadata={metadata}
-					onSubmitHandler={addBookByMetadataWithEffects}
 					authorNameList={authorList}
+					isOpen={isAddBookModalOpen}
+					metadata={metadata}
+					onClose={closeAddBookModal}
+					onCreateAuthor={onCreateAuthor}
+					onSubmitHandler={addBookByMetadataWithEffects}
 				/>
 			)}
 			<SidebarPure
@@ -150,19 +168,21 @@ export const Sidebar = () => {
 };
 
 interface AddBookModalProps {
-	isOpen: boolean;
-	onClose: () => void;
-	metadata: ImportableBookMetadata;
-	onSubmitHandler: (form: AddBookForm) => void;
 	authorNameList: string[];
+	isOpen: boolean;
+	metadata: ImportableBookMetadata;
+	onClose: () => void;
+	onCreateAuthor: (newAuthorName: string) => void;
+	onSubmitHandler: (form: AddBookForm) => void;
 }
 
 const AddBookModalPure = ({
-	isOpen,
-	onClose,
-	metadata,
-	onSubmitHandler,
 	authorNameList,
+	isOpen,
+	metadata,
+	onClose,
+	onCreateAuthor,
+	onSubmitHandler,
 }: AddBookModalProps) => {
 	return (
 		<Modal.Root opened={isOpen} onClose={onClose} size={"lg"}>
@@ -181,6 +201,7 @@ const AddBookModalPure = ({
 						authorList={authorNameList}
 						fileName={metadata?.path ?? ""}
 						hideTitle={true}
+						onCreateAuthor={onCreateAuthor}
 						onSubmit={onSubmitHandler}
 					/>
 				</Modal.Body>

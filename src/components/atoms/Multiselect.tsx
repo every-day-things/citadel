@@ -18,7 +18,7 @@ interface BaseProps<T> {
 
 type MultiSelectCreatableProps = BaseProps<string> & {
 	selectOptions: string[];
-	onCreateSelectOption?: (newList: string[], ...payload: unknown[]) => void;
+	onCreateSelectOption?: (newOption: string) => void;
 };
 
 export function MultiSelectCreatable({
@@ -36,10 +36,11 @@ export function MultiSelectCreatable({
 		finalValue: [],
 		onChange,
 	});
+
 	const [_data, setData] = useUncontrolled<string[]>({
 		defaultValue: selectOptions,
-		onChange: onCreateSelectOption,
 	});
+
 	const combobox = useCombobox({
 		onDropdownClose: () => combobox.resetSelectedOption(),
 		onDropdownOpen: () => combobox.updateSelectedOptionIndex("active"),
@@ -54,6 +55,7 @@ export function MultiSelectCreatable({
 		if (val === "$create") {
 			setData([..._data, search]);
 			setValue([..._value, search]);
+			onCreateSelectOption?.(search);
 		} else {
 			const isItemRemoval = _value.includes(val);
 			if (isItemRemoval) {
