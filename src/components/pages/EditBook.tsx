@@ -25,8 +25,9 @@ import { MultiSelectCreatable } from "../atoms/Multiselect";
 import styles from "./EditBook.module.css";
 
 interface BookPageProps {
-	book: LibraryBook;
 	allAuthorList: LibraryAuthor[];
+	book: LibraryBook;
+	onCreateAuthor: (authorName: string) => void;
 	onSave: (bookUpdate: BookUpdate) => Promise<void>;
 	onDeleteIdentifier: (bookId: string, identifierId: number) => Promise<void>;
 	onUpsertIdentifier: (
@@ -38,8 +39,9 @@ interface BookPageProps {
 }
 
 export const BookPage = ({
-	book,
 	allAuthorList,
+	book,
+	onCreateAuthor,
 	onSave,
 	onUpsertIdentifier,
 	onDeleteIdentifier,
@@ -53,8 +55,9 @@ export const BookPage = ({
 				– {book.title}
 			</Title>
 			<EditBookForm
-				book={book}
 				allAuthorList={allAuthorList}
+				onCreateAuthor={onCreateAuthor}
+				book={book}
 				onSave={onSave}
 				onDeleteIdentifier={onDeleteIdentifier}
 				onUpsertIdentifier={onUpsertIdentifier}
@@ -110,14 +113,16 @@ const formValuesFromBook = (book: LibraryBook) => ({
 const LABEL_OFFSET_MARGIN = "22px";
 
 const EditBookForm = ({
-	book,
 	allAuthorList,
+	book,
+	onCreateAuthor: createAuthor,
 	onSave,
 	onUpsertIdentifier,
 	onDeleteIdentifier,
 }: {
-	book: LibraryBook;
 	allAuthorList: LibraryAuthor[];
+	book: LibraryBook;
+	onCreateAuthor: (name: string) => void;
 	onSave: (update: BookUpdate) => Promise<void>;
 	onDeleteIdentifier: (bookId: string, identifierId: number) => Promise<void>;
 	onUpsertIdentifier: (
@@ -190,7 +195,7 @@ const EditBookForm = ({
 						allAuthorList.find((author) => author.name === authorName)?.id ??
 						"-1",
 				);
-				console.log(authorIdsFromName);
+
 				const bookUpdate: BookUpdate = {
 					title: form.values.title,
 					author_id_list: authorIdsFromName,
@@ -273,6 +278,7 @@ const EditBookForm = ({
 					<MultiSelectCreatable
 						label="Authors"
 						selectOptions={allAuthorNames}
+						onCreateSelectOption={createAuthor}
 						{...form.getInputProps("authorList")}
 					/>
 					<Group flex={1}>

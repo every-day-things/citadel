@@ -1,4 +1,9 @@
-import type { BookUpdate, LibraryAuthor, LibraryBook } from "@/bindings";
+import type {
+	BookUpdate,
+	LibraryAuthor,
+	LibraryBook,
+	NewAuthor,
+} from "@/bindings";
 import { BookPage } from "@/components/pages/EditBook";
 import { safeAsyncEventHandler } from "@/lib/async";
 import { LibraryState, useLibrary } from "@/lib/contexts/library";
@@ -71,6 +76,21 @@ const EditBookRoute = () => {
 		[library, bookId, eventEmitter],
 	);
 
+	const onCreateAuthor = useCallback(
+		(authorName: string) => {
+			const newAuthor: NewAuthor = {
+				name: authorName,
+				sortable_name: authorName,
+			};
+
+			void library?.createAuthors([newAuthor]).then(async () => {
+				const allAuthors = await library.listAuthors();
+				setAllAuthorList(allAuthors);
+			});
+		},
+		[library],
+	);
+
 	const onUpsertIdentifier = useCallback(
 		async (
 			bookId: string,
@@ -90,6 +110,7 @@ const EditBookRoute = () => {
 		},
 		[library, eventEmitter],
 	);
+
 	const onDeleteIdentifier = useCallback(
 		async (bookId: string, identifierId: number) => {
 			await library?.deleteBookIdentifier(bookId, identifierId);
@@ -114,8 +135,9 @@ const EditBookRoute = () => {
 
 	return (
 		<BookPage
-			book={book}
 			allAuthorList={allAuthorList}
+			book={book}
+			onCreateAuthor={onCreateAuthor}
 			onSave={onSave}
 			onUpsertIdentifier={onUpsertIdentifier}
 			onDeleteIdentifier={onDeleteIdentifier}
