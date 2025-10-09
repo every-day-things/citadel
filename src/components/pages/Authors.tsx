@@ -4,7 +4,6 @@ import {
 	Badge,
 	Button,
 	Card,
-	Center,
 	Group,
 	Menu,
 	Modal,
@@ -105,7 +104,7 @@ export const Authors = () => {
 	}
 
 	return (
-		<>
+		<Stack h="100%" gap={0}>
 			<Modal
 				opened={editModalOpened}
 				onClose={closeEditModal}
@@ -142,8 +141,9 @@ export const Authors = () => {
 					</Stack>
 				)}
 			</Modal>
-			<Stack gap="xs" h="min-content">
-				<Title order={1} mb="xs">
+
+			<Stack gap="xs" style={{ flexShrink: 0 }} p="md" pb="sm">
+				<Title order={1} mb={0}>
 					Authors
 				</Title>
 
@@ -154,11 +154,19 @@ export const Authors = () => {
 					onShowOnlyAuthorsWithoutBooksChange={setShowOnlyAuthorsWithoutBooks}
 				/>
 
-				<Text>Showing {filteredAuthors.length} authors</Text>
+				<Text size="sm" c="dimmed">
+					Showing {filteredAuthors.length} authors
+				</Text>
 			</Stack>
 
-			<Center h="100%" mt="md">
-				<Stack maw="480" h="100%" gap="md">
+			<Stack
+				style={{ flex: 1, overflow: "auto" }}
+				align="center"
+				justify="flex-start"
+				p="md"
+				pt={0}
+			>
+				<Stack maw="480" w="100%" gap="md" align="stretch">
 					{filteredAuthors?.map((author) => (
 						<AuthorCard
 							author={author}
@@ -169,8 +177,8 @@ export const Authors = () => {
 						/>
 					))}
 				</Stack>
-			</Center>
-		</>
+			</Stack>
+		</Stack>
 	);
 };
 
