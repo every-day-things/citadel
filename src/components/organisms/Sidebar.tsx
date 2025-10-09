@@ -1,8 +1,4 @@
-import {
-	NewAuthor,
-	type ImportableBookMetadata,
-	type LibraryAuthor,
-} from "@/bindings";
+import { NewAuthor, type ImportableBookMetadata } from "@/bindings";
 import { LibraryState, useLibrary } from "@/lib/contexts/library";
 import { commitAddBook, promptToAddBook } from "@/lib/services/library";
 import {
