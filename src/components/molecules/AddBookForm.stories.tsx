@@ -58,6 +58,7 @@ export const Primary: Story = {
 				title: "The Batman",
 			}}
 			authorList={AUTHORS.map((author) => author.name)}
+			onCreateAuthor={(data) => console.log("Author created", data)}
 			onSubmit={(data) => console.log("Book data added", data)}
 		/>
 	),
