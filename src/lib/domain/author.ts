@@ -1,5 +1,8 @@
 import { LibraryAuthor } from "@/bindings";
 
 export const sortAuthors = (a: LibraryAuthor, b: LibraryAuthor) => {
-	return a.sortable_name.localeCompare(b.sortable_name);
+	const nameA = a.sortable_name || a.name;
+	const nameB = b.sortable_name || b.name;
+
+	return nameA.localeCompare(nameB);
 };
