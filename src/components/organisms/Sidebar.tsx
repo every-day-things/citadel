@@ -30,6 +30,7 @@ import { F7Gear } from "@/components/icons/F7Gear";
 import { useThemeModal } from "@/lib/contexts/modal-theme/hooks";
 import { useLibrarySelectModal } from "@/lib/contexts/modal-library-select/hooks";
 import { FluentLibraryFilled } from "@/components/icons/FluentLibraryFilled";
+import { sortAuthors } from "@/lib/domain/author";
 
 export const Sidebar = () => {
 	const { library, state, eventEmitter } = useLibrary();
@@ -208,10 +209,6 @@ const AddBookModalPure = ({
 			</Modal.Content>
 		</Modal.Root>
 	);
-};
-
-const sortAuthors = (a: LibraryAuthor, b: LibraryAuthor) => {
-	return a.sortable_name.localeCompare(b.sortable_name);
 };
 
 interface SidebarPureProps {

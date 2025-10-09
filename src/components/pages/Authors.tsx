@@ -27,18 +27,30 @@ import { F7Pencil } from "../icons/F7Pencil";
 import { F7Trash } from "../icons/F7Trash";
 import { useDisclosure } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
+import { AuthorFilterControls } from "@/components/organisms/AuthorFilterControls";
+import { useAuthorFilters } from "@/lib/hooks/use-author-filters";
 
 export const Authors = () => {
 	const { library, eventEmitter } = useLibrary();
 	const [loadingAuthors, authors] = useLoadAuthors();
 	const [loadingBooks, books] = useLoadBooks();
 
+	const {
+		filters,
+		setSearchTerm,
+		setSortOrder,
+		setShowOnlyAuthorsWithoutBooks,
+		filteredAuthors,
+	} = useAuthorFilters(authors, books);
+
 	const [editModalOpened, { open: openEditModal, close: closeEditModal }] =
 		useDisclosure(false);
+
 	const [
 		deleteModalOpened,
 		{ open: openDeleteModal, close: closeDeleteModal },
 	] = useDisclosure(false);
+
 	const [authorToEdit, setAuthorToEdit] = useState<LibraryAuthor | null>(null);
 	const [authorToDelete, setAuthorToDelete] = useState<LibraryAuthor | null>(
 		null,
@@ -55,28 +67,35 @@ export const Authors = () => {
 		},
 		[eventEmitter, library],
 	);
+
 	const onOpenEditAuthorModal = useCallback(
 		(authorId: string): void => {
-			setAuthorToEdit(authors.find(({ id }) => id === authorId) ?? null);
+			setAuthorToEdit(
+				filteredAuthors.find(({ id }) => id === authorId) ?? null,
+			);
 			openEditModal();
 		},
-		[openEditModal, authors],
+		[openEditModal, filteredAuthors],
 	);
 
 	const onOpenDeleteAuthorModal = useCallback(
 		(authorId: string): void => {
-			setAuthorToDelete(authors.find(({ id }) => id === authorId) ?? null);
+			setAuthorToDelete(
+				filteredAuthors.find(({ id }) => id === authorId) ?? null,
+			);
 			openDeleteModal();
 		},
-		[openDeleteModal, authors],
+		[openDeleteModal, filteredAuthors],
 	);
 
 	const onConfirmDeleteAuthor = useCallback((): void => {
 		if (authorToDelete) {
 			void library?.deleteAuthor(authorToDelete.id);
+
 			eventEmitter?.emit(LibraryEventNames.LIBRARY_AUTHOR_DELETED, {
 				author: authorToDelete.id,
 			});
+
 			closeDeleteModal();
 		}
 	}, [eventEmitter, library, authorToDelete, closeDeleteModal]);
@@ -123,16 +142,24 @@ export const Authors = () => {
 					</Stack>
 				)}
 			</Modal>
-			<Stack gap="xs">
+			<Stack gap="xs" h="min-content">
 				<Title order={1} mb="xs">
 					Authors
 				</Title>
-				<Text>Showing {authors.length} authors</Text>
+
+				<AuthorFilterControls
+					filters={filters}
+					onSearchChange={setSearchTerm}
+					onSortOrderChange={setSortOrder}
+					onShowOnlyAuthorsWithoutBooksChange={setShowOnlyAuthorsWithoutBooks}
+				/>
+
+				<Text>Showing {filteredAuthors.length} authors</Text>
 			</Stack>
 
-			<Center>
-				<Stack maw="480">
-					{authors?.map((author) => (
+			<Center h="100%" mt="md">
+				<Stack maw="480" h="100%" gap="md">
+					{filteredAuthors?.map((author) => (
 						<AuthorCard
 							author={author}
 							books={books}
