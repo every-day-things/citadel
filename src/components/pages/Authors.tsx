@@ -105,20 +105,14 @@ export const Authors = () => {
 
 	return (
 		<Stack h="100%" gap={0}>
-			<Modal
-				opened={editModalOpened}
-				onClose={closeEditModal}
-				title="Edit author"
-			>
-				{authorToEdit && (
-					<EditAuthorModal
-						opened={editModalOpened}
-						onClose={closeEditModal}
-						authorToEdit={authorToEdit}
-						onSubmitEdit={onSubmitEdit}
-					/>
-				)}
-			</Modal>
+			{authorToEdit && (
+				<EditAuthorModal
+					opened={editModalOpened}
+					onClose={closeEditModal}
+					authorToEdit={authorToEdit}
+					onSubmitEdit={onSubmitEdit}
+				/>
+			)}
 			<Modal
 				opened={deleteModalOpened}
 				onClose={closeDeleteModal}
