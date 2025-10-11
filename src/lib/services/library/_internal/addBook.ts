@@ -2,9 +2,8 @@ import type { ImportableBookMetadata } from "@/bindings";
 import { LibraryEvents } from "@/lib/contexts/library";
 import { LibraryEventNames } from "@/lib/contexts/library/context";
 import { EventEmitter } from "@/lib/event";
-import {} from "@tauri-apps/api";
 import type { Library } from "./_types";
-import * as dialog from "@tauri-apps/plugin-dialog";
+import { open as dialogOpen } from "@tauri-apps/plugin-dialog";
 
 export const addBookByDragDrop = async (
 	library: Library,
@@ -33,7 +32,7 @@ export const promptToAddBook = async (
 	const validExtensions = (await library.listValidFileTypes()).map(
 		(type) => type.extension,
 	);
-	const filePath = await dialog.open({
+	const filePath = await dialogOpen({
 		multiple: false,
 		directory: false,
 		filters: [
