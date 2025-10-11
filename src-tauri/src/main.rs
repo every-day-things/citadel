@@ -1,9 +1,9 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use specta_typescript::Typescript;
 use std::env;
 use tauri::Manager;
-use specta_typescript::Typescript;
 use tauri_specta::{collect_commands, Builder};
 
 pub mod libs {
@@ -21,8 +21,7 @@ fn is_server(args: &[String]) -> bool {
 }
 
 fn run_tauri_backend() -> std::io::Result<()> {
-    let builder = Builder::<tauri::Wry>::new()
-        .commands(collect_commands![
+    let builder = Builder::<tauri::Wry>::new().commands(collect_commands![
         // Library and initialization commands
         libs::calibre::init_client,
         libs::calibre::clb_query_is_path_valid_library,
@@ -42,18 +41,19 @@ fn run_tauri_backend() -> std::io::Result<()> {
         libs::calibre::clb_cmd_create_authors,
         libs::calibre::clb_cmd_update_author,
         libs::calibre::clb_cmd_delete_author,
-        ]);
+    ]);
 
     #[cfg(debug_assertions)] // <- Only export on non-release builds
     builder
         .export(Typescript::default(), "../src/bindings.ts")
         .expect("Failed to export typescript bindings");
 
-			tauri::Builder::default()
-				.invoke_handler(builder.invoke_handler())
+    tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
+        .invoke_handler(builder.invoke_handler())
         .plugin(tauri_plugin_store::Builder::new().build())
         .setup(move |app| {
-        		builder.mount_events(app);
+            builder.mount_events(app);
 
             // Get the main window that was created from config and center it
             if let Some(main_window) = app.get_webview_window("main") {

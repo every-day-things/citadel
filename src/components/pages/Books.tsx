@@ -23,7 +23,7 @@ import { type UseFormReturnType, useForm } from "@mantine/form";
 import { useDisclosure } from "@mantine/hooks";
 import { Link } from "@tanstack/react-router";
 import { path } from "@tauri-apps/api";
-import { open } from "@tauri-apps/plugin-shell";
+import { openPath, revealItemInDir } from '@tauri-apps/plugin-opener';
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BookCover } from "../atoms/BookCover";
 import { F7ListBullet } from "../icons/F7ListBullet";
@@ -301,7 +301,7 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 									const isLocal = "Local" in firstFile;
 									if (!isLocal) return;
 
-									await open(firstFile.Local.path);
+									await openPath(firstFile.Local.path);
 								})}
 							>
 								Read
@@ -343,7 +343,7 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 									onPointerDown={safeAsyncEventHandler(async () => {
 										const directory = await path.dirname(f1.Local.path);
 
-										await open(directory);
+										await revealItemInDir(directory);
 									})}
 								>
 									{f1.Local.mime_type} ↗

@@ -37,6 +37,23 @@
     "clipboard-manager:allow-read-text",
     "clipboard-manager:allow-write-text",
     "drag:default",
-    "store:default"
+    "store:default",
+    "opener:default",
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [
+        {
+          "path": "**"
+        }
+      ]
+    },
+    {
+     "identifier": "opener:allow-reveal-item-in-dir",
+     "allow": [
+			 {
+				 "path": "**"
+			 }
+		 ]
+    }
   ]
 }
