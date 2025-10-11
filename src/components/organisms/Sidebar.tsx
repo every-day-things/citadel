@@ -60,23 +60,24 @@ export const Sidebar = () => {
 		let unlisten: (() => void) | undefined;
 
 		const setupFileDropListener = async () => {
-			// TODO: Update for Tauri v2 drag plugin API
-			// unlisten = await appWindow.onFileDropEvent((event) => {
-			// 	if (!library) return;
-			// 	void (async () => {
-			// 		if (event.payload.type === "drop") {
-			// 			const metadataList = await addBookByDragDrop(
-			// 				library,
-			// 				event.payload.paths,
-			// 			);
-			// 			const firstItem = metadataList[0];
-			// 			if (firstItem) {
-			// 				setMetadata(firstItem);
-			// 				openAddBookModal();
-			// 			}
-			// 		}
-			// 	})();
-			// });
+			const { listen } = await import("@tauri-apps/api/event");
+			
+			unlisten = await listen("tauri://drag-drop", (event: any) => {
+				if (!library) return;
+				void (async () => {
+					if (event.payload && event.payload.paths) {
+						const metadataList = await addBookByDragDrop(
+							library,
+							event.payload.paths,
+						);
+						const firstItem = metadataList[0];
+						if (firstItem) {
+							setMetadata(firstItem);
+							openAddBookModal();
+						}
+					}
+				})();
+			});
 		};
 
 		void setupFileDropListener();
@@ -86,7 +87,7 @@ export const Sidebar = () => {
 				unlisten();
 			}
 		};
-	}, [library, openAddBookModal]);
+	}, [library, openAddBookModal, setMetadata]);
 
 	useEffect(() => {
 		void (async () => {
