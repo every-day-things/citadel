@@ -61,7 +61,7 @@ export const Sidebar = () => {
 
 		const setupFileDropListener = async () => {
 			const { listen } = await import("@tauri-apps/api/event");
-			
+
 			unlisten = await listen("tauri://drag-drop", (event: any) => {
 				if (!library) return;
 				void (async () => {

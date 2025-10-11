@@ -25,7 +25,10 @@ type SettingsValue<K extends SettingsKey> = SettingsSchema[K];
 
 interface SettingsManager {
 	initialize: () => Promise<SettingsSchema>;
-	set: <K extends SettingsKey>(key: K, value: SettingsValue<K>) => Promise<SettingsSchema>;
+	set: <K extends SettingsKey>(
+		key: K,
+		value: SettingsValue<K>,
+	) => Promise<SettingsSchema>;
 	get: <K extends SettingsKey>(key: K) => Promise<SettingsValue<K>>;
 	syncCache: () => Promise<SettingsSchema>;
 	settings: SettingsSchema;
@@ -37,7 +40,9 @@ const settingsLoadedPromise = new Promise<void>((resolve) => {
 	resolveSettingsLoaded = resolve;
 });
 
-const genSettingsManager = (defaultSettings: SettingsSchema): SettingsManager => {
+const genSettingsManager = (
+	defaultSettings: SettingsSchema,
+): SettingsManager => {
 	// Check if running in Tauri environment
 	if (isTauri()) {
 		let store: Awaited<ReturnType<typeof load>>;
@@ -103,7 +108,9 @@ const genSettingsManager = (defaultSettings: SettingsSchema): SettingsManager =>
 		},
 		get: <K extends SettingsKey>(key: K) => {
 			const item = localStorage.getItem(key);
-			const parsed = item ? JSON.parse(item) as SettingsValue<K> : defaultSettings[key];
+			const parsed = item
+				? (JSON.parse(item) as SettingsValue<K>)
+				: defaultSettings[key];
 			return Promise.resolve(parsed);
 		},
 		settings: defaultSettings,
@@ -138,10 +145,7 @@ const createSettingsStore = () => {
 		});
 
 	return {
-		set: async <K extends SettingsKey>(
-			key: K,
-			value: SettingsValue<K>,
-		) => {
+		set: async <K extends SettingsKey>(key: K, value: SettingsValue<K>) => {
 			settings.update((s) => ({ ...s, [key]: value }));
 			await manager.set(key, value);
 		},
