@@ -20,9 +20,8 @@ export const LibrarySelectModal = () => {
 
 	useEffect(() => {
 		return subscribe((update) => {
-			if (!update) return; // Safety check for undefined update
-			setLibraries(update.libraryPaths || []);
-			const activeLibrary = update.libraryPaths?.find(
+			setLibraries(update.libraryPaths);
+			const activeLibrary = update.libraryPaths.find(
 				(library) => library.id === update.activeLibraryId,
 			);
 			if (activeLibrary) {
