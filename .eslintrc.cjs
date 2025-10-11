@@ -17,6 +17,7 @@ module.exports = {
 		".eslintrc.cjs",
 		"vite.config.ts",
 		"src/bindings.ts",
+		"src-tauri/",
 	],
 	parser: "@typescript-eslint/parser",
 	plugins: ["react-refresh", "eslint-plugin-paths"],
