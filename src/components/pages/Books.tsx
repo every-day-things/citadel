@@ -23,7 +23,7 @@ import { type UseFormReturnType, useForm } from "@mantine/form";
 import { useDisclosure } from "@mantine/hooks";
 import { Link } from "@tanstack/react-router";
 import { path } from "@tauri-apps/api";
-import { openPath, revealItemInDir } from '@tauri-apps/plugin-opener';
+import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BookCover } from "../atoms/BookCover";
 import { F7ListBullet } from "../icons/F7ListBullet";

@@ -33,7 +33,9 @@ export const LibrarySelectModal = () => {
 
 	const addNewLibraryByPath = useCallback(
 		async (form: SwitchLibraryForm) => {
-			const isPathValidLibrary = await commands.clbQueryIsPathValidLibrary(form.libraryPath);
+			const isPathValidLibrary = await commands.clbQueryIsPathValidLibrary(
+				form.libraryPath,
+			);
 
 			if (isPathValidLibrary) {
 				const newLibraryId = await createSettingsLibrary(
