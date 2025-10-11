@@ -17,9 +17,7 @@ const openFilePicker = async (): Promise<
 	const path = await pickLibrary();
 	if (!path) return { type: "invalid library path selected" };
 
-	const selectedIsValid = await invoke<boolean>("clb_query_is_path_valid_library", {
-		libraryRoot: path,
-	});
+	const selectedIsValid = await commands.clbQueryIsPathValidLibrary(path)
 
 	if (selectedIsValid) {
 		return { type: "existing library selected", path };
