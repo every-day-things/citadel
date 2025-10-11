@@ -3,7 +3,9 @@
   "identifier": "minimal",
   "description": "Essential capabilities for Citadel app",
   "local": true,
-  "windows": ["main"],
+  "windows": [
+    "main"
+  ],
   "permissions": [
     "core:default",
     "core:window:default",
@@ -34,6 +36,7 @@
     "clipboard-manager:default",
     "clipboard-manager:allow-read-text",
     "clipboard-manager:allow-write-text",
-    "drag:default"
+    "drag:default",
+    "store:default"
   ]
 }

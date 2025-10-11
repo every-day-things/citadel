@@ -76,6 +76,7 @@
     "@tauri-apps/plugin-dialog": "^2.4.0",
     "@tauri-apps/plugin-fs": "^2.4.2",
     "@tauri-apps/plugin-shell": "^2.3.1",
+    "@tauri-apps/plugin-store": "~2",
     "@tiptap/extension-link": "^2.22.2",
     "@tiptap/react": "^2.22.2",
     "@tiptap/starter-kit": "^2.22.2",
@@ -87,7 +88,6 @@
     "react": "18.2",
     "react-dom": "18.2",
     "tailwind-merge": "^2.2.0",
-    "tailwind-variants": "^0.1.20",
-    "tauri-settings": "^0.3.5"
+    "tailwind-variants": "^0.1.20"
   }
 }
