@@ -1,31 +1,11 @@
 import { safeAsyncEventHandler } from "@/lib/async";
 import { writable } from "svelte/store";
-// TODO: Re-enable when tauri-settings supports Tauri v2
-// import {
-// 	type ConfigOptions,
-// 	SettingsManager as TauriSettingsManager,
-// } from "tauri-settings";
-// import type { Path, PathValue } from "tauri-settings/dist/types/dot-notation";
-
-// Temporary fallback types and implementation
-type ConfigOptions = any;
-type Path<_T> = string;
-type PathValue<_T, _P> = any;
-
-class TauriSettingsManager {
-	constructor(_defaultSettings: any, _config: ConfigOptions) {}
-	initialize() {
-		return Promise.resolve();
-	}
-	get(_path: string) {
-		return Promise.resolve(null);
-	}
-	set(_path: string, _value: any) {
-		return Promise.resolve();
-	}
-}
 import { type Option, none, some } from "@/lib/option";
 import { invoke } from "@tauri-apps/api/core";
+import { readTextFile, writeTextFile, exists, BaseDirectory } from "@tauri-apps/plugin-fs";
+
+type Path<_T> = string;
+type PathValue<_T, _P> = any;
 
 export interface LibraryPath {
 	id: string;
@@ -57,38 +37,71 @@ const settingsLoadedPromise = new Promise<void>((resolve) => {
 	resolveSettingsLoaded = resolve;
 });
 
+const SETTINGS_FILE = "settings.json";
+
 const genSettingsManager = <T extends SettingsSchema>(
 	defaultSettings: T,
-	_config: ConfigOptions,
 ): SettingsManager<T> => {
-	try {
-		// Check if we're in a Tauri environment by trying to access Tauri API
-		if (typeof invoke === "function") {
-			// TODO: Re-enable when tauri-settings supports Tauri v2
-			// return new TauriSettingsManager(defaultSettings, config);
-		}
-	} catch {
-		// Fall through to browser implementation
-	}
-	return {
-		initialize: () => {
-			for (const setting of Object.entries(defaultSettings)) {
-				localStorage.setItem(setting[0], setting[1].toString());
-			}
-			return Promise.resolve({} as T);
-		},
-		syncCache: () => Promise.resolve({} as T),
-		set: (key, value) => {
-			localStorage.setItem(key.toString(), String(value));
+	let currentSettings = { ...defaultSettings };
+	let isInitialized = false;
 
-			return Promise.resolve({} as T);
+	const loadFromFile = async (): Promise<T> => {
+		console.log("Loading settings - forcing localStorage for testing");
+		
+		// Force localStorage for now to debug the issue
+		for (const [key, defaultValue] of Object.entries(defaultSettings)) {
+			const stored = localStorage.getItem(key);
+			if (stored !== null && stored !== "") {
+				try {
+					const parsed = JSON.parse(stored);
+					currentSettings[key as keyof T] = parsed;
+					console.log(`Loaded ${key} from localStorage:`, parsed);
+				} catch {
+					// For backwards compatibility, handle string values
+					if (key === "libraryPaths" && stored === "") {
+						currentSettings[key as keyof T] = [] as any;
+					} else {
+						currentSettings[key as keyof T] = stored as any;
+					}
+					console.log(`Loaded ${key} from localStorage (string):`, stored);
+				}
+			} else {
+				(currentSettings as any)[key] = defaultValue;
+				console.log(`Using default for ${key}:`, defaultValue);
+			}
+		}
+		console.log("Final loaded settings:", currentSettings);
+		return currentSettings;
+	};
+
+	const saveToFile = async (): Promise<void> => {
+		console.log("Saving settings - forcing localStorage for testing:", currentSettings);
+		
+		// Force localStorage for now to debug the issue
+		for (const [key, value] of Object.entries(currentSettings)) {
+			localStorage.setItem(key, JSON.stringify(value));
+			console.log(`Saved ${key} to localStorage:`, value);
+		}
+	};
+
+	return {
+		initialize: async () => {
+			if (!isInitialized) {
+				currentSettings = await loadFromFile();
+				isInitialized = true;
+			}
+			return currentSettings;
+		},
+		syncCache: () => Promise.resolve(currentSettings),
+		set: async (key, value) => {
+			currentSettings[key as keyof T] = value as any;
+			await saveToFile();
+			return currentSettings;
 		},
 		get: (key) => {
-			return Promise.resolve(
-				localStorage.getItem(key.toString()) as PathValue<T, typeof key>,
-			);
+			return Promise.resolve(currentSettings[key as keyof T] as PathValue<T, typeof key>);
 		},
-		settings: defaultSettings,
+		settings: currentSettings,
 	};
 };
 
@@ -101,22 +114,28 @@ const createSettingsStore = () => {
 		activeLibraryId: "",
 		libraryPaths: [],
 	};
-	const settings = writable<SettingsSchema>();
-	const manager = genSettingsManager(defaultSettings, {});
+	const settings = writable<SettingsSchema>(defaultSettings);
+	const manager = genSettingsManager(defaultSettings);
 	manager
 		.initialize()
-		.then(
-			safeAsyncEventHandler(async () => {
-				await manager.syncCache();
-				for (const [key, value] of Object.entries(manager.settings)) {
-					settings.update((s) => ({ ...s, [key]: value }));
-				}
-				resolveSettingsLoaded();
-				isReady = true;
-			}),
-		)
+		.then((initializedSettings) => {
+			console.log('Settings loaded:', initializedSettings);
+			if (!initializedSettings) {
+				console.error('Settings initialization returned undefined, using defaults');
+				settings.update(() => defaultSettings);
+			} else {
+				// Update the store with the loaded settings
+				settings.update(() => initializedSettings as SettingsSchema);
+			}
+			resolveSettingsLoaded();
+			isReady = true;
+		})
 		.catch((e) => {
-			console.error(e);
+			console.error('Settings initialization failed:', e);
+			// Ensure we still mark as ready with defaults
+			settings.update(() => defaultSettings);
+			resolveSettingsLoaded();
+			isReady = true;
 		});
 
 	return {
@@ -124,8 +143,16 @@ const createSettingsStore = () => {
 			key: K,
 			value: PathValue<SettingsSchema, K>,
 		) => {
-			settings.update((s) => ({ ...s, [key]: value }));
-			await manager.set(key, value);
+			try {
+				console.log('Setting:', key, 'to:', value);
+				const updatedSettings = await manager.set(key, value);
+				console.log('Updated settings:', updatedSettings);
+				// Update the store with the updated settings
+				settings.update(() => updatedSettings as SettingsSchema);
+			} catch (e) {
+				console.error('Failed to set setting:', key, value, e);
+				throw e;
+			}
 		},
 		get: <S extends Path<SettingsSchema>>(key: S) => {
 			return manager.get(key);

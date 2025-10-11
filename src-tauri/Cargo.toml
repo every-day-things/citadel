@@ -35,6 +35,8 @@ uuid = { version = "1.6.1", features = [ "v4", "fast-rng", ] }
 zip = "0.6"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
+tauri-plugin-shell = "2"
+tauri-plugin-clipboard-manager = "2"
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
