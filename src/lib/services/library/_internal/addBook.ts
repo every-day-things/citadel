@@ -5,27 +5,6 @@ import { EventEmitter } from "@/lib/event";
 import type { Library } from "./_types";
 import { open as dialogOpen } from "@tauri-apps/plugin-dialog";
 
-export const addBookByDragDrop = async (
-	library: Library,
-	paths: string[],
-): Promise<ImportableBookMetadata[]> => {
-	const importableMetadata = [];
-	for (const path of paths) {
-		const importableFile = await library.checkFileImportable(path);
-		if (!importableFile) {
-			continue;
-		}
-		const metadata = await library.getImportableFileMetadata(importableFile);
-		if (!metadata) {
-			continue;
-		}
-
-		importableMetadata.push(metadata);
-	}
-
-	return importableMetadata;
-};
-
 export const promptToAddBook = async (
 	library: Library,
 ): Promise<ImportableBookMetadata | undefined> => {
