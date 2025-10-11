@@ -1,4 +1,4 @@
-import { path } from "@tauri-apps/api";
+import { sep } from "@tauri-apps/api/path";
 
 /**
  * Join parts of a path together synchronously.
@@ -17,5 +17,5 @@ import { path } from "@tauri-apps/api";
  * ```
  */
 export const joinSync = (...paths: string[]): string => {
-	return paths.join(path.sep);
+	return paths.join(sep());
 };

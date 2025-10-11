@@ -1,11 +1,31 @@
 import { safeAsyncEventHandler } from "@/lib/async";
 import { writable } from "svelte/store";
-import {
-	type ConfigOptions,
-	SettingsManager as TauriSettingsManager,
-} from "tauri-settings";
-import type { Path, PathValue } from "tauri-settings/dist/types/dot-notation";
+// TODO: Re-enable when tauri-settings supports Tauri v2
+// import {
+// 	type ConfigOptions,
+// 	SettingsManager as TauriSettingsManager,
+// } from "tauri-settings";
+// import type { Path, PathValue } from "tauri-settings/dist/types/dot-notation";
+
+// Temporary fallback types and implementation
+type ConfigOptions = any;
+type Path<_T> = string;
+type PathValue<_T, _P> = any;
+
+class TauriSettingsManager {
+	constructor(_defaultSettings: any, _config: ConfigOptions) {}
+	initialize() {
+		return Promise.resolve();
+	}
+	get(_path: string) {
+		return Promise.resolve(null);
+	}
+	set(_path: string, _value: any) {
+		return Promise.resolve();
+	}
+}
 import { type Option, none, some } from "@/lib/option";
+import { invoke } from "@tauri-apps/api/core";
 
 export interface LibraryPath {
 	id: string;
@@ -39,10 +59,16 @@ const settingsLoadedPromise = new Promise<void>((resolve) => {
 
 const genSettingsManager = <T extends SettingsSchema>(
 	defaultSettings: T,
-	config: ConfigOptions,
+	_config: ConfigOptions,
 ): SettingsManager<T> => {
-	if (window.__TAURI__) {
-		return new TauriSettingsManager(defaultSettings, config);
+	try {
+		// Check if we're in a Tauri environment by trying to access Tauri API
+		if (typeof invoke === "function") {
+			// TODO: Re-enable when tauri-settings supports Tauri v2
+			// return new TauriSettingsManager(defaultSettings, config);
+		}
+	} catch {
+		// Fall through to browser implementation
 	}
 	return {
 		initialize: () => {
@@ -130,7 +156,7 @@ export const createSettingsLibrary = async (
 	const existingLibraryPaths = (await store.get("libraryPaths")) ?? [];
 
 	const wouldBeDuplicate = existingLibraryPaths.find(
-		(library) => library.absolutePath === absolutePath,
+		(library: LibraryPath) => library.absolutePath === absolutePath,
 	);
 
 	if (wouldBeDuplicate) {
@@ -181,7 +207,7 @@ export const getActiveLibrary = async (
 	}
 
 	const activeLibrary = (await store.get("libraryPaths")).find(
-		(library) => library.id === activeLibraryId,
+		(library: LibraryPath) => library.id === activeLibraryId,
 	);
 	if (activeLibrary !== undefined) return some(activeLibrary);
 

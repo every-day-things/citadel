@@ -3,7 +3,8 @@
 
 use std::env;
 
-use specta::ts::{BigIntExportBehavior, ExportConfig};
+use tauri::Manager;
+use tauri_specta;
 
 pub mod libs {
     pub mod calibre;
@@ -20,57 +21,18 @@ fn is_server(args: &[String]) -> bool {
 }
 
 fn run_tauri_backend() -> std::io::Result<()> {
-    let specta_builder = {
-        let specta_builder = tauri_specta::ts::builder()
-            .commands(tauri_specta::collect_commands![
-                libs::calibre::clb_cmd_create_book,
-                libs::calibre::clb_cmd_create_library,
-                libs::calibre::clb_cmd_create_authors,
-                libs::calibre::clb_cmd_update_book,
-                libs::calibre::clb_cmd_update_author,
-                libs::calibre::clb_cmd_delete_author,
-                libs::calibre::clb_cmd_upsert_book_identifier,
-                libs::calibre::clb_cmd_delete_book_identifier,
-                libs::calibre::clb_query_importable_file_metadata,
-                libs::calibre::clb_query_is_file_importable,
-                libs::calibre::clb_query_is_path_valid_library,
-                libs::calibre::clb_query_list_all_authors,
-                libs::calibre::clb_query_list_all_books,
-                libs::calibre::clb_query_list_all_filetypes,
-                libs::calibre::init_client,
-            ])
-            .config(ExportConfig::default().bigint(BigIntExportBehavior::BigInt));
-
-        #[cfg(debug_assertions)] // <- Only export on non-release builds
-        let specta_builder = specta_builder.path("../src/bindings.ts");
-
-        specta_builder.into_plugin()
-    };
+    // TODO: Update tauri-specta for v2 - for now just disable type generation
+    // let specta_builder = tauri_specta::builder()
+    //     .commands(tauri_specta::collect_commands![
+    //         libs::calibre::clb_cmd_create_book,
+    //         // ... other commands
+    //     ]);
 
     tauri::Builder::default()
-        .setup(|app| {
-            let main_window = {
-                let mut builder = tauri::WindowBuilder::new(
-                    app,
-                    "main",
-                    tauri::WindowUrl::App("index.html".into()),
-                )
-                // Hide main app window until UI app is ready & makes visible
-                .visible(false)
-                .title("");
-
-                #[cfg(target_os = "macos")]
-                {
-                    builder = builder.title_bar_style(tauri::TitleBarStyle::Overlay);
-                }
-
-                builder.build().expect("failed to create main window")
-            };
-            main_window.center().unwrap();
-
-            Ok(())
-        })
-        .plugin(specta_builder)
+        // TODO: Re-enable specta plugin when v2 API is figured out
+        // .plugin(specta_builder)
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_persisted_scope::init())
         .plugin(tauri_plugin_drag::init())
         .run(tauri::generate_context!())

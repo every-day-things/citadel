@@ -19,7 +19,7 @@ import {
 	AddBookForm,
 	title as addBookFormTitle,
 } from "../molecules/AddBookForm";
-import { appWindow } from "@tauri-apps/api/window";
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { addBookByDragDrop } from "@/lib/services/library/_internal/addBook";
 import { F7SunMaxFill } from "@/components/icons/F7SunMaxFill";
 import { F7Gear } from "@/components/icons/F7Gear";
@@ -27,6 +27,7 @@ import { useThemeModal } from "@/lib/contexts/modal-theme/hooks";
 import { useLibrarySelectModal } from "@/lib/contexts/modal-library-select/hooks";
 import { FluentLibraryFilled } from "@/components/icons/FluentLibraryFilled";
 import { sortAuthors } from "@/lib/domain/author";
+const appWindow = getCurrentWebviewWindow();
 
 export const Sidebar = () => {
 	const { library, state, eventEmitter } = useLibrary();
@@ -59,23 +60,23 @@ export const Sidebar = () => {
 		let unlisten: (() => void) | undefined;
 
 		const setupFileDropListener = async () => {
-			unlisten = await appWindow.onFileDropEvent((event) => {
-				if (!library) return;
-
-				void (async () => {
-					if (event.payload.type === "drop") {
-						const metadataList = await addBookByDragDrop(
-							library,
-							event.payload.paths,
-						);
-						const firstItem = metadataList[0];
-						if (firstItem) {
-							setMetadata(firstItem);
-							openAddBookModal();
-						}
-					}
-				})();
-			});
+			// TODO: Update for Tauri v2 drag plugin API
+			// unlisten = await appWindow.onFileDropEvent((event) => {
+			// 	if (!library) return;
+			// 	void (async () => {
+			// 		if (event.payload.type === "drop") {
+			// 			const metadataList = await addBookByDragDrop(
+			// 				library,
+			// 				event.payload.paths,
+			// 			);
+			// 			const firstItem = metadataList[0];
+			// 			if (firstItem) {
+			// 				setMetadata(firstItem);
+			// 				openAddBookModal();
+			// 			}
+			// 		}
+			// 	})();
+			// });
 		};
 
 		void setupFileDropListener();

@@ -15,6 +15,7 @@ use libcalibre::mime_type::MIMETYPE;
 use libcalibre::UpsertBookIdentifier;
 use serde::Deserialize;
 use serde::Serialize;
+use tauri::Manager;
 
 mod author;
 mod book;
@@ -269,8 +270,11 @@ pub fn clb_cmd_create_library(
     library_root: String,
 ) -> Result<(), String> {
     let resource_path = handle
-        .path_resolver()
-        .resolve_resource("resources/empty_7_2_calibre_lib.zip")
+        .path()
+        .resolve(
+            "resources/empty_7_2_calibre_lib.zip",
+            tauri::path::BaseDirectory::Resource,
+        )
         .expect("Failed to find default empty library");
 
     let file = std::fs::File::open(resource_path).expect("Failed to open default empty library");
