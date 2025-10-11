@@ -6,11 +6,11 @@ import {
 	settings,
 } from "@/stores/settings";
 import { pickLibrary } from "@/lib/services/library";
-import { invoke } from "@tauri-apps/api/core";
 import { Modal } from "@mantine/core";
 import { useCallback, useEffect, useState } from "react";
 import { useLibrarySelectModal } from "@/lib/contexts/modal-library-select/hooks";
 import { useSettings } from "@/lib/contexts/settings";
+import { commands } from "@/bindings";
 
 export const LibrarySelectModal = () => {
 	const { close, isOpen: isSwitchLibraryModalOpen } = useLibrarySelectModal();
@@ -33,9 +33,7 @@ export const LibrarySelectModal = () => {
 
 	const addNewLibraryByPath = useCallback(
 		async (form: SwitchLibraryForm) => {
-			const isPathValidLibrary = await invoke<boolean>("clb_query_is_path_valid_library", {
-				libraryRoot: form.libraryPath,
-			});
+			const isPathValidLibrary = await commands.clbQueryIsPathValidLibrary(form.libraryPath);
 
 			if (isPathValidLibrary) {
 				const newLibraryId = await createSettingsLibrary(
