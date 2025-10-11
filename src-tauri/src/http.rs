@@ -3,7 +3,6 @@ use std::path::Path;
 use actix_cors::Cors;
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 use serde::Serialize;
-use tauri::api::file;
 
 use libcalibre::mime_type::MIMETYPE;
 
@@ -44,7 +43,7 @@ async fn get_asset(data: web::Data<AppState>, book_id: web::Path<String>) -> imp
     let file_path = Path::new(&book_cover_path);
     HttpResponse::Ok()
         .content_type("image/jpeg")
-        .body(file::read_binary(file_path).unwrap())
+        .body(std::fs::read(file_path).unwrap())
 }
 #[get("/download/{book_id}/{file_name}.{file_type}")]
 async fn get_book_file(
@@ -75,7 +74,7 @@ async fn get_book_file(
             let file_path = Path::new(&file.path);
             HttpResponse::Ok()
                 .content_type(file.mime_type.clone())
-                .body(file::read_binary(file_path).unwrap())
+                .body(std::fs::read(file_path).unwrap())
         }
         None => HttpResponse::NotFound().body("File not found"),
     }

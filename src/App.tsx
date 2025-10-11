@@ -124,6 +124,9 @@ export const App = () => {
  * and https://github.com/cloudy-org/roseate/commit/21f445011f8becc81300b42fe10d8f4c419c95bd
  */
 async function setupAppWindow() {
-	const appWindow = (await import("@tauri-apps/api/window")).appWindow;
+	const { getCurrentWebviewWindow } = await import(
+		"@tauri-apps/api/webviewWindow"
+	);
+	const appWindow = getCurrentWebviewWindow();
 	safeAsyncEventHandler(async () => appWindow.show())();
 }

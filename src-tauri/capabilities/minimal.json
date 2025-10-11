@@ -1,0 +1,10 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "minimal",
+  "description": "Minimal capabilities for Citadel app",
+  "local": true,
+  "windows": ["main"],
+  "permissions": [
+    "core:default"
+  ]
+}
