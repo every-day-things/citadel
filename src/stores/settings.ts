@@ -1,11 +1,8 @@
 import { safeAsyncEventHandler } from "@/lib/async";
 import { writable } from "svelte/store";
+import { load } from "@tauri-apps/plugin-store";
 import { type Option, none, some } from "@/lib/option";
-import { invoke } from "@tauri-apps/api/core";
-import { readTextFile, writeTextFile, exists, BaseDirectory } from "@tauri-apps/plugin-fs";
-
-type Path<_T> = string;
-type PathValue<_T, _P> = any;
+import { isTauri } from "@tauri-apps/api/core";
 
 export interface LibraryPath {
 	id: string;
@@ -23,12 +20,15 @@ export type SettingsSchema = {
 	calibreLibraryPath: string;
 };
 
-interface SettingsManager<T> {
-	initialize: () => Promise<T>;
-	set: <S extends Path<T>>(key: S, value: PathValue<T, S>) => Promise<T>;
-	get: <S extends Path<T>>(key: S) => Promise<PathValue<T, S>>;
-	syncCache: () => Promise<T>;
-	settings: T;
+type SettingsKey = keyof SettingsSchema;
+type SettingsValue<K extends SettingsKey> = SettingsSchema[K];
+
+interface SettingsManager {
+	initialize: () => Promise<SettingsSchema>;
+	set: <K extends SettingsKey>(key: K, value: SettingsValue<K>) => Promise<SettingsSchema>;
+	get: <K extends SettingsKey>(key: K) => Promise<SettingsValue<K>>;
+	syncCache: () => Promise<SettingsSchema>;
+	settings: SettingsSchema;
 }
 
 let isReady = false;
@@ -37,71 +37,76 @@ const settingsLoadedPromise = new Promise<void>((resolve) => {
 	resolveSettingsLoaded = resolve;
 });
 
-const SETTINGS_FILE = "settings.json";
+const genSettingsManager = (defaultSettings: SettingsSchema): SettingsManager => {
+	// Check if running in Tauri environment
+	if (isTauri()) {
+		let store: Awaited<ReturnType<typeof load>>;
+		const cachedSettings: SettingsSchema = { ...defaultSettings };
 
-const genSettingsManager = <T extends SettingsSchema>(
-	defaultSettings: T,
-): SettingsManager<T> => {
-	let currentSettings = { ...defaultSettings };
-	let isInitialized = false;
+		return {
+			initialize: async () => {
+				store = await load("settings.json");
 
-	const loadFromFile = async (): Promise<T> => {
-		console.log("Loading settings - forcing localStorage for testing");
-		
-		// Force localStorage for now to debug the issue
-		for (const [key, defaultValue] of Object.entries(defaultSettings)) {
-			const stored = localStorage.getItem(key);
-			if (stored !== null && stored !== "") {
-				try {
-					const parsed = JSON.parse(stored);
-					currentSettings[key as keyof T] = parsed;
-					console.log(`Loaded ${key} from localStorage:`, parsed);
-				} catch {
-					// For backwards compatibility, handle string values
-					if (key === "libraryPaths" && stored === "") {
-						currentSettings[key as keyof T] = [] as any;
+				// Initialize with default values if keys don't exist
+				for (const [key, defaultValue] of Object.entries(defaultSettings)) {
+					const existingValue = await store.get(key);
+					if (existingValue === null || existingValue === undefined) {
+						await store.set(key, defaultValue);
 					} else {
-						currentSettings[key as keyof T] = stored as any;
+						(cachedSettings as Record<string, unknown>)[key] = existingValue;
 					}
-					console.log(`Loaded ${key} from localStorage (string):`, stored);
 				}
-			} else {
-				(currentSettings as any)[key] = defaultValue;
-				console.log(`Using default for ${key}:`, defaultValue);
-			}
-		}
-		console.log("Final loaded settings:", currentSettings);
-		return currentSettings;
-	};
 
-	const saveToFile = async (): Promise<void> => {
-		console.log("Saving settings - forcing localStorage for testing:", currentSettings);
-		
-		// Force localStorage for now to debug the issue
-		for (const [key, value] of Object.entries(currentSettings)) {
-			localStorage.setItem(key, JSON.stringify(value));
-			console.log(`Saved ${key} to localStorage:`, value);
-		}
-	};
+				await store.save();
+				return cachedSettings;
+			},
+			syncCache: async () => {
+				const entries = await store.entries();
 
+				// Update cached settings with all entries from store
+				for (const [key, value] of entries) {
+					if (key in defaultSettings) {
+						(cachedSettings as Record<string, unknown>)[key] = value;
+					}
+				}
+
+				return cachedSettings;
+			},
+			set: async <K extends SettingsKey>(key: K, value: SettingsValue<K>) => {
+				await store.set(key, value);
+				await store.save();
+				(cachedSettings as Record<string, unknown>)[key] = value;
+				return cachedSettings;
+			},
+			get: async <K extends SettingsKey>(key: K) => {
+				const value = await store.get(key);
+				return value as SettingsValue<K>;
+			},
+			settings: cachedSettings,
+		};
+	}
+
+	// Fallback for non-Tauri environments (web/testing)
 	return {
-		initialize: async () => {
-			if (!isInitialized) {
-				currentSettings = await loadFromFile();
-				isInitialized = true;
+		initialize: () => {
+			for (const [key, value] of Object.entries(defaultSettings)) {
+				if (localStorage.getItem(key) === null) {
+					localStorage.setItem(key, JSON.stringify(value));
+				}
 			}
-			return currentSettings;
+			return Promise.resolve(defaultSettings);
 		},
-		syncCache: () => Promise.resolve(currentSettings),
-		set: async (key, value) => {
-			currentSettings[key as keyof T] = value as any;
-			await saveToFile();
-			return currentSettings;
+		syncCache: () => Promise.resolve(defaultSettings),
+		set: <K extends SettingsKey>(key: K, value: SettingsValue<K>) => {
+			localStorage.setItem(key, JSON.stringify(value));
+			return Promise.resolve(defaultSettings);
 		},
-		get: (key) => {
-			return Promise.resolve(currentSettings[key as keyof T] as PathValue<T, typeof key>);
+		get: <K extends SettingsKey>(key: K) => {
+			const item = localStorage.getItem(key);
+			const parsed = item ? JSON.parse(item) as SettingsValue<K> : defaultSettings[key];
+			return Promise.resolve(parsed);
 		},
-		settings: currentSettings,
+		settings: defaultSettings,
 	};
 };
 
@@ -114,47 +119,33 @@ const createSettingsStore = () => {
 		activeLibraryId: "",
 		libraryPaths: [],
 	};
-	const settings = writable<SettingsSchema>(defaultSettings);
+	const settings = writable<SettingsSchema>();
 	const manager = genSettingsManager(defaultSettings);
 	manager
 		.initialize()
-		.then((initializedSettings) => {
-			console.log('Settings loaded:', initializedSettings);
-			if (!initializedSettings) {
-				console.error('Settings initialization returned undefined, using defaults');
-				settings.update(() => defaultSettings);
-			} else {
-				// Update the store with the loaded settings
-				settings.update(() => initializedSettings as SettingsSchema);
-			}
-			resolveSettingsLoaded();
-			isReady = true;
-		})
+		.then(
+			safeAsyncEventHandler(async () => {
+				await manager.syncCache();
+				for (const [key, value] of Object.entries(manager.settings)) {
+					settings.update((s) => ({ ...s, [key]: value }));
+				}
+				resolveSettingsLoaded();
+				isReady = true;
+			}),
+		)
 		.catch((e) => {
-			console.error('Settings initialization failed:', e);
-			// Ensure we still mark as ready with defaults
-			settings.update(() => defaultSettings);
-			resolveSettingsLoaded();
-			isReady = true;
+			console.error(e);
 		});
 
 	return {
-		set: async <K extends Path<SettingsSchema>>(
+		set: async <K extends SettingsKey>(
 			key: K,
-			value: PathValue<SettingsSchema, K>,
+			value: SettingsValue<K>,
 		) => {
-			try {
-				console.log('Setting:', key, 'to:', value);
-				const updatedSettings = await manager.set(key, value);
-				console.log('Updated settings:', updatedSettings);
-				// Update the store with the updated settings
-				settings.update(() => updatedSettings as SettingsSchema);
-			} catch (e) {
-				console.error('Failed to set setting:', key, value, e);
-				throw e;
-			}
+			settings.update((s) => ({ ...s, [key]: value }));
+			await manager.set(key, value);
 		},
-		get: <S extends Path<SettingsSchema>>(key: S) => {
+		get: <K extends SettingsKey>(key: K) => {
 			return manager.get(key);
 		},
 		subscribe: settings.subscribe,
@@ -183,7 +174,7 @@ export const createSettingsLibrary = async (
 	const existingLibraryPaths = (await store.get("libraryPaths")) ?? [];
 
 	const wouldBeDuplicate = existingLibraryPaths.find(
-		(library: LibraryPath) => library.absolutePath === absolutePath,
+		(library) => library.absolutePath === absolutePath,
 	);
 
 	if (wouldBeDuplicate) {
@@ -217,7 +208,7 @@ const isActiveLibraryIdSet = (libraryId: string) => {
 
 export const getActiveLibrary = async (
 	store: typeof settings,
-): Promise<Option<SettingsSchema["libraryPaths"][number]>> => {
+): Promise<Option<LibraryPath>> => {
 	const activeLibraryId = await store.get("activeLibraryId");
 
 	// Support one-time migration from old schema
@@ -233,9 +224,11 @@ export const getActiveLibrary = async (
 		return none();
 	}
 
-	const activeLibrary = (await store.get("libraryPaths")).find(
-		(library: LibraryPath) => library.id === activeLibraryId,
+	const libraryPaths = await store.get("libraryPaths");
+	const activeLibrary = libraryPaths.find(
+		(library) => library.id === activeLibraryId,
 	);
+
 	if (activeLibrary !== undefined) return some(activeLibrary);
 
 	return none();
