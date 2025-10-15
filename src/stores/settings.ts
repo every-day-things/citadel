@@ -156,10 +156,6 @@ const createSettingsStore = () => {
 	};
 };
 
-export const waitForSettings = () => settingsLoadedPromise;
-export const settings = createSettingsStore();
-export const isSettingsReady = () => isReady;
-
 // TODO: Replace this with a proper UUID generator
 const uuidv4 = () => {
 	return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
@@ -167,6 +163,10 @@ const uuidv4 = () => {
 		const v = c === "x" ? r : (r & 0x3) | 0x8;
 		return v.toString(16);
 	});
+};
+
+const isActiveLibraryIdSet = (libraryId: string) => {
+	return libraryId.length > 0;
 };
 
 export const createSettingsLibrary = async (
@@ -197,6 +197,10 @@ export const createSettingsLibrary = async (
 	return libraryId;
 };
 
+export const waitForSettings = () => settingsLoadedPromise;
+export const settings = createSettingsStore();
+export const isSettingsReady = () => isReady;
+
 export const setActiveLibrary = async (
 	store: typeof settings,
 	libraryId: string,
@@ -204,10 +208,6 @@ export const setActiveLibrary = async (
 	await store.set("activeLibraryId", libraryId);
 
 	return;
-};
-
-const isActiveLibraryIdSet = (libraryId: string) => {
-	return libraryId.length > 0;
 };
 
 export const getActiveLibrary = async (
