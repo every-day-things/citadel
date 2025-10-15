@@ -1,4 +1,3 @@
-import { safeAsyncEventHandler } from "@/lib/async";
 import { writable } from "svelte/store";
 import { load } from "@tauri-apps/plugin-store";
 import { type Option, none, some } from "@/lib/option";
@@ -28,7 +27,6 @@ interface SettingsManager {
 		value: SettingsValue<K>,
 	) => Promise<SettingsSchema>;
 	get: <K extends SettingsKey>(key: K) => Promise<SettingsValue<K>>;
-	syncCache: () => Promise<SettingsSchema>;
 	settings: SettingsSchema;
 }
 
@@ -63,18 +61,6 @@ const genSettingsManager = (
 				await store.save();
 				return cachedSettings;
 			},
-			syncCache: async () => {
-				const entries = await store.entries();
-
-				// Update cached settings with all entries from store
-				for (const [key, value] of entries) {
-					if (key in defaultSettings) {
-						(cachedSettings as Record<string, unknown>)[key] = value;
-					}
-				}
-
-				return cachedSettings;
-			},
 			set: async <K extends SettingsKey>(key: K, value: SettingsValue<K>) => {
 				await store.set(key, value);
 				await store.save();
@@ -99,7 +85,6 @@ const genSettingsManager = (
 			}
 			return Promise.resolve(defaultSettings);
 		},
-		syncCache: () => Promise.resolve(defaultSettings),
 		set: <K extends SettingsKey>(key: K, value: SettingsValue<K>) => {
 			localStorage.setItem(key, JSON.stringify(value));
 			return Promise.resolve(defaultSettings);
@@ -127,14 +112,13 @@ const createSettingsStore = () => {
 	manager
 		.initialize()
 		.then(
-			safeAsyncEventHandler(async () => {
-				await manager.syncCache();
+			() => {
 				for (const [key, value] of Object.entries(manager.settings)) {
 					settings.update((s) => ({ ...s, [key]: value }));
 				}
 				resolveSettingsLoaded();
 				isReady = true;
-			}),
+			},
 		)
 		.catch((e) => {
 			console.error(e);
