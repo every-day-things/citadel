@@ -1,7 +1,8 @@
 import { writable } from "svelte/store";
-import { load } from "@tauri-apps/plugin-store";
 import { type Option, none, some } from "@/lib/option";
 import { isTauri } from "@tauri-apps/api/core";
+import { createTauriSettingsManager } from "@/lib/settings-manager/tauri-settings";
+import { createWebSettingsManager } from "@/lib/settings-manager/web-settings";
 
 export interface LibraryPath {
 	id: string;
@@ -36,68 +37,14 @@ const settingsLoadedPromise = new Promise<void>((resolve) => {
 	resolveSettingsLoaded = resolve;
 });
 
-const genSettingsManager = (
+const createSettingsManager = (
 	defaultSettings: SettingsSchema,
 ): SettingsManager => {
-	// Check if running in Tauri environment
 	if (isTauri()) {
-		let store: Awaited<ReturnType<typeof load>>;
-		const cachedSettings: SettingsSchema = { ...defaultSettings };
-
-		return {
-			initialize: async () => {
-				store = await load("settings.json");
-
-				// Initialize with default values if keys don't exist
-				for (const [key, defaultValue] of Object.entries(defaultSettings)) {
-					const existingValue = await store.get(key);
-					if (existingValue === null || existingValue === undefined) {
-						await store.set(key, defaultValue);
-					} else {
-						(cachedSettings as Record<string, unknown>)[key] = existingValue;
-					}
-				}
-
-				await store.save();
-				return cachedSettings;
-			},
-			set: async <K extends SettingsKey>(key: K, value: SettingsValue<K>) => {
-				await store.set(key, value);
-				await store.save();
-				(cachedSettings as Record<string, unknown>)[key] = value;
-				return cachedSettings;
-			},
-			get: async <K extends SettingsKey>(key: K) => {
-				const value = await store.get(key);
-				return value as SettingsValue<K>;
-			},
-			settings: cachedSettings,
-		};
+		return createTauriSettingsManager(defaultSettings)
 	}
 
-	// Fallback for non-Tauri environments (web/testing)
-	return {
-		initialize: () => {
-			for (const [key, value] of Object.entries(defaultSettings)) {
-				if (localStorage.getItem(key) === null) {
-					localStorage.setItem(key, JSON.stringify(value));
-				}
-			}
-			return Promise.resolve(defaultSettings);
-		},
-		set: <K extends SettingsKey>(key: K, value: SettingsValue<K>) => {
-			localStorage.setItem(key, JSON.stringify(value));
-			return Promise.resolve(defaultSettings);
-		},
-		get: <K extends SettingsKey>(key: K) => {
-			const item = localStorage.getItem(key);
-			const parsed = item
-				? (JSON.parse(item) as SettingsValue<K>)
-				: defaultSettings[key];
-			return Promise.resolve(parsed);
-		},
-		settings: defaultSettings,
-	};
+	return createWebSettingsManager(defaultSettings)
 };
 
 const createSettingsStore = () => {
@@ -108,7 +55,8 @@ const createSettingsStore = () => {
 		libraryPaths: [],
 	};
 	const settings = writable<SettingsSchema>();
-	const manager = genSettingsManager(defaultSettings);
+	const manager = createSettingsManager(defaultSettings);
+
 	manager
 		.initialize()
 		.then(
