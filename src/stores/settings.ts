@@ -178,7 +178,7 @@ export const createSettingsLibrary = async (
 	}
 
 	await store.set("libraryPaths", [
-		...(await store.get("libraryPaths")),
+		...existingLibraryPaths,
 		{
 			id: libraryId,
 			displayName,
