@@ -16,8 +16,6 @@ export type SettingsSchema = {
 	startFullscreen: boolean;
 	activeLibraryId: string;
 	libraryPaths: LibraryPath[];
-	// @deprecated Use `activeLibraryId` and `libraryPaths` instead
-	calibreLibraryPath: string;
 };
 
 type SettingsKey = keyof SettingsSchema;
@@ -121,8 +119,6 @@ const createSettingsStore = () => {
 	const defaultSettings: SettingsSchema = {
 		theme: "light",
 		startFullscreen: false,
-		// @deprecated Use `activeLibraryId` and `libraryPaths` instead
-		calibreLibraryPath: "",
 		activeLibraryId: "",
 		libraryPaths: [],
 	};
@@ -163,10 +159,6 @@ const uuidv4 = () => {
 		const v = c === "x" ? r : (r & 0x3) | 0x8;
 		return v.toString(16);
 	});
-};
-
-const isActiveLibraryIdSet = (libraryId: string) => {
-	return libraryId.length > 0;
 };
 
 export const createSettingsLibrary = async (
@@ -214,19 +206,6 @@ export const getActiveLibrary = async (
 	store: typeof settings,
 ): Promise<Option<LibraryPath>> => {
 	const activeLibraryId = await store.get("activeLibraryId");
-
-	// Support one-time migration from old schema
-	const calibreLibraryPath = (await settings.get("calibreLibraryPath")) ?? "";
-	if (!isActiveLibraryIdSet(activeLibraryId) && calibreLibraryPath.length > 0) {
-		const newLibraryId = await createSettingsLibrary(
-			settings,
-			calibreLibraryPath,
-		);
-		await setActiveLibrary(settings, newLibraryId);
-		await settings.set("calibreLibraryPath", "");
-	} else if (!isActiveLibraryIdSet(activeLibraryId)) {
-		return none();
-	}
 
 	const libraryPaths = await store.get("libraryPaths");
 	const activeLibrary = libraryPaths.find(
