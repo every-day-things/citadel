@@ -206,13 +206,12 @@ export const getActiveLibrary = async (
 	store: typeof settings,
 ): Promise<Option<LibraryPath>> => {
 	const activeLibraryId = await store.get("activeLibraryId");
-
 	const libraryPaths = await store.get("libraryPaths");
 	const activeLibrary = libraryPaths.find(
 		(library) => library.id === activeLibraryId,
 	);
 
-	if (activeLibrary !== undefined) return some(activeLibrary);
+	if (activeLibrary === undefined) return none();
 
-	return none();
+	return some(activeLibrary);
 };
