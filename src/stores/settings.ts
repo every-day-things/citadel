@@ -34,6 +34,9 @@ const createSettingsStore = () => {
 		activeLibraryId: "",
 		libraryPaths: [],
 	};
+	// Used as a way of letting subscribers know when settings have changed, but
+	// we pull data (`.get()`) straight from the manager, avoiding the
+	// cached version in the store.
 	const settings = writable<SettingsSchema>();
 	const manager = createSettingsManager(defaultSettings);
 
