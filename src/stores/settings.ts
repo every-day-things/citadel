@@ -3,33 +3,13 @@ import { type Option, none, some } from "@/lib/option";
 import { isTauri } from "@tauri-apps/api/core";
 import { createTauriSettingsManager } from "@/lib/settings-manager/tauri-settings";
 import { createWebSettingsManager } from "@/lib/settings-manager/web-settings";
-
-export interface LibraryPath {
-	id: string;
-	displayName: string;
-	absolutePath: string;
-}
-
-// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
-export type SettingsSchema = {
-	theme: "dark" | "light";
-	startFullscreen: boolean;
-	activeLibraryId: string;
-	libraryPaths: LibraryPath[];
-};
-
-type SettingsKey = keyof SettingsSchema;
-type SettingsValue<K extends SettingsKey> = SettingsSchema[K];
-
-interface SettingsManager {
-	initialize: () => Promise<SettingsSchema>;
-	set: <K extends SettingsKey>(
-		key: K,
-		value: SettingsValue<K>,
-	) => Promise<SettingsSchema>;
-	get: <K extends SettingsKey>(key: K) => Promise<SettingsValue<K>>;
-	settings: SettingsSchema;
-}
+import {
+	LibraryPath,
+	SettingsKey,
+	SettingsManager,
+	SettingsSchema,
+	SettingsValue,
+} from "@/lib/settings-manager/types";
 
 let isReady = false;
 let resolveSettingsLoaded: () => void;
@@ -41,10 +21,10 @@ const createSettingsManager = (
 	defaultSettings: SettingsSchema,
 ): SettingsManager => {
 	if (isTauri()) {
-		return createTauriSettingsManager(defaultSettings)
+		return createTauriSettingsManager(defaultSettings);
 	}
 
-	return createWebSettingsManager(defaultSettings)
+	return createWebSettingsManager(defaultSettings);
 };
 
 const createSettingsStore = () => {
@@ -59,15 +39,13 @@ const createSettingsStore = () => {
 
 	manager
 		.initialize()
-		.then(
-			() => {
-				for (const [key, value] of Object.entries(manager.settings)) {
-					settings.update((s) => ({ ...s, [key]: value }));
-				}
-				resolveSettingsLoaded();
-				isReady = true;
-			},
-		)
+		.then(() => {
+			for (const [key, value] of Object.entries(manager.settings)) {
+				settings.update((s) => ({ ...s, [key]: value }));
+			}
+			resolveSettingsLoaded();
+			isReady = true;
+		})
 		.catch((e) => {
 			console.error(e);
 		});
@@ -75,11 +53,14 @@ const createSettingsStore = () => {
 	return {
 		set: async <K extends SettingsKey>(key: K, value: SettingsValue<K>) => {
 			settings.update((s) => ({ ...s, [key]: value }));
+
 			await manager.set(key, value);
 		},
+
 		get: <K extends SettingsKey>(key: K) => {
 			return manager.get(key);
 		},
+
 		subscribe: settings.subscribe,
 	};
 };
