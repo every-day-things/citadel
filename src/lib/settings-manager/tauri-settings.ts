@@ -1,11 +1,22 @@
+import {
+	SettingsKey,
+	SettingsManager,
+	SettingsSchema,
+	SettingsValue,
+} from "@/lib/settings-manager/types";
 import { load } from "@tauri-apps/plugin-store";
 
-export const createTauriSettingsManager = <SettingsSchema extends Record<string, unknown>>(defaultSettings: SettingsSchema) => {
-	type SettingsKey = keyof SettingsSchema;
-	type SettingsValue<K extends SettingsKey> = SettingsSchema[K];
+export const createTauriSettingsManager = (
+	defaultSettings: SettingsSchema,
+): SettingsManager => {
+	type MutableSettings = {
+		-readonly [K in keyof SettingsSchema]: SettingsSchema[K];
+	};
 
 	let store: Awaited<ReturnType<typeof load>>;
-	const cachedSettings: SettingsSchema = { ...defaultSettings };
+	const cachedSettings: MutableSettings = {
+		...defaultSettings,
+	} as MutableSettings;
 
 	return {
 		initialize: async () => {
@@ -17,23 +28,31 @@ export const createTauriSettingsManager = <SettingsSchema extends Record<string,
 				if (existingValue === null || existingValue === undefined) {
 					await store.set(key, defaultValue);
 				} else {
+					// type assertions because I can't figure out how to convince TS
+					// that this is right
 					(cachedSettings as Record<string, unknown>)[key] = existingValue;
 				}
 			}
 
 			await store.save();
-			return cachedSettings;
+			return cachedSettings as SettingsSchema;
 		},
+
 		set: async <K extends SettingsKey>(key: K, value: SettingsValue<K>) => {
 			await store.set(key, value);
 			await store.save();
-			(cachedSettings as Record<string, unknown>)[key] = value;
-			return cachedSettings;
+
+			cachedSettings[key] = value;
+
+			return cachedSettings as SettingsSchema;
 		},
+
 		get: async <K extends SettingsKey>(key: K) => {
 			const value = await store.get(key);
+
 			return value as SettingsValue<K>;
 		},
-		settings: cachedSettings,
+
+		settings: cachedSettings as SettingsSchema,
 	};
-}
+};
