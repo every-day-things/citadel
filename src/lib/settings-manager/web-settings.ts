@@ -21,7 +21,11 @@ export const createWebSettingsManager = (
 			const initialSettings = {} as SettingsSchema;
 			for (const key of Object.keys(defaultSettings) as SettingsKey[]) {
 				const item = localStorage.getItem(key);
-				const parsed = item ? JSON.parse(item) as SettingsValue<typeof key> : defaultSettings[key];
+
+				const parsed = item
+					? (JSON.parse(item) as SettingsValue<typeof key>)
+					: defaultSettings[key];
+
 				(initialSettings as Record<string, unknown>)[key] = parsed;
 			}
 
@@ -38,13 +42,14 @@ export const createWebSettingsManager = (
 			const item = localStorage.getItem(key);
 
 			if (!item) {
-				throw new Error(`Settings store missing key ${key} -- expected it to have been initialized to default value, at least.`)
+				throw new Error(
+					`Settings store missing key ${key} -- expected it to have been initialized to default value, at least.`,
+				);
 			}
 
 			const parsed = JSON.parse(item) as SettingsValue<K>;
 
 			return Promise.resolve(parsed);
 		},
-
 	};
 };
