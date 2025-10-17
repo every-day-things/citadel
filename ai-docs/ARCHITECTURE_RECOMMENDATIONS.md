@@ -1,8 +1,8 @@
 # Architecture Recommendations for Citadel
 ## Svelte-Inspired React with Tauri/Remote Backend
 
-**Version**: 1.0  
-**Date**: December 2024  
+**Version**: 1.0
+**Date**: October 2025
 **Context**: Dual-mode architecture (Tauri local + remote web)
 
 ---
@@ -81,19 +81,19 @@ const createBooksStore = () => {
 
   return {
     subscribe,
-    
+
     // Load books with automatic caching
     async load(forceRefresh = false) {
       const state = get({ subscribe });
       const now = Date.now();
-      
+
       // Skip if recently fetched (unless forced)
       if (!forceRefresh && state.lastFetch && (now - state.lastFetch) < 5000) {
         return;
       }
 
       update(s => ({ ...s, loading: true, error: null }));
-      
+
       try {
         const items = await adapter.listBooks();
         set({ items, loading: false, error: null, lastFetch: now });
@@ -106,13 +106,13 @@ const createBooksStore = () => {
     async updateBook(bookId: string, updates: BookUpdate) {
       const state = get({ subscribe });
       const originalBook = state.items.find(b => b.id === bookId);
-      
+
       // Optimistically update UI
       update(s => ({
         ...s,
-        items: s.items.map(book => 
-          book.id === bookId 
-            ? { ...book, ...updates } 
+        items: s.items.map(book =>
+          book.id === bookId
+            ? { ...book, ...updates }
             : book
         ),
       }));
@@ -124,7 +124,7 @@ const createBooksStore = () => {
         if (originalBook) {
           update(s => ({
             ...s,
-            items: s.items.map(book => 
+            items: s.items.map(book =>
               book.id === bookId ? originalBook : book
             ),
             error: error as Error,
@@ -148,17 +148,17 @@ const createBooksStore = () => {
 
       try {
         const realId = await adapter.addBook(metadata);
-        
+
         // Replace temp with real
         update(s => ({
           ...s,
-          items: s.items.map(book => 
-            book.id === tempId 
-              ? { ...book, id: realId } 
+          items: s.items.map(book =>
+            book.id === tempId
+              ? { ...book, id: realId }
               : book
           ),
         }));
-        
+
         return realId;
       } catch (error) {
         // Remove temp on error
@@ -181,8 +181,8 @@ const createBooksStore = () => {
 export const booksStore = createBooksStore();
 
 // Derived stores for common queries
-export const bookById = (id: string) => 
-  derived(booksStore, $books => 
+export const bookById = (id: string) =>
+  derived(booksStore, $books =>
     $books.items.find(book => book.id === id)
   );
 
@@ -241,7 +241,7 @@ class RemoteAdapter implements BackendAdapter {
 
 let adapter: BackendAdapter;
 
-export const initializeAdapter = (config: { 
+export const initializeAdapter = (config: {
   mode: 'tauri' | 'remote';
   libraryPath?: string;
   baseUrl?: string;
@@ -423,7 +423,7 @@ const booksStore = {
 const booksStore = {
   async load(forceRefresh = false) {
     const adapter = getBackendAdapter();
-    
+
     // Remote mode: Check cache first
     if (adapter instanceof RemoteAdapter && !forceRefresh) {
       const cached = await this.checkCache();
@@ -434,11 +434,11 @@ const booksStore = {
         return;
       }
     }
-    
+
     // Tauri mode: Just fetch (it's fast)
     const books = await adapter.listBooks();
     set({ items: books, loading: false });
-    
+
     // Remote mode: Update cache
     if (adapter instanceof RemoteAdapter) {
       await this.updateCache(books);
@@ -456,9 +456,9 @@ Build remote support incrementally:
 class RemoteAdapter {
   async listBooks() { /* implement */ }
   async listAuthors() { /* implement */ }
-  
+
   // Stub write operations
-  async updateBook() { 
+  async updateBook() {
     throw new Error('Updates not supported in remote mode yet');
   }
 }
@@ -481,7 +481,7 @@ class RemoteAdapter {
 ```typescript
 class RemoteAdapter {
   private cache = new Map();
-  
+
   async listBooks() {
     // Add caching, prefetching, etc.
   }
@@ -526,20 +526,20 @@ export class ValidationError extends CitadelError {
 const booksStore = {
   async load() {
     update(s => ({ ...s, loading: true, error: null }));
-    
+
     try {
       const items = await adapter.listBooks();
       set({ items, loading: false, error: null, lastFetch: Date.now() });
     } catch (err) {
-      const error = err instanceof CitadelError 
-        ? err 
+      const error = err instanceof CitadelError
+        ? err
         : new BackendError('Failed to load books', err);
-      
+
       update(s => ({ ...s, loading: false, error }));
-      
+
       // Log for debugging
       console.error('[booksStore] Load failed:', error);
-      
+
       // Don't throw - let UI handle via error state
     }
   }
@@ -579,7 +579,7 @@ pub fn clb_cmd_update_book(...) -> Result<i32, CommandError> {
                     message: "Book ID must be a number".to_string(),
                     recoverable: true,
                 })?;
-            
+
             calibre.update_book(book_id_int, updates.to_dto())
                 .map(|entry| entry.book.id)
                 .map_err(|e| CommandError {
@@ -723,7 +723,7 @@ const createAuthorsStore = () => {
 
   return {
     subscribe,
-    
+
     async load() {
       update(s => ({ ...s, loading: true }));
       const adapter = getBackendAdapter();
@@ -733,26 +733,26 @@ const createAuthorsStore = () => {
 
     async deleteAuthor(authorId: string) {
       const adapter = getBackendAdapter();
-      
+
       // Check for relationships
       const books = get(booksStore);
       const hasBooks = books.items.some(book =>
         book.author_list.some(a => a.id === authorId)
       );
-      
+
       if (hasBooks) {
         throw new ValidationError(
           'Cannot delete author with existing books',
           'authorId'
         );
       }
-      
+
       // Optimistically remove
       update(s => ({
         ...s,
         items: s.items.filter(a => a.id !== authorId),
       }));
-      
+
       try {
         await adapter.deleteAuthor(authorId);
       } catch (error) {
@@ -817,14 +817,14 @@ export const booksByAuthor = (authorId: string) =>
 const BooksPage = () => {
   // New system
   const { books: newBooks } = useBooks();
-  
+
   // Old system (fallback)
   const { library } = useLibrary();
   const [oldBooks, setOldBooks] = useState([]);
-  
+
   // Use new if available, fall back to old
   const books = newBooks.length > 0 ? newBooks : oldBooks;
-  
+
   // ... rest of component
 };
 ```
@@ -838,8 +838,8 @@ export const FEATURE_FLAGS = {
 };
 
 // In components
-const books = FEATURE_FLAGS.USE_NEW_STORES 
-  ? useBooks() 
+const books = FEATURE_FLAGS.USE_NEW_STORES
+  ? useBooks()
   : useOldLibraryPattern();
 ```
 

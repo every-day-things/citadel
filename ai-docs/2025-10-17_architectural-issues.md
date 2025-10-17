@@ -314,4 +314,4 @@ Separate command and query responsibilities with dedicated handlers.
 ---
 
 **Document Version**: 1.0
-**Last Updated**: December 2024
+**Last Updated**: October 2025
