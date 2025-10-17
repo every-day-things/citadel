@@ -42,10 +42,16 @@ const createSettingsStore = () => {
 
 	manager
 		.initialize()
-		.then(() => {
-			for (const [key, value] of Object.entries(manager.settings)) {
-				settings.update((s) => ({ ...s, [key]: value }));
+		.then(async () => {
+			// Initialize store
+			const initialSettings = {} as SettingsSchema;
+			for (const key of Object.keys(defaultSettings) as SettingsKey[]) {
+				const value = await manager.get(key);
+				(initialSettings as Record<string, unknown>)[key] = value;
 			}
+
+			settings.update((s) => ({ ...s, ...initialSettings }));
+
 			resolveSettingsLoaded();
 			isReady = true;
 		})
@@ -114,8 +120,6 @@ export const setActiveLibrary = async (
 	libraryId: string,
 ): Promise<void> => {
 	await store.set("activeLibraryId", libraryId);
-
-	return;
 };
 
 export const getActiveLibrary = async (

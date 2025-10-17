@@ -20,7 +20,6 @@ export interface SettingsManager {
 	set: <K extends SettingsKey>(
 		key: K,
 		value: SettingsValue<K>,
-	) => Promise<SettingsSchema>;
+	) => Promise<void>;
 	get: <K extends SettingsKey>(key: K) => Promise<SettingsValue<K>>;
-	settings: SettingsSchema;
 }
