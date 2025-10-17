@@ -46,12 +46,12 @@ All logic related to Calibre, for instance, is in a `libcalibre` crate that can 
 Modules are deep, and errors are defined out of existence. For more, see
 [A Philosophy of Software Design](https://openlibrary.org/books/OL28736729M/A_Philosophy_of_Software_Design).
 
-### Evolving Principles (2025)
+## Patterns
 
-The architecture is evolving toward a **store-based pattern** that:
-- Uses Svelte stores as single source of truth
-- Provides automatic UI updates via subscriptions
-- Implements a thin adapter layer for Tauri/remote differences
-- Optimizes for development velocity while supporting both local and remote modes
+### Frontend
 
-See [Architecture Recommendations](../ai-docs/ARCHITECTURE_RECOMMENDATIONS.md) for details on this approach.
+- Use store/s as single source of truth
+  - Provides automatic UI updates via subscriptions
+  - Implements a thin layer over Tauri/remote backends which allows us to build
+  quickly but retain local/remote support
+  - See [Architecture Recommendations](../ai-docs/ARCHITECTURE_RECOMMENDATIONS.md) for details
