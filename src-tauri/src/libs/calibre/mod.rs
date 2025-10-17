@@ -7,7 +7,7 @@ use crate::book::LibraryBook;
 
 use author::NewAuthor;
 use chrono::NaiveDateTime;
-use libcalibre::client::CalibreClient;
+use libcalibre::calibre_client::CalibreClient;
 use libcalibre::dtos::author::UpdateAuthorDto;
 use libcalibre::dtos::book::UpdateBookDto;
 use libcalibre::dtos::library::UpdateLibraryEntryDto;

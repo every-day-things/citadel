@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use libcalibre::{client::CalibreClient, Author};
+use libcalibre::{calibre_client::CalibreClient, Author};
 
 use crate::{
     book::{

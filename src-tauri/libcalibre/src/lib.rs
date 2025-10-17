@@ -1,6 +1,6 @@
 mod api;
-pub mod client;
-pub mod client_v2;
+pub mod calibre_client;
+pub mod db;
 mod cover_image;
 pub mod dtos;
 mod entities;
