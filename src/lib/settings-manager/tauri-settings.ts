@@ -14,10 +14,6 @@ export const createTauriSettingsManager = (
 	};
 
 	let store: Awaited<ReturnType<typeof load>>;
-	const cachedSettings: MutableSettings = {
-		...defaultSettings,
-	} as MutableSettings;
-
 	return {
 		initialize: async () => {
 			store = await load("settings.json");
@@ -27,24 +23,23 @@ export const createTauriSettingsManager = (
 				const existingValue = await store.get(key);
 				if (existingValue === null || existingValue === undefined) {
 					await store.set(key, defaultValue);
-				} else {
-					// type assertions because I can't figure out how to convince TS
-					// that this is right
-					(cachedSettings as Record<string, unknown>)[key] = existingValue;
 				}
 			}
 
 			await store.save();
-			return cachedSettings as SettingsSchema;
+
+			// Return fresh values from store
+			const initialSettings = {} as MutableSettings;
+			for (const key of Object.keys(defaultSettings)) {
+				const value = await store.get(key);
+				(initialSettings as Record<string, unknown>)[key] = value;
+			}
+			return initialSettings as SettingsSchema;
 		},
 
 		set: async <K extends SettingsKey>(key: K, value: SettingsValue<K>) => {
 			await store.set(key, value);
 			await store.save();
-
-			cachedSettings[key] = value;
-
-			return cachedSettings as SettingsSchema;
 		},
 
 		get: async <K extends SettingsKey>(key: K) => {
@@ -52,7 +47,5 @@ export const createTauriSettingsManager = (
 
 			return value as SettingsValue<K>;
 		},
-
-		settings: cachedSettings as SettingsSchema,
 	};
 };
