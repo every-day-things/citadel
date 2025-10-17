@@ -59,12 +59,6 @@ export const LibrarySelectModal = () => {
 		[close, set],
 	);
 
-	console.log({
-		isSwitchLibraryModalOpen,
-		activeLibraryId,
-		libraries,
-	});
-
 	if (!activeLibraryId) {
 		return <p>Something went wrong</p>;
 	}
