@@ -1,4 +1,4 @@
-use libcalibre::{client::CalibreClient, dtos::author::NewAuthorDto};
+use libcalibre::{calibre_client::CalibreClient, dtos::author::NewAuthorDto};
 use serde::{Deserialize, Serialize};
 
 use crate::book::LibraryAuthor;
