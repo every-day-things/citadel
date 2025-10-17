@@ -1,6 +1,5 @@
 import { SwitchLibraryForm } from "../molecules/SwitchLibraryForm";
 import {
-	LibraryPath,
 	createSettingsLibrary,
 	setActiveLibrary,
 	settings,
@@ -11,6 +10,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useLibrarySelectModal } from "@/lib/contexts/modal-library-select/hooks";
 import { useSettings } from "@/lib/contexts/settings";
 import { commands } from "@/bindings";
+import { LibraryPath } from "@/lib/settings-manager/types";
 
 export const LibrarySelectModal = () => {
 	const { close, isOpen: isSwitchLibraryModalOpen } = useLibrarySelectModal();
