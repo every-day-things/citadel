@@ -12,13 +12,6 @@ pub mod libs {
     mod util;
 }
 mod book;
-mod http;
-
-const SERVER_FLAG: &str = "--server";
-
-fn is_server(args: &[String]) -> bool {
-    args.iter().any(|x| x == SERVER_FLAG)
-}
 
 fn run_tauri_backend() -> std::io::Result<()> {
     let builder = Builder::<tauri::Wry>::new().commands(collect_commands![
@@ -74,13 +67,6 @@ fn run_tauri_backend() -> std::io::Result<()> {
     Ok(())
 }
 
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
-    let args: Vec<String> = env::args().collect();
-
-    if is_server(&args) {
-        http::run_http_server(&args).await
-    } else {
-        run_tauri_backend()
-    }
+fn main() -> std::io::Result<()> {
+    run_tauri_backend()
 }
