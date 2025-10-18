@@ -22,7 +22,6 @@ import {
 import { type UseFormReturnType, useForm } from "@mantine/form";
 import { useDisclosure } from "@mantine/hooks";
 import { Link } from "@tanstack/react-router";
-import { path } from "@tauri-apps/api";
 import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BookCover } from "../atoms/BookCover";
@@ -341,9 +340,7 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 									key={f1.Local.path}
 									style={{ textDecoration: "underline", marginRight: "1rem" }}
 									onPointerDown={safeAsyncEventHandler(async () => {
-										const directory = await path.dirname(f1.Local.path);
-
-										await revealItemInDir(directory);
+										await revealItemInDir(f1.Local.path);
 									})}
 								>
 									{f1.Local.mime_type} ↗
