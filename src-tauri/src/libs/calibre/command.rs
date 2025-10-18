@@ -38,12 +38,14 @@ pub fn clb_cmd_create_library(
             "resources/empty_7_2_calibre_lib.zip",
             tauri::path::BaseDirectory::Resource,
         )
-        .expect("Failed to find default empty library");
+        .map_err(|e| format!("Failed to find default empty library: {}", e))?;
 
-    let file = std::fs::File::open(resource_path).expect("Failed to open default empty library");
+    let file = std::fs::File::open(resource_path)
+        .map_err(|e| format!("Failed to open default empty library: {}", e))?;
 
     // Extract the default library to the specified location
-    let mut archive = zip::ZipArchive::new(file).expect("Failed to read zip archive");
+    let mut archive =
+        zip::ZipArchive::new(file).map_err(|e| format!("Failed to read zip archive: {}", e))?;
     let result = archive.extract(&library_root).map_err(|e| e.to_string());
 
     // Set a new UUID for the library

@@ -30,8 +30,8 @@ pub fn clb_query_list_all_authors(
         client
             .list_all_authors()
             .map(|author_list| author_list.iter().map(LibraryAuthor::from).collect())
-            .unwrap_or_default()
     })
+    .and_then(|result| result.map_err(|e| format!("Failed to list authors: {}", e)))
 }
 
 #[tauri::command]
@@ -51,14 +51,14 @@ pub fn clb_query_importable_file_metadata(file: ImportableFile) -> Option<Import
 #[specta::specta]
 /// Lists all importable file types. Those are files that Citadel knows how
 /// to import, and that libcalibre supports.
-pub fn clb_query_list_all_filetypes() -> Vec<(&'static str, &'static str)> {
+pub fn clb_query_list_all_filetypes() -> Vec<(String, String)> {
     file_formats::SupportedFormats::list_all()
         .iter()
-        .map(|(_, extension)| (MIMETYPE::from_file_extension(extension), *extension))
-        .filter(|(mimetype, _)| {
-            mimetype.is_some() && mimetype.as_ref().unwrap() != &MIMETYPE::UNKNOWN
+        .filter_map(|(_, extension)| {
+            MIMETYPE::from_file_extension(extension)
+                .filter(|mimetype| mimetype != &MIMETYPE::UNKNOWN)
+                .map(|mimetype| (mimetype.as_str().to_string(), extension.to_string()))
         })
-        .map(|(mimetype, ext)| (mimetype.unwrap().as_str(), ext))
         .collect()
 }
 
