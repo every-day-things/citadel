@@ -22,8 +22,11 @@ impl CitadelState {
 
         let client = CalibreClient::new(db_path);
 
-        *self.client.lock().unwrap() = Some(client);
-        *self.current_library_path.lock().unwrap() = Some(library_path);
+        *self.client.lock().expect("Client mutex poisoned") = Some(client);
+        *self
+            .current_library_path
+            .lock()
+            .expect("Library path mutex poisoned") = Some(library_path);
 
         Ok(())
     }
@@ -33,7 +36,7 @@ impl CitadelState {
     where
         F: FnOnce(&mut CalibreClient) -> R,
     {
-        let mut client_guard = self.client.lock().unwrap();
+        let mut client_guard = self.client.lock().expect("Client mutex poisoned");
         match client_guard.as_mut() {
             Some(client) => Ok(f(client)),
             None => Err("No library initialized. Please load a library first.".to_string()),
@@ -42,11 +45,14 @@ impl CitadelState {
 
     /// Get the current library path
     pub fn get_library_path(&self) -> Option<String> {
-        self.current_library_path.lock().unwrap().clone()
+        self.current_library_path
+            .lock()
+            .expect("Library path mutex poisoned")
+            .clone()
     }
 
     /// Check if a library is currently loaded
     pub fn is_initialized(&self) -> bool {
-        self.client.lock().unwrap().is_some()
+        self.client.lock().expect("Client mutex poisoned").is_some()
     }
 }
