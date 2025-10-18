@@ -1,10 +1,13 @@
 use std::path::PathBuf;
 
 use chrono::{NaiveDate, NaiveDateTime};
-use libcalibre::dtos::{
-    author::NewAuthorDto,
-    book::NewBookDto,
-    library::{NewLibraryEntryDto, NewLibraryFileDto},
+use libcalibre::{
+    dtos::{
+        author::NewAuthorDto,
+        book::NewBookDto,
+        library::{NewLibraryEntryDto, NewLibraryFileDto},
+    },
+    Book,
 };
 use serde::{Deserialize, Serialize};
 
@@ -57,6 +60,40 @@ pub struct LibraryBook {
     pub description: Option<String>,
 
     pub is_read: bool,
+}
+
+impl LibraryBook {
+    pub fn from_book(book: &Book, library_path: &String) -> Self {
+        Self {
+            id: book.id.to_string(),
+            uuid: book.uuid.clone(),
+            title: book.title.clone(),
+            author_list: book.authors.iter().map(LibraryAuthor::from).collect(),
+            sortable_title: book.sortable_title.clone(),
+            identifier_list: book.identifiers.iter().map(Identifier::from).collect(),
+            description: book.metadata.description_html.clone(),
+            is_read: book.metadata.is_read,
+            /*
+              TODO: implement cover image extraction
+            */
+            cover_image: None,
+            file_list: book
+                .files
+                .iter()
+                .map(|f| {
+                    let file_name_with_ext = format!("{}.{}", f.name, f.format.to_lowercase());
+                    BookFile::Local(LocalFile {
+                        path: PathBuf::from(library_path)
+                            .join(book.metadata.cover_path.as_deref().unwrap_or(""))
+                            .parent()
+                            .unwrap_or(PathBuf::from(library_path).as_path())
+                            .join(file_name_with_ext),
+                        mime_type: f.format.clone(),
+                    })
+                })
+                .collect(),
+        }
+    }
 }
 
 #[derive(Serialize, specta::Type, Deserialize, Clone)]
@@ -144,4 +181,14 @@ pub struct Identifier {
     pub id: i32,
     pub label: String,
     pub value: String,
+}
+
+impl From<&libcalibre::models::Identifier> for Identifier {
+    fn from(identifier: &libcalibre::models::Identifier) -> Self {
+        Identifier {
+            id: identifier.id,
+            label: identifier.type_.clone(),
+            value: identifier.val.clone(),
+        }
+    }
 }
