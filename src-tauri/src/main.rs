@@ -1,6 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use libs::calibre;
 use specta_typescript::Typescript;
 use std::env;
 use tauri::Manager;
@@ -17,24 +18,24 @@ mod state;
 fn run_tauri_backend() -> std::io::Result<()> {
     let builder = Builder::<tauri::Wry>::new().commands(collect_commands![
         // Library and initialization commands
-        libs::calibre::init_client,
-        libs::calibre::clb_query_is_path_valid_library,
-        libs::calibre::clb_cmd_create_library,
+        calibre::init_client,
+        calibre::query::clb_query_is_path_valid_library,
+        calibre::clb_cmd_create_library,
         // Book query commands
-        libs::calibre::clb_query_list_all_books,
-        libs::calibre::clb_query_is_file_importable,
-        libs::calibre::clb_query_importable_file_metadata,
-        libs::calibre::clb_query_list_all_filetypes,
+        calibre::query::clb_query_list_all_books,
+        calibre::query::clb_query_is_file_importable,
+        calibre::query::clb_query_importable_file_metadata,
+        calibre::query::clb_query_list_all_filetypes,
         // Book manipulation commands
-        libs::calibre::clb_cmd_create_book,
-        libs::calibre::clb_cmd_update_book,
-        libs::calibre::clb_cmd_upsert_book_identifier,
-        libs::calibre::clb_cmd_delete_book_identifier,
+        calibre::clb_cmd_create_book,
+        calibre::clb_cmd_update_book,
+        calibre::clb_cmd_upsert_book_identifier,
+        calibre::clb_cmd_delete_book_identifier,
         // Author query and manipulation commands
-        libs::calibre::clb_query_list_all_authors,
-        libs::calibre::clb_cmd_create_authors,
-        libs::calibre::clb_cmd_update_author,
-        libs::calibre::clb_cmd_delete_author,
+        calibre::query::clb_query_list_all_authors,
+        calibre::clb_cmd_create_authors,
+        calibre::clb_cmd_update_author,
+        calibre::clb_cmd_delete_author,
     ]);
 
     #[cfg(debug_assertions)] // <- Only export on non-release builds
