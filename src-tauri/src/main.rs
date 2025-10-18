@@ -20,22 +20,22 @@ fn run_tauri_backend() -> std::io::Result<()> {
         // Library and initialization commands
         calibre::init_client,
         calibre::query::clb_query_is_path_valid_library,
-        calibre::clb_cmd_create_library,
+        calibre::command::clb_cmd_create_library,
         // Book query commands
         calibre::query::clb_query_list_all_books,
         calibre::query::clb_query_is_file_importable,
         calibre::query::clb_query_importable_file_metadata,
         calibre::query::clb_query_list_all_filetypes,
         // Book manipulation commands
-        calibre::clb_cmd_create_book,
-        calibre::clb_cmd_update_book,
-        calibre::clb_cmd_upsert_book_identifier,
-        calibre::clb_cmd_delete_book_identifier,
+        calibre::command::clb_cmd_create_book,
+        calibre::command::clb_cmd_update_book,
+        calibre::command::clb_cmd_upsert_book_identifier,
+        calibre::command::clb_cmd_delete_book_identifier,
         // Author query and manipulation commands
         calibre::query::clb_query_list_all_authors,
-        calibre::clb_cmd_create_authors,
-        calibre::clb_cmd_update_author,
-        calibre::clb_cmd_delete_author,
+        calibre::command::clb_cmd_create_authors,
+        calibre::command::clb_cmd_update_author,
+        calibre::command::clb_cmd_delete_author,
     ]);
 
     #[cfg(debug_assertions)] // <- Only export on non-release builds
