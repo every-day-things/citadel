@@ -1,4 +1,4 @@
-use libcalibre::{calibre_client::CalibreClient, dtos::author::NewAuthorDto};
+use libcalibre::dtos::author::NewAuthorDto;
 use serde::{Deserialize, Serialize};
 
 use crate::book::LibraryAuthor;
@@ -30,38 +30,6 @@ impl From<&NewAuthor> for NewAuthorDto {
             full_name: author.name.clone(),
             sortable_name,
             external_url: None,
-        }
-    }
-}
-
-pub fn list_all(library_root: String) -> Vec<LibraryAuthor> {
-    match libcalibre::util::get_db_path(&library_root) {
-        None => vec![],
-        Some(database_path) => {
-            let mut client = CalibreClient::new(database_path);
-
-            client
-                .list_all_authors()
-                .map(|author_list| author_list.iter().map(LibraryAuthor::from).collect())
-                .unwrap_or_default()
-        }
-    }
-}
-
-pub fn create_authors(library_root: String, new_authors: Vec<NewAuthor>) -> Vec<LibraryAuthor> {
-    match libcalibre::util::get_db_path(&library_root) {
-        None => vec![],
-        Some(database_path) => {
-            let mut client = CalibreClient::new(database_path);
-            let dtos = new_authors
-                .iter()
-                .map(NewAuthorDto::from)
-                .collect::<Vec<NewAuthorDto>>();
-
-            client
-                .create_authors(dtos)
-                .map(|author_list| author_list.iter().map(LibraryAuthor::from).collect())
-                .unwrap_or_default()
         }
     }
 }

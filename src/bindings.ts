@@ -5,8 +5,13 @@
 
 
 export const commands = {
-async initClient(libraryPath: string) : Promise<CalibreClientConfig> {
-    return await TAURI_INVOKE("init_client", { libraryPath });
+async initClient(libraryPath: string) : Promise<Result<CalibreClientConfig, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("init_client", { libraryPath }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 },
 async clbQueryIsPathValidLibrary(libraryRoot: string) : Promise<boolean> {
     return await TAURI_INVOKE("clb_query_is_path_valid_library", { libraryRoot });
@@ -19,8 +24,13 @@ async clbCmdCreateLibrary(libraryRoot: string) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async clbQueryListAllBooks(libraryRoot: string) : Promise<LibraryBook[]> {
-    return await TAURI_INVOKE("clb_query_list_all_books", { libraryRoot });
+async clbQueryListAllBooks() : Promise<Result<LibraryBook[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clb_query_list_all_books") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 },
 async clbQueryIsFileImportable(pathToFile: string) : Promise<ImportableFile | null> {
     return await TAURI_INVOKE("clb_query_is_file_importable", { pathToFile });
@@ -35,50 +45,65 @@ async clbQueryImportableFileMetadata(file: ImportableFile) : Promise<ImportableB
 async clbQueryListAllFiletypes() : Promise<([string, string])[]> {
     return await TAURI_INVOKE("clb_query_list_all_filetypes");
 },
-async clbCmdCreateBook(libraryRoot: string, md: ImportableBookMetadata) : Promise<void> {
-    await TAURI_INVOKE("clb_cmd_create_book", { libraryRoot, md });
-},
-async clbCmdUpdateBook(libraryRoot: string, bookId: string, updates: BookUpdate) : Promise<Result<number, null>> {
+async clbCmdCreateBook(md: ImportableBookMetadata) : Promise<Result<null, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("clb_cmd_update_book", { libraryRoot, bookId, updates }) };
+    return { status: "ok", data: await TAURI_INVOKE("clb_cmd_create_book", { md }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
 },
-async clbCmdUpsertBookIdentifier(libraryRoot: string, bookId: string, label: string, value: string, existingId: number | null) : Promise<Result<null, null>> {
+async clbCmdUpdateBook(bookId: string, updates: BookUpdate) : Promise<Result<number, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("clb_cmd_upsert_book_identifier", { libraryRoot, bookId, label, value, existingId }) };
+    return { status: "ok", data: await TAURI_INVOKE("clb_cmd_update_book", { bookId, updates }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
 },
-async clbCmdDeleteBookIdentifier(libraryRoot: string, bookId: string, identifierId: number) : Promise<Result<null, null>> {
+async clbCmdUpsertBookIdentifier(bookId: string, label: string, value: string, existingId: number | null) : Promise<Result<null, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("clb_cmd_delete_book_identifier", { libraryRoot, bookId, identifierId }) };
+    return { status: "ok", data: await TAURI_INVOKE("clb_cmd_upsert_book_identifier", { bookId, label, value, existingId }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
 },
-async clbQueryListAllAuthors(libraryRoot: string) : Promise<LibraryAuthor[]> {
-    return await TAURI_INVOKE("clb_query_list_all_authors", { libraryRoot });
-},
-async clbCmdCreateAuthors(libraryRoot: string, newAuthors: NewAuthor[]) : Promise<LibraryAuthor[]> {
-    return await TAURI_INVOKE("clb_cmd_create_authors", { libraryRoot, newAuthors });
-},
-async clbCmdUpdateAuthor(libraryRoot: string, authorId: string, updates: AuthorUpdate) : Promise<Result<number, null>> {
+async clbCmdDeleteBookIdentifier(bookId: string, identifierId: number) : Promise<Result<null, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("clb_cmd_update_author", { libraryRoot, authorId, updates }) };
+    return { status: "ok", data: await TAURI_INVOKE("clb_cmd_delete_book_identifier", { bookId, identifierId }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
 },
-async clbCmdDeleteAuthor(libraryRoot: string, authorId: string) : Promise<Result<null, null>> {
+async clbQueryListAllAuthors() : Promise<Result<LibraryAuthor[], string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("clb_cmd_delete_author", { libraryRoot, authorId }) };
+    return { status: "ok", data: await TAURI_INVOKE("clb_query_list_all_authors") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async clbCmdCreateAuthors(newAuthors: NewAuthor[]) : Promise<Result<LibraryAuthor[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clb_cmd_create_authors", { newAuthors }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async clbCmdUpdateAuthor(authorId: string, updates: AuthorUpdate) : Promise<Result<number, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clb_cmd_update_author", { authorId, updates }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async clbCmdDeleteAuthor(authorId: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clb_cmd_delete_author", { authorId }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };

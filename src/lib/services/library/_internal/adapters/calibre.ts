@@ -16,7 +16,11 @@ import type {
 const genLocalCalibreClient = async (
 	options: LocalConnectionOptions,
 ): Promise<Library> => {
-	const config = await commands.initClient(options.libraryPath);
+	const configResult = await commands.initClient(options.libraryPath);
+	if (configResult.status === "error") {
+		throw new Error(configResult.error);
+	}
+
 	const bookCoverCache = new Map<
 		LibraryBook["id"],
 		{
@@ -34,17 +38,20 @@ const genLocalCalibreClient = async (
 
 	return {
 		createAuthors: async (authorList: NewAuthor[]) => {
-			const results = await commands.clbCmdCreateAuthors(
-				config.library_path,
-				authorList,
-			);
-
-			return results;
+			const results = await commands.clbCmdCreateAuthors(authorList);
+			if (results.status === "error") {
+				throw new Error(results.error);
+			}
+			return results.data;
 		},
 		listBooks: async () => {
-			const results = await commands.clbQueryListAllBooks(config.library_path);
+			const results = await commands.clbQueryListAllBooks();
+			if (results.status === "error") {
+				throw new Error(results.error);
+			}
+			const books = results.data;
 
-			for (const book of results) {
+			for (const book of books) {
 				bookCoverCache.set(book.id.toString(), {
 					localPath: book.cover_image?.local_path ?? "",
 					url: book.cover_image?.url ?? "",
@@ -62,39 +69,52 @@ const genLocalCalibreClient = async (
 				}
 			}
 
-			return results;
+			return books;
 		},
-		listAuthors() {
-			return commands.clbQueryListAllAuthors(config.library_path);
+		listAuthors: async () => {
+			const results = await commands.clbQueryListAllAuthors();
+			if (results.status === "error") {
+				throw new Error(results.error);
+			}
+			return results.data;
 		},
 		sendToDevice: () => {
 			throw new Error("Not implemented");
 		},
 		updateBook: async (bookId, updates) => {
-			await commands.clbCmdUpdateBook(options.libraryPath, bookId, updates);
+			const result = await commands.clbCmdUpdateBook(bookId, updates);
+			if (result.status === "error") {
+				throw new Error(result.error);
+			}
 		},
 		updateAuthor: async (authorId, updates) => {
-			await commands.clbCmdUpdateAuthor(options.libraryPath, authorId, updates);
+			const result = await commands.clbCmdUpdateAuthor(authorId, updates);
+			if (result.status === "error") {
+				throw new Error(result.error);
+			}
 		},
 		deleteAuthor: async (authorId) => {
-			await commands.clbCmdDeleteAuthor(options.libraryPath, authorId);
-			return;
+			const result = await commands.clbCmdDeleteAuthor(authorId);
+			if (result.status === "error") {
+				throw new Error(result.error);
+			}
 		},
 		upsertBookIdentifier: async (bookId, identifierId, label, value) => {
-			await commands.clbCmdUpsertBookIdentifier(
-				options.libraryPath,
+			const result = await commands.clbCmdUpsertBookIdentifier(
 				bookId,
 				label,
 				value,
 				identifierId,
 			);
+			if (result.status === "error") {
+				throw new Error(result.error);
+			}
 		},
 		deleteBookIdentifier: async (bookId, identifierId) => {
-			await commands.clbCmdDeleteBookIdentifier(
-				options.libraryPath,
-				bookId,
-				identifierId,
-			);
+			const result = await commands.clbCmdDeleteBookIdentifier(bookId, identifierId);
+			if (result.status === "error") {
+				throw new Error(result.error);
+			}
 		},
 		getCoverPathForBook: (bookId) => {
 			return bookCoverCache.get(bookId)?.localPath;
@@ -118,7 +138,10 @@ const genLocalCalibreClient = async (
 			return result;
 		},
 		addImportableFileByMetadata: async (metadata: ImportableBookMetadata) => {
-			await commands.clbCmdCreateBook(options.libraryPath, metadata);
+			const result = await commands.clbCmdCreateBook(metadata);
+			if (result.status === "error") {
+				throw new Error(result.error);
+			}
 			return undefined;
 		},
 		listValidFileTypes: async () => {

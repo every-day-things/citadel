@@ -12,6 +12,7 @@ pub mod libs {
     mod util;
 }
 mod book;
+mod state;
 
 fn run_tauri_backend() -> std::io::Result<()> {
     let builder = Builder::<tauri::Wry>::new().commands(collect_commands![
@@ -43,6 +44,7 @@ fn run_tauri_backend() -> std::io::Result<()> {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .manage(state::CitadelState::new())
         .invoke_handler(builder.invoke_handler())
         .plugin(tauri_plugin_store::Builder::new().build())
         .setup(move |app| {

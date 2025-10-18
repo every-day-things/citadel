@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use crate::book::ImportableBookMetadata;
 use crate::book::LibraryAuthor;
 use crate::book::LibraryBook;
+use crate::state::CitadelState;
 
 use author::NewAuthor;
 use chrono::NaiveDateTime;
@@ -34,22 +35,39 @@ pub struct CalibreClientConfig {
 
 #[tauri::command]
 #[specta::specta]
-pub fn init_client(library_path: String) -> CalibreClientConfig {
-    CalibreClientConfig {
+pub fn init_client(
+    state: tauri::State<CitadelState>,
+    library_path: String,
+) -> Result<CalibreClientConfig, String> {
+    state.init_library(library_path.clone())?;
+    Ok(CalibreClientConfig {
         library_path: library_path.clone(),
-    }
+    })
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn clb_query_list_all_books(library_root: String) -> Vec<LibraryBook> {
-    book::list_all(library_root)
+pub fn clb_query_list_all_books(
+    state: tauri::State<CitadelState>,
+) -> Result<Vec<LibraryBook>, String> {
+    let library_root = state
+        .get_library_path()
+        .ok_or("No library loaded".to_string())?;
+
+    state.with_client(|client| book::list_all(library_root, client))
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn clb_query_list_all_authors(library_root: String) -> Vec<LibraryAuthor> {
-    author::list_all(library_root)
+pub fn clb_query_list_all_authors(
+    state: tauri::State<CitadelState>,
+) -> Result<Vec<LibraryAuthor>, String> {
+    state.with_client(|client| {
+        client
+            .list_all_authors()
+            .map(|author_list| author_list.iter().map(LibraryAuthor::from).collect())
+            .unwrap_or_default()
+    })
 }
 
 #[tauri::command]
@@ -99,105 +117,105 @@ pub fn clb_cmd_create_author_dir(
 
 #[tauri::command]
 #[specta::specta]
-pub fn clb_cmd_create_book(library_root: String, md: ImportableBookMetadata) {
-    let database_path = libcalibre::util::get_db_path(&library_root);
-    match database_path {
-        None => panic!("Could not find database at {}", library_root),
-        Some(database_path) => {
-            let mut calibre = CalibreClient::new(database_path);
-            let dto = md.to_new_library_entry_dto();
-            let _result = calibre.add_book(dto);
-        }
-    }
+pub fn clb_cmd_create_book(
+    state: tauri::State<CitadelState>,
+    md: ImportableBookMetadata,
+) -> Result<(), String> {
+    state.with_client(|client| {
+        let dto = md.to_new_library_entry_dto();
+        client
+            .add_book(dto)
+            .map(|_| ())
+            .map_err(|e| e.to_string())
+    })?
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn clb_cmd_upsert_book_identifier(
-    library_root: String,
+    state: tauri::State<CitadelState>,
     book_id: String,
     label: String,
     value: String,
     existing_id: Option<i32>,
-) -> Result<(), ()> {
-    match libcalibre::util::get_db_path(&library_root) {
-        None => Err(()),
-        Some(database_path) => {
-            let mut calibre = CalibreClient::new(database_path);
-
-            let book_id_int = book_id.parse::<i32>().unwrap();
-            let result = calibre.upsert_book_identifier(UpsertBookIdentifier {
+) -> Result<(), String> {
+    state.with_client(|client| {
+        let book_id_int = book_id.parse::<i32>().map_err(|e| e.to_string())?;
+        client
+            .upsert_book_identifier(UpsertBookIdentifier {
                 book_id: book_id_int,
                 id: existing_id,
                 label,
                 value,
-            });
-
-            result.map(|_| ()).map_err(|_| ())
-        }
-    }
+            })
+            .map(|_| ())
+            .map_err(|_| "Failed to upsert book identifier".to_string())
+    })?
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn clb_cmd_delete_book_identifier(
-    library_root: String,
+    state: tauri::State<CitadelState>,
     book_id: String,
     identifier_id: i32,
-) -> Result<(), ()> {
-    match libcalibre::util::get_db_path(&library_root) {
-        None => Err(()),
-        Some(database_path) => {
-            let mut calibre = CalibreClient::new(database_path);
-
-            let book_id_int = book_id.parse::<i32>().unwrap();
-            let result = calibre.delete_book_identifier(book_id_int, identifier_id);
-            result.map(|_| ()).map_err(|_| ())
-        }
-    }
+) -> Result<(), String> {
+    state.with_client(|client| {
+        let book_id_int = book_id.parse::<i32>().map_err(|e| e.to_string())?;
+        client
+            .delete_book_identifier(book_id_int, identifier_id)
+            .map(|_| ())
+            .map_err(|_| "Failed to delete book identifier".to_string())
+    })?
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn clb_cmd_update_author(
-    library_root: String,
+    state: tauri::State<CitadelState>,
     author_id: String,
     updates: AuthorUpdate,
-) -> Result<i32, ()> {
-    match libcalibre::util::get_db_path(&library_root) {
-        None => Err(()),
-        Some(database_path) => {
-            let mut calibre = CalibreClient::new(database_path);
-
-            let author_id_int = author_id.parse::<i32>().unwrap();
-            let result = calibre.update_author(author_id_int, updates.to_dto());
-
-            result.map(|entry| entry.id).map_err(|_| ())
-        }
-    }
+) -> Result<i32, String> {
+    state.with_client(|client| {
+        let author_id_int = author_id.parse::<i32>().map_err(|e| e.to_string())?;
+        client
+            .update_author(author_id_int, updates.to_dto())
+            .map(|entry| entry.id)
+            .map_err(|_| "Failed to update author".to_string())
+    })?
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn clb_cmd_delete_author(library_root: String, author_id: String) -> Result<(), ()> {
-    match libcalibre::util::get_db_path(&library_root) {
-        None => Err(()),
-        Some(database_path) => {
-            let mut calibre = CalibreClient::new(database_path);
-
-            let author_id_int = author_id.parse::<i32>().unwrap();
-            calibre.delete_author(author_id_int)
-        }
-    }
+pub fn clb_cmd_delete_author(
+    state: tauri::State<CitadelState>,
+    author_id: String,
+) -> Result<(), String> {
+    state.with_client(|client| {
+        let author_id_int = author_id.parse::<i32>().map_err(|e| e.to_string())?;
+        client
+            .delete_author(author_id_int)
+            .map_err(|_| "Failed to delete author".to_string())
+    })?
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn clb_cmd_create_authors(
-    library_root: String,
+    state: tauri::State<CitadelState>,
     new_authors: Vec<NewAuthor>,
-) -> Vec<LibraryAuthor> {
-    author::create_authors(library_root, new_authors)
+) -> Result<Vec<LibraryAuthor>, String> {
+    state.with_client(|client| {
+        let dtos = new_authors
+            .iter()
+            .map(libcalibre::dtos::author::NewAuthorDto::from)
+            .collect::<Vec<libcalibre::dtos::author::NewAuthorDto>>();
+
+        client
+            .create_authors(dtos)
+            .map(|author_list| author_list.iter().map(LibraryAuthor::from).collect())
+            .map_err(|e| e.to_string())
+    })?
 }
 
 #[derive(Serialize, Deserialize, specta::Type, Debug)]
@@ -246,21 +264,17 @@ impl AuthorUpdate {
 #[tauri::command]
 #[specta::specta]
 pub fn clb_cmd_update_book(
-    library_root: String,
+    state: tauri::State<CitadelState>,
     book_id: String,
     updates: BookUpdate,
-) -> Result<i32, ()> {
-    match libcalibre::util::get_db_path(&library_root) {
-        None => Err(()),
-        Some(database_path) => {
-            let mut calibre = CalibreClient::new(database_path);
-
-            let book_id_int = book_id.parse::<i32>().unwrap();
-            let result = calibre.update_book(book_id_int, updates.to_dto());
-
-            result.map(|entry| entry.book.id).map_err(|_| ())
-        }
-    }
+) -> Result<i32, String> {
+    state.with_client(|client| {
+        let book_id_int = book_id.parse::<i32>().map_err(|e| e.to_string())?;
+        client
+            .update_book(book_id_int, updates.to_dto())
+            .map(|entry| entry.book.id)
+            .map_err(|e| e.to_string())
+    })?
 }
 
 #[tauri::command]
