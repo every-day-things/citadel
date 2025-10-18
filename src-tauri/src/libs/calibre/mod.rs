@@ -1,4 +1,3 @@
-use std::io::Error;
 use std::path::PathBuf;
 
 use crate::book::ImportableBookMetadata;
@@ -21,8 +20,6 @@ mod book;
 
 pub mod query;
 
-use std::path::Path;
-
 #[derive(Serialize, Deserialize, specta::Type, Debug)]
 pub struct ImportableFile {
     pub(crate) path: PathBuf,
@@ -43,22 +40,6 @@ pub fn init_client(
     Ok(CalibreClientConfig {
         library_path: library_path.clone(),
     })
-}
-
-pub fn clb_cmd_create_author_dir(
-    library_root: &String,
-    author_name: String,
-) -> Result<PathBuf, Error> {
-    let author_path = Path::new(&library_root).join(author_name);
-    let author_folder = Path::new(&author_path);
-    if !author_folder.exists() {
-        match std::fs::create_dir(author_folder) {
-            Ok(_) => Ok(author_path),
-            Err(e) => Err(e),
-        }
-    } else {
-        Ok(author_path)
-    }
 }
 
 #[tauri::command]
