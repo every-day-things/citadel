@@ -10,6 +10,8 @@ pub struct Book {
     pub uuid: Option<String>,
     pub title: String,
     pub sortable_title: Option<String>,
+    /// Relative path from library root to book directory
+    pub path: String,
     pub authors: Vec<Author>,
     pub files: Vec<BookFile>,
     pub identifiers: Vec<Identifier>,
@@ -35,7 +37,7 @@ impl Book {
         is_read: bool,
     ) -> Self {
         let metadata = BookMetadata {
-            description_html: description.clone(),
+            description_html: description,
             is_read,
             cover_path: row.has_cover.and_then(|has_cover| {
                 if has_cover {
@@ -54,6 +56,7 @@ impl Book {
             uuid: row.uuid.clone(),
             sortable_title: row.sort.clone(),
             title: row.title.clone(),
+            path: row.path,
             authors,
             files,
             identifiers,

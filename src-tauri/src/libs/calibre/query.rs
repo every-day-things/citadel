@@ -26,12 +26,13 @@ pub fn clb_query_list_all_books(
 pub fn clb_query_list_all_authors(
     state: tauri::State<CitadelState>,
 ) -> Result<Vec<LibraryAuthor>, String> {
-    state.with_client(|client| {
-        client
-            .list_all_authors()
-            .map(|author_list| author_list.iter().map(LibraryAuthor::from).collect())
-    })
-    .and_then(|result| result.map_err(|e| format!("Failed to list authors: {}", e)))
+    state
+        .with_client(|client| {
+            client
+                .list_all_authors()
+                .map(|author_list| author_list.iter().map(LibraryAuthor::from).collect())
+        })
+        .and_then(|result| result.map_err(|e| format!("Failed to list authors: {}", e)))
 }
 
 #[tauri::command]
