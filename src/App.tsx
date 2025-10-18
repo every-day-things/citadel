@@ -69,19 +69,19 @@ export const App = () => {
 				const activeLibrary = settings.libraryPaths.find(
 					(library) => library.id === settings.activeLibraryId,
 				);
+
 				if (activeLibrary) {
 					setLibraryPath(activeLibrary.absolutePath);
 					setPreviousActiveLibraryId(activeLibrary.id);
 				} else {
 					setLibraryPath(null);
 				}
+				setIsLoading(false);
 			}
-
-			setIsLoading(false);
 		});
 
 		return unsub;
-	}, [previousActiveLibraryId]);
+	}, [isLoading, libraryPath, previousActiveLibraryId]);
 
 	useEffect(() => {
 		if (!isLoading) {
