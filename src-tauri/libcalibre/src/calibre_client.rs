@@ -248,11 +248,13 @@ impl CalibreClient {
             .unwrap_or(Some(false))
             .unwrap_or(false);
 
+        let identifers = self.list_identifiers_for_book(book.id)?;
+
         Ok(Book::from_db_parts(
             book,
             authors,
             files,
-            [].to_vec(),
+            identifers,
             book_desc,
             is_read,
         ))
