@@ -2282,6 +2282,7 @@ dependencies = [
  "sanitise-file-name",
  "serde",
  "serde_json",
+ "thiserror 1.0.64",
  "uuid",
 ]
 

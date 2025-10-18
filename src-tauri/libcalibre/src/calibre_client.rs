@@ -6,6 +6,7 @@ use crate::dtos::library::NewLibraryFileDto;
 use crate::dtos::library::UpdateLibraryEntryDto;
 use crate::entities::book_file::NewBookFile;
 use crate::BookRow;
+use crate::CalibreError;
 use crate::UpsertBookIdentifier;
 use chrono::DateTime;
 use chrono::Utc;
@@ -13,7 +14,6 @@ use sanitise_file_name::sanitise;
 
 use crate::BookFile;
 
-use std::error::Error;
 use std::fs;
 use std::io;
 use std::path::Path;
@@ -31,19 +31,6 @@ use crate::Author;
 use crate::Book;
 use crate::ClientV2;
 
-#[derive(Debug)]
-pub enum CalibreError {
-    DatabaseError,
-}
-
-impl std::fmt::Display for CalibreError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-impl std::error::Error for CalibreError {}
-
 pub struct CalibreClient {
     validated_library_path: ValidDbPath,
     client_v2: ClientV2,
@@ -57,10 +44,7 @@ impl CalibreClient {
         }
     }
 
-    pub fn add_book(
-        &mut self,
-        dto: NewLibraryEntryDto,
-    ) -> Result<crate::Book, Box<dyn std::error::Error>> {
+    pub fn add_book(&mut self, dto: NewLibraryEntryDto) -> Result<crate::Book, CalibreError> {
         // 1. Create Authors & Book, then link them.
         // ======================================
         let created_author_list = self.create_authors(dto.authors)?;
@@ -163,7 +147,7 @@ impl CalibreClient {
         &mut self,
         book_id: i32,
         updates: UpdateLibraryEntryDto,
-    ) -> Result<crate::Book, Box<dyn std::error::Error>> {
+    ) -> Result<crate::Book, CalibreError> {
         // Write new updates to book
         let is_read = updates.book.is_read;
         let description = updates.book.description.clone();
@@ -211,10 +195,7 @@ impl CalibreClient {
         self.find_book_with_authors(book_id)
     }
 
-    pub fn find_book_with_authors(
-        &mut self,
-        book_id: i32,
-    ) -> Result<crate::Book, Box<dyn std::error::Error>> {
+    pub fn find_book_with_authors(&mut self, book_id: i32) -> Result<crate::Book, CalibreError> {
         let book = self.client_v2.books().find_by_id(book_id).unwrap().unwrap();
         let book_desc = self.client_v2.books().get_description(book_id).unwrap();
         let author_ids = self
@@ -229,17 +210,16 @@ impl CalibreClient {
                 let authors = self.client_v2.authors().find_by_id(author_id);
                 match authors {
                     Ok(Some(author)) => Ok(author),
-                    _ => Err(ClientError::GenericError),
+                    _ => Err(CalibreError::AuthorNotFound(author_id)),
                 }
             })
-            .map(|item| item.map_err(|e| e.into()))
-            .collect::<Result<Vec<Author>, Box<dyn Error>>>()?;
+            .collect::<Result<Vec<Author>, CalibreError>>()?;
 
         let files = self
             .client_v2
             .book_files()
             .list_all_by_book_id(book.id)
-            .map_err(|_| ClientError::GenericError)?;
+            .map_err(|_| CalibreError::Database("Failed to load book files".to_string()))?;
 
         let is_read = self
             .client_v2
@@ -251,16 +231,11 @@ impl CalibreClient {
         let identifers = self.list_identifiers_for_book(book.id)?;
 
         Ok(Book::from_db_parts(
-            book,
-            authors,
-            files,
-            identifers,
-            book_desc,
-            is_read,
+            book, authors, files, identifers, book_desc, is_read,
         ))
     }
 
-    pub fn find_all(&mut self) -> Result<Vec<crate::Book>, Box<dyn std::error::Error>> {
+    pub fn find_all(&mut self) -> Result<Vec<crate::Book>, CalibreError> {
         let mut book_list = Vec::new();
         let books = self.client_v2.books().list().unwrap();
 
@@ -275,21 +250,21 @@ impl CalibreClient {
         Ok(book_list)
     }
 
-    pub fn list_all_authors(&mut self) -> Result<Vec<crate::Author>, Box<dyn std::error::Error>> {
+    pub fn list_all_authors(&mut self) -> Result<Vec<crate::Author>, CalibreError> {
         self.client_v2
             .authors()
             .list()
-            .map_err(|_| Box::new(CalibreError::DatabaseError) as Box<dyn std::error::Error>)
+            .map_err(|_| CalibreError::Database("Failed to list authors".to_string()))
     }
 
     pub fn list_identifiers_for_book(
         &mut self,
         book_id: i32,
-    ) -> Result<Vec<Identifier>, Box<dyn std::error::Error>> {
+    ) -> Result<Vec<Identifier>, CalibreError> {
         self.client_v2
             .books()
             .list_identifiers_for_book(book_id)
-            .map_err(|_| Box::new(CalibreError::DatabaseError) as Box<dyn std::error::Error>)
+            .map_err(|_| CalibreError::Database("Failed to list identifiers".to_string()))
     }
 
     pub fn update_author(
@@ -307,7 +282,7 @@ impl CalibreClient {
     pub fn create_authors(
         &mut self,
         authors: Vec<NewAuthorDto>,
-    ) -> Result<Vec<Author>, Box<dyn Error>> {
+    ) -> Result<Vec<Author>, CalibreError> {
         let x = authors
             .into_iter()
             .map(|dto| self.client_v2.authors().create_if_missing(dto).unwrap())
@@ -323,7 +298,7 @@ impl CalibreClient {
         book_id: i32,
         primary_author_name: &String,
         book_dir_rel_path: PathBuf,
-    ) -> Result<Vec<BookFile>, ClientError> {
+    ) -> Result<Vec<BookFile>, CalibreError> {
         let book_files = self.client_v2.book_files();
 
         files
@@ -338,7 +313,7 @@ impl CalibreClient {
                 .unwrap();
                 let added_book = book_files
                     .create(nbf)
-                    .map_err(|_| ClientError::GenericError)?;
+                    .map_err(|_| CalibreError::Database("Failed to create book file record".to_string()))?;
 
                 let book_rel_path = Path::new(&book_dir_rel_path).join(&added_book.as_filename());
                 let _ = library_relative_copy_file(
@@ -346,11 +321,11 @@ impl CalibreClient {
                     file.path.as_path(),
                     book_rel_path.as_path(),
                 )
-                .map_err(|_| ClientError::GenericError);
+                .map_err(|_| CalibreError::Unknown);
 
                 Ok(added_book)
             })
-            .collect::<Result<Vec<BookFile>, ClientError>>()
+            .collect::<Result<Vec<BookFile>, CalibreError>>()
     }
 
     // === Identifiers ===
@@ -376,7 +351,7 @@ impl CalibreClient {
                 .execute(&mut c)
                 .expect("Failed to set new UUID");
         })
-        .map_err(|_| CalibreError::DatabaseError)
+        .map_err(|_| CalibreError::Database("Failed to randomize library UUID".to_string()))
     }
 }
 
@@ -519,17 +494,6 @@ impl<'a> MetadataOpf<'a> {
         )
     }
 }
-
-#[derive(Debug)]
-enum ClientError {
-    GenericError,
-}
-impl std::fmt::Display for ClientError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-impl std::error::Error for ClientError {}
 
 /// Create a new directory at a library-relative path.
 /// Convenience function to avoid having absolute paths for files everywhere.
