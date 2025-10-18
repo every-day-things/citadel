@@ -311,9 +311,9 @@ impl CalibreClient {
                     name: book_file_name,
                 })
                 .unwrap();
-                let added_book = book_files
-                    .create(nbf)
-                    .map_err(|_| CalibreError::Database("Failed to create book file record".to_string()))?;
+                let added_book = book_files.create(nbf).map_err(|_| {
+                    CalibreError::Database("Failed to create book file record".to_string())
+                })?;
 
                 let book_rel_path = Path::new(&book_dir_rel_path).join(&added_book.as_filename());
                 let _ = library_relative_copy_file(
