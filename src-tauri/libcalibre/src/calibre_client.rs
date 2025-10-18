@@ -5,7 +5,7 @@ use crate::dtos::library::NewLibraryEntryDto;
 use crate::dtos::library::NewLibraryFileDto;
 use crate::dtos::library::UpdateLibraryEntryDto;
 use crate::entities::book_file::NewBookFile;
-use crate::Book;
+use crate::BookRow;
 use crate::UpsertBookIdentifier;
 use chrono::DateTime;
 use chrono::Utc;
@@ -23,12 +23,12 @@ use diesel::RunQueryDsl;
 
 use crate::dtos::author::NewAuthorDto;
 
-use crate::entities::book::{NewBook, UpdateBookData};
+use crate::entities::book_row::{NewBook, UpdateBookData};
 use crate::models::Identifier;
 use crate::persistence::establish_connection;
 use crate::util::ValidDbPath;
 use crate::Author;
-use crate::BookWithAuthorsAndFiles;
+use crate::Book;
 use crate::ClientV2;
 
 #[derive(Debug)]
@@ -60,7 +60,7 @@ impl CalibreClient {
     pub fn add_book(
         &mut self,
         dto: NewLibraryEntryDto,
-    ) -> Result<crate::BookWithAuthorsAndFiles, Box<dyn std::error::Error>> {
+    ) -> Result<crate::Book, Box<dyn std::error::Error>> {
         // 1. Create Authors & Book, then link them.
         // ======================================
         let created_author_list = self.create_authors(dto.authors)?;
@@ -149,20 +149,21 @@ impl CalibreClient {
             Err(_) => (),
         };
 
-        Ok(BookWithAuthorsAndFiles {
+        Ok(Book::from_db_parts(
             book,
-            authors: created_author_list,
-            files: created_files,
-            book_description_html: None,
-            is_read: false,
-        })
+            created_author_list,
+            created_files,
+            [].to_vec(),
+            None,
+            false,
+        ))
     }
 
     pub fn update_book(
         &mut self,
         book_id: i32,
         updates: UpdateLibraryEntryDto,
-    ) -> Result<crate::BookWithAuthorsAndFiles, Box<dyn std::error::Error>> {
+    ) -> Result<crate::Book, Box<dyn std::error::Error>> {
         // Write new updates to book
         let is_read = updates.book.is_read;
         let description = updates.book.description.clone();
@@ -213,7 +214,7 @@ impl CalibreClient {
     pub fn find_book_with_authors(
         &mut self,
         book_id: i32,
-    ) -> Result<crate::BookWithAuthorsAndFiles, Box<dyn std::error::Error>> {
+    ) -> Result<crate::Book, Box<dyn std::error::Error>> {
         let book = self.client_v2.books().find_by_id(book_id).unwrap().unwrap();
         let book_desc = self.client_v2.books().get_description(book_id).unwrap();
         let author_ids = self
@@ -247,18 +248,17 @@ impl CalibreClient {
             .unwrap_or(Some(false))
             .unwrap_or(false);
 
-        Ok(BookWithAuthorsAndFiles {
+        Ok(Book::from_db_parts(
             book,
             authors,
             files,
-            book_description_html: book_desc,
+            [].to_vec(),
+            book_desc,
             is_read,
-        })
+        ))
     }
 
-    pub fn find_all(
-        &mut self,
-    ) -> Result<Vec<crate::BookWithAuthorsAndFiles>, Box<dyn std::error::Error>> {
+    pub fn find_all(&mut self) -> Result<Vec<crate::Book>, Box<dyn std::error::Error>> {
         let mut book_list = Vec::new();
         let books = self.client_v2.books().list().unwrap();
 
@@ -417,13 +417,13 @@ fn gen_book_folder_name(book_name: &String, book_id: i32) -> String {
 }
 
 struct MetadataOpf<'a> {
-    book: &'a Book,
+    book: &'a BookRow,
     author_list: &'a Vec<Author>,
     now: DateTime<Utc>,
 }
 
 impl<'a> MetadataOpf<'a> {
-    pub fn new(book: &'a Book, author_list: &'a Vec<Author>, now: DateTime<Utc>) -> Self {
+    pub fn new(book: &'a BookRow, author_list: &'a Vec<Author>, now: DateTime<Utc>) -> Self {
         Self {
             book,
             author_list,
@@ -477,7 +477,7 @@ impl<'a> MetadataOpf<'a> {
 
     fn format_metadata_opf(
         &self,
-        book: &Book,
+        book: &BookRow,
         authors_string: &String,
         tags_string: &String,
         now: &DateTime<Utc>,

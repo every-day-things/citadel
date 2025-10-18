@@ -1,57 +1,63 @@
 use chrono::NaiveDateTime;
-use diesel::prelude::*;
 
-use serde::Deserialize;
+use crate::entities::book_row::BookRow;
+use crate::entities::{author::Author, book_file::BookFile};
+use crate::models::Identifier;
 
-use crate::schema::books;
-
-#[derive(Clone, Debug, Queryable, Selectable, Identifiable, AsChangeset)]
-#[diesel(table_name = books)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+#[derive(Debug, Clone)]
 pub struct Book {
     pub id: i32,
     pub uuid: Option<String>,
     pub title: String,
-    pub sort: Option<String>,
-    pub timestamp: Option<NaiveDateTime>,
-    pub pubdate: Option<NaiveDateTime>,
-    pub series_index: f32,
-    pub author_sort: Option<String>,
-    pub path: String,
-    pub flags: i32,
-    pub has_cover: Option<bool>,
-    pub last_modified: NaiveDateTime,
+    pub sortable_title: Option<String>,
+    pub authors: Vec<Author>,
+    pub files: Vec<BookFile>,
+    pub identifiers: Vec<Identifier>,
+    pub metadata: BookMetadata,
 }
 
-#[derive(Insertable)]
-#[diesel(table_name = books)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
-pub struct NewBook {
-    pub title: String,
-    pub timestamp: Option<NaiveDateTime>,
-    pub pubdate: Option<NaiveDateTime>,
-    pub series_index: f32,
-    pub flags: i32,
-    pub has_cover: Option<bool>,
+#[derive(Debug, Clone)]
+pub struct BookMetadata {
+    /// A partially HTML-formatted description of the book. User-editable.
+    pub description_html: Option<String>,
+    pub is_read: bool,
+    pub cover_path: Option<String>,
+    pub added_data: NaiveDateTime,
 }
 
-#[derive(Deserialize, AsChangeset, Default, Debug)]
-#[diesel(table_name = books)]
-pub struct UpdateBookData {
-    pub(crate) author_sort: Option<String>,
-    pub(crate) title: Option<String>,
-    pub(crate) timestamp: Option<NaiveDateTime>,
-    pub(crate) pubdate: Option<NaiveDateTime>,
-    pub(crate) series_index: Option<f32>,
-    pub(crate) path: Option<String>,
-    pub(crate) flags: Option<i32>,
-    pub(crate) has_cover: Option<bool>,
-}
+impl Book {
+    pub(crate) fn from_db_parts(
+        row: BookRow,
+        authors: Vec<Author>,
+        files: Vec<BookFile>,
+        identifiers: Vec<Identifier>,
+        description: Option<String>,
+        is_read: bool,
+    ) -> Self {
+        let metadata = BookMetadata {
+            description_html: description.clone(),
+            is_read,
+            cover_path: row.has_cover.and_then(|has_cover| {
+                if has_cover {
+                    Some(format!("{}/cover.jpg", row.path))
+                } else {
+                    None
+                }
+            }),
+            added_data: row
+                .timestamp
+                .unwrap_or_else(|| chrono::Utc::now().naive_utc()),
+        };
 
-#[derive(Deserialize, Default, Debug)]
-pub struct UpsertBookIdentifier {
-    pub book_id: i32,
-    pub id: Option<i32>,
-    pub label: String,
-    pub value: String,
+        Self {
+            id: row.id,
+            uuid: row.uuid.clone(),
+            sortable_title: row.sort.clone(),
+            title: row.title.clone(),
+            authors,
+            files,
+            identifiers,
+            metadata,
+        }
+    }
 }

@@ -5,7 +5,7 @@ pub mod db;
 pub mod dtos;
 mod entities;
 pub mod mime_type;
-mod models;
+pub mod models;
 pub mod persistence;
 mod schema;
 pub mod util;
@@ -14,8 +14,8 @@ use diesel::SqliteConnection;
 use std::sync::{Arc, Mutex};
 
 pub use entities::{
-    author::Author, book::Book, book::UpsertBookIdentifier,
-    book_aggregate::BookWithAuthorsAndFiles, book_file::BookFile,
+    author::Author, book::Book, book_file::BookFile, book_row::BookRow,
+    book_row::UpsertBookIdentifier,
 };
 
 pub struct ClientV2 {

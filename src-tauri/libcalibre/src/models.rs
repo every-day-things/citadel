@@ -1,6 +1,6 @@
 use diesel::prelude::*;
 
-use crate::entities::book::Book;
+use crate::entities::book_row::BookRow;
 
 use super::schema::*;
 
@@ -15,7 +15,7 @@ pub struct Author {
 }
 
 #[derive(Identifiable, Associations, Queryable, Selectable, Insertable)]
-#[diesel(belongs_to(Book, foreign_key = book))]
+#[diesel(belongs_to(BookRow, foreign_key = book))]
 #[diesel(belongs_to(Author, foreign_key = author))]
 #[diesel(table_name = books_authors_link)]
 pub struct BookAuthorLink {
@@ -24,7 +24,7 @@ pub struct BookAuthorLink {
     pub author: i32,
 }
 
-#[derive(Queryable, Selectable)]
+#[derive(Queryable, Selectable, Clone, Debug)]
 #[diesel(table_name = identifiers)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct Identifier {

@@ -12,8 +12,8 @@ use serde::Serialize;
 mod author;
 mod book;
 
-pub mod query;
 pub mod command;
+pub mod query;
 
 #[derive(Serialize, Deserialize, specta::Type, Debug)]
 pub struct ImportableFile {

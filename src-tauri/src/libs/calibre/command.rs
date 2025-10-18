@@ -4,8 +4,8 @@ use tauri::Manager;
 use crate::book::ImportableBookMetadata;
 use crate::book::LibraryAuthor;
 use crate::calibre::author::NewAuthor;
-use libcalibre::UpsertBookIdentifier;
 use crate::state::CitadelState;
+use libcalibre::UpsertBookIdentifier;
 
 use super::AuthorUpdate;
 use super::BookUpdate;
@@ -21,7 +21,7 @@ pub fn clb_cmd_update_book(
         let book_id_int = book_id.parse::<i32>().map_err(|e| e.to_string())?;
         client
             .update_book(book_id_int, updates.to_dto())
-            .map(|entry| entry.book.id)
+            .map(|entry| entry.id)
             .map_err(|e| e.to_string())
     })?
 }

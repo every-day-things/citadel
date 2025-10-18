@@ -6,9 +6,9 @@ use diesel::sql_query;
 use diesel::sql_types::Integer;
 use diesel::QueryableByName;
 
-use crate::entities::book::{NewBook, UpdateBookData, UpsertBookIdentifier};
+use crate::entities::book_row::{NewBook, UpdateBookData, UpsertBookIdentifier};
 use crate::models::Identifier;
-use crate::Book;
+use crate::BookRow;
 
 #[derive(QueryableByName)]
 struct CustomValue {
@@ -25,13 +25,13 @@ impl BooksHandler {
         Self { client }
     }
 
-    pub fn create(&self, new_book: NewBook) -> Result<Book, ()> {
+    pub fn create(&self, new_book: NewBook) -> Result<BookRow, ()> {
         use crate::schema::books::dsl::*;
         let mut connection = self.client.lock().unwrap();
 
         let b = diesel::insert_into(books)
             .values(new_book)
-            .returning(Book::as_returning())
+            .returning(BookRow::as_returning())
             .get_result(&mut *connection)
             .expect("Error saving new book");
 
@@ -44,36 +44,36 @@ impl BooksHandler {
         Ok(book_generated)
     }
 
-    pub fn list(&self) -> Result<Vec<Book>, ()> {
+    pub fn list(&self) -> Result<Vec<BookRow>, ()> {
         use crate::schema::books::dsl::*;
         let mut connection = self.client.lock().unwrap();
 
         books
-            .select(Book::as_select())
-            .load::<Book>(&mut *connection)
+            .select(BookRow::as_select())
+            .load::<BookRow>(&mut *connection)
             .or(Err(()))
     }
 
-    pub fn update(&mut self, book_id: i32, book: UpdateBookData) -> Result<Book, ()> {
+    pub fn update(&mut self, book_id: i32, book: UpdateBookData) -> Result<BookRow, ()> {
         use crate::schema::books::dsl::*;
         let mut connection = self.client.lock().unwrap();
 
         diesel::update(books)
             .filter(id.eq(book_id))
             .set(book)
-            .returning(Book::as_returning())
+            .returning(BookRow::as_returning())
             .get_result(&mut *connection)
             .or(Err(()))
     }
 
-    pub fn find_by_id(&mut self, search_id: i32) -> Result<Option<Book>, ()> {
+    pub fn find_by_id(&mut self, search_id: i32) -> Result<Option<BookRow>, ()> {
         use crate::schema::books::dsl::*;
         let mut connection = self.client.lock().unwrap();
 
         books
             .filter(id.eq(search_id))
-            .select(Book::as_select())
-            .get_result::<Book>(&mut *connection)
+            .select(BookRow::as_select())
+            .get_result::<BookRow>(&mut *connection)
             .optional()
             .or(Err(()))
     }
