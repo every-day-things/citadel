@@ -80,15 +80,15 @@ impl LibraryBook {
             file_list: book
                 .files
                 .iter()
-                .map(|f| {
-                    let file_name_with_ext = format!("{}.{}", f.name, f.format.to_lowercase());
+                .map(|file| {
+                    let file_name_with_ext =
+                        format!("{}.{}", file.name, file.format.to_lowercase());
+
                     BookFile::Local(LocalFile {
                         path: PathBuf::from(library_path)
-                            .join(book.metadata.cover_path.as_deref().unwrap_or(""))
-                            .parent()
-                            .unwrap_or(PathBuf::from(library_path).as_path())
+                            .join(book.path.clone())
                             .join(file_name_with_ext),
-                        mime_type: f.format.clone(),
+                        mime_type: file.format.clone(),
                     })
                 })
                 .collect(),
