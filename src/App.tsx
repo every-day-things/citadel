@@ -56,6 +56,7 @@ export const App = () => {
 
 	// Update the library path whenever the settings change (e.g. user changes the
 	// active library)
+	// biome-ignore lint/correctness/useExhaustiveDependencies: More to be done here, but this fixes the immediate issue
 	useEffect(() => {
 		// Update the active library's path whenever the activeLibraryId changes
 		const unsub = settingsStore.subscribe((settings) => {
