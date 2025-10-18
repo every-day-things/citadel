@@ -22,7 +22,7 @@ pub struct BookMetadata {
     pub description_html: Option<String>,
     pub is_read: bool,
     pub cover_path: Option<String>,
-    pub added_data: NaiveDateTime,
+    pub added_date: NaiveDateTime,
 }
 
 impl Book {
@@ -44,7 +44,7 @@ impl Book {
                     None
                 }
             }),
-            added_data: row
+            added_date: row
                 .timestamp
                 .unwrap_or_else(|| chrono::Utc::now().naive_utc()),
         };
