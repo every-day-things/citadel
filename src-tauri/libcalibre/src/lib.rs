@@ -1,7 +1,7 @@
 mod api;
 pub mod calibre_client;
-pub mod db;
 mod cover_image;
+pub mod db;
 pub mod dtos;
 mod entities;
 pub mod mime_type;

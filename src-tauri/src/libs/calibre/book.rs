@@ -69,42 +69,35 @@ fn book_cover_image(library_root: &String, book: &libcalibre::Book) -> Option<Lo
     }
 }
 
-pub fn list_all(library_root: String) -> Vec<LibraryBook> {
-    match libcalibre::util::get_db_path(&library_root) {
-        None => vec![],
-        Some(database_path) => {
-            let mut calibre = CalibreClient::new(database_path);
+pub fn list_all(library_root: String, calibre: &mut CalibreClient) -> Vec<LibraryBook> {
+    let results = calibre.find_all().expect("Could not load books from DB");
 
-            let results = calibre.find_all().expect("Could not load books from DB");
-
-            results
+    results
+        .iter()
+        .map(|b| {
+            let identifer_list: Vec<_> = calibre
+                .list_identifiers_for_book(b.book.id)
+                .unwrap_or(Vec::new())
                 .iter()
-                .map(|b| {
-                    let identifer_list: Vec<_> = calibre
-                        .list_identifiers_for_book(b.book.id)
-                        .unwrap_or(Vec::new())
-                        .iter()
-                        .map(|identifier| Identifier {
-                            label: identifier.type_.clone(),
-                            value: identifier.val.clone(),
-                            id: identifier.id,
-                        })
-                        .collect();
-
-                    let mut calibre_book = to_library_book(
-                        &library_root,
-                        &b.book,
-                        b.authors.clone(),
-                        b.files.clone(),
-                        identifer_list,
-                        b.book_description_html.clone(),
-                        Some(b.is_read),
-                    );
-                    calibre_book.cover_image = book_cover_image(&library_root, &b.book);
-
-                    calibre_book
+                .map(|identifier| Identifier {
+                    label: identifier.type_.clone(),
+                    value: identifier.val.clone(),
+                    id: identifier.id,
                 })
-                .collect()
-        }
-    }
+                .collect();
+
+            let mut calibre_book = to_library_book(
+                &library_root,
+                &b.book,
+                b.authors.clone(),
+                b.files.clone(),
+                identifer_list,
+                b.book_description_html.clone(),
+                Some(b.is_read),
+            );
+            calibre_book.cover_image = book_cover_image(&library_root, &b.book);
+
+            calibre_book
+        })
+        .collect()
 }
