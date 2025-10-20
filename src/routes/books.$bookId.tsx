@@ -1,10 +1,12 @@
-import type {
-	BookUpdate,
-	NewAuthor,
-} from "@/bindings";
+import type { BookUpdate, NewAuthor } from "@/bindings";
 import { BookPage } from "@/components/pages/EditBook";
-import { LibraryState, useBooks, useAuthors, useLibraryState } from "@/stores/library/store";
-import { useLibraryActions } from "@/stores/library/actions";
+import {
+	LibraryState,
+	useBooks,
+	useAuthors,
+	useLibraryActions,
+	useLibraryState,
+} from "@/stores/library/store";
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useCallback, useMemo } from "react";
 
@@ -20,7 +22,7 @@ const EditBookRoute = () => {
 	// Find the book from the store
 	const book = useMemo(
 		() => books.find((b) => b.id === bookId),
-		[books, bookId]
+		[books, bookId],
 	);
 
 	const onSave = useCallback(
@@ -80,7 +82,9 @@ const EditBookRoute = () => {
 		<BookPage
 			allAuthorList={allAuthorList}
 			book={book}
-			onCreateAuthor={async (name) => { await onCreateAuthor(name); }}
+			onCreateAuthor={async (name) => {
+				await onCreateAuthor(name);
+			}}
 			onSave={onSave}
 			onUpsertIdentifier={onUpsertIdentifier}
 			onDeleteIdentifier={onDeleteIdentifier}

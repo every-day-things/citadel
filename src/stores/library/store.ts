@@ -1,7 +1,14 @@
 import { create } from "zustand";
 import { open as dialogOpen } from "@tauri-apps/plugin-dialog";
 
-import type { ImportableBookMetadata, LibraryAuthor, LibraryBook } from "@/bindings";
+import type {
+	AuthorUpdate,
+	BookUpdate,
+	ImportableBookMetadata,
+	LibraryAuthor,
+	LibraryBook,
+	NewAuthor,
+} from "@/bindings";
 import { commands } from "@/bindings";
 import type { Library, Options } from "@/lib/services/library";
 import { initClient } from "@/lib/services/library";
@@ -12,6 +19,39 @@ export enum LibraryState {
 	initializing = "initializing",
 	ready = "ready",
 	error = "error",
+}
+
+interface LibraryActions {
+	// Core actions
+	loadBooks: () => Promise<void>;
+	loadAuthors: () => Promise<void>;
+	initialize: (libraryPath: string) => Promise<void>;
+	reset: () => void;
+
+	// Mutations
+	invalidateBooks: () => void;
+	invalidateAuthors: () => void;
+
+	// Library management
+	createLibrary: (libraryRoot: string) => Promise<void>;
+	promptToAddBook: () => Promise<ImportableBookMetadata | undefined>;
+	commitAddBook: (
+		metadata: ImportableBookMetadata,
+	) => Promise<string | undefined>;
+
+	// Book and author mutations
+	updateBook: (bookId: string, updates: BookUpdate) => Promise<void>;
+	updateAuthor: (authorId: string, updates: AuthorUpdate) => Promise<void>;
+	createAuthors: (newAuthors: NewAuthor[]) => Promise<void>;
+	deleteAuthor: (authorId: string) => Promise<void>;
+	deleteBookIdentifier: (bookId: string, identifierId: number) => Promise<void>;
+	upsertBookIdentifier: (
+		bookId: string,
+		identifierId: number | null,
+		label: string,
+		value: string,
+	) => Promise<void>;
+	addBook: (metadata: ImportableBookMetadata) => Promise<string | undefined>;
 }
 
 interface LibraryStoreState {
@@ -30,20 +70,8 @@ interface LibraryStoreState {
 	authorsLoading: boolean;
 	authorsError: string | null;
 
-	// Actions
-	loadBooks: () => Promise<void>;
-	loadAuthors: () => Promise<void>;
-	initialize: (libraryPath: string) => Promise<void>;
-	reset: () => void;
-
-	// Mutations (update store directly after API calls)
-	invalidateBooks: () => void;
-	invalidateAuthors: () => void;
-
-	// Library management actions
-	createLibrary: (libraryRoot: string) => Promise<void>;
-	promptToAddBook: () => Promise<ImportableBookMetadata | undefined>;
-	commitAddBook: (metadata: ImportableBookMetadata) => Promise<string | undefined>;
+	// Stable actions object containing ALL actions
+	actions: LibraryActions;
 }
 
 const initialState = {
@@ -67,143 +95,221 @@ const localLibraryFromPath = (path: string): Options => ({
 export const useLibraryStore = create<LibraryStoreState>((set, get) => ({
 	...initialState,
 
-	loadBooks: async () => {
-		const { library } = get();
-		if (!library) return;
+	// Stable actions object - ALL actions go here, created once and never change
+	actions: {
+		loadBooks: async () => {
+			const { library } = get();
+			if (!library) return;
 
-		set({ booksLoading: true, booksError: null });
-		try {
-			const books = await library.listBooks();
-			set({ books, booksLoading: false });
-		} catch (error) {
-			set({
-				booksError: error instanceof Error ? error.message : "Failed to load books",
-				booksLoading: false,
+			set({ booksLoading: true, booksError: null });
+			try {
+				const books = await library.listBooks();
+				set({ books, booksLoading: false });
+			} catch (error) {
+				set({
+					booksError:
+						error instanceof Error ? error.message : "Failed to load books",
+					booksLoading: false,
+				});
+			}
+		},
+
+		loadAuthors: async () => {
+			const { library } = get();
+			if (!library) return;
+
+			set({ authorsLoading: true, authorsError: null });
+			try {
+				const authors = await library.listAuthors();
+				set({ authors: authors.sort(sortAuthors), authorsLoading: false });
+			} catch (error) {
+				set({
+					authorsError:
+						error instanceof Error ? error.message : "Failed to load authors",
+					authorsLoading: false,
+				});
+			}
+		},
+
+		initialize: async (libraryPath: string) => {
+			const actions = get().actions;
+
+			set({ libraryState: LibraryState.initializing, libraryError: null });
+
+			try {
+				const library = await initClient(localLibraryFromPath(libraryPath));
+				set({ library });
+
+				await Promise.all([actions.loadBooks(), actions.loadAuthors()]);
+
+				set({ libraryState: LibraryState.ready });
+			} catch (error) {
+				console.error("Failed to initialize library:", error);
+				set({
+					libraryState: LibraryState.error,
+					libraryError:
+						error instanceof Error ? error : new Error(String(error)),
+				});
+			}
+		},
+
+		invalidateBooks: () => {
+			set({ booksLoading: true });
+		},
+
+		invalidateAuthors: () => {
+			set({ authorsLoading: true });
+		},
+
+		reset: () => {
+			set(initialState);
+		},
+
+		createLibrary: async (libraryRoot: string) => {
+			const create = await commands.clbCmdCreateLibrary(libraryRoot);
+			if (create.status === "error") {
+				console.error("Failed to create library", create.error);
+				return;
+			}
+		},
+
+		promptToAddBook: async () => {
+			const { library } = get();
+			if (!library) return;
+
+			const validExtensions = (await library.listValidFileTypes()).map(
+				(type) => type.extension,
+			);
+			const filePath = await dialogOpen({
+				multiple: false,
+				directory: false,
+				filters: [
+					{
+						name: "Importable files",
+						extensions: validExtensions,
+					},
+				],
 			});
-		}
-	},
 
-	loadAuthors: async () => {
-		const { library } = get();
-		if (!library) return;
+			if (!filePath) {
+				return;
+			}
 
-		set({ authorsLoading: true, authorsError: null });
-		try {
-			const authors = await library.listAuthors();
-			set({ authors: authors.sort(sortAuthors), authorsLoading: false });
-		} catch (error) {
-			set({
-				authorsError: error instanceof Error ? error.message : "Failed to load authors",
-				authorsLoading: false,
-			});
-		}
-	},
+			if (Array.isArray(filePath)) {
+				throw new Error("Multiple file selection not supported");
+			}
 
-	initialize: async (libraryPath: string) => {
-		const state = get();
+			const importableFile = await library.checkFileImportable(filePath);
+			if (!importableFile) {
+				console.error(`File ${filePath} not importable`);
+				return;
+			}
+			const metadata = await library.getImportableFileMetadata(importableFile);
+			if (!metadata) {
+				console.error(`Failed to get metadata for file at ${filePath}`);
+				return;
+			}
 
-		set({ libraryState: LibraryState.initializing, libraryError: null });
+			return metadata;
+		},
 
-		try {
-			const library = await initClient(localLibraryFromPath(libraryPath));
-			set({ library });
+		commitAddBook: async (metadata: ImportableBookMetadata) => {
+			const { library } = get();
+			if (!library) return;
 
-			await Promise.all([
-				state.loadBooks(),
-				state.loadAuthors(),
-			]);
+			const bookId = await library.addImportableFileByMetadata(metadata);
+			return bookId;
+		},
+		updateBook: async (bookId: string, updates: BookUpdate): Promise<void> => {
+			const { library } = get();
+			if (!library) throw new Error("Library not initialized");
+			await library.updateBook(bookId, updates);
+			await get().actions.loadBooks();
+		},
 
-			set({ libraryState: LibraryState.ready });
-		} catch (error) {
-			console.error("Failed to initialize library:", error);
-			set({ 
-				libraryState: LibraryState.error,
-				libraryError: error instanceof Error ? error : new Error(String(error))
-			});
-		}
-	},
+		updateAuthor: async (
+			authorId: string,
+			updates: AuthorUpdate,
+		): Promise<void> => {
+			const { library } = get();
+			if (!library) throw new Error("Library not initialized");
+			await library.updateAuthor(authorId, updates);
+			await get().actions.loadAuthors();
+		},
 
-	invalidateBooks: () => {
-		set({ booksLoading: true });
-	},
+		createAuthors: async (newAuthors: NewAuthor[]): Promise<void> => {
+			const { library } = get();
+			if (!library) throw new Error("Library not initialized");
+			await library.createAuthors(newAuthors);
+			await get().actions.loadAuthors();
+		},
 
-	invalidateAuthors: () => {
-		set({ authorsLoading: true });
-	},
+		deleteAuthor: async (authorId: string): Promise<void> => {
+			const { library } = get();
+			if (!library) throw new Error("Library not initialized");
+			await library.deleteAuthor(authorId);
+			await get().actions.loadAuthors();
+		},
 
-	reset: () => {
-		set(initialState);
-	},
+		deleteBookIdentifier: async (
+			bookId: string,
+			identifierId: number,
+		): Promise<void> => {
+			const { library } = get();
+			if (!library) throw new Error("Library not initialized");
+			await library.deleteBookIdentifier(bookId, identifierId);
+			await get().actions.loadBooks();
+		},
 
-	createLibrary: async (libraryRoot: string) => {
-		const create = await commands.clbCmdCreateLibrary(libraryRoot);
-		if (create.status === "error") {
-			console.error("Failed to create library", create.error);
-			return;
-		}
-	},
+		upsertBookIdentifier: async (
+			bookId: string,
+			identifierId: number | null,
+			label: string,
+			value: string,
+		): Promise<void> => {
+			const { library } = get();
+			if (!library) throw new Error("Library not initialized");
+			await library.upsertBookIdentifier(bookId, identifierId, label, value);
+			await get().actions.loadBooks();
+		},
 
-	promptToAddBook: async () => {
-		const { library } = get();
-		if (!library) return;
-
-		const validExtensions = (await library.listValidFileTypes()).map(
-			(type) => type.extension,
-		);
-		const filePath = await dialogOpen({
-			multiple: false,
-			directory: false,
-			filters: [
-				{
-					name: "Importable files",
-					extensions: validExtensions,
-				},
-			],
-		});
-
-		if (!filePath) {
-			return;
-		}
-
-		if (Array.isArray(filePath)) {
-			throw new Error("Multiple file selection not supported");
-		}
-
-		const importableFile = await library.checkFileImportable(filePath);
-		if (!importableFile) {
-			console.error(`File ${filePath} not importable`);
-			return;
-		}
-		const metadata = await library.getImportableFileMetadata(importableFile);
-		if (!metadata) {
-			console.error(`Failed to get metadata for file at ${filePath}`);
-			return;
-		}
-
-		return metadata;
-	},
-
-	commitAddBook: async (metadata: ImportableBookMetadata) => {
-		const { library } = get();
-		if (!library) return;
-
-		const bookId = await library.addImportableFileByMetadata(metadata);
-		return bookId;
+		addBook: async (
+			metadata: ImportableBookMetadata,
+		): Promise<string | undefined> => {
+			const { library } = get();
+			if (!library) throw new Error("Library not initialized");
+			const bookId = await library.addImportableFileByMetadata(metadata);
+			if (bookId) {
+				await get().actions.loadBooks();
+			}
+			return bookId;
+		},
 	},
 }));
 
 // Selectors for library state
-export const useLibraryState = () => useLibraryStore((state) => state.libraryState);
-export const useLibraryReady = () => useLibraryStore((state) => state.libraryState === LibraryState.ready);
-export const useLibraryInitializing = () => useLibraryStore((state) => state.libraryState === LibraryState.initializing);
-export const useLibraryError = () => useLibraryStore((state) => state.libraryError);
+export const useLibraryState = () =>
+	useLibraryStore((state) => state.libraryState);
+export const useLibraryReady = () =>
+	useLibraryStore((state) => state.libraryState === LibraryState.ready);
+export const useLibraryInitializing = () =>
+	useLibraryStore((state) => state.libraryState === LibraryState.initializing);
+export const useLibraryError = () =>
+	useLibraryStore((state) => state.libraryError);
 
 // Selectors for books
 export const useBooks = () => useLibraryStore((state) => state.books);
-export const useBooksLoading = () => useLibraryStore((state) => state.booksLoading);
+export const useBooksLoading = () =>
+	useLibraryStore((state) => state.booksLoading);
 export const useBooksError = () => useLibraryStore((state) => state.booksError);
 
 // Selectors for authors
 export const useAuthors = () => useLibraryStore((state) => state.authors);
-export const useAuthorsLoading = () => useLibraryStore((state) => state.authorsLoading);
-export const useAuthorsError = () => useLibraryStore((state) => state.authorsError);
+export const useAuthorsLoading = () =>
+	useLibraryStore((state) => state.authorsLoading);
+export const useAuthorsError = () =>
+	useLibraryStore((state) => state.authorsError);
+
+// Selector for stable actions object
+export const useLibraryActions = () =>
+	useLibraryStore((state) => state.actions);

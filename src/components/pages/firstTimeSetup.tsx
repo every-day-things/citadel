@@ -7,7 +7,7 @@ import { setActiveLibrary } from "@/stores/settings/actions";
 import { Button, Stack, Text, Title } from "@mantine/core";
 
 export const FirstTimeSetup = () => {
-	const createCalibreLibrary = useLibraryStore((state) => state.createLibrary);
+	const actions = useLibraryStore((state) => state.actions);
 
 	const openFilePicker = async (): Promise<
 		| { type: "existing library selected"; path: string }
@@ -40,7 +40,7 @@ export const FirstTimeSetup = () => {
 					}
 
 					if (returnStatus.type === "new library selected") {
-						await createCalibreLibrary(returnStatus.path);
+						await actions.createLibrary(returnStatus.path);
 					}
 					const newLibraryId = await createLibrary(returnStatus.path);
 					await setActiveLibrary(newLibraryId);

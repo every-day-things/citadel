@@ -1,6 +1,10 @@
 import { NewAuthor, type ImportableBookMetadata } from "@/bindings";
-import { useLibraryActions } from "@/stores/library/actions";
-import { LibraryState, useAuthors, useLibraryState, useLibraryStore } from "@/stores/library/store";
+import {
+	LibraryState,
+	useAuthors,
+	useLibraryActions,
+	useLibraryState,
+} from "@/stores/library/store";
 import {
 	ActionIcon,
 	Button,
@@ -30,7 +34,6 @@ export const Sidebar = () => {
 	const { open: openLibrarySelectModal } = useLibrarySelectModal();
 	const actions = useLibraryActions();
 	const authors = useAuthors();
-	const promptToAddBook = useLibraryStore((state) => state.promptToAddBook);
 
 	const [metadata, setMetadata] = useState<ImportableBookMetadata | null>();
 
@@ -55,13 +58,14 @@ export const Sidebar = () => {
 
 	const authorList = useMemo(
 		() => authors.map((author) => author.name),
-		[authors]
+		[authors],
 	);
 
 	const selectAndEditBookFile = useCallback(() => {
 		if (state !== LibraryState.ready) return;
 
-		promptToAddBook()
+		actions
+			.promptToAddBook()
 			.then((importableMetadata) => {
 				if (importableMetadata) {
 					setMetadata(importableMetadata);
@@ -71,7 +75,7 @@ export const Sidebar = () => {
 			.catch((failure) => {
 				console.error("failed to import new book: ", failure);
 			});
-	}, [promptToAddBook, state, openAddBookModal]);
+	}, [actions, state, openAddBookModal]);
 
 	const addBookByMetadataWithEffects = async (form: AddBookForm) => {
 		if (!metadata || state !== LibraryState.ready) return;

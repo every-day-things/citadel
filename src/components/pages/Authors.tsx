@@ -17,8 +17,13 @@ import { useCallback, useState } from "react";
 
 import { AuthorUpdate, LibraryAuthor, LibraryBook } from "@/bindings";
 
-import { useAuthors, useAuthorsLoading, useBooks, useBooksLoading } from "@/stores/library/store";
-import { useLibraryActions } from "@/stores/library/actions";
+import {
+	useAuthors,
+	useAuthorsLoading,
+	useBooks,
+	useBooksLoading,
+	useLibraryActions,
+} from "@/stores/library/store";
 
 import { F7Ellipsis } from "../icons/F7Ellipsis";
 import { F7Pencil } from "../icons/F7Pencil";
@@ -57,7 +62,10 @@ export const Authors = () => {
 	);
 
 	const onSubmitEdit = useCallback(
-		async (authorId: LibraryAuthor["id"], authorUpdate: AuthorUpdate): Promise<void> => {
+		async (
+			authorId: LibraryAuthor["id"],
+			authorUpdate: AuthorUpdate,
+		): Promise<void> => {
 			if (actions) {
 				await actions.updateAuthor(authorId, authorUpdate);
 			}

@@ -9,14 +9,13 @@ import { useLibraryStore } from "@/stores/library/store";
  */
 export const useInitializeLibraryStore = () => {
 	const libraryPath = useActiveLibraryPath();
-	const initialize = useLibraryStore((state) => state.initialize);
-	const reset = useLibraryStore((state) => state.reset);
+	const actions = useLibraryStore((state) => state.actions);
 
 	useEffect(() => {
 		if (libraryPath.isSome) {
-			void initialize(libraryPath.value);
+			void actions.initialize(libraryPath.value);
 		} else {
-			reset();
+			actions.reset();
 		}
-	}, [libraryPath, initialize, reset]);
+	}, [libraryPath, actions]);
 };
