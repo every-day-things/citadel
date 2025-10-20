@@ -6,7 +6,7 @@ import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { FirstTimeSetup } from "./components/pages/firstTimeSetup";
 import { routeTree } from "./routeTree.gen";
-import { useActiveLibraryPath, useSettings } from "./stores/settings";
+import { useActiveLibraryPath, useSettings } from "./stores/settings/store";
 
 const router = createRouter({
 	routeTree,
@@ -19,7 +19,7 @@ declare module "@tanstack/react-router" {
 }
 
 export const App = () => {
-	const hydrated = useSettings(state => state.hydrated);
+	const hydrated = useSettings((state) => state.hydrated);
 	const libraryPath = useActiveLibraryPath();
 
 	useEffect(() => {

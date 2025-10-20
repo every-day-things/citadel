@@ -1,9 +1,8 @@
 import { SwitchLibraryForm } from "../molecules/SwitchLibraryForm";
 import {
-	createLibrary,
-	setActiveLibrary,
 	useSettings,
-} from "@/stores/settings";
+} from "@/stores/settings/store";
+import { createLibrary, setActiveLibrary } from "@/stores/settings/actions";
 import { pickLibrary } from "@/lib/services/library";
 import { Modal } from "@mantine/core";
 import { useCallback } from "react";

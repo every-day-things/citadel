@@ -2,7 +2,8 @@ import { commands } from "@/bindings";
 import { safeAsyncEventHandler } from "@/lib/async";
 import { pickLibrary } from "@/lib/services/library";
 import { createLibrary as createCalibreLibrary } from "@/lib/services/library/_internal/pickLibrary";
-import { createLibrary, setActiveLibrary } from "@/stores/settings";
+import { createLibrary } from "@/stores/settings/actions";
+import { setActiveLibrary } from "@/stores/settings/actions";
 import { Button, Stack, Text, Title } from "@mantine/core";
 
 const openFilePicker = async (): Promise<
