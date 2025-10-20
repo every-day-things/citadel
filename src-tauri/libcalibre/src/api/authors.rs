@@ -112,4 +112,30 @@ impl AuthorsHandler {
             Err(()) // Cannot delete an author that has books
         }
     }
+
+    // === === ===
+    // Batch Query Methods for Optimization
+    // === === ===
+
+    /// Batch fetch multiple authors by their IDs
+    pub fn find_by_ids(
+        &self,
+        author_ids: &[i32],
+    ) -> Result<std::collections::HashMap<i32, Author>, ()> {
+        use crate::schema::authors::dsl::*;
+
+        if author_ids.is_empty() {
+            return Ok(std::collections::HashMap::new());
+        }
+
+        let mut connection = self.client.lock().unwrap();
+
+        let results: Vec<Author> = authors
+            .filter(id.eq_any(author_ids))
+            .select(Author::as_select())
+            .load(&mut *connection)
+            .map_err(|_| ())?;
+
+        Ok(results.into_iter().map(|a| (a.id, a)).collect())
+    }
 }

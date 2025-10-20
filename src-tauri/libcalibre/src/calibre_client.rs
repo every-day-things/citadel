@@ -236,15 +236,105 @@ impl CalibreClient {
     }
 
     pub fn find_all(&mut self) -> Result<Vec<crate::Book>, CalibreError> {
-        let mut book_list = Vec::new();
-        let books = self.client_v2.books().list().unwrap();
+        use std::collections::{HashMap, HashSet};
 
-        for book in books {
-            let result = self.find_book_with_authors(book.id);
-            match result {
-                Ok(res) => book_list.push(res),
-                Err(_) => (),
-            }
+        // Query 1: Fetch all books
+        let books = self
+            .client_v2
+            .books()
+            .list()
+            .map_err(|_| CalibreError::Database("Failed to list books".to_string()))?;
+
+        if books.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let book_ids: Vec<i32> = books.iter().map(|b| b.id).collect();
+
+        // Query 2: Batch fetch all descriptions
+        let descriptions_map = self
+            .client_v2
+            .books()
+            .batch_get_descriptions(&book_ids)
+            .map_err(|_| {
+                CalibreError::Database("Failed to batch fetch descriptions".to_string())
+            })?;
+
+        // Query 3: Batch fetch all book-author links
+        let book_author_links_map = self
+            .client_v2
+            .books()
+            .batch_get_author_links(&book_ids)
+            .map_err(|_| {
+                CalibreError::Database("Failed to batch fetch author links".to_string())
+            })?;
+
+        // Query 4: Batch fetch all authors (collect unique author IDs first)
+        let author_ids: Vec<i32> = book_author_links_map
+            .values()
+            .flat_map(|ids| ids.iter())
+            .copied()
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect();
+
+        let authors_map = if !author_ids.is_empty() {
+            self.client_v2
+                .authors()
+                .find_by_ids(&author_ids)
+                .map_err(|_| CalibreError::Database("Failed to batch fetch authors".to_string()))?
+        } else {
+            HashMap::new()
+        };
+
+        // Query 5: Batch fetch all book files
+        let files_map = self
+            .client_v2
+            .book_files()
+            .batch_list_by_book_ids(&book_ids)
+            .map_err(|_| CalibreError::Database("Failed to batch fetch book files".to_string()))?;
+
+        // Query 6: Batch fetch all read states
+        let read_states_map = self
+            .client_v2
+            .books()
+            .batch_get_read_states(&book_ids)
+            .map_err(|_| CalibreError::Database("Failed to batch fetch read states".to_string()))?;
+
+        // Query 7: Batch fetch all identifiers
+        let identifiers_map = self
+            .client_v2
+            .books()
+            .batch_get_identifiers(&book_ids)
+            .map_err(|_| CalibreError::Database("Failed to batch fetch identifiers".to_string()))?;
+
+        // Assemble books from the fetched data
+        let mut book_list = Vec::with_capacity(books.len());
+
+        for book_row in books {
+            let book_id = book_row.id;
+
+            // Get authors for this book
+            let author_ids_for_book = book_author_links_map
+                .get(&book_id)
+                .cloned()
+                .unwrap_or_default();
+            let authors: Vec<Author> = author_ids_for_book
+                .iter()
+                .filter_map(|author_id| authors_map.get(author_id).cloned())
+                .collect();
+
+            // Get other data for this book
+            let files = files_map.get(&book_id).cloned().unwrap_or_default();
+            let description = descriptions_map.get(&book_id).cloned();
+            let is_read = read_states_map.get(&book_id).copied().unwrap_or(false);
+            let identifiers = identifiers_map.get(&book_id).cloned().unwrap_or_default();
+
+            // Create the Book struct
+            let book =
+                Book::from_db_parts(book_row, authors, files, identifiers, description, is_read);
+
+            book_list.push(book);
         }
 
         Ok(book_list)

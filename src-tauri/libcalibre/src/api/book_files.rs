@@ -57,4 +57,37 @@ impl BookFilesHandler {
             .get_results::<BookFile>(&mut *connection)
             .or(Err(()))
     }
+
+    // === === ===
+    // Batch Query Methods for Optimization
+    // === === ===
+
+    /// Batch fetch book files for multiple books
+    pub fn batch_list_by_book_ids(
+        &self,
+        book_ids: &[i32],
+    ) -> Result<std::collections::HashMap<i32, Vec<BookFile>>, ()> {
+        use crate::schema::data::dsl::*;
+
+        if book_ids.is_empty() {
+            return Ok(std::collections::HashMap::new());
+        }
+
+        let mut connection = self.client.lock().unwrap();
+
+        let results: Vec<BookFile> = data
+            .filter(book.eq_any(book_ids))
+            .select(BookFile::as_select())
+            .load(&mut *connection)
+            .or(Err(()))?;
+
+        // Group by book_id
+        let mut map: std::collections::HashMap<i32, Vec<BookFile>> =
+            std::collections::HashMap::new();
+        for file in results {
+            map.entry(file.book).or_insert_with(Vec::new).push(file);
+        }
+
+        Ok(map)
+    }
 }

@@ -307,6 +307,132 @@ impl BooksHandler {
         .map(|_| ())
         .or(Err(()))
     }
+
+    // === === ===
+    // Batch Query Methods for Optimization
+    // === === ===
+
+    /// Batch fetch descriptions for multiple books
+    pub fn batch_get_descriptions(
+        &self,
+        book_ids: &[i32],
+    ) -> Result<std::collections::HashMap<i32, String>, ()> {
+        use crate::schema::comments::dsl::*;
+
+        if book_ids.is_empty() {
+            return Ok(std::collections::HashMap::new());
+        }
+
+        let mut connection = self.client.lock().unwrap();
+
+        let results: Vec<(i32, String)> = comments
+            .filter(book.eq_any(book_ids))
+            .select((book, text))
+            .load(&mut *connection)
+            .or(Err(()))?;
+
+        Ok(results.into_iter().collect())
+    }
+
+    /// Batch fetch book-author links for multiple books
+    pub fn batch_get_author_links(
+        &self,
+        book_ids: &[i32],
+    ) -> Result<std::collections::HashMap<i32, Vec<i32>>, ()> {
+        use crate::schema::books_authors_link::dsl::*;
+
+        if book_ids.is_empty() {
+            return Ok(std::collections::HashMap::new());
+        }
+
+        let mut connection = self.client.lock().unwrap();
+
+        let results: Vec<(i32, i32)> = books_authors_link
+            .filter(book.eq_any(book_ids))
+            .select((book, author))
+            .load(&mut *connection)
+            .or(Err(()))?;
+
+        // Group by book_id
+        let mut map: std::collections::HashMap<i32, Vec<i32>> = std::collections::HashMap::new();
+        for (book_id, author_id) in results {
+            map.entry(book_id).or_insert_with(Vec::new).push(author_id);
+        }
+
+        Ok(map)
+    }
+
+    /// Batch fetch read states for multiple books
+    pub fn batch_get_read_states(
+        &self,
+        book_ids: &[i32],
+    ) -> Result<std::collections::HashMap<i32, bool>, ()> {
+        if book_ids.is_empty() {
+            return Ok(std::collections::HashMap::new());
+        }
+
+        let mut connection = self.client.lock().unwrap();
+        let read_state_column_id = self.get_or_create_read_state_custom_column(&mut *connection)?;
+
+        #[derive(QueryableByName)]
+        struct BookReadState {
+            #[diesel(sql_type = Integer)]
+            book: i32,
+            #[diesel(sql_type = Integer)]
+            value: i32,
+        }
+
+        let placeholders = book_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+        let query_str = format!(
+            "SELECT book, value FROM custom_column_{} WHERE book IN ({})",
+            read_state_column_id, placeholders
+        );
+
+        let mut query = sql_query(query_str);
+        for book_id in book_ids {
+            query = query.bind::<Integer, _>(*book_id);
+        }
+
+        let results: Vec<BookReadState> = query.load(&mut *connection).or(Err(()))?;
+
+        let map: std::collections::HashMap<i32, bool> = results
+            .into_iter()
+            .map(|r| (r.book, r.value == 1))
+            .collect();
+
+        Ok(map)
+    }
+
+    /// Batch fetch identifiers for multiple books
+    pub fn batch_get_identifiers(
+        &self,
+        book_ids: &[i32],
+    ) -> Result<std::collections::HashMap<i32, Vec<Identifier>>, ()> {
+        use crate::schema::identifiers::dsl::*;
+
+        if book_ids.is_empty() {
+            return Ok(std::collections::HashMap::new());
+        }
+
+        let mut connection = self.client.lock().unwrap();
+
+        let results: Vec<Identifier> = identifiers
+            .filter(book.eq_any(book_ids))
+            .select(Identifier::as_returning())
+            .load(&mut *connection)
+            .or(Err(()))?;
+
+        // Group by book_id
+        let mut map: std::collections::HashMap<i32, Vec<Identifier>> =
+            std::collections::HashMap::new();
+        for identifier in results {
+            map.entry(identifier.book)
+                .or_insert_with(Vec::new)
+                .push(identifier);
+        }
+
+        Ok(map)
+    }
 }
 
 fn uuid_for_book(conn: &mut SqliteConnection, book_id: i32) -> Option<String> {
