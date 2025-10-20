@@ -1,7 +1,5 @@
 import { SwitchLibraryForm } from "../molecules/SwitchLibraryForm";
-import {
-	useSettings,
-} from "@/stores/settings/store";
+import { useSettings } from "@/stores/settings/store";
 import { createLibrary, setActiveLibrary } from "@/stores/settings/actions";
 import { pickLibrary } from "@/lib/services/library";
 import { Modal } from "@mantine/core";

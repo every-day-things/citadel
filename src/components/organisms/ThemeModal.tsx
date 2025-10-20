@@ -2,20 +2,37 @@ import { F7CircleRighthalfFill } from "@/components/icons/F7CircleRightHalfFill"
 import { F7MoonFill } from "@/components/icons/F7MoonFill";
 import { F7SunMaxFill } from "@/components/icons/F7SunMaxFill";
 import { useThemeModal } from "@/lib/contexts/modal-theme/hooks";
+import { useSettings } from "@/stores/settings/store";
 import { Modal, Group, Button, useMantineColorScheme } from "@mantine/core";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 
 export const ThemeModal = () => {
 	const { setColorScheme } = useMantineColorScheme();
 	const [isThemeSettingsOpen, { close: closeThemeModal }] = useThemeModal();
+	const theme = useSettings((state) => state.theme);
+	const setTheme = useSettings((state) => state.setTheme);
+
+	// Sync Mantine color scheme with persisted theme on mount
+	useEffect(() => {
+		setColorScheme(theme);
+	}, [theme, setColorScheme]);
 
 	const colorSchemeSetters = useMemo(() => {
 		return {
-			dark: () => setColorScheme("dark"),
-			light: () => setColorScheme("light"),
-			auto: () => setColorScheme("auto"),
+			dark: () => {
+				setColorScheme("dark");
+				void setTheme("dark");
+			},
+			light: () => {
+				setColorScheme("light");
+				void setTheme("light");
+			},
+			auto: () => {
+				setColorScheme("auto");
+				void setTheme("auto");
+			},
 		};
-	}, [setColorScheme]);
+	}, [setColorScheme, setTheme]);
 
 	return (
 		<ThemeModalPure
