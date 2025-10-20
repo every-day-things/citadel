@@ -1,18 +1,12 @@
 import { safeAsyncEventHandler } from "$lib/async";
 import { LibraryProvider } from "$lib/contexts/library";
-import { SettingsProvider } from "$lib/contexts/settings";
 import { theme } from "$lib/theme";
 import { ColorSchemeScript, MantineProvider } from "@mantine/core";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect } from "react";
 import { FirstTimeSetup } from "./components/pages/firstTimeSetup";
 import { routeTree } from "./routeTree.gen";
-import {
-	getActiveLibrary,
-	isSettingsReady,
-	settings as settingsStore,
-	waitForSettings,
-} from "./stores/settings";
+import { useActiveLibraryPath, useSettings } from "./stores/settings";
 
 const router = createRouter({
 	routeTree,
@@ -25,96 +19,35 @@ declare module "@tanstack/react-router" {
 }
 
 export const App = () => {
-	const [isLoading, setIsLoading] = useState(true);
-	const [libraryPath, setLibraryPath] = useState<string | null>(null);
-	const [previousActiveLibraryId, setPreviousActiveLibraryId] =
-		useState<string>("");
-	const updateLibraryPath = useCallback(async () => {
-		const activeLibrary = await getActiveLibrary(settingsStore);
-		if (activeLibrary.isSome) {
-			setLibraryPath(activeLibrary.value.absolutePath);
-		} else {
-			setLibraryPath(null);
-		}
-
-		setIsLoading(false);
-	}, []);
-	useEffect(() => {
-		const fetchSettings = async () => {
-			await waitForSettings();
-
-			const activeLibrary = await getActiveLibrary(settingsStore);
-			if (activeLibrary.isSome) {
-				setLibraryPath(activeLibrary.value.absolutePath);
-			} else {
-				setLibraryPath(null);
-			}
-		};
-
-		safeAsyncEventHandler(fetchSettings)();
-	}, []);
-
-	// Update the library path whenever the settings change (e.g. user changes the
-	// active library)
-	// biome-ignore lint/correctness/useExhaustiveDependencies: More to be done here, but this fixes the immediate issue
-	useEffect(() => {
-		// Update the active library's path whenever the activeLibraryId changes
-		const unsub = settingsStore.subscribe((settings) => {
-			if (
-				isSettingsReady() &&
-				settings?.activeLibraryId &&
-				settings?.libraryPaths &&
-				settings.activeLibraryId.length > 0 &&
-				previousActiveLibraryId !== settings.activeLibraryId
-			) {
-				const activeLibrary = settings.libraryPaths.find(
-					(library) => library.id === settings.activeLibraryId,
-				);
-
-				if (activeLibrary) {
-					setLibraryPath(activeLibrary.absolutePath);
-					setPreviousActiveLibraryId(activeLibrary.id);
-				} else {
-					setLibraryPath(null);
-				}
-				setIsLoading(false);
-			}
-		});
-
-		return unsub;
-	}, [isLoading, libraryPath, previousActiveLibraryId]);
+	const hydrated = useSettings(state => state.hydrated);
+	const libraryPath = useActiveLibraryPath();
 
 	useEffect(() => {
-		if (!isLoading) {
+		if (hydrated) {
 			safeAsyncEventHandler(setupAppWindow)();
 		}
-	}, [isLoading]);
+	}, [hydrated]);
 
-	if (isLoading) {
+	if (!hydrated) {
+		// No window is shown until settings are hydrated
 		return null;
 	}
 
-	if (libraryPath === null) {
+	if (!libraryPath.isSome) {
 		return (
 			<MantineProvider theme={theme} defaultColorScheme="auto">
-				<FirstTimeSetup
-					onLibraryPathPicked={() => {
-						safeAsyncEventHandler(updateLibraryPath)();
-					}}
-				/>
+				<FirstTimeSetup />
 			</MantineProvider>
 		);
 	}
 
 	return (
-		<SettingsProvider value={settingsStore}>
-			<LibraryProvider libraryPath={libraryPath}>
-				<ColorSchemeScript defaultColorScheme="auto" />
-				<MantineProvider theme={theme} defaultColorScheme="auto">
-					<RouterProvider router={router} />
-				</MantineProvider>
-			</LibraryProvider>
-		</SettingsProvider>
+		<LibraryProvider libraryPath={libraryPath.value}>
+			<ColorSchemeScript defaultColorScheme="auto" />
+			<MantineProvider theme={theme} defaultColorScheme="auto">
+				<RouterProvider router={router} />
+			</MantineProvider>
+		</LibraryProvider>
 	);
 };
 
