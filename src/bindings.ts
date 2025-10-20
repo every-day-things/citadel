@@ -45,7 +45,7 @@ async clbQueryImportableFileMetadata(file: ImportableFile) : Promise<ImportableB
 async clbQueryListAllFiletypes() : Promise<([string, string])[]> {
     return await TAURI_INVOKE("clb_query_list_all_filetypes");
 },
-async clbCmdCreateBook(md: ImportableBookMetadata) : Promise<Result<null, string>> {
+async clbCmdCreateBook(md: ImportableBookMetadata) : Promise<Result<string, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("clb_cmd_create_book", { md }) };
 } catch (e) {

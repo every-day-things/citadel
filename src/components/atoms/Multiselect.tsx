@@ -18,7 +18,7 @@ interface BaseProps<T> {
 
 type MultiSelectCreatableProps = BaseProps<string> & {
 	selectOptions: string[];
-	onCreateSelectOption?: (newOption: string) => void;
+	onCreateSelectOption?: (newOption: string) => void | Promise<void>;
 };
 
 export function MultiSelectCreatable({
@@ -55,7 +55,7 @@ export function MultiSelectCreatable({
 		if (val === "$create") {
 			setData([..._data, search]);
 			setValue([..._value, search]);
-			onCreateSelectOption?.(search);
+			void onCreateSelectOption?.(search);
 		} else {
 			const isItemRemoval = _value.includes(val);
 			if (isItemRemoval) {

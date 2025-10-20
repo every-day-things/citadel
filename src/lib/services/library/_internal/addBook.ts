@@ -1,7 +1,4 @@
 import type { ImportableBookMetadata } from "@/bindings";
-import { LibraryEvents } from "@/lib/contexts/library";
-import { LibraryEventNames } from "@/lib/contexts/library/context";
-import { EventEmitter } from "@/lib/event";
 import type { Library } from "./_types";
 import { open as dialogOpen } from "@tauri-apps/plugin-dialog";
 
@@ -47,10 +44,7 @@ export const promptToAddBook = async (
 export const commitAddBook = async (
 	library: Library,
 	metadata: ImportableBookMetadata,
-	eventEmitter: EventEmitter<LibraryEvents>,
-) => {
-	await library.addImportableFileByMetadata(metadata);
-	eventEmitter.emit(LibraryEventNames.LIBRARY_BOOK_CREATED, {
-		bookname: metadata.title,
-	});
+): Promise<string | undefined> => {
+	const bookId = await library.addImportableFileByMetadata(metadata);
+	return bookId;
 };

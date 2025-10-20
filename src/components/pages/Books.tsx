@@ -31,7 +31,7 @@ import { BookGrid } from "../molecules/BookGrid";
 import { BookTable } from "../molecules/BookTable";
 import { TablerCopy } from "../icons/TablerCopy";
 import { F7Pencil } from "../icons/F7Pencil";
-import { useLoadBooks } from "@/lib/hooks/use-load-books";
+import { useBooks, useBooksLoading } from "@/stores/library/store";
 import * as clipboard from "@tauri-apps/plugin-clipboard-manager";
 
 interface BookSearchOptions {
@@ -77,7 +77,8 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
-	const [loading, books] = useLoadBooks();
+	const books = useBooks();
+	const loading = useBooksLoading();
 
 	const filteredBooks = useMemo(
 		() => filterBooksByQuery(books, form.values),

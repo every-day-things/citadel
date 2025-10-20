@@ -61,10 +61,13 @@ pub fn clb_cmd_create_library(
 pub fn clb_cmd_create_book(
     state: tauri::State<CitadelState>,
     md: ImportableBookMetadata,
-) -> Result<(), String> {
+) -> Result<String, String> {
     state.with_client(|client| {
         let dto = md.to_new_library_entry_dto();
-        client.add_book(dto).map(|_| ()).map_err(|e| e.to_string())
+        client
+            .add_book(dto)
+            .map(|book| book.id.to_string())
+            .map_err(|e| e.to_string())
     })?
 }
 

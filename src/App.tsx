@@ -1,5 +1,4 @@
 import { safeAsyncEventHandler } from "$lib/async";
-import { LibraryProvider } from "$lib/contexts/library";
 import { theme } from "$lib/theme";
 import { ColorSchemeScript, MantineProvider } from "@mantine/core";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
@@ -7,6 +6,7 @@ import { useEffect } from "react";
 import { FirstTimeSetup } from "./components/pages/firstTimeSetup";
 import { routeTree } from "./routeTree.gen";
 import { useActiveLibraryPath, useSettings } from "./stores/settings/store";
+import { useInitializeLibraryStore } from "@/lib/hooks/use-initialize-library-store";
 
 const router = createRouter({
 	routeTree,
@@ -42,13 +42,23 @@ export const App = () => {
 	}
 
 	return (
-		<LibraryProvider libraryPath={libraryPath.value}>
+		<>
 			<ColorSchemeScript defaultColorScheme="auto" />
 			<MantineProvider theme={theme} defaultColorScheme="auto">
-				<RouterProvider router={router} />
+				<LibraryStoreInitializer>
+					<RouterProvider router={router} />
+				</LibraryStoreInitializer>
 			</MantineProvider>
-		</LibraryProvider>
+		</>
 	);
+};
+
+/**
+ * Initializes the library store based on the active library path
+ */
+const LibraryStoreInitializer = ({ children }: { children: React.ReactNode }) => {
+	useInitializeLibraryStore();
+	return <>{children}</>;
 };
 
 /**

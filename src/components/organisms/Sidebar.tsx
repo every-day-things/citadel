@@ -1,6 +1,6 @@
 import { NewAuthor, type ImportableBookMetadata } from "@/bindings";
-import { LibraryState, useLibrary } from "@/lib/contexts/library";
-import { commitAddBook, promptToAddBook } from "@/lib/services/library";
+import { useLibraryActions } from "@/stores/library/actions";
+import { LibraryState, useAuthors, useLibraryState, useLibraryStore } from "@/stores/library/store";
 import {
 	ActionIcon,
 	Button,
@@ -10,11 +10,10 @@ import {
 	NavLink,
 	Stack,
 	Title,
-	noop,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
 	AddBookForm,
 	title as addBookFormTitle,
@@ -24,15 +23,16 @@ import { F7Gear } from "@/components/icons/F7Gear";
 import { useThemeModal } from "@/lib/contexts/modal-theme/hooks";
 import { useLibrarySelectModal } from "@/lib/contexts/modal-library-select/hooks";
 import { FluentLibraryFilled } from "@/components/icons/FluentLibraryFilled";
-import { sortAuthors } from "@/lib/domain/author";
 
 export const Sidebar = () => {
-	const { library, state, eventEmitter } = useLibrary();
+	const state = useLibraryState();
 	const { location } = useRouterState();
 	const { open: openLibrarySelectModal } = useLibrarySelectModal();
+	const actions = useLibraryActions();
+	const authors = useAuthors();
+	const promptToAddBook = useLibraryStore((state) => state.promptToAddBook);
 
 	const [metadata, setMetadata] = useState<ImportableBookMetadata | null>();
-	const [authorList, setAuthorList] = useState<string[]>([]);
 
 	const [
 		isAddBookModalOpen,
@@ -42,31 +42,26 @@ export const Sidebar = () => {
 	const [, { open: openThemeModal }] = useThemeModal();
 
 	const onCreateAuthor = useCallback(
-		(newAuthorName: string) => {
+		async (newAuthorName: string) => {
 			const newAuthor: NewAuthor = {
 				name: newAuthorName,
 				sortable_name: newAuthorName,
 			};
 
-			library?.createAuthors([newAuthor]).catch(noop);
+			await actions.createAuthors([newAuthor]);
 		},
-		[library],
+		[actions],
 	);
 
-	useEffect(() => {
-		void (async () => {
-			setAuthorList(
-				((await library?.listAuthors()) ?? [])
-					.sort(sortAuthors)
-					.map((author) => author.name),
-			);
-		})();
-	}, [library]);
+	const authorList = useMemo(
+		() => authors.map((author) => author.name),
+		[authors]
+	);
 
 	const selectAndEditBookFile = useCallback(() => {
 		if (state !== LibraryState.ready) return;
 
-		promptToAddBook(library)
+		promptToAddBook()
 			.then((importableMetadata) => {
 				if (importableMetadata) {
 					setMetadata(importableMetadata);
@@ -76,23 +71,22 @@ export const Sidebar = () => {
 			.catch((failure) => {
 				console.error("failed to import new book: ", failure);
 			});
-	}, [library, state, openAddBookModal]);
+	}, [promptToAddBook, state, openAddBookModal]);
 
-	const addBookByMetadataWithEffects = (form: AddBookForm) => {
+	const addBookByMetadataWithEffects = async (form: AddBookForm) => {
 		if (!metadata || state !== LibraryState.ready) return;
 		const editedMetadata: ImportableBookMetadata = {
 			...metadata,
 			title: form.title,
 			author_names: form.authorList,
 		};
-		commitAddBook(library, editedMetadata, eventEmitter)
-			.then(() => {
-				closeAddBookModal();
-				setMetadata(null);
-			})
-			.catch((error) => {
-				console.error("Failed to add book to database", error);
-			});
+		try {
+			await actions.addBook(editedMetadata);
+			closeAddBookModal();
+			setMetadata(null);
+		} catch (error) {
+			console.error("Failed to add book to database", error);
+		}
 	};
 	const shelves = useMemo(() => {
 		return [
@@ -135,8 +129,8 @@ interface AddBookModalProps {
 	isOpen: boolean;
 	metadata: ImportableBookMetadata;
 	onClose: () => void;
-	onCreateAuthor: (newAuthorName: string) => void;
-	onSubmitHandler: (form: AddBookForm) => void;
+	onCreateAuthor: (newAuthorName: string) => Promise<void>;
+	onSubmitHandler: (form: AddBookForm) => Promise<void>;
 }
 
 const AddBookModalPure = ({
@@ -164,8 +158,8 @@ const AddBookModalPure = ({
 						authorList={authorNameList}
 						fileName={metadata?.path ?? ""}
 						hideTitle={true}
-						onCreateAuthor={onCreateAuthor}
-						onSubmit={onSubmitHandler}
+						onCreateAuthor={(name) => void onCreateAuthor(name)}
+						onSubmit={(form) => void onSubmitHandler(form)}
 					/>
 				</Modal.Body>
 			</Modal.Content>
