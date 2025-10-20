@@ -1,4 +1,4 @@
-# Citadel Backend Development Guide
+# Citadel Development Guide
 
 ## Commands
 - **Production build**: `bun run build` (builds frontend then backend via Tauri)

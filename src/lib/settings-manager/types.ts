@@ -6,7 +6,7 @@ export interface LibraryPath {
 
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 export type SettingsSchema = {
-	theme: "dark" | "light";
+	theme: "dark" | "light" | "auto";
 	startFullscreen: boolean;
 	activeLibraryId: string;
 	libraryPaths: LibraryPath[];
