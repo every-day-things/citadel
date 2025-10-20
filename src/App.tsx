@@ -56,7 +56,9 @@ export const App = () => {
 /**
  * Initializes the library store based on the active library path
  */
-const LibraryStoreInitializer = ({ children }: { children: React.ReactNode }) => {
+const LibraryStoreInitializer = ({
+	children,
+}: { children: React.ReactNode }) => {
 	useInitializeLibraryStore();
 	return <>{children}</>;
 };
