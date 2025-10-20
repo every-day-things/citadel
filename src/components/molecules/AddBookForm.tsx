@@ -11,8 +11,8 @@ export interface AddBookFormProps {
 	initial: AddBookForm;
 	authorList: string[];
 	fileName: string;
-	onCreateAuthor: (newAuthorName: string) => void;
-	onSubmit?: (formData: AddBookForm) => void;
+	onCreateAuthor: (newAuthorName: string) => void | Promise<void>;
+	onSubmit?: (formData: AddBookForm) => void | Promise<void>;
 	hideTitle?: boolean;
 }
 
@@ -34,7 +34,7 @@ export const AddBookForm = ({
 			form={form}
 			onSubmit={() => {
 				if (onSubmit) {
-					onSubmit(form.values);
+					void onSubmit(form.values);
 				}
 			}}
 		>
@@ -48,7 +48,7 @@ export const AddBookForm = ({
 					label="Authors"
 					placeholder="Search or add author"
 					selectOptions={authorList}
-					onCreateSelectOption={onCreateAuthor}
+					onCreateSelectOption={(name) => void onCreateAuthor(name)}
 					{...form.getInputProps("authorList")}
 				/>
 				<Button mt="mg" variant="filled" fullWidth type="submit">

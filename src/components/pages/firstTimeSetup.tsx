@@ -1,28 +1,29 @@
 import { commands } from "@/bindings";
 import { safeAsyncEventHandler } from "@/lib/async";
-import { pickLibrary } from "@/lib/services/library";
-import { createLibrary as createCalibreLibrary } from "@/lib/services/library/_internal/pickLibrary";
+import { selectLibraryFolderDialog } from "@/lib/utils/library";
+import { useLibraryStore } from "@/stores/library/store";
 import { createLibrary } from "@/stores/settings/actions";
 import { setActiveLibrary } from "@/stores/settings/actions";
 import { Button, Stack, Text, Title } from "@mantine/core";
 
-const openFilePicker = async (): Promise<
-	| { type: "existing library selected"; path: string }
-	| { type: "new library selected"; path: string }
-	| { type: "invalid library path selected" }
-> => {
-	const path = await pickLibrary();
-	if (!path) return { type: "invalid library path selected" };
-
-	const selectedIsValid = await commands.clbQueryIsPathValidLibrary(path);
-
-	if (selectedIsValid) {
-		return { type: "existing library selected", path };
-	}
-	return { type: "new library selected", path };
-};
-
 export const FirstTimeSetup = () => {
+	const createCalibreLibrary = useLibraryStore((state) => state.createLibrary);
+
+	const openFilePicker = async (): Promise<
+		| { type: "existing library selected"; path: string }
+		| { type: "new library selected"; path: string }
+		| { type: "invalid library path selected" }
+	> => {
+		const path = await selectLibraryFolderDialog();
+		if (!path) return { type: "invalid library path selected" };
+
+		const selectedIsValid = await commands.clbQueryIsPathValidLibrary(path);
+
+		if (selectedIsValid) {
+			return { type: "existing library selected", path };
+		}
+		return { type: "new library selected", path };
+	};
 	return (
 		<Stack align="center" justify="flex-start" h={"100vh"} p="sm">
 			<Title>Welcome to Citadel!</Title>

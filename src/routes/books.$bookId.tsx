@@ -1,94 +1,49 @@
 import type {
 	BookUpdate,
-	LibraryAuthor,
-	LibraryBook,
 	NewAuthor,
 } from "@/bindings";
 import { BookPage } from "@/components/pages/EditBook";
-import { safeAsyncEventHandler } from "@/lib/async";
-import { LibraryState, useLibrary } from "@/lib/contexts/library";
-import { LibraryEventNames } from "@/lib/contexts/library/context";
-import type { Library } from "@/lib/services/library";
+import { LibraryState, useBooks, useAuthors, useLibraryState } from "@/stores/library/store";
+import { useLibraryActions } from "@/stores/library/actions";
 import { createFileRoute, useParams } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
-
-const libraryIsReady = (
-	state: LibraryState,
-	_library: Library | null,
-): _library is Library => state === LibraryState.ready;
+import { useCallback, useMemo } from "react";
 
 const EditBookRoute = () => {
 	const { bookId } = useParams({ from: "/books/$bookId" });
-	const { library, state, eventEmitter } = useLibrary();
+	const state = useLibraryState();
+	const actions = useLibraryActions();
 
-	const [book, setBook] = useState<LibraryBook | undefined>();
-	const [allAuthorList, setAllAuthorList] = useState<LibraryAuthor[]>([]);
+	// Get data from store - no local state needed!
+	const books = useBooks();
+	const allAuthorList = useAuthors();
 
-	const loadBook = useCallback(async () => {
-		if (!libraryIsReady(state, library)) {
-			return;
-		}
-
-		const [bookList, authorList] = await Promise.all([
-			library.listBooks(),
-			library.listAuthors(),
-		]);
-
-		const matchingBook = bookList.find((b) => b.id === bookId);
-
-		if (matchingBook) {
-			setBook(matchingBook);
-		}
-
-		setAllAuthorList(authorList);
-	}, [bookId, library, state]);
-
-	useEffect(() => {
-		// Load book on first render
-		safeAsyncEventHandler(loadBook)();
-	}, [loadBook]);
-
-	useEffect(() => {
-		// Re-load `book` when Library emits "book updated" event, to capture
-		// any changes automatically done by the backend
-		const unsubUpdatedBook = eventEmitter?.listen(
-			LibraryEventNames.LIBRARY_BOOK_UPDATED,
-			safeAsyncEventHandler(async () => {
-				await loadBook();
-			}),
-		);
-
-		return unsubUpdatedBook;
-	}, [eventEmitter, loadBook]);
+	// Find the book from the store
+	const book = useMemo(
+		() => books.find((b) => b.id === bookId),
+		[books, bookId]
+	);
 
 	const onSave = useCallback(
 		async (bookUpdate: BookUpdate) => {
-			await library?.updateBook(bookId, bookUpdate);
-
-			if (bookId) {
-				eventEmitter?.emit(LibraryEventNames.LIBRARY_BOOK_UPDATED, {
-					book: bookId,
-				});
+			if (actions) {
+				await actions.updateBook(bookId, bookUpdate);
 			}
-
-			return Promise.resolve();
 		},
-		[library, bookId, eventEmitter],
+		[actions, bookId],
 	);
 
 	const onCreateAuthor = useCallback(
-		(authorName: string) => {
+		async (authorName: string) => {
 			const newAuthor: NewAuthor = {
 				name: authorName,
 				sortable_name: authorName,
 			};
 
-			void library?.createAuthors([newAuthor]).then(async () => {
-				const allAuthors = await library.listAuthors();
-				setAllAuthorList(allAuthors);
-			});
+			if (actions) {
+				await actions.createAuthors([newAuthor]);
+			}
 		},
-		[library],
+		[actions],
 	);
 
 	const onUpsertIdentifier = useCallback(
@@ -98,32 +53,20 @@ const EditBookRoute = () => {
 			label: string,
 			value: string,
 		) => {
-			await library?.upsertBookIdentifier(bookId, identifierId, label, value);
-
-			if (bookId) {
-				eventEmitter?.emit(LibraryEventNames.LIBRARY_BOOK_UPDATED, {
-					book: bookId,
-				});
+			if (actions) {
+				await actions.upsertBookIdentifier(bookId, identifierId, label, value);
 			}
-
-			return Promise.resolve();
 		},
-		[library, eventEmitter],
+		[actions],
 	);
 
 	const onDeleteIdentifier = useCallback(
 		async (bookId: string, identifierId: number) => {
-			await library?.deleteBookIdentifier(bookId, identifierId);
-
-			if (bookId) {
-				eventEmitter?.emit(LibraryEventNames.LIBRARY_BOOK_UPDATED, {
-					book: bookId,
-				});
+			if (actions) {
+				await actions.deleteBookIdentifier(bookId, identifierId);
 			}
-
-			return Promise.resolve();
 		},
-		[library, eventEmitter],
+		[actions],
 	);
 
 	if (state !== LibraryState.ready) {
@@ -137,7 +80,7 @@ const EditBookRoute = () => {
 		<BookPage
 			allAuthorList={allAuthorList}
 			book={book}
-			onCreateAuthor={onCreateAuthor}
+			onCreateAuthor={async (name) => { await onCreateAuthor(name); }}
 			onSave={onSave}
 			onUpsertIdentifier={onUpsertIdentifier}
 			onDeleteIdentifier={onDeleteIdentifier}

@@ -1,7 +1,7 @@
 import { SwitchLibraryForm } from "../molecules/SwitchLibraryForm";
 import { useSettings } from "@/stores/settings/store";
 import { createLibrary, setActiveLibrary } from "@/stores/settings/actions";
-import { pickLibrary } from "@/lib/services/library";
+import { selectLibraryFolderDialog } from "@/lib/utils/library";
 import { Modal } from "@mantine/core";
 import { useCallback } from "react";
 import { useLibrarySelectModal } from "@/lib/contexts/modal-library-select/hooks";
@@ -52,7 +52,7 @@ export const LibrarySelectModal = () => {
 				libraries={libraries}
 				onSubmit={(form) => void addNewLibraryByPath(form)}
 				selectExistingLibrary={selectExistingLibrary}
-				selectNewLibrary={pickLibrary}
+				selectNewLibrary={selectLibraryFolderDialog}
 			/>
 		</SwitchLibraryPathModalPure>
 	);

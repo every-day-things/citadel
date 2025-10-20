@@ -16,10 +16,9 @@ import { Link } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
 
 import { AuthorUpdate, LibraryAuthor, LibraryBook } from "@/bindings";
-import { useLoadAuthors } from "@/lib/hooks/use-load-authors";
-import { useLoadBooks } from "@/lib/hooks/use-load-books";
-import { useLibrary } from "@/lib/contexts/library";
-import { LibraryEventNames } from "@/lib/contexts/library/context";
+
+import { useAuthors, useAuthorsLoading, useBooks, useBooksLoading } from "@/stores/library/store";
+import { useLibraryActions } from "@/stores/library/actions";
 
 import { F7Ellipsis } from "../icons/F7Ellipsis";
 import { F7Pencil } from "../icons/F7Pencil";
@@ -30,9 +29,11 @@ import { AuthorFilterControls } from "@/components/organisms/AuthorFilterControl
 import { useAuthorFilters } from "@/lib/hooks/use-author-filters";
 
 export const Authors = () => {
-	const { library, eventEmitter } = useLibrary();
-	const [loadingAuthors, authors] = useLoadAuthors();
-	const [loadingBooks, books] = useLoadBooks();
+	const authors = useAuthors();
+	const loadingAuthors = useAuthorsLoading();
+	const books = useBooks();
+	const loadingBooks = useBooksLoading();
+	const actions = useLibraryActions();
 
 	const {
 		filters,
@@ -56,15 +57,12 @@ export const Authors = () => {
 	);
 
 	const onSubmitEdit = useCallback(
-		(authorId: LibraryAuthor["id"], authorUpdate: AuthorUpdate): void => {
-			void library?.updateAuthor(authorId, authorUpdate);
-			// Ew why does this business logic exist here.
-			// Why does our useLibrary hook not automatically emit events as needed??
-			eventEmitter?.emit(LibraryEventNames.LIBRARY_AUTHOR_UPDATED, {
-				author: authorId,
-			});
+		async (authorId: LibraryAuthor["id"], authorUpdate: AuthorUpdate): Promise<void> => {
+			if (actions) {
+				await actions.updateAuthor(authorId, authorUpdate);
+			}
 		},
-		[eventEmitter, library],
+		[actions],
 	);
 
 	const onOpenEditAuthorModal = useCallback(
@@ -87,17 +85,12 @@ export const Authors = () => {
 		[openDeleteModal, filteredAuthors],
 	);
 
-	const onConfirmDeleteAuthor = useCallback((): void => {
-		if (authorToDelete) {
-			void library?.deleteAuthor(authorToDelete.id);
-
-			eventEmitter?.emit(LibraryEventNames.LIBRARY_AUTHOR_DELETED, {
-				author: authorToDelete.id,
-			});
-
+	const onConfirmDeleteAuthor = useCallback(async (): Promise<void> => {
+		if (authorToDelete && actions) {
+			await actions.deleteAuthor(authorToDelete.id);
 			closeDeleteModal();
 		}
-	}, [eventEmitter, library, authorToDelete, closeDeleteModal]);
+	}, [actions, authorToDelete, closeDeleteModal]);
 
 	if (loadingAuthors || loadingBooks) {
 		return null;
@@ -125,7 +118,7 @@ export const Authors = () => {
 							{authorToDelete.name}&quot;?
 						</Text>
 						<Group gap="lg" grow mt="md">
-							<Button color="red" onClick={onConfirmDeleteAuthor}>
+							<Button color="red" onClick={() => void onConfirmDeleteAuthor()}>
 								Delete
 							</Button>
 							<Button onClick={closeDeleteModal} variant="outline">
@@ -188,7 +181,7 @@ const EditAuthorModal = ({
 	onSubmitEdit: (
 		authorId: LibraryAuthor["id"],
 		authorUpdate: AuthorUpdate,
-	) => void;
+	) => Promise<void>;
 }) => {
 	const form = useForm({
 		initialValues: {
@@ -206,7 +199,7 @@ const EditAuthorModal = ({
 
 	const onSubmit = useCallback(
 		(values: FormValues) => {
-			onSubmitEdit(authorToEdit.id, {
+			void onSubmitEdit(authorToEdit.id, {
 				full_name: values.displayName,
 				sortable_name: values.sortName,
 				external_url: null,

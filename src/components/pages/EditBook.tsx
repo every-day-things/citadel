@@ -27,7 +27,7 @@ import styles from "./EditBook.module.css";
 interface BookPageProps {
 	allAuthorList: LibraryAuthor[];
 	book: LibraryBook;
-	onCreateAuthor: (authorName: string) => void;
+	onCreateAuthor: (authorName: string) => Promise<void>;
 	onSave: (bookUpdate: BookUpdate) => Promise<void>;
 	onDeleteIdentifier: (bookId: string, identifierId: number) => Promise<void>;
 	onUpsertIdentifier: (
@@ -122,7 +122,7 @@ const EditBookForm = ({
 }: {
 	allAuthorList: LibraryAuthor[];
 	book: LibraryBook;
-	onCreateAuthor: (name: string) => void;
+	onCreateAuthor: (name: string) => Promise<void>;
 	onSave: (update: BookUpdate) => Promise<void>;
 	onDeleteIdentifier: (bookId: string, identifierId: number) => Promise<void>;
 	onUpsertIdentifier: (
@@ -278,7 +278,7 @@ const EditBookForm = ({
 					<MultiSelectCreatable
 						label="Authors"
 						selectOptions={allAuthorNames}
-						onCreateSelectOption={createAuthor}
+						onCreateSelectOption={(name) => void createAuthor(name)}
 						{...form.getInputProps("authorList")}
 					/>
 					<Group flex={1}>
