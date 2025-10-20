@@ -1,34 +1,19 @@
 import { SwitchLibraryForm } from "../molecules/SwitchLibraryForm";
 import {
-	createSettingsLibrary,
+	createLibrary,
 	setActiveLibrary,
-	settings,
+	useSettings,
 } from "@/stores/settings";
 import { pickLibrary } from "@/lib/services/library";
 import { Modal } from "@mantine/core";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { useLibrarySelectModal } from "@/lib/contexts/modal-library-select/hooks";
-import { useSettings } from "@/lib/contexts/settings";
 import { commands } from "@/bindings";
-import { LibraryPath } from "@/lib/settings-manager/types";
 
 export const LibrarySelectModal = () => {
 	const { close, isOpen: isSwitchLibraryModalOpen } = useLibrarySelectModal();
-	const { set, subscribe } = useSettings();
-	const [libraries, setLibraries] = useState<LibraryPath[]>([]);
-	const [activeLibraryId, setActiveLibraryId] = useState<string | null>(null);
-
-	useEffect(() => {
-		return subscribe((update) => {
-			setLibraries(update.libraryPaths);
-			const activeLibrary = update.libraryPaths.find(
-				(library) => library.id === update.activeLibraryId,
-			);
-			if (activeLibrary) {
-				setActiveLibraryId(activeLibrary.id);
-			}
-		});
-	}, [subscribe]);
+	const libraries = useSettings((state) => state.libraryPaths);
+	const activeLibraryId = useSettings((state) => state.activeLibraryId);
 
 	const addNewLibraryByPath = useCallback(
 		async (form: SwitchLibraryForm) => {
@@ -37,11 +22,8 @@ export const LibrarySelectModal = () => {
 			);
 
 			if (isPathValidLibrary) {
-				const newLibraryId = await createSettingsLibrary(
-					settings,
-					form.libraryPath,
-				);
-				await setActiveLibrary(settings, newLibraryId);
+				const newLibraryId = await createLibrary(form.libraryPath);
+				await setActiveLibrary(newLibraryId);
 				close();
 			} else {
 				// TODO: You could create a new library, if you like.
@@ -53,10 +35,10 @@ export const LibrarySelectModal = () => {
 
 	const selectExistingLibrary = useCallback(
 		async (id: string) => {
-			await set("activeLibraryId", id);
+			await setActiveLibrary(id);
 			close();
 		},
-		[close, set],
+		[close],
 	);
 
 	if (!activeLibraryId) {

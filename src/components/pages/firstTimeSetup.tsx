@@ -1,12 +1,8 @@
 import { commands } from "@/bindings";
 import { safeAsyncEventHandler } from "@/lib/async";
 import { pickLibrary } from "@/lib/services/library";
-import { createLibrary } from "@/lib/services/library/_internal/pickLibrary";
-import {
-	createSettingsLibrary,
-	setActiveLibrary,
-	settings,
-} from "@/stores/settings";
+import { createLibrary as createCalibreLibrary } from "@/lib/services/library/_internal/pickLibrary";
+import { createLibrary, setActiveLibrary } from "@/stores/settings";
 import { Button, Stack, Text, Title } from "@mantine/core";
 
 const openFilePicker = async (): Promise<
@@ -25,9 +21,7 @@ const openFilePicker = async (): Promise<
 	return { type: "new library selected", path };
 };
 
-export const FirstTimeSetup = ({
-	onLibraryPathPicked,
-}: { onLibraryPathPicked: () => void }) => {
+export const FirstTimeSetup = () => {
 	return (
 		<Stack align="center" justify="flex-start" h={"100vh"} p="sm">
 			<Title>Welcome to Citadel!</Title>
@@ -44,14 +38,10 @@ export const FirstTimeSetup = ({
 					}
 
 					if (returnStatus.type === "new library selected") {
-						await createLibrary(returnStatus.path);
+						await createCalibreLibrary(returnStatus.path);
 					}
-					const newLibraryId = await createSettingsLibrary(
-						settings,
-						returnStatus.path,
-					);
-					await setActiveLibrary(settings, newLibraryId);
-					onLibraryPathPicked();
+					const newLibraryId = await createLibrary(returnStatus.path);
+					await setActiveLibrary(newLibraryId);
 				})}
 			>
 				Choose Calibre library folder

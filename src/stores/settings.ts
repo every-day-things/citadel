@@ -1,21 +1,37 @@
-import { writable } from "svelte/store";
-import { type Option, none, some } from "@/lib/option";
-import { isTauri } from "@tauri-apps/api/core";
+import type { Option } from "@/lib/option";
+import { none, some } from "@/lib/option";
 import { createTauriSettingsManager } from "@/lib/settings-manager/tauri-settings";
 import { createWebSettingsManager } from "@/lib/settings-manager/web-settings";
-import {
+import type {
 	LibraryPath,
 	SettingsKey,
 	SettingsManager,
 	SettingsSchema,
 	SettingsValue,
 } from "@/lib/settings-manager/types";
+import { isTauri } from "@tauri-apps/api/core";
+import { create } from "zustand";
 
-let isReady = false;
-let resolveSettingsLoaded: () => void;
-const settingsLoadedPromise = new Promise<void>((resolve) => {
-	resolveSettingsLoaded = resolve;
-});
+interface SettingsStore extends SettingsSchema {
+	hydrated: boolean;
+	init: () => Promise<void>;
+	set: <K extends SettingsKey>(
+		key: K,
+		value: SettingsValue<K>,
+	) => Promise<void>;
+	get: <K extends SettingsKey>(key: K) => Promise<SettingsValue<K>>;
+	// Library management actions
+	createLibrary: (absolutePath: string) => Promise<string>;
+	setActiveLibrary: (libraryId: string) => Promise<void>;
+	getActiveLibrary: () => Option<LibraryPath>;
+}
+
+const defaultSettings: SettingsSchema = {
+	theme: "light",
+	startFullscreen: false,
+	activeLibraryId: "",
+	libraryPaths: [],
+};
 
 const createSettingsManager = (
 	defaultSettings: SettingsSchema,
@@ -27,51 +43,96 @@ const createSettingsManager = (
 	return createWebSettingsManager(defaultSettings);
 };
 
-const createSettingsStore = () => {
-	const defaultSettings: SettingsSchema = {
-		theme: "light",
-		startFullscreen: false,
-		activeLibraryId: "",
-		libraryPaths: [],
-	};
-	// Used as a way of letting subscribers know when settings have changed, but
-	// we pull data (`.get()`) straight from the manager, avoiding the
-	// cached version in the store.
-	const settings = writable<SettingsSchema>();
-	const manager = createSettingsManager(defaultSettings);
+const manager = createSettingsManager(defaultSettings);
 
-	manager
-		.initialize()
-		.then(async () => {
-			// Initialize store
+export const useSettings = create<SettingsStore>((set, get) => ({
+	...defaultSettings,
+	hydrated: false,
+
+	init: async () => {
+		try {
+			await manager.initialize();
+
+			// Load all settings from manager
 			const initialSettings = {} as SettingsSchema;
 			for (const key of Object.keys(defaultSettings) as SettingsKey[]) {
 				const value = await manager.get(key);
 				(initialSettings as Record<string, unknown>)[key] = value;
 			}
 
-			settings.update((s) => ({ ...s, ...initialSettings }));
+			set({ ...initialSettings, hydrated: true });
+		} catch (e) {
+			console.error("Failed to initialize settings:", e);
+		}
+	},
 
-			resolveSettingsLoaded();
-			isReady = true;
-		})
-		.catch((e) => {
-			console.error(e);
-		});
+	set: async <K extends SettingsKey>(key: K, value: SettingsValue<K>) => {
+		// Update store immediately for responsive UI
+		set({ [key]: value } as Partial<SettingsStore>);
 
-	return {
-		set: async <K extends SettingsKey>(key: K, value: SettingsValue<K>) => {
-			settings.update((s) => ({ ...s, [key]: value }));
+		// Persist to disk
+		await manager.set(key, value);
+	},
 
-			await manager.set(key, value);
-		},
+	get: async <K extends SettingsKey>(key: K) => {
+		return manager.get(key);
+	},
 
-		get: <K extends SettingsKey>(key: K) => {
-			return manager.get(key);
-		},
+	createLibrary: async (absolutePath: string) => {
+		const libraryId = uuidv4();
+		const displayName = absolutePath.split("/").at(-1) ?? "";
+		const { libraryPaths } = get();
 
-		subscribe: settings.subscribe,
-	};
+		const wouldBeDuplicate = libraryPaths.find(
+			(library) => library.absolutePath === absolutePath,
+		);
+
+		if (wouldBeDuplicate) {
+			return wouldBeDuplicate.id;
+		}
+
+		await get().set("libraryPaths", [
+			...libraryPaths,
+			{
+				id: libraryId,
+				displayName,
+				absolutePath,
+			},
+		]);
+
+		return libraryId;
+	},
+
+	setActiveLibrary: async (libraryId: string) => {
+		await get().set("activeLibraryId", libraryId);
+	},
+
+	getActiveLibrary: () => {
+		const { activeLibraryId, libraryPaths } = get();
+		const activeLibrary = libraryPaths.find(
+			(library) => library.id === activeLibraryId,
+		);
+
+		if (activeLibrary === undefined) return none();
+
+		return some(activeLibrary);
+	},
+}));
+
+// Auto-initialize the store when module loads
+void useSettings.getState().init();
+
+// Export actions for use in components
+export const createLibrary = (absolutePath: string): Promise<string> => {
+	return useSettings.getState().createLibrary(absolutePath);
+};
+
+export const setActiveLibrary = (libraryId: string): Promise<void> => {
+	return useSettings.getState().setActiveLibrary(libraryId);
+};
+
+export const getActiveLibrary = (): Option<LibraryPath> => {
+	return useSettings.getState().getActiveLibrary();
 };
 
 // TODO: Replace this with a proper UUID generator
@@ -83,55 +144,23 @@ const uuidv4 = () => {
 	});
 };
 
-export const createSettingsLibrary = async (
-	store: typeof settings,
-	absolutePath: string,
-): Promise<string> => {
-	const libraryId = uuidv4();
-	const displayName = absolutePath.split("/").at(-1) ?? "";
-	const existingLibraryPaths = (await store.get("libraryPaths")) ?? [];
+// Custom hook - derives Option from primitives to avoid reference equality issues
+export const useActiveLibraryPath = (): Option<string> => {
+	const activeLibraryId = useSettings((state) => state.activeLibraryId);
+	const libraryPaths = useSettings((state) => state.libraryPaths);
 
-	const wouldBeDuplicate = existingLibraryPaths.find(
-		(library) => library.absolutePath === absolutePath,
-	);
-
-	if (wouldBeDuplicate) {
-		return wouldBeDuplicate.id;
+	// Derive Option inline - React only re-renders if dependencies change
+	if (!activeLibraryId || activeLibraryId.length === 0) {
+		return none();
 	}
 
-	await store.set("libraryPaths", [
-		...existingLibraryPaths,
-		{
-			id: libraryId,
-			displayName,
-			absolutePath,
-		},
-	]);
-
-	return libraryId;
-};
-
-export const waitForSettings = () => settingsLoadedPromise;
-export const settings = createSettingsStore();
-export const isSettingsReady = () => isReady;
-
-export const setActiveLibrary = async (
-	store: typeof settings,
-	libraryId: string,
-): Promise<void> => {
-	await store.set("activeLibraryId", libraryId);
-};
-
-export const getActiveLibrary = async (
-	store: typeof settings,
-): Promise<Option<LibraryPath>> => {
-	const activeLibraryId = await store.get("activeLibraryId");
-	const libraryPaths = await store.get("libraryPaths");
 	const activeLibrary = libraryPaths.find(
 		(library) => library.id === activeLibraryId,
 	);
 
-	if (activeLibrary === undefined) return none();
+	if (activeLibrary?.absolutePath) {
+		return some(activeLibrary.absolutePath);
+	}
 
-	return some(activeLibrary);
+	return none();
 };
