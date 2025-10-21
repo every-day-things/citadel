@@ -11,6 +11,7 @@
 		"core:window:allow-hide",
 		"core:window:allow-close",
 		"core:window:allow-set-focus",
+		"core:window:allow-start-dragging",
 		"core:app:default",
 		"core:event:default",
 		"core:event:allow-listen",
