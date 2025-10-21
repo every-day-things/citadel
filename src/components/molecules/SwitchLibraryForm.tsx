@@ -1,4 +1,5 @@
 import { safeAsyncEventHandler } from "@/lib/async";
+import { type Option } from "@/lib/option";
 import {
 	Button,
 	Code,
@@ -83,7 +84,7 @@ export const SwitchLibraryForm = ({
 
 interface AddNewLibraryPathFomProps {
 	onSubmit: (formData: SwitchLibraryForm) => void;
-	selectNewLibrary: () => Promise<string | undefined>;
+	selectNewLibrary: () => Promise<Option<string>>;
 }
 
 const AddNewLibraryPathForm = ({
@@ -123,10 +124,10 @@ const AddNewLibraryPathForm = ({
 						event.preventDefault();
 					}}
 					onPointerDown={safeAsyncEventHandler(async () => {
-						const libPath = await addNewLibraryByPath();
-						if (libPath === undefined) return;
+						const libPathOption = await addNewLibraryByPath();
+						if (!libPathOption.isSome) return;
 
-						form.setFieldValue("libraryPath", libPath);
+						form.setFieldValue("libraryPath", libPathOption.value);
 					})}
 				/>
 				<Button

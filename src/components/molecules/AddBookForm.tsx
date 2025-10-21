@@ -11,8 +11,8 @@ export interface AddBookFormProps {
 	initial: AddBookForm;
 	authorList: string[];
 	fileName: string;
-	onCreateAuthor: (newAuthorName: string) => void | Promise<void>;
-	onSubmit?: (formData: AddBookForm) => void | Promise<void>;
+	onCreateAuthor: (newAuthorName: string) => Promise<void>;
+	onSubmit?: (formData: AddBookForm) => Promise<void>;
 	hideTitle?: boolean;
 }
 

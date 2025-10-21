@@ -1,4 +1,5 @@
 import { theme } from "@/lib/theme";
+import { some } from "@/lib/option";
 import { MantineProvider } from "@mantine/core";
 import { useArgs } from "@storybook/preview-api";
 import type { Meta, StoryFn, StoryObj } from "@storybook/react";
@@ -38,7 +39,7 @@ export const Primary: Story = {
 				currentLibraryId={args.currentLibraryId}
 				libraries={args.libraries}
 				selectExistingLibrary={() => Promise.resolve()}
-				selectNewLibrary={() => Promise.resolve("/path/to/new/library")}
+				selectNewLibrary={() => Promise.resolve(some("/path/to/new/library"))}
 				onSubmit={(data) => console.log("Updated library path", data)}
 			/>
 		);
@@ -72,7 +73,7 @@ export const HasManyLibraries: Story = {
 					updateArgs({ currentLibraryId: id });
 					return Promise.resolve();
 				}}
-				selectNewLibrary={() => Promise.resolve("/path/to/new/library")}
+				selectNewLibrary={() => Promise.resolve(some("/path/to/new/library"))}
 				onSubmit={(data) => console.log("Updated library path", data)}
 			/>
 		);
@@ -82,7 +83,7 @@ export const HasManyLibraries: Story = {
 export const FirstLibrary: Story = {
 	render: () => (
 		<SelectFirstLibrary
-			selectNewLibrary={() => Promise.resolve("/path/to/new/library")}
+			selectNewLibrary={() => Promise.resolve(some("/path/to/new/library"))}
 			onSubmit={(data) => console.log("Updated library path", data)}
 		/>
 	),

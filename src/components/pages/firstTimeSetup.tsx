@@ -2,6 +2,7 @@ import { commands } from "@/bindings";
 import { safeAsyncEventHandler } from "@/lib/async";
 import { selectLibraryFolderDialog } from "@/lib/utils/library";
 import { useLibraryStore } from "@/stores/library/store";
+import { unwrap } from "@/lib/option";
 import { createLibrary } from "@/stores/settings/actions";
 import { setActiveLibrary } from "@/stores/settings/actions";
 import { Button, Stack, Text, Title } from "@mantine/core";
@@ -14,9 +15,10 @@ export const FirstTimeSetup = () => {
 		| { type: "new library selected"; path: string }
 		| { type: "invalid library path selected" }
 	> => {
-		const path = await selectLibraryFolderDialog();
-		if (!path) return { type: "invalid library path selected" };
+		const pathOption = await selectLibraryFolderDialog();
+		if (!pathOption.isSome) return { type: "invalid library path selected" };
 
+		const path = unwrap(pathOption);
 		const selectedIsValid = await commands.clbQueryIsPathValidLibrary(path);
 
 		if (selectedIsValid) {

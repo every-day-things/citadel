@@ -162,8 +162,8 @@ const AddBookModalPure = ({
 						authorList={authorNameList}
 						fileName={metadata?.path ?? ""}
 						hideTitle={true}
-						onCreateAuthor={(name) => void onCreateAuthor(name)}
-						onSubmit={(form) => void onSubmitHandler(form)}
+						onCreateAuthor={onCreateAuthor}
+						onSubmit={onSubmitHandler}
 					/>
 				</Modal.Body>
 			</Modal.Content>

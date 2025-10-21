@@ -1,6 +1,7 @@
 import { open as dialogOpen } from "@tauri-apps/plugin-dialog";
+import { type Option, some, none } from "@/lib/option";
 
-export async function selectLibraryFolderDialog(): Promise<string | undefined> {
+export async function selectLibraryFolderDialog(): Promise<Option<string>> {
 	const selected = await dialogOpen({
 		multiple: false,
 		directory: true,
@@ -9,8 +10,8 @@ export async function selectLibraryFolderDialog(): Promise<string | undefined> {
 	});
 
 	if (typeof selected === "string") {
-		return selected;
+		return some(selected);
 	}
 
-	return undefined;
+	return none();
 }
