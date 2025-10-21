@@ -209,10 +209,67 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => ({
 			return bookId;
 		},
 		updateBook: async (bookId: string, updates: BookUpdate): Promise<void> => {
-			const { library } = get();
+			const { library, books, authors } = get();
 			if (!library) throw new Error("Library not initialized");
-			await library.updateBook(bookId, updates);
-			await get().actions.loadBooks();
+
+			// Find the book to update
+			const bookIndex = books.findIndex((b) => b.id === bookId);
+			if (bookIndex === -1) {
+				throw new Error(`Book with id ${bookId} not found`);
+			}
+
+			const currentBook = books[bookIndex];
+
+			// Build optimistic update
+			const optimisticBook: LibraryBook = { ...currentBook };
+
+			if (updates.title !== null) {
+				optimisticBook.title = updates.title;
+			}
+			if (updates.is_read !== null) {
+				optimisticBook.is_read = updates.is_read;
+			}
+			if (updates.description !== null) {
+				optimisticBook.description = updates.description;
+			}
+			if (updates.author_id_list !== null) {
+				// Map author IDs to author objects
+				const updatedAuthors = updates.author_id_list
+					.map((authorId) => authors.find((a) => a.id === authorId))
+					.filter((author): author is LibraryAuthor => author !== undefined);
+				optimisticBook.author_list = updatedAuthors;
+			}
+
+			// Apply optimistic update immediately
+			const optimisticBooks = [...books];
+			optimisticBooks[bookIndex] = optimisticBook;
+			set({ books: optimisticBooks });
+
+			try {
+				// Send update to backend
+				await library.updateBook(bookId, updates);
+
+				// Selectively refetch just this book from backend
+				const freshBooks = await library.listBooks();
+				const updatedBook = freshBooks.find((b) => b.id === bookId);
+
+				if (updatedBook) {
+					// Update only this specific book with authoritative backend data
+					set((state) => {
+						const currentBooks = state.books;
+						const index = currentBooks.findIndex((b) => b.id === bookId);
+						if (index === -1) return state;
+
+						const newBooks = [...currentBooks];
+						newBooks[index] = updatedBook;
+						return { books: newBooks };
+					});
+				}
+			} catch (error) {
+				// On error, revert by reloading all books
+				await get().actions.loadBooks();
+				throw error;
+			}
 		},
 
 		updateAuthor: async (
@@ -243,10 +300,49 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => ({
 			bookId: string,
 			identifierId: number,
 		): Promise<void> => {
-			const { library } = get();
+			const { library, books } = get();
 			if (!library) throw new Error("Library not initialized");
-			await library.deleteBookIdentifier(bookId, identifierId);
-			await get().actions.loadBooks();
+
+			// Find the book to update
+			const bookIndex = books.findIndex((b) => b.id === bookId);
+			if (bookIndex !== -1) {
+				// Apply optimistic update - remove identifier from list
+				const currentBook = books[bookIndex];
+				const optimisticBook: LibraryBook = {
+					...currentBook,
+					identifier_list: currentBook.identifier_list.filter(
+						(id) => id.id !== identifierId,
+					),
+				};
+
+				const optimisticBooks = [...books];
+				optimisticBooks[bookIndex] = optimisticBook;
+				set({ books: optimisticBooks });
+			}
+
+			try {
+				await library.deleteBookIdentifier(bookId, identifierId);
+
+				// Selectively refetch just this book from backend
+				const freshBooks = await library.listBooks();
+				const updatedBook = freshBooks.find((b) => b.id === bookId);
+
+				if (updatedBook) {
+					set((state) => {
+						const currentBooks = state.books;
+						const index = currentBooks.findIndex((b) => b.id === bookId);
+						if (index === -1) return state;
+
+						const newBooks = [...currentBooks];
+						newBooks[index] = updatedBook;
+						return { books: newBooks };
+					});
+				}
+			} catch (error) {
+				// On error, revert by reloading all books
+				await get().actions.loadBooks();
+				throw error;
+			}
 		},
 
 		upsertBookIdentifier: async (
@@ -255,10 +351,62 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => ({
 			label: string,
 			value: string,
 		): Promise<void> => {
-			const { library } = get();
+			const { library, books } = get();
 			if (!library) throw new Error("Library not initialized");
-			await library.upsertBookIdentifier(bookId, identifierId, label, value);
-			await get().actions.loadBooks();
+
+			// Find the book to update
+			const bookIndex = books.findIndex((b) => b.id === bookId);
+			if (bookIndex !== -1) {
+				// Apply optimistic update - add or update identifier
+				const currentBook = books[bookIndex];
+				let optimisticIdentifiers = [...currentBook.identifier_list];
+
+				if (identifierId !== null) {
+					// Update existing identifier
+					const idIndex = optimisticIdentifiers.findIndex(
+						(id) => id.id === identifierId,
+					);
+					if (idIndex !== -1) {
+						optimisticIdentifiers[idIndex] = { id: identifierId, label, value };
+					}
+				} else {
+					// Add new identifier (use a temporary negative ID)
+					optimisticIdentifiers.push({ id: -1, label, value });
+				}
+
+				const optimisticBook: LibraryBook = {
+					...currentBook,
+					identifier_list: optimisticIdentifiers,
+				};
+
+				const optimisticBooks = [...books];
+				optimisticBooks[bookIndex] = optimisticBook;
+				set({ books: optimisticBooks });
+			}
+
+			try {
+				await library.upsertBookIdentifier(bookId, identifierId, label, value);
+
+				// Selectively refetch just this book from backend
+				const freshBooks = await library.listBooks();
+				const updatedBook = freshBooks.find((b) => b.id === bookId);
+
+				if (updatedBook) {
+					set((state) => {
+						const currentBooks = state.books;
+						const index = currentBooks.findIndex((b) => b.id === bookId);
+						if (index === -1) return state;
+
+						const newBooks = [...currentBooks];
+						newBooks[index] = updatedBook;
+						return { books: newBooks };
+					});
+				}
+			} catch (error) {
+				// On error, revert by reloading all books
+				await get().actions.loadBooks();
+				throw error;
+			}
 		},
 
 		addBook: async (
