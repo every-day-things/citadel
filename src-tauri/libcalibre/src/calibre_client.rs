@@ -272,8 +272,7 @@ impl CalibreClient {
         // Query 4: Batch fetch all authors (collect unique author IDs first)
         let author_ids: Vec<i32> = book_author_links_map
             .values()
-            .flat_map(|ids| ids.iter())
-            .copied()
+            .flat_map(|ids| ids.iter().copied())
             .collect::<HashSet<_>>()
             .into_iter()
             .collect();
