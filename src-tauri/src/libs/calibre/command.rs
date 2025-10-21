@@ -61,12 +61,14 @@ pub fn clb_cmd_create_library(
 pub fn clb_cmd_create_book(
     state: tauri::State<CitadelState>,
     md: ImportableBookMetadata,
-) -> Result<String, String> {
+) -> Result<crate::book::LibraryBook, String> {
     state.with_client(|client| {
         let dto = md.to_new_library_entry_dto();
         client
             .add_book(dto)
-            .map(|book| book.id.to_string())
+            .map(|book| {
+                crate::book::LibraryBook::from_book(&book, &client.validated_library_path.path)
+            })
             .map_err(|e| e.to_string())
     })?
 }
@@ -79,9 +81,12 @@ pub fn clb_cmd_upsert_book_identifier(
     label: String,
     value: String,
     existing_id: Option<i32>,
-) -> Result<(), String> {
+) -> Result<crate::book::Identifier, String> {
     state.with_client(|client| {
         let book_id_int = book_id.parse::<i32>().map_err(|e| e.to_string())?;
+        let label_for_identifier = label.clone();
+        let value_for_identifier = value.clone();
+
         client
             .upsert_book_identifier(UpsertBookIdentifier {
                 book_id: book_id_int,
@@ -89,7 +94,11 @@ pub fn clb_cmd_upsert_book_identifier(
                 label,
                 value,
             })
-            .map(|_| ())
+            .map(|identifier_id| crate::book::Identifier {
+                id: identifier_id,
+                label: label_for_identifier,
+                value: value_for_identifier,
+            })
             .map_err(|_| "Failed to upsert book identifier".to_string())
     })?
 }

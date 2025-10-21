@@ -356,15 +356,47 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => ({
 			}
 
 			try {
-				// Send upsert to backend
-				await library.upsertBookIdentifier(bookId, identifierId, label, value);
+				// Send upsert to backend - now returns the created/updated identifier
+				const returnedIdentifier = await library.upsertBookIdentifier(
+					bookId,
+					identifierId,
+					label,
+					value,
+				);
 
-				// For new identifiers, we must refetch to get the real ID assigned by the backend
-				// This is necessary because we used a temporary ID (-1) for the optimistic update.
-				// Without the real ID, future operations (edit/delete) on this identifier won't work.
-				// TODO: Optimize this by having the backend return the created identifier in the response
-				if (identifierId === null) {
-					await get().actions.loadBooks();
+				// Update the book with the real identifier (replaces temporary ID if it was a create)
+				if (bookIndex !== -1) {
+					set((state) => {
+						const currentBooks = state.books;
+						const index = currentBooks.findIndex((b) => b.id === bookId);
+						if (index === -1) return state;
+
+						const currentBook = currentBooks[index];
+						let updatedIdentifiers = [...currentBook.identifier_list];
+
+						if (identifierId !== null) {
+							// Update existing - replace in list
+							const idIndex = updatedIdentifiers.findIndex(
+								(id) => id.id === identifierId,
+							);
+							if (idIndex !== -1) {
+								updatedIdentifiers[idIndex] = returnedIdentifier;
+							}
+						} else {
+							// Create new - replace the temporary -1 ID with real one
+							const tempIndex = updatedIdentifiers.findIndex((id) => id.id === -1);
+							if (tempIndex !== -1) {
+								updatedIdentifiers[tempIndex] = returnedIdentifier;
+							}
+						}
+
+						const newBooks = [...currentBooks];
+						newBooks[index] = {
+							...currentBook,
+							identifier_list: updatedIdentifiers,
+						};
+						return { books: newBooks };
+					});
 				}
 			} catch (error) {
 				// On error, revert by reloading all books
@@ -378,11 +410,23 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => ({
 		): Promise<string | undefined> => {
 			const { library } = get();
 			if (!library) throw new Error("Library not initialized");
-			const bookId = await library.addImportableFileByMetadata(metadata);
-			if (bookId) {
+
+			try {
+				// Backend now returns the full LibraryBook
+				const createdBook = await library.addImportableFileByMetadata(metadata);
+				if (createdBook) {
+					// Add the new book to the store optimistically
+					set((state) => ({
+						books: [...state.books, createdBook],
+					}));
+					return createdBook.id;
+				}
+				return undefined;
+			} catch (error) {
+				// On error, revert by reloading all books
 				await get().actions.loadBooks();
+				throw error;
 			}
-			return bookId;
 		},
 	},
 }));

@@ -109,6 +109,7 @@ const genLocalCalibreClient = async (
 			if (result.status === "error") {
 				throw new Error(result.error);
 			}
+			return result.data;
 		},
 		deleteBookIdentifier: async (bookId, identifierId) => {
 			const result = await commands.clbCmdDeleteBookIdentifier(
