@@ -260,24 +260,64 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => ({
 			authorId: string,
 			updates: AuthorUpdate,
 		): Promise<void> => {
-			const { library } = get();
+			const { library, authors } = get();
 			if (!library) throw new Error("Library not initialized");
-			await library.updateAuthor(authorId, updates);
-			await get().actions.loadAuthors();
+
+			// Optimistically update author in store
+			const authorIndex = authors.findIndex((a) => a.id === authorId);
+			if (authorIndex !== -1) {
+				const updatedAuthors = [...authors];
+				updatedAuthors[authorIndex] = {
+					...updatedAuthors[authorIndex],
+					...(updates.full_name && { name: updates.full_name }),
+					...(updates.sortable_name && { sortable_name: updates.sortable_name }),
+				};
+				set({ authors: updatedAuthors });
+			}
+
+			try {
+				await library.updateAuthor(authorId, updates);
+				// Trust optimistic update - no refetch
+			} catch (error) {
+				// On error, reload authors
+				await get().actions.loadAuthors();
+				throw error;
+			}
 		},
 
 		createAuthors: async (newAuthors: NewAuthor[]): Promise<void> => {
 			const { library } = get();
 			if (!library) throw new Error("Library not initialized");
-			await library.createAuthors(newAuthors);
-			await get().actions.loadAuthors();
+
+			try {
+				const createdAuthors = await library.createAuthors(newAuthors);
+				// Add newly created authors to store
+				set((state) => ({
+					authors: [...state.authors, ...createdAuthors].sort(sortAuthors),
+				}));
+			} catch (error) {
+				// On error, reload authors
+				await get().actions.loadAuthors();
+				throw error;
+			}
 		},
 
 		deleteAuthor: async (authorId: string): Promise<void> => {
-			const { library } = get();
+			const { library, authors } = get();
 			if (!library) throw new Error("Library not initialized");
-			await library.deleteAuthor(authorId);
-			await get().actions.loadAuthors();
+
+			// Optimistically remove author from store
+			const filteredAuthors = authors.filter((a) => a.id !== authorId);
+			set({ authors: filteredAuthors });
+
+			try {
+				await library.deleteAuthor(authorId);
+				// Trust optimistic update - no refetch
+			} catch (error) {
+				// On error, reload authors
+				await get().actions.loadAuthors();
+				throw error;
+			}
 		},
 
 		deleteBookIdentifier: async (
