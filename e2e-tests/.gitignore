@@ -4,13 +4,15 @@
 screenshots/*.png
 screenshots/*.jpg
 
-# WebdriverIO logs
+# Logs
 *.log
 
-# Test results
+# Playwright test results
 test-results/
-allure-results/
-allure-report/
+playwright-report/
+
+# tauri-driver PID file
+.tauri-driver.pid
 
 # Coverage reports
 coverage/

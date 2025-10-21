@@ -8,7 +8,7 @@ Citadel uses a multi-layered testing strategy:
 
 ```
 ┌─────────────────────────────────────┐
-│         E2E Tests (WebdriverIO)     │  ← Full application workflows
+│         E2E Tests (Playwright)      │  ← Full application workflows
 ├─────────────────────────────────────┤
 │     Integration Tests (Vitest)      │  ← Component interactions
 ├─────────────────────────────────────┤
@@ -106,9 +106,11 @@ describe("Book Service Integration", () => {
 });
 ```
 
-## 3. E2E Tests (WebdriverIO + tauri-driver)
+## 3. E2E Tests (Playwright + tauri-driver)
 
-E2E tests verify complete user workflows in the actual application.
+E2E tests verify complete user workflows in the actual application using Playwright's test runner with tauri-driver.
+
+**Note:** This is an experimental setup that combines Playwright's API with tauri-driver for desktop app automation.
 
 ### Location
 - `e2e-tests/`
@@ -131,29 +133,41 @@ npm run test:e2e:build
 npm run test:e2e
 
 # Run specific test file
-npx wdio run wdio.conf.ts --spec e2e-tests/app-launch.test.ts
+npx playwright test app-launch.spec.ts
+
+# Run with Playwright UI (interactive debugging)
+npx playwright test --ui
+
+# Debug mode
+npx playwright test --debug
 ```
 
 ### Writing E2E Tests
 
 See [e2e-tests/README.md](./e2e-tests/README.md) for detailed documentation.
 
-Quick example:
+Quick example using Playwright-style API:
 
 ```typescript
-import { expect } from "@wdio/globals";
-import { waitForAppReady, findByTestId, clickElement } from "./helpers/app-helpers";
+import { test, expect } from "./fixtures";
 
-describe("Add Book Workflow", () => {
-  before(async () => {
-    await waitForAppReady();
-  });
+test.describe("Add Book Workflow", () => {
+  test("should add a new book", async ({ page }) => {
+    // Find and click button (Playwright-style!)
+    const addButton = await page.getByTestId("add-book-button");
+    await addButton.click();
 
-  it("should add a new book", async () => {
-    const addButton = await findByTestId("add-book-button");
-    await clickElement(addButton);
+    // Fill in form
+    const titleInput = await page.getByTestId("book-title-input");
+    await titleInput.fill("My Book");
 
-    // ... rest of test
+    // Save
+    const saveButton = await page.getByRole("button", { name: "Save" });
+    await saveButton.click();
+
+    // Verify
+    const bookItem = await page.getByText("My Book");
+    expect(await bookItem.isVisible()).toBe(true);
   });
 });
 ```
@@ -204,7 +218,7 @@ Runs on every push and PR:
 - ✅ Formatting checks
 - ✅ Linting (TypeScript + Rust)
 - ✅ Unit tests (Vitest)
-- ✅ E2E tests (WebdriverIO + tauri-driver)
+- ✅ E2E tests (Playwright + tauri-driver)
 
 ### Build Workflow (`.github/workflows/build.yml`)
 
@@ -308,8 +322,14 @@ npm run test -- --ui
 ### E2E Tests
 
 ```bash
-# Enable debug logging in wdio.conf.ts
-logLevel: "debug"
+# Run with Playwright UI for interactive debugging
+npx playwright test --ui
+
+# Run in debug mode
+npx playwright test --debug
+
+# View HTML test reports
+npx playwright show-report
 
 # Check screenshots in e2e-tests/screenshots/
 # Tests automatically capture screenshots on failure
@@ -353,7 +373,7 @@ RUST_BACKTRACE=1 cargo test
 ## Resources
 
 - [Vitest Documentation](https://vitest.dev/)
-- [WebdriverIO Documentation](https://webdriver.io/)
+- [Playwright Documentation](https://playwright.dev/)
 - [Tauri Testing Guide](https://tauri.app/v1/guides/testing/)
 - [Rust Testing Book](https://doc.rust-lang.org/book/ch11-00-testing.html)
 

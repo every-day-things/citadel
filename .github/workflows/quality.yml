@@ -116,18 +116,17 @@ jobs:
       - name: Build app for testing
         run: cd src-tauri && cargo build --release
 
-      - name: Start tauri-driver in background
-        run: tauri-driver --port 4445 &
-
-      - name: Run E2E tests
+      - name: Run E2E tests with Playwright
         run: npm run test:e2e
         env:
           CI: true
 
-      - name: Upload screenshots on failure
+      - name: Upload test reports on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-test-screenshots
-          path: e2e-tests/screenshots/
+          name: e2e-test-results
+          path: |
+            e2e-tests/test-results/
+            e2e-tests/screenshots/
           if-no-files-found: ignore
