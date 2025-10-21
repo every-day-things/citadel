@@ -64,7 +64,7 @@ impl BookFilesHandler {
 
     /// Batch fetch book files for multiple books
     pub fn batch_list_by_book_ids(
-        &self,
+        &mut self,
         book_ids: &[i32],
     ) -> Result<std::collections::HashMap<i32, Vec<BookFile>>, ()> {
         use crate::schema::data::dsl::*;
