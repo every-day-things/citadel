@@ -162,7 +162,7 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => ({
 		},
 
 		reset: () => {
-			set(initialState);
+			set({ ...initialState, actions: get().actions });
 		},
 
 		createLibrary: async (libraryRoot: string) => {
