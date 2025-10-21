@@ -1,6 +1,7 @@
 import type {
 	AuthorUpdate,
 	BookUpdate,
+	Identifier,
 	ImportableBookMetadata,
 	ImportableFile,
 	LibraryAuthor,
@@ -39,7 +40,7 @@ export interface Library {
 		identifierId: number | null,
 		label: string,
 		value: string,
-	): Promise<void>;
+	): Promise<Identifier>;
 
 	/**
 	 * Returns the path to the cover image for the book with the given ID.
@@ -92,10 +93,11 @@ export interface Library {
 	 * see {@link Library#getImportableFileMetadata} for more details.
 	 *
 	 * @param metadata
+	 * @returns The created LibraryBook
 	 */
 	addImportableFileByMetadata(
 		metadata: ImportableBookMetadata,
-	): Promise<LibraryBook["id"] | undefined>;
+	): Promise<LibraryBook | undefined>;
 
 	/**
 	 * Returns a list of valid file extensions & mimetypes for files users want to

@@ -45,7 +45,7 @@ async clbQueryImportableFileMetadata(file: ImportableFile) : Promise<ImportableB
 async clbQueryListAllFiletypes() : Promise<([string, string])[]> {
     return await TAURI_INVOKE("clb_query_list_all_filetypes");
 },
-async clbCmdCreateBook(md: ImportableBookMetadata) : Promise<Result<string, string>> {
+async clbCmdCreateBook(md: ImportableBookMetadata) : Promise<Result<LibraryBook, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("clb_cmd_create_book", { md }) };
 } catch (e) {
@@ -61,7 +61,7 @@ async clbCmdUpdateBook(bookId: string, updates: BookUpdate) : Promise<Result<num
     else return { status: "error", error: e  as any };
 }
 },
-async clbCmdUpsertBookIdentifier(bookId: string, label: string, value: string, existingId: number | null) : Promise<Result<null, string>> {
+async clbCmdUpsertBookIdentifier(bookId: string, label: string, value: string, existingId: number | null) : Promise<Result<Identifier, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("clb_cmd_upsert_book_identifier", { bookId, label, value, existingId }) };
 } catch (e) {
