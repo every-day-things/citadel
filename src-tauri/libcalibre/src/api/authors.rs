@@ -119,7 +119,7 @@ impl AuthorsHandler {
 
     /// Batch fetch multiple authors by their IDs
     pub fn find_by_ids(
-        &self,
+        &mut self,
         author_ids: &[i32],
     ) -> Result<std::collections::HashMap<i32, Author>, ()> {
         use crate::schema::authors::dsl::*;

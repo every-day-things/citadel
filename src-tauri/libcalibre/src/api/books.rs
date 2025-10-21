@@ -314,7 +314,7 @@ impl BooksHandler {
 
     /// Batch fetch descriptions for multiple books
     pub fn batch_get_descriptions(
-        &self,
+        &mut self,
         book_ids: &[i32],
     ) -> Result<std::collections::HashMap<i32, String>, ()> {
         use crate::schema::comments::dsl::*;
@@ -336,7 +336,7 @@ impl BooksHandler {
 
     /// Batch fetch book-author links for multiple books
     pub fn batch_get_author_links(
-        &self,
+        &mut self,
         book_ids: &[i32],
     ) -> Result<std::collections::HashMap<i32, Vec<i32>>, ()> {
         use crate::schema::books_authors_link::dsl::*;
@@ -364,7 +364,7 @@ impl BooksHandler {
 
     /// Batch fetch read states for multiple books
     pub fn batch_get_read_states(
-        &self,
+        &mut self,
         book_ids: &[i32],
     ) -> Result<std::collections::HashMap<i32, bool>, ()> {
         if book_ids.is_empty() {
@@ -406,7 +406,7 @@ impl BooksHandler {
 
     /// Batch fetch identifiers for multiple books
     pub fn batch_get_identifiers(
-        &self,
+        &mut self,
         book_ids: &[i32],
     ) -> Result<std::collections::HashMap<i32, Vec<Identifier>>, ()> {
         use crate::schema::identifiers::dsl::*;
