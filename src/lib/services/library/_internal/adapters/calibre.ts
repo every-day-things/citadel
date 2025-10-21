@@ -145,7 +145,7 @@ const genLocalCalibreClient = async (
 			if (result.status === "error") {
 				throw new Error(result.error);
 			}
-			return result.data ?? undefined;
+			return result.data;
 		},
 		listValidFileTypes: async () => {
 			const result = await commands.clbQueryListAllFiletypes();
