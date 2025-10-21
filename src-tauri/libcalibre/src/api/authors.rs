@@ -136,6 +136,12 @@ impl AuthorsHandler {
             .load(&mut *connection)
             .map_err(|_| ())?;
 
-        Ok(results.into_iter().map(|a| (a.id, a)).collect())
+        Ok(results.into_iter().fold(
+            std::collections::HashMap::with_capacity(results.len()),
+            |mut m, a| {
+                m.insert(a.id, a);
+                m
+            },
+        ))
     }
 }
