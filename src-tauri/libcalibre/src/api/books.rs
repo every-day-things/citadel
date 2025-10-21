@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex;
 
@@ -313,14 +314,11 @@ impl BooksHandler {
     // === === ===
 
     /// Batch fetch descriptions for multiple books
-    pub fn batch_get_descriptions(
-        &mut self,
-        book_ids: &[i32],
-    ) -> Result<std::collections::HashMap<i32, String>, ()> {
+    pub fn batch_get_descriptions(&mut self, book_ids: &[i32]) -> Result<HashMap<i32, String>, ()> {
         use crate::schema::comments::dsl::*;
 
         if book_ids.is_empty() {
-            return Ok(std::collections::HashMap::new());
+            return Ok(HashMap::new());
         }
 
         let mut connection = self.client.lock().unwrap();
@@ -338,11 +336,11 @@ impl BooksHandler {
     pub fn batch_get_author_links(
         &mut self,
         book_ids: &[i32],
-    ) -> Result<std::collections::HashMap<i32, Vec<i32>>, ()> {
+    ) -> Result<HashMap<i32, Vec<i32>>, ()> {
         use crate::schema::books_authors_link::dsl::*;
 
         if book_ids.is_empty() {
-            return Ok(std::collections::HashMap::new());
+            return Ok(HashMap::new());
         }
 
         let mut connection = self.client.lock().unwrap();
@@ -354,7 +352,7 @@ impl BooksHandler {
             .or(Err(()))?;
 
         // Group by book_id
-        let mut map: std::collections::HashMap<i32, Vec<i32>> = std::collections::HashMap::new();
+        let mut map: HashMap<i32, Vec<i32>> = HashMap::new();
         for (book_id, author_id) in results {
             map.entry(book_id).or_insert_with(Vec::new).push(author_id);
         }
@@ -363,12 +361,9 @@ impl BooksHandler {
     }
 
     /// Batch fetch read states for multiple books
-    pub fn batch_get_read_states(
-        &mut self,
-        book_ids: &[i32],
-    ) -> Result<std::collections::HashMap<i32, bool>, ()> {
+    pub fn batch_get_read_states(&mut self, book_ids: &[i32]) -> Result<HashMap<i32, bool>, ()> {
         if book_ids.is_empty() {
-            return Ok(std::collections::HashMap::new());
+            return Ok(HashMap::new());
         }
 
         let mut connection = self.client.lock().unwrap();
@@ -396,7 +391,7 @@ impl BooksHandler {
         let results: Vec<BookReadState> =
             sql_query(query_str).load(&mut *connection).or(Err(()))?;
 
-        let map: std::collections::HashMap<i32, bool> = results
+        let map: HashMap<i32, bool> = results
             .into_iter()
             .map(|r| (r.book, r.value == 1))
             .collect();
@@ -408,11 +403,11 @@ impl BooksHandler {
     pub fn batch_get_identifiers(
         &mut self,
         book_ids: &[i32],
-    ) -> Result<std::collections::HashMap<i32, Vec<Identifier>>, ()> {
+    ) -> Result<HashMap<i32, Vec<Identifier>>, ()> {
         use crate::schema::identifiers::dsl::*;
 
         if book_ids.is_empty() {
-            return Ok(std::collections::HashMap::new());
+            return Ok(HashMap::new());
         }
 
         let mut connection = self.client.lock().unwrap();
@@ -424,8 +419,7 @@ impl BooksHandler {
             .or(Err(()))?;
 
         // Group by book_id
-        let mut map: std::collections::HashMap<i32, Vec<Identifier>> =
-            std::collections::HashMap::new();
+        let mut map: HashMap<i32, Vec<Identifier>> = HashMap::new();
         for identifier in results {
             map.entry(identifier.book)
                 .or_insert_with(Vec::new)

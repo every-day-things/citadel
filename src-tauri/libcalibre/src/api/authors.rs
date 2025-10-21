@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex;
 
@@ -118,14 +119,11 @@ impl AuthorsHandler {
     // === === ===
 
     /// Batch fetch multiple authors by their IDs
-    pub fn find_by_ids(
-        &mut self,
-        author_ids: &[i32],
-    ) -> Result<std::collections::HashMap<i32, Author>, ()> {
+    pub fn find_by_ids(&mut self, author_ids: &[i32]) -> Result<HashMap<i32, Author>, ()> {
         use crate::schema::authors::dsl::*;
 
         if author_ids.is_empty() {
-            return Ok(std::collections::HashMap::new());
+            return Ok(HashMap::new());
         }
 
         let mut connection = self.client.lock().unwrap();
@@ -136,12 +134,11 @@ impl AuthorsHandler {
             .load(&mut *connection)
             .map_err(|_| ())?;
 
-        Ok(results.into_iter().fold(
-            std::collections::HashMap::with_capacity(results.len()),
-            |mut m, a| {
+        Ok(results
+            .into_iter()
+            .fold(HashMap::with_capacity(results.len()), |mut m, a| {
                 m.insert(a.id, a);
                 m
-            },
-        ))
+            }))
     }
 }
