@@ -134,9 +134,10 @@ impl AuthorsHandler {
             .load(&mut *connection)
             .map_err(|_| ())?;
 
+        let capacity = results.len();
         Ok(results
             .into_iter()
-            .fold(HashMap::with_capacity(results.len()), |mut m, a| {
+            .fold(HashMap::with_capacity(capacity), |mut m, a| {
                 m.insert(a.id, a);
                 m
             }))
