@@ -1,0 +1,17 @@
+# E2E Test Generated Files
+
+# Screenshots (except examples)
+screenshots/*.png
+screenshots/*.jpg
+
+# WebdriverIO logs
+*.log
+
+# Test results
+test-results/
+allure-results/
+allure-report/
+
+# Coverage reports
+coverage/
+.nyc_output/
