@@ -28,10 +28,6 @@ interface LibraryActions {
 	initialize: (libraryPath: string) => Promise<void>;
 	reset: () => void;
 
-	// Mutations
-	invalidateBooks: () => void;
-	invalidateAuthors: () => void;
-
 	// Library management
 	createLibrary: (libraryRoot: string) => Promise<void>;
 	promptToAddBook: () => Promise<ImportableBookMetadata | undefined>;
@@ -151,14 +147,6 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => ({
 						error instanceof Error ? error : new Error(String(error)),
 				});
 			}
-		},
-
-		invalidateBooks: () => {
-			set({ booksLoading: true });
-		},
-
-		invalidateAuthors: () => {
-			set({ authorsLoading: true });
 		},
 
 		reset: () => {
