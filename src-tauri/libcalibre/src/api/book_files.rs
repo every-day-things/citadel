@@ -83,13 +83,13 @@ impl BookFilesHandler {
             .or(Err(()))?;
 
         // Group by book_id
-        let map = results.into_iter().fold(
-            HashMap::with_capacity(book_ids.len()),
-            |mut acc, file| {
-                acc.entry(file.book).or_insert_with(Vec::new).push(file);
-                acc
-            }
-        );
+        let map =
+            results
+                .into_iter()
+                .fold(HashMap::with_capacity(book_ids.len()), |mut acc, file| {
+                    acc.entry(file.book).or_insert_with(Vec::new).push(file);
+                    acc
+                });
 
         Ok(map)
     }
