@@ -246,25 +246,9 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => ({
 			set({ books: optimisticBooks });
 
 			try {
-				// Send update to backend
+				// Send update to backend - trust optimistic update, no refetch needed
 				await library.updateBook(bookId, updates);
-
-				// Selectively refetch just this book from backend
-				const freshBooks = await library.listBooks();
-				const updatedBook = freshBooks.find((b) => b.id === bookId);
-
-				if (updatedBook) {
-					// Update only this specific book with authoritative backend data
-					set((state) => {
-						const currentBooks = state.books;
-						const index = currentBooks.findIndex((b) => b.id === bookId);
-						if (index === -1) return state;
-
-						const newBooks = [...currentBooks];
-						newBooks[index] = updatedBook;
-						return { books: newBooks };
-					});
-				}
+				// Optimistic update is now confirmed, no additional data fetch required
 			} catch (error) {
 				// On error, revert by reloading all books
 				await get().actions.loadBooks();
@@ -321,23 +305,8 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => ({
 			}
 
 			try {
+				// Send delete to backend - trust optimistic update, no refetch needed
 				await library.deleteBookIdentifier(bookId, identifierId);
-
-				// Selectively refetch just this book from backend
-				const freshBooks = await library.listBooks();
-				const updatedBook = freshBooks.find((b) => b.id === bookId);
-
-				if (updatedBook) {
-					set((state) => {
-						const currentBooks = state.books;
-						const index = currentBooks.findIndex((b) => b.id === bookId);
-						if (index === -1) return state;
-
-						const newBooks = [...currentBooks];
-						newBooks[index] = updatedBook;
-						return { books: newBooks };
-					});
-				}
 			} catch (error) {
 				// On error, revert by reloading all books
 				await get().actions.loadBooks();
@@ -354,8 +323,10 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => ({
 			const { library, books } = get();
 			if (!library) throw new Error("Library not initialized");
 
-			// Find the book to update
+			// Store original book state for potential rollback
 			const bookIndex = books.findIndex((b) => b.id === bookId);
+			const originalBook = bookIndex !== -1 ? books[bookIndex] : null;
+
 			if (bookIndex !== -1) {
 				// Apply optimistic update - add or update identifier
 				const currentBook = books[bookIndex];
@@ -385,22 +356,15 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => ({
 			}
 
 			try {
+				// Send upsert to backend
 				await library.upsertBookIdentifier(bookId, identifierId, label, value);
 
-				// Selectively refetch just this book from backend
-				const freshBooks = await library.listBooks();
-				const updatedBook = freshBooks.find((b) => b.id === bookId);
-
-				if (updatedBook) {
-					set((state) => {
-						const currentBooks = state.books;
-						const index = currentBooks.findIndex((b) => b.id === bookId);
-						if (index === -1) return state;
-
-						const newBooks = [...currentBooks];
-						newBooks[index] = updatedBook;
-						return { books: newBooks };
-					});
+				// For new identifiers, we must refetch to get the real ID assigned by the backend
+				// This is necessary because we used a temporary ID (-1) for the optimistic update.
+				// Without the real ID, future operations (edit/delete) on this identifier won't work.
+				// TODO: Optimize this by having the backend return the created identifier in the response
+				if (identifierId === null) {
+					await get().actions.loadBooks();
 				}
 			} catch (error) {
 				// On error, revert by reloading all books
