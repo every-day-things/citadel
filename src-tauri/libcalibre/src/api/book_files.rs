@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::Mutex;
 
@@ -66,11 +67,11 @@ impl BookFilesHandler {
     pub fn batch_list_by_book_ids(
         &mut self,
         book_ids: &[i32],
-    ) -> Result<std::collections::HashMap<i32, Vec<BookFile>>, ()> {
+    ) -> Result<HashMap<i32, Vec<BookFile>>, ()> {
         use crate::schema::data::dsl::*;
 
         if book_ids.is_empty() {
-            return Ok(std::collections::HashMap::new());
+            return Ok(HashMap::new());
         }
 
         let mut connection = self.client.lock().unwrap();
@@ -82,8 +83,7 @@ impl BookFilesHandler {
             .or(Err(()))?;
 
         // Group by book_id
-        let mut map: std::collections::HashMap<i32, Vec<BookFile>> =
-            std::collections::HashMap::new();
+        let mut map: HashMap<i32, Vec<BookFile>> = HashMap::new();
         for file in results {
             map.entry(file.book).or_insert_with(Vec::new).push(file);
         }
