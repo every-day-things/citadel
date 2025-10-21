@@ -382,18 +382,19 @@ impl BooksHandler {
             value: i32,
         }
 
-        let placeholders = book_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+        // Build a query with all book IDs using IN clause
+        let book_ids_str = book_ids
+            .iter()
+            .map(|id| id.to_string())
+            .collect::<Vec<_>>()
+            .join(",");
         let query_str = format!(
             "SELECT book, value FROM custom_column_{} WHERE book IN ({})",
-            read_state_column_id, placeholders
+            read_state_column_id, book_ids_str
         );
 
-        let mut query = sql_query(query_str);
-        for book_id in book_ids {
-            query = query.bind::<Integer, _>(*book_id);
-        }
-
-        let results: Vec<BookReadState> = query.load(&mut *connection).or(Err(()))?;
+        let results: Vec<BookReadState> =
+            sql_query(query_str).load(&mut *connection).or(Err(()))?;
 
         let map: std::collections::HashMap<i32, bool> = results
             .into_iter()
