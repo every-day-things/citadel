@@ -321,8 +321,15 @@ impl CalibreClient {
                 .unwrap_or_default();
             let authors: Vec<Author> = author_ids_for_book
                 .iter()
-                .filter_map(|author_id| authors_map.get(author_id).cloned())
-                .collect();
+                .map(|author_id| {
+                    authors_map.get(author_id).cloned().ok_or_else(|| {
+                        CalibreError::Database(format!(
+                            "Author {} not found for book {}",
+                            author_id, book_id
+                        ))
+                    })
+                })
+                .collect::<Result<Vec<Author>, CalibreError>>()?;
 
             // Get other data for this book
             let files = files_map.get(&book_id).cloned().unwrap_or_default();
