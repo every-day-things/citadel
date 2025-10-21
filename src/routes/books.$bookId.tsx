@@ -82,9 +82,7 @@ const EditBookRoute = () => {
 		<BookPage
 			allAuthorList={allAuthorList}
 			book={book}
-			onCreateAuthor={async (name) => {
-				await onCreateAuthor(name);
-			}}
+			onCreateAuthor={onCreateAuthor}
 			onSave={onSave}
 			onUpsertIdentifier={onUpsertIdentifier}
 			onDeleteIdentifier={onDeleteIdentifier}
