@@ -10,6 +10,9 @@ pub mod models;
 pub mod persistence;
 mod schema;
 pub mod sorting;
+#[cfg(test)]
+mod test_utils;
+pub mod types;
 pub mod util;
 
 use diesel::SqliteConnection;
@@ -20,7 +23,9 @@ pub use entities::{
     book_row::UpdateBookData, book_row::UpsertBookIdentifier,
 };
 
-pub use error::CalibreError;
+pub use error::{CalibreError, Error, Result};
+
+pub use types::{AuthorId, BookFileId, BookId, IdentifierId};
 
 pub struct ClientV2 {
     connection: Arc<Mutex<SqliteConnection>>,
