@@ -10,6 +10,8 @@ pub mod persistence;
 mod queries;
 pub(crate) mod schema;
 pub mod sorting;
+#[cfg(test)]
+mod test_utils;
 pub mod types;
 pub mod util;
 
@@ -19,7 +21,7 @@ pub use library::{
     Author as LibraryAuthor, AuthorAdd, AuthorUpdate, Book as LibraryBook, BookAdd, BookFileInfo,
     BookIdentifier, BookUpdate, Library,
 };
-pub use types::{AuthorId, BookFileId, BookId};
+pub use types::{AuthorId, BookFileId, BookId, IdentifierId};
 
 // Keep entity exports that are needed internally (for operations/queries)
 pub(crate) use entities::{

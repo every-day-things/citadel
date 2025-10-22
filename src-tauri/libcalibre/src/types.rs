@@ -1,7 +1,7 @@
-//! Type-safe IDs for entities.
+//! Type-safe ID wrappers for Calibre entities.
 //!
-//! These newtypes avoid mixing different entity IDs, and include convenience
-//! methods to parse and display them.
+//! These newtypes prevent mixing up different entity IDs and provide
+//! convenient parsing and display implementations.
 
 use std::fmt;
 use std::num::ParseIntError;
@@ -18,6 +18,12 @@ pub struct AuthorId(pub i32);
 /// Type-safe wrapper for book file IDs.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct BookFileId(pub i32);
+
+
+/// Type-safe wrapper for identifier IDs.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub struct IdentifierId(pub i32);
+
 
 // === Macro to reduce boilerplate ===
 
@@ -66,7 +72,8 @@ macro_rules! impl_id_type {
 
 impl_id_type!(BookId, "book");
 impl_id_type!(AuthorId, "author");
-impl_id_type!(BookFileId, "book_file");
+impl_id_type!(BookFileId, "file");
+impl_id_type!(IdentifierId, "identifier");
 
 #[cfg(test)]
 mod tests {
@@ -179,5 +186,62 @@ mod tests {
     #[test]
     fn author_id_to_i32() {
         assert_eq!(i32::from(AuthorId(123)), 123);
+    }
+
+    // === BookFileId Tests ===
+
+    #[test]
+    fn file_id_display() {
+        assert_eq!(BookFileId(456).to_string(), "file_456");
+    }
+
+    #[test]
+    fn file_id_parse() {
+        assert_eq!("file_456".parse::<BookFileId>().unwrap(), BookFileId(456));
+        assert_eq!("456".parse::<BookFileId>().unwrap(), BookFileId(456));
+    }
+
+    #[test]
+    fn file_id_roundtrip() {
+        let id = BookFileId(789);
+        let parsed: BookFileId = id.to_string().parse().unwrap();
+        assert_eq!(id, parsed);
+    }
+
+    // === IdentifierId Tests ===
+
+    #[test]
+    fn identifier_id_display() {
+        assert_eq!(IdentifierId(111).to_string(), "identifier_111");
+    }
+
+    #[test]
+    fn identifier_id_parse() {
+        assert_eq!(
+            "identifier_111".parse::<IdentifierId>().unwrap(),
+            IdentifierId(111)
+        );
+        assert_eq!("111".parse::<IdentifierId>().unwrap(), IdentifierId(111));
+    }
+
+    #[test]
+    fn identifier_id_roundtrip() {
+        let id = IdentifierId(222);
+        let parsed: IdentifierId = id.to_string().parse().unwrap();
+        assert_eq!(id, parsed);
+    }
+
+    // === Type Safety Tests ===
+
+    #[test]
+    fn ids_are_not_interchangeable() {
+        let book = BookId(1);
+        let author = AuthorId(1);
+
+        // This should not compile (uncomment to verify):
+        // assert_eq!(book, author);
+
+        // But we can compare their raw values explicitly if needed:
+        assert_eq!(book.as_i32(), author.as_i32());
     }
 }

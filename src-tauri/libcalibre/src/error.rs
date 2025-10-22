@@ -1,11 +1,16 @@
+use crate::types::{AuthorId, BookFileId, BookId, IdentifierId};
 use std::fmt;
+use std::num::ParseIntError;
 
-use crate::types::{AuthorId, BookId};
+/// Result type alias for libcalibre operations.
+pub type Result<T> = std::result::Result<T, Error>;
 
+/// Errors that can occur when working with a Calibre library.
 #[derive(Debug, thiserror::Error)]
-pub enum CalibreError {
-    #[error("Database error: {0}")]
-    Database(String),
+pub enum Error {
+    /// Database operation failed.
+    #[error("database error: {0}")]
+    Database(#[from] diesel::result::Error),
 
     #[error("Database integrity error: {0}")]
     DatabaseIntegrity(String),
@@ -21,16 +26,20 @@ pub enum CalibreError {
     #[error("Author not found: {0}")]
     AuthorNotFound(AuthorId),
 
-    /// Book file with given ID was not found.
+    /// Book file with given ID and format was not found.
     #[error("Book file not found for book {0} with format {1}")]
     BookFileNotFound(BookId, String),
 
-    /// Book file with given ID was not found.
+    /// Cover image for a book was not found.
     #[error("Book file not found")]
     BookCoverNotFound,
 
     #[error("Author cannot be deleted; they have associated books")]
     AuthorHasAssociatedBooks(Vec<BookId>),
+
+    /// Identifier with given ID was not found.
+    #[error("identifier not found: {0}")]
+    IdentifierNotFound(IdentifierId),
 
     #[error("Library not initialized")]
     LibraryNotInitialized,
@@ -46,35 +55,41 @@ pub enum CalibreError {
     ///
     /// Functions or function parameter values may be banned for security,
     /// stability, performance, or other reasons. Any time a ban error is
-    /// returned, a reason is provideed.
+    /// returned, a reason is provided.
     #[error("Banned function invocation")]
     BannedFunctionInvocation(String),
+
+    /// Failed to parse ID from string.
+    #[error("failed to parse id: {0}")]
+    ParseId(#[from] ParseIntError),
+
+    /// Cover extraction failed.
+    #[error("failed to extract cover from file: {0}")]
+    CoverExtraction(String),
 
     #[error("Unknown error: {0}")]
     Unknown(String),
 }
 
-impl CalibreError {
-    /// Helper to create a database error from any error type
+impl Error {
+    /// Helper to create a database error from any error type.
     pub fn database<E: fmt::Display>(error: E) -> Self {
-        CalibreError::Database(error.to_string())
+        Error::Unknown(format!("database error: {}", error))
     }
 
-    /// Helper to create an unknown error from any error type
+    /// Helper to create an unknown error from any error type.
     pub fn unknown<E: fmt::Display>(error: E) -> Self {
-        CalibreError::Unknown(error.to_string())
+        Error::Unknown(error.to_string())
     }
 }
+
+// Maintain backwards compatibility with old CalibreError name
+#[allow(deprecated)]
+pub type CalibreError = Error;
 
 // Allow converting from Box<dyn std::error::Error> for gradual migration
-impl From<Box<dyn std::error::Error>> for CalibreError {
+impl From<Box<dyn std::error::Error>> for Error {
     fn from(error: Box<dyn std::error::Error>) -> Self {
-        CalibreError::Unknown(error.to_string())
-    }
-}
-
-impl From<diesel::result::Error> for CalibreError {
-    fn from(error: diesel::result::Error) -> Self {
-        CalibreError::Database(error.to_string())
+        Error::Unknown(error.to_string())
     }
 }
