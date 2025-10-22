@@ -146,6 +146,22 @@ pub(crate) fn find_books(
     Ok(book_ids)
 }
 
+/// Count how many books an author has.
+pub(crate) fn count_books(
+    conn: &mut SqliteConnection,
+    author_id: AuthorId,
+) -> Result<usize, CalibreError> {
+    use crate::schema::books_authors_link::dsl::*;
+
+    let count: i64 = books_authors_link
+        .filter(author.eq(author_id.as_i32()))
+        .count()
+        .get_result(conn)
+        .map_err(CalibreError::from)?;
+
+    Ok(count as usize)
+}
+
 pub(crate) fn link_book(
     conn: &mut SqliteConnection,
     author_id: AuthorId,
@@ -179,6 +195,10 @@ pub(crate) fn unlink_book(
     Ok(())
 }
 
+/// Batch fetch author IDs grouped by book ID.
+///
+/// Returns a HashMap mapping BookId to a Vec of AuthorIds.
+/// More efficient than calling find_books for each book individually.
 pub(crate) fn find_author_ids_by_book_ids(
     conn: &mut SqliteConnection,
     book_ids: Vec<BookId>,
@@ -203,9 +223,3 @@ pub(crate) fn find_author_ids_by_book_ids(
 
     Ok(grouped)
 }
-
-// =============================================================================
-// Tests
-// =============================================================================
-
-// TODO

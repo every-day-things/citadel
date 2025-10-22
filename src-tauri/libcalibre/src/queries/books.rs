@@ -3,9 +3,12 @@
 //! Provides functions to interact with `books` in the Calibre database.
 //! All functions use type-safe IDs and accept a mutable SQLite connection.
 
+use std::collections::HashMap;
+
 use diesel::prelude::*;
 use diesel::{QueryDsl, RunQueryDsl, SqliteConnection};
 
+use crate::models::Identifier;
 use crate::types::AuthorId;
 use crate::{types::BookId, CalibreError};
 use crate::{BookRow, NewBook, UpdateBookData};
@@ -87,4 +90,100 @@ pub(crate) fn find_authors(
         .map_err(CalibreError::from)?;
 
     Ok(author_ids)
+}
+
+// =============================================================================
+// Batch Operations (for performance)
+// =============================================================================
+
+/// Batch fetch descriptions for multiple books.
+///
+/// Returns a HashMap mapping BookId to description text.
+/// More efficient than calling get_description for each book individually.
+pub(crate) fn batch_get_descriptions(
+    conn: &mut SqliteConnection,
+    book_ids: &[BookId],
+) -> Result<HashMap<BookId, String>, CalibreError> {
+    use crate::schema::comments::dsl::*;
+
+    if book_ids.is_empty() {
+        return Ok(HashMap::new());
+    }
+
+    let i32_ids: Vec<i32> = book_ids.iter().map(|bid| bid.as_i32()).collect();
+
+    let results: Vec<(i32, String)> = comments
+        .filter(book.eq_any(&i32_ids))
+        .select((book, text))
+        .load(conn)
+        .map_err(CalibreError::from)?;
+
+    Ok(results
+        .into_iter()
+        .map(|(bid, txt)| (BookId(bid), txt))
+        .collect())
+}
+
+/// Batch fetch author links for multiple books.
+///
+/// Returns a HashMap mapping BookId to a Vec of AuthorIds.
+/// More efficient than calling find_authors for each book individually.
+pub(crate) fn batch_get_author_links(
+    conn: &mut SqliteConnection,
+    book_ids: &[BookId],
+) -> Result<HashMap<BookId, Vec<AuthorId>>, CalibreError> {
+    use crate::schema::books_authors_link::dsl::*;
+
+    if book_ids.is_empty() {
+        return Ok(HashMap::new());
+    }
+
+    let i32_ids: Vec<i32> = book_ids.iter().map(|bid| bid.as_i32()).collect();
+
+    let results: Vec<(i32, i32)> = books_authors_link
+        .filter(book.eq_any(&i32_ids))
+        .select((book, author))
+        .load(conn)
+        .map_err(CalibreError::from)?;
+
+    let mut map: HashMap<BookId, Vec<AuthorId>> = HashMap::new();
+    for (book_id, author_id) in results {
+        map.entry(BookId(book_id))
+            .or_insert_with(Vec::new)
+            .push(AuthorId(author_id));
+    }
+
+    Ok(map)
+}
+
+/// Batch fetch identifiers for multiple books.
+///
+/// Returns a HashMap mapping BookId to a Vec of Identifiers.
+/// More efficient than fetching per-book individually.
+pub(crate) fn batch_get_identifiers(
+    conn: &mut SqliteConnection,
+    book_ids: &[BookId],
+) -> Result<HashMap<BookId, Vec<Identifier>>, CalibreError> {
+    use crate::schema::identifiers::dsl::*;
+
+    if book_ids.is_empty() {
+        return Ok(HashMap::new());
+    }
+
+    let i32_ids: Vec<i32> = book_ids.iter().map(|bid| bid.as_i32()).collect();
+
+    let results: Vec<Identifier> = identifiers
+        .filter(book.eq_any(&i32_ids))
+        .select(Identifier::as_returning())
+        .load(conn)
+        .map_err(CalibreError::from)?;
+
+    let mut map: HashMap<BookId, Vec<Identifier>> = HashMap::new();
+    for identifier in results {
+        map.entry(BookId(identifier.book))
+            .or_insert_with(Vec::new)
+            .push(identifier);
+    }
+
+    Ok(map)
 }

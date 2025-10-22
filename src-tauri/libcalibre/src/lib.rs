@@ -7,7 +7,7 @@ pub mod mime_type;
 pub(crate) mod models;
 mod operations;
 pub mod persistence;
-mod queries;
+pub mod queries;
 pub(crate) mod schema;
 pub mod sorting;
 #[cfg(test)]
