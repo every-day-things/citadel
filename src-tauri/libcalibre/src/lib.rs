@@ -8,6 +8,7 @@ pub mod error;
 pub mod mime_type;
 pub mod models;
 pub mod persistence;
+pub mod queries;
 mod schema;
 pub mod sorting;
 #[cfg(test)]
