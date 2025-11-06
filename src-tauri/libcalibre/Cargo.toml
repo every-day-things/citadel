@@ -20,6 +20,7 @@ sanitise-file-name = "1.0.0"
 
 [dev-dependencies]
 insta = { version = "1.40", features = ["yaml"] }
+proptest = "1.4"
 rusqlite = "0.32"
 serde_yaml = "0.9"
 tempfile = "3.8"
