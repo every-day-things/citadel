@@ -449,6 +449,11 @@ impl CalibreClient {
         })
         .map_err(|_| CalibreError::Database("Failed to randomize library UUID".to_string()))
     }
+
+    /// Get the database path for testing purposes
+    pub fn get_database_path(&self) -> std::path::PathBuf {
+        std::path::PathBuf::from(&self.validated_library_path.database_path)
+    }
 }
 
 fn combined_author_sort(author_list: &Vec<Author>) -> String {
