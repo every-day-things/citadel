@@ -9,14 +9,17 @@
 
 This analysis compares Calibre's Python implementation (v7.20.0) with the current Rust libcalibre implementation. The focus is on database schema, table operations, filesystem storage patterns, and critical business logic that must be replicated for full compatibility.
 
+> **⚠️ IMPORTANT CORRECTION:** An earlier version of this analysis incorrectly stated that libcalibre had "no filesystem operations." This is FALSE. libcalibre DOES implement filesystem operations in `calibre_client.rs` including directory creation, file copying, cover extraction, and metadata.opf generation. The analysis below has been updated to reflect the actual implementation.
+
 **Key Findings:**
-1. libcalibre implements basic CRUD operations but lacks critical Calibre-specific business logic
-2. Missing filesystem path construction logic that matches Calibre's conventions
-3. No support for custom columns (dynamic tables)
-4. Missing triggers, cascading deletes, and data integrity constraints
-5. Incomplete relationship management (many-to-many, many-to-one patterns)
-6. No caching layer or in-memory table representations
-7. Missing data normalization and case-insensitive duplicate handling
+1. ✅ libcalibre DOES implement core filesystem operations (directory creation, file copying, metadata.opf)
+2. ⚠️ Path construction differs from Calibre (uses `sanitise()` crate vs Calibre's custom ASCII logic)
+3. ✅ Basic book creation workflow is implemented with multi-step process
+4. ❌ No support for custom columns beyond hard-coded "read" state
+5. ❌ Missing triggers, cascading deletes, and data integrity constraints
+6. ❌ Incomplete relationship management (only authors implemented, missing tags/series/publishers)
+7. ❌ No caching layer or in-memory table representations
+8. ❌ Missing data normalization and case-insensitive duplicate handling
 
 ---
 
@@ -644,17 +647,33 @@ diesel::table! {
 
 **Code Reference:** `backend.py:1507-1527`
 
-#### libcalibre Implementation
+#### libcalibre Implementation (`calibre_client.rs:47-144`)
 
-**❌ COMPLETE ABSENCE:** No filesystem operations implemented
+**✅ IMPLEMENTED:** libcalibre follows the same directory structure!
 
-**Missing Functionality:**
-- No path construction
-- No file copying
-- No cover management
-- No directory creation
-- No file deletion
-- No file existence checks
+**Path Construction** (`calibre_client.rs:484-489`):
+```rust
+fn gen_book_folder_name(book_name: &String, book_id: i32) -> String {
+    sanitise(
+        &"{title} ({id})"
+            .replace("{title}", book_name)
+            .replace("{id}", &book_id.to_string()),
+    )
+}
+```
+
+**Directory Creation** (`calibre_client.rs:80-84`):
+```rust
+library_relative_mkdir(&self.validated_library_path,
+    Path::new(&author_dir_name).to_path_buf())?;
+library_relative_mkdir(&self.validated_library_path,
+    book_dir_relative_path.clone())?;
+```
+
+**⚠️ DIFFERENCE:** Uses `sanitise()` crate instead of Calibre's custom `ascii_filename()` logic
+- May not handle Windows reserved names (CON, PRN, etc.) the same way
+- May not enforce PATH_LIMIT
+- May not strip trailing spaces/periods like Calibre does
 
 ### 3.2 File Naming
 
@@ -676,9 +695,45 @@ diesel::table! {
 - Generated on demand or cached
 - `metadata_dirtied` table tracks books needing OPF update
 
-#### libcalibre Implementation
+#### libcalibre Implementation (`calibre_client.rs`)
 
-**❌ NOT IMPLEMENTED**
+**✅ IMPLEMENTED:**
+
+**Format Files** (`calibre_client.rs:476-482`):
+```rust
+fn gen_book_file_name(book_title: &String, author_name: &String) -> String {
+    sanitise(&"{title} - {author}"
+        .replace("{title}", book_title)
+        .replace("{author}", author_name))
+}
+```
+- Pattern: `{title} - {author}.{ext}`
+- Example: `The Great Book - Smith, John.epub`
+
+**Cover Files** (`calibre_client.rs:108-118`):
+```rust
+let cover_data = cover_image_data_from_path(primary_file.path.as_path())?;
+if let Some(cover_data) = cover_data {
+    let cover_path = Path::new(&book_dir_relative_path).join("cover.jpg");
+    library_relative_write_file(&self.validated_library_path,
+                                &cover_path, &cover_data);
+}
+```
+- ✅ Extracts cover from EPUB/PDF/MOBI
+- ✅ Saves as `cover.jpg`
+- ⚠️ Doesn't update `books.has_cover` flag
+
+**Metadata Files** (`calibre_client.rs:121-134, 492-592`):
+```rust
+let metadata_opf = MetadataOpf::new(&book, &created_author_list, Utc::now()).format();
+let metadata_opf_path = Path::new(&book_dir_relative_path).join("metadata.opf");
+library_relative_write_file(&self.validated_library_path,
+                            &metadata_opf_path, contents.as_bytes());
+```
+- ✅ Generates OPF XML
+- ✅ Includes book ID, title, authors, dates, language, tags
+- ✅ Includes calibre:timestamp and calibre:title_sort metadata
+- ⚠️ Doesn't use `metadata_dirtied` table
 
 ### 3.3 File Operations
 
@@ -714,7 +769,40 @@ diesel::table! {
 
 #### libcalibre Implementation
 
-**❌ NONE OF THIS EXISTS**
+**✅ PARTIALLY IMPLEMENTED:**
+
+**Add Book with Formats** (`calibre_client.rs:47-144, 390-425`):
+1. ✅ Create authors & book
+2. ✅ Link authors to book
+3. ✅ Create author/book directories
+4. ✅ Update book.path in database
+5. ✅ Copy files to library (`add_book_files()`)
+6. ✅ Insert into `data` table
+7. ✅ Extract and save cover image
+8. ✅ Generate metadata.opf
+9. ⚠️ NO uncompressed size calculation
+10. ⚠️ NO in-memory cache updates
+11. ⚠️ NO metadata_dirtied flag
+
+**File Copying** (`calibre_client.rs:607-622`):
+```rust
+fn library_relative_copy_file(valid_db_path: &ValidDbPath,
+                               source_abs: &Path,
+                               dest_rel: &Path) -> io::Result<()> {
+    let complete_dest_path = Path::new(&valid_db_path.library_path).join(dest_rel);
+    fs::copy(source_abs, complete_dest_path).map(|_| ())
+}
+```
+- ✅ Copies files to correct locations
+- ⚠️ No hardlink support
+- ⚠️ No progress reporting
+- ⚠️ No Windows file locking checks
+- ⚠️ Not atomic
+
+**Missing Operations:**
+- ❌ Remove format (no file deletion)
+- ❌ Update path (no directory renaming)
+- ❌ Replace format (no file replacement logic)
 
 ---
 
@@ -808,18 +896,36 @@ def _create_book_entry(self, mi, apply_import_tags=True):
     # 14. Return book_id
 ```
 
-#### libcalibre (`api/books.rs:create`)
+#### libcalibre (`calibre_client.rs:add_book`)
+
+**✅ MULTI-STEP PROCESS IMPLEMENTED:**
 
 ```rust
-pub fn create(&self, new_book: NewBook) -> Result<BookRow, ()> {
-    // 1. Insert into books
-    // 2. Fetch UUID (because trigger might not exist)
-    // 3. Return book row
-    // No authors, tags, path construction, etc.
+pub fn add_book(&mut self, dto: NewLibraryEntryDto) -> Result<Book, CalibreError> {
+    // 1. Create authors (create if missing)
+    // 2. Create book in database
+    // 3. Update book.author_sort from authors
+    // 4. Link authors to book
+    // 5. Construct filesystem path (author/title (id))
+    // 6. Create directories
+    // 7. Update book.path in database
+    // 8. Copy book files to library
+    // 9. Insert file records into data table
+    // 10. Extract and save cover.jpg
+    // 11. Generate metadata.opf
+    // 12. Return complete Book object
 }
 ```
 
-**❌ MAJOR DEFICIENCY:** Book creation is incomplete and doesn't follow Calibre's multi-step process
+**⚠️ DIFFERENCES from Calibre:**
+- ❌ No tags/series/publishers (only authors implemented)
+- ❌ No custom columns (except hard-coded "read" state)
+- ❌ No cache updates
+- ❌ No metadata_dirtied flag
+- ❌ No import tags
+- ✅ Does create directories, copy files, generate metadata.opf
+- ✅ Does link authors
+- ✅ Multi-step transaction-like process
 
 ### 5.2 Author Sort
 
@@ -932,32 +1038,40 @@ No path construction or sanitization logic exists.
 
 ### 6.1 Immediate Priorities (P0)
 
-1. **Implement Filesystem Operations**
-   - Path construction following Calibre's rules
-   - File copying, moving, deleting
-   - Cover management
-   - Directory creation/deletion
-
-2. **Add Database Triggers**
+1. **Add Database Triggers**
    - Auto-generate sort titles
    - Auto-generate UUIDs
    - Cascade deletes
    - Auto-update last_modified
 
-3. **Register Custom SQL Functions**
-   - `title_sort()`
-   - `author_to_author_sort()`
-   - `uuid4()`
+2. **Register Custom SQL Functions**
+   - `title_sort()` - Already implemented in Rust, needs SQL registration
+   - `author_to_author_sort()` - Needs implementation
+   - `uuid4()` - May already be registered
 
-4. **Implement In-Memory Caching**
+3. **Implement In-Memory Caching**
    - Table classes similar to Calibre
    - `read()` methods to load caches
    - Update caches on writes
+   - Currently has batch queries which is a good start
 
-5. **Add Missing Link Tables**
-   - Implement all `books_*_link` tables
-   - Add CRUD operations
+4. **Add Missing Link Tables Operations**
+   - `books_tags_link` CRUD
+   - `books_series_link` CRUD
+   - `books_publishers_link` CRUD
+   - `books_ratings_link` CRUD
+   - `books_languages_link` CRUD
    - Support ordering where applicable
+
+5. **Improve Filesystem Operations**
+   - ✅ Basic operations exist but need enhancements:
+   - Replace `sanitise()` with Calibre-compatible `ascii_filename()`
+   - Add Windows reserved name handling (CON, PRN, etc.)
+   - Add PATH_LIMIT enforcement
+   - Add file deletion (remove format)
+   - Add directory renaming (update path)
+   - Add hardlink support for file copying
+   - Calculate uncompressed_size for formats
 
 ### 6.2 High Priority (P1)
 
@@ -967,75 +1081,82 @@ No path construction or sanitization logic exists.
    - Handle schema upgrades
 
 7. **Complete Book Creation**
-   - Multi-step creation process
-   - Author auto-creation
-   - Tag auto-creation
-   - Identifier handling
-   - Custom column population
+   - ✅ Multi-step process exists
+   - ❌ Add tags support (create if needed, link)
+   - ❌ Add series support (create if needed, link)
+   - ❌ Add publishers support
+   - ❌ Add ratings support
+   - ❌ Add languages support
+   - ❌ Custom column population
+   - ❌ Update `has_cover` flag after cover extraction
 
 8. **Author Sort Auto-Generation**
-   - Implement `author_to_author_sort()`
+   - Implement `author_to_author_sort()` with proper rules:
+     - Detect "Last, First" format
+     - Handle particles (von, van, de, etc.)
+     - Handle suffixes (Jr., Sr., III, etc.)
    - Apply on author creation/update
 
-9. **Path Sanitization**
-   - Implement `ascii_filename()`
-   - Handle Windows reserved names
-   - Length limiting
-
-10. **Format Operations**
-    - Add format with file copying
-    - Remove format with file deletion
-    - Update format with replacement
-    - Size calculation
+9. **Format Operations Completion**
+    - ✅ Add format exists
+    - ❌ Remove format with file deletion
+    - ❌ Update/replace format
+    - ❌ Uncompressed size calculation
+    - ❌ Update `has_cover` flag
+    - ❌ Update `metadata_dirtied` table
 
 ### 6.3 Medium Priority (P2)
 
-11. **Case-Insensitive Duplicate Handling**
+10. **Case-Insensitive Duplicate Handling**
     - Implement `fix_case_duplicates()` for all tables
     - Merge duplicates on detection
     - ICU collation support
 
-12. **Custom Columns**
+11. **Custom Columns**
     - Dynamic table creation
     - All datatype support
-    - General API (not just "read" column)
-    - Fix SQL injection vulnerabilities
+    - General API (not just hard-coded "read" column)
+    - **CRITICAL:** Fix SQL injection vulnerabilities in `api/books.rs:263-264, 279-280, 302-303`
 
-13. **Missing Tables**
-    - `library_id` - Track library UUID
+12. **Missing Tables**
+    - ⚠️ `library_id` - Track library UUID (partially exists, has `dontusethis_randomize_library_uuid()`)
     - `preferences` - Settings storage
     - `metadata_dirtied` - OPF tracking
     - `books_plugin_data` - Plugin data
 
-14. **Transaction Management**
+13. **Transaction Management**
     - Wrap multi-step operations in transactions
     - Proper error handling and rollback
+    - Currently `add_book()` is not transactional
 
-15. **Batch Operations**
-    - Batch author/tag/series creation
+14. **Batch Operations**
+    - ✅ Already has batch queries for read operations
+    - ❌ Need batch write operations
+    - Batch tag/series/publisher creation
     - Batch linking operations
-    - Bulk updates
 
 ### 6.4 Lower Priority (P3)
 
-16. **Views and Tag Browser**
+15. **Views and Tag Browser**
     - Create tag browser views
     - Filtered views
     - Aggregate functions
 
-17. **Annotations & Reading Progress**
+16. **Annotations & Reading Progress**
     - `annotations` table support
     - `last_read_positions` support
 
-18. **Conversion & Feeds**
+17. **Conversion & Feeds**
     - `conversion_options` table
     - `feeds` table
 
-19. **OPF Metadata**
-    - Generate OPF XML
-    - Sync with `metadata_dirtied`
+18. **OPF Metadata Enhancement**
+    - ✅ Basic OPF generation exists
+    - ❌ Sync with `metadata_dirtied` table
+    - ❌ Handle all metadata fields
+    - ❌ Update on book changes
 
-20. **Plugin Support**
+19. **Plugin Support**
     - `books_plugin_data` API
     - Plugin hooks
 
@@ -1102,24 +1223,45 @@ trait FilesystemOps {
 
 ## Conclusion
 
-libcalibre currently implements basic CRUD operations for a subset of Calibre's database tables but lacks the critical business logic, filesystem operations, caching layer, and data integrity features that make Calibre a robust library management system.
+libcalibre has **made significant progress** toward Calibre compatibility! The implementation includes core database operations, a complete book creation workflow with filesystem operations, and covers the most important use cases. However, some critical features still need work for full 1:1 parity.
 
-**To achieve 1:1 parity, libcalibre needs:**
+**Current State:**
 
-1. ✅ **Core tables present** - Good foundation
-2. ❌ **Business logic** - Needs complete rewrite
-3. ❌ **Filesystem operations** - Not implemented at all
-4. ❌ **In-memory caching** - Not implemented
-5. ❌ **Data integrity** - Missing triggers, constraints
-6. ⚠️ **Performance** - Will be slower without caching
-7. ❌ **Compatibility** - Can't handle real Calibre databases
+1. ✅ **Core tables present** - Solid foundation
+2. ✅ **Basic book creation workflow** - Multi-step process with file operations
+3. ✅ **Filesystem operations** - Directory creation, file copying, cover extraction, metadata.opf
+4. ✅ **Author management** - CRUD with linking
+5. ⚠️ **Business logic** - Partially implemented (authors work, but tags/series/publishers missing)
+6. ⚠️ **Path construction** - Uses `sanitise()` instead of Calibre's `ascii_filename()`
+7. ❌ **In-memory caching** - Has batch queries but no cache layer
+8. ❌ **Data integrity** - Missing triggers, cascade deletes
+9. ❌ **Full relationship support** - Only authors implemented, missing tags/series/publishers/ratings
+10. ⚠️ **Compatibility** - Works with Calibre DBs but may have subtle differences
 
-**Estimated Effort:**
-- P0 items: ~4-6 weeks
-- P1 items: ~3-4 weeks
-- P2 items: ~3-4 weeks
-- P3 items: ~2-3 weeks
+**Gap Analysis:**
 
-**Total: ~12-17 weeks for full parity**
+**What Works Well:**
+- ✅ Reading books with authors, files, identifiers, descriptions
+- ✅ Creating books with file import
+- ✅ Batch query optimizations for listing books
+- ✅ Basic library management
+- ✅ Generates metadata.opf compatible with Calibre
 
-The Rust implementation has the potential to be faster and safer than Calibre's Python code, but significant work is needed to match the feature set and subtle behaviors that users depend on.
+**What Needs Work:**
+- ❌ Tags, series, publishers, ratings (tables exist but no CRUD operations)
+- ❌ Database triggers (sort titles, UUIDs, cascade deletes)
+- ❌ Custom columns (has hard-coded "read" column with SQL injection risk)
+- ❌ Format removal/replacement
+- ❌ Path updates/renaming
+- ❌ Case-insensitive duplicate merging
+- ❌ Schema versioning
+
+**Estimated Effort to Full Parity:**
+- P0 items (triggers, SQL functions, caching, link tables, path fixes): ~3-4 weeks
+- P1 items (schema versioning, complete relationships, author sort): ~2-3 weeks
+- P2 items (duplicates, custom columns, transactions): ~2-3 weeks
+- P3 items (views, annotations, OPF sync): ~1-2 weeks
+
+**Total: ~8-12 weeks for full parity** (down from initial estimate thanks to existing filesystem work!)
+
+**Bottom Line:** libcalibre is much further along than initially appeared! It's a functional library manager that can read and create books in Calibre databases. The main gaps are in relationship management (tags/series/publishers), database integrity (triggers/constraints), and some advanced features. The Rust implementation already provides memory safety and has good potential for performance improvements over Python.
