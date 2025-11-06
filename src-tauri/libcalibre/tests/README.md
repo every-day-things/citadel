@@ -280,15 +280,42 @@ git add tests/fixtures/ tests/snapshots/
 git commit -m "Upgrade to Calibre 7.3 fixtures"
 ```
 
-## Dependencies
+## Test Types
 
-- [`insta`](https://insta.rs/) - Snapshot testing framework
-- [`rusqlite`](https://github.com/rusqlite/rusqlite) - SQLite access (for capturing snapshots)
-- [`serde_yaml`](https://github.com/dtolnay/serde-yaml) - YAML serialization
-- [`tempfile`](https://github.com/Stebalien/tempfile) - Temporary test directories
+libcalibre uses multiple testing approaches for comprehensive coverage, in order
+of preference for you to write them:
 
-## Further Reading
+### 1. Doc Tests
+- **What**: Examples in doc comments that run as tests
+- **Coverage**: API documentation and simple usage examples
+- **When to use**: Documenting public API with runnable examples
 
-- [Snapshot Testing Guide](https://insta.rs/docs/)
-- [Golden Master Testing](https://en.wikipedia.org/wiki/Characterization_test)
-- [Testing Without Mocks](https://www.jamesshore.com/v2/blog/2018/testing-without-mocks)
+### 1. Unit Tests
+- **What**: Direct function tests for business logic
+- **Coverage**: Author/title sorting, name generation, sanitization
+- **When to use**: Testing pure functions and transformations
+
+### 1. Snapshot Tests
+- **What**: Capture entire database state and compare to committed snapshots
+- **Coverage**: Full integration paths for database operations
+- **When to use**: Testing add/update/delete operations
+
+### 1. Property-Based Tests
+- **What**: Generate hundreds of random inputs to verify invariants
+- **Coverage**: Filesystem safety, determinism, edge cases
+- **When to use**: Verifying properties hold for ALL inputs
+
+## Code Coverage
+
+### Viewing Coverage Reports
+
+Install `cargo-llvm-cov`:
+```bash
+cargo install cargo-llvm-cov
+```
+
+Generate coverage reports:
+```bash
+# HTML summary
+cargo llvm-cov --package libcalibre --all-features --html
+```
