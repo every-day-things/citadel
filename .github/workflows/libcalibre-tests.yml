@@ -1,0 +1,113 @@
+name: libcalibre Tests & Coverage
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Rust
+        run: rustup update stable
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: "v0-rust"
+          workspaces: "src-tauri"
+
+      - name: Build
+        working-directory: src-tauri/libcalibre
+        run: cargo build --all-features
+
+  report-coverage:
+    needs: setup
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Rust
+        run: rustup update stable
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: "v0-rust"
+          workspaces: "src-tauri"
+
+      - name: Generate HTML coverage report
+        working-directory: src-tauri
+        run: |
+          cargo llvm-cov --package libcalibre --all-features --html
+
+      - name: Upload HTML coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-html
+          path: src-tauri/target/llvm-cov/html/
+          retention-days: 14
+
+      - name: Generate JSON coverage report (required for comment)
+        working-directory: src-tauri
+        run: |
+          cargo llvm-cov --package libcalibre --all-features --json --output-path ../target/llvm-cov/coverage-summary.json
+
+      - name: Extract coverage percentage
+        id: coverage
+        working-directory: src-tauri
+        run: |
+          COVERAGE=$(jq -r '.data[0].totals.lines.percent' ../target/llvm-cov/coverage-summary.json | xargs printf "%.2f")
+          echo "percentage=$COVERAGE" >> $GITHUB_OUTPUT
+          echo "Coverage: $COVERAGE%"
+
+      - name: Comment coverage on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const coverage = '${{ steps.coverage.outputs.percentage }}';
+            const comment = `## libcalibre Test Coverage Report
+
+            **Overall coverage:** ${coverage}%
+
+            📊 [Download HTML Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+            Coverage breakdown available in the artifacts.`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  test:
+    needs: setup
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Rust
+        run: rustup update stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: "v0-rust"
+          workspaces: "src-tauri"
+
+      - name: Run tests
+        working-directory: src-tauri
+        run: cargo test --package libcalibre --all-features
