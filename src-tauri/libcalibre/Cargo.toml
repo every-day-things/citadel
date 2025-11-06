@@ -17,3 +17,9 @@ serde_json = "1.0"
 thiserror = "1.0"
 uuid = { version = "1.6.1", features = [ "v4", "fast-rng", ] }
 sanitise-file-name = "1.0.0"
+
+[dev-dependencies]
+insta = { version = "1.40", features = ["yaml"] }
+rusqlite = "0.32"
+serde_yaml = "0.9"
+tempfile = "3.8"

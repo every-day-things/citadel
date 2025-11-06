@@ -1,0 +1,698 @@
+---
+source: libcalibre/tests/add_book_test.rs
+expression: snapshot
+---
+schema:
+  - name: annotations
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: book
+        type_name: INTEGER
+        nullable: false
+        primary_key: false
+      - name: format
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+      - name: user_type
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+      - name: user
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+      - name: timestamp
+        type_name: REAL
+        nullable: false
+        primary_key: false
+      - name: annot_id
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+      - name: annot_type
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+      - name: annot_data
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+      - name: searchable_text
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+  - name: annotations_dirtied
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: book
+        type_name: INTEGER
+        nullable: false
+        primary_key: false
+  - name: annotations_fts
+    columns:
+      - name: searchable_text
+        type_name: ""
+        nullable: true
+        primary_key: false
+  - name: annotations_fts_config
+    columns:
+      - name: k
+        type_name: ""
+        nullable: false
+        primary_key: true
+      - name: v
+        type_name: ""
+        nullable: true
+        primary_key: false
+  - name: annotations_fts_data
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: block
+        type_name: BLOB
+        nullable: true
+        primary_key: false
+  - name: annotations_fts_docsize
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: sz
+        type_name: BLOB
+        nullable: true
+        primary_key: false
+  - name: annotations_fts_idx
+    columns:
+      - name: segid
+        type_name: ""
+        nullable: false
+        primary_key: true
+      - name: term
+        type_name: ""
+        nullable: false
+        primary_key: true
+      - name: pgno
+        type_name: ""
+        nullable: true
+        primary_key: false
+  - name: annotations_fts_stemmed
+    columns:
+      - name: searchable_text
+        type_name: ""
+        nullable: true
+        primary_key: false
+  - name: annotations_fts_stemmed_config
+    columns:
+      - name: k
+        type_name: ""
+        nullable: false
+        primary_key: true
+      - name: v
+        type_name: ""
+        nullable: true
+        primary_key: false
+  - name: annotations_fts_stemmed_data
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: block
+        type_name: BLOB
+        nullable: true
+        primary_key: false
+  - name: annotations_fts_stemmed_docsize
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: sz
+        type_name: BLOB
+        nullable: true
+        primary_key: false
+  - name: annotations_fts_stemmed_idx
+    columns:
+      - name: segid
+        type_name: ""
+        nullable: false
+        primary_key: true
+      - name: term
+        type_name: ""
+        nullable: false
+        primary_key: true
+      - name: pgno
+        type_name: ""
+        nullable: true
+        primary_key: false
+  - name: authors
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: name
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+      - name: sort
+        type_name: TEXT
+        nullable: true
+        primary_key: false
+      - name: link
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+  - name: books
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: title
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+      - name: sort
+        type_name: TEXT
+        nullable: true
+        primary_key: false
+      - name: timestamp
+        type_name: TIMESTAMP
+        nullable: true
+        primary_key: false
+      - name: pubdate
+        type_name: TIMESTAMP
+        nullable: true
+        primary_key: false
+      - name: series_index
+        type_name: REAL
+        nullable: false
+        primary_key: false
+      - name: author_sort
+        type_name: TEXT
+        nullable: true
+        primary_key: false
+      - name: isbn
+        type_name: TEXT
+        nullable: true
+        primary_key: false
+      - name: lccn
+        type_name: TEXT
+        nullable: true
+        primary_key: false
+      - name: path
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+      - name: flags
+        type_name: INTEGER
+        nullable: false
+        primary_key: false
+      - name: uuid
+        type_name: TEXT
+        nullable: true
+        primary_key: false
+      - name: has_cover
+        type_name: BOOL
+        nullable: true
+        primary_key: false
+      - name: last_modified
+        type_name: TIMESTAMP
+        nullable: false
+        primary_key: false
+  - name: books_authors_link
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: book
+        type_name: INTEGER
+        nullable: false
+        primary_key: false
+      - name: author
+        type_name: INTEGER
+        nullable: false
+        primary_key: false
+  - name: books_languages_link
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: book
+        type_name: INTEGER
+        nullable: false
+        primary_key: false
+      - name: lang_code
+        type_name: INTEGER
+        nullable: false
+        primary_key: false
+      - name: item_order
+        type_name: INTEGER
+        nullable: false
+        primary_key: false
+  - name: books_plugin_data
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: book
+        type_name: INTEGER
+        nullable: false
+        primary_key: false
+      - name: name
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+      - name: val
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+  - name: books_publishers_link
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: book
+        type_name: INTEGER
+        nullable: false
+        primary_key: false
+      - name: publisher
+        type_name: INTEGER
+        nullable: false
+        primary_key: false
+  - name: books_ratings_link
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: book
+        type_name: INTEGER
+        nullable: false
+        primary_key: false
+      - name: rating
+        type_name: INTEGER
+        nullable: false
+        primary_key: false
+  - name: books_series_link
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: book
+        type_name: INTEGER
+        nullable: false
+        primary_key: false
+      - name: series
+        type_name: INTEGER
+        nullable: false
+        primary_key: false
+  - name: books_tags_link
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: book
+        type_name: INTEGER
+        nullable: false
+        primary_key: false
+      - name: tag
+        type_name: INTEGER
+        nullable: false
+        primary_key: false
+  - name: comments
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: book
+        type_name: INTEGER
+        nullable: false
+        primary_key: false
+      - name: text
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+  - name: conversion_options
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: format
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+      - name: book
+        type_name: INTEGER
+        nullable: true
+        primary_key: false
+      - name: data
+        type_name: BLOB
+        nullable: false
+        primary_key: false
+  - name: custom_columns
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: label
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+      - name: name
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+      - name: datatype
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+      - name: mark_for_delete
+        type_name: BOOL
+        nullable: false
+        primary_key: false
+      - name: editable
+        type_name: BOOL
+        nullable: false
+        primary_key: false
+      - name: display
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+      - name: is_multiple
+        type_name: BOOL
+        nullable: false
+        primary_key: false
+      - name: normalized
+        type_name: BOOL
+        nullable: false
+        primary_key: false
+  - name: data
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: book
+        type_name: INTEGER
+        nullable: false
+        primary_key: false
+      - name: format
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+      - name: uncompressed_size
+        type_name: INTEGER
+        nullable: false
+        primary_key: false
+      - name: name
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+  - name: feeds
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: title
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+      - name: script
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+  - name: identifiers
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: book
+        type_name: INTEGER
+        nullable: false
+        primary_key: false
+      - name: type
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+      - name: val
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+  - name: languages
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: lang_code
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+      - name: link
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+  - name: last_read_positions
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: book
+        type_name: INTEGER
+        nullable: false
+        primary_key: false
+      - name: format
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+      - name: user
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+      - name: device
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+      - name: cfi
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+      - name: epoch
+        type_name: REAL
+        nullable: false
+        primary_key: false
+      - name: pos_frac
+        type_name: REAL
+        nullable: false
+        primary_key: false
+  - name: library_id
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: uuid
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+  - name: metadata_dirtied
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: book
+        type_name: INTEGER
+        nullable: false
+        primary_key: false
+  - name: preferences
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: key
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+      - name: val
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+  - name: publishers
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: name
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+      - name: sort
+        type_name: TEXT
+        nullable: true
+        primary_key: false
+      - name: link
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+  - name: ratings
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: rating
+        type_name: INTEGER
+        nullable: true
+        primary_key: false
+      - name: link
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+  - name: series
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: name
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+      - name: sort
+        type_name: TEXT
+        nullable: true
+        primary_key: false
+      - name: link
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+  - name: tags
+    columns:
+      - name: id
+        type_name: INTEGER
+        nullable: true
+        primary_key: true
+      - name: name
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+      - name: link
+        type_name: TEXT
+        nullable: false
+        primary_key: false
+data:
+  annotations: []
+  annotations_dirtied: []
+  annotations_fts: []
+  annotations_fts_config:
+    - k: version
+      v: 4
+  annotations_fts_data:
+    - block: []
+      id: 1
+    - block:
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+      id: 10
+  annotations_fts_docsize: []
+  annotations_fts_idx: []
+  annotations_fts_stemmed: []
+  annotations_fts_stemmed_config:
+    - k: version
+      v: 4
+  annotations_fts_stemmed_data:
+    - block: []
+      id: 1
+    - block:
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+        - 0
+      id: 10
+  annotations_fts_stemmed_docsize: []
+  annotations_fts_stemmed_idx: []
+  authors: []
+  books: []
+  books_authors_link: []
+  books_languages_link: []
+  books_plugin_data: []
+  books_publishers_link: []
+  books_ratings_link: []
+  books_series_link: []
+  books_tags_link: []
+  comments: []
+  conversion_options: []
+  custom_columns: []
+  data: []
+  feeds: []
+  identifiers: []
+  languages: []
+  last_read_positions: []
+  library_id:
+    - id: 1
+      uuid: "<UUID>"
+  metadata_dirtied: []
+  preferences:
+    - id: 1
+      key: bools_are_tristate
+      val: "true"
+    - id: 2
+      key: user_categories
+      val: "{}"
+    - id: 3
+      key: saved_searches
+      val: "{}"
+    - id: 4
+      key: grouped_search_terms
+      val: "{}"
+    - id: 5
+      key: library_view books view state
+      val: "{\n  \"column_alignment\": {},\n  \"column_positions\": {\n    \"authors\": 3,\n    \"formats\": 10,\n    \"id\": 1,\n    \"languages\": 14,\n    \"last_modified\": 13,\n    \"ondevice\": 0,\n    \"path\": 11,\n    \"pubdate\": 12,\n    \"publisher\": 9,\n    \"rating\": 6,\n    \"series\": 8,\n    \"size\": 5,\n    \"tags\": 7,\n    \"timestamp\": 4,\n    \"title\": 2\n  },\n  \"column_sizes\": {\n    \"authors\": 171,\n    \"formats\": 0,\n    \"id\": 0,\n    \"languages\": 0,\n    \"last_modified\": 0,\n    \"path\": 0,\n    \"pubdate\": 0,\n    \"publisher\": 71,\n    \"rating\": 86,\n    \"series\": 136,\n    \"size\": 155,\n    \"tags\": 42,\n    \"timestamp\": 0,\n    \"title\": 245\n  },\n  \"formats_injected\": true,\n  \"hidden_columns\": [\n    \"id\",\n    \"formats\",\n    \"path\",\n    \"last_modified\",\n    \"languages\"\n  ],\n  \"id_injected\": true,\n  \"languages_injected\": true,\n  \"last_modified_injected\": true,\n  \"path_injected\": true,\n  \"sort_history\": [\n    [\n      \"last_modified\",\n      false\n    ],\n    [\n      \"authors\",\n      true\n    ],\n    [\n      \"last_modified\",\n      false\n    ],\n    [\n      \"timestamp\",\n      false\n    ]\n  ]\n}"
+    - id: 6
+      key: books view split pane state
+      val: "{\n  \"column_positions\": {\n    \"authors\": 2,\n    \"formats\": 13,\n    \"id\": 12,\n    \"languages\": 11,\n    \"last_modified\": 10,\n    \"ondevice\": 0,\n    \"path\": 14,\n    \"pubdate\": 9,\n    \"publisher\": 8,\n    \"rating\": 5,\n    \"series\": 7,\n    \"size\": 4,\n    \"tags\": 6,\n    \"timestamp\": 3,\n    \"title\": 1\n  },\n  \"column_sizes\": {\n    \"authors\": 100,\n    \"formats\": 100,\n    \"id\": 100,\n    \"languages\": 100,\n    \"last_modified\": 100,\n    \"path\": 100,\n    \"pubdate\": 100,\n    \"publisher\": 100,\n    \"rating\": 100,\n    \"series\": 100,\n    \"size\": 100,\n    \"tags\": 100,\n    \"timestamp\": 100,\n    \"title\": 100\n  },\n  \"hidden_columns\": []\n}"
+    - id: 7
+      key: tag_browser_hidden_categories
+      val: "[]"
+    - id: 8
+      key: tag_browser_category_order
+      val: "[\n  \"authors\",\n  \"languages\",\n  \"series\",\n  \"formats\",\n  \"publisher\",\n  \"rating\",\n  \"news\",\n  \"tags\",\n  \"identifiers\"\n]"
+  publishers: []
+  ratings: []
+  series: []
+  tags: []

@@ -160,7 +160,7 @@ impl Author {
     ///
     /// ## Examples
     /// ```
-    /// use libcalibre::domain::author::entity::Author;
+    /// use libcalibre::Author;
     /// let author = Author {
     ///    id: 1,
     ///    name: "John Doe".to_string(),
@@ -173,7 +173,7 @@ impl Author {
     ///
     /// For Dr.'s and other titles, the title is removed.
     /// ```
-    /// use libcalibre::domain::author::entity::Author;
+    /// use libcalibre::Author;
     /// let author = Author {
     ///   id: 1,
     ///   name: "Dr. John Doe".to_string(),
@@ -187,7 +187,7 @@ impl Author {
     /// For Jr.'s and other generational titles, the title is moved to the end,
     /// with a comma before it.
     /// ```
-    /// use libcalibre::domain::author::entity::Author;
+    /// use libcalibre::Author;
     /// let author = Author {
     ///    id: 1,
     ///    name: "John Doe Jr.".to_string(),
@@ -200,7 +200,7 @@ impl Author {
     ///
     /// Academic degrees, licenses, and professional titles are omitted.
     /// ```
-    /// use libcalibre::domain::author::entity::Author;
+    /// use libcalibre::Author;
     /// let author = Author {
     ///    id: 1,
     ///    name: "John Doe BA Bsc M.S. PhD Esq".to_string(),
@@ -213,7 +213,7 @@ impl Author {
     ///
     /// Anything within brackets is removed.
     /// ```
-    /// use libcalibre::domain::author::entity::Author;
+    /// use libcalibre::Author;
     /// let author = Author {
     ///   id: 1,
     ///   name: "John Doe (Author) [Deceased] {Ed.: fictional character}".to_string(),
@@ -226,7 +226,7 @@ impl Author {
     ///
     /// Organization names are not modified.
     /// ```
-    /// use libcalibre::domain::author::entity::Author;
+    /// use libcalibre::Author;
     /// let author = Author {
     ///   id: 1,
     ///  name: "Coca Cola Inc.".to_string(),
@@ -239,7 +239,7 @@ impl Author {
     ///
     /// Surnames with a prefix keep their prefix.
     /// ```
-    /// use libcalibre::domain::author::entity::Author;
+    /// use libcalibre::Author;
     /// let author = Author {
     ///   id: 1,
     ///  name: "Example von Cruz".to_string(),
