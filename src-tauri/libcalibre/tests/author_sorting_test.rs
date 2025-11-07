@@ -36,12 +36,9 @@ proptest! {
 
         let sorted = author.sortable_name();
 
-        // Should either be:
-        // 1. "Last, First" (normal case)
-        // 2. Unchanged (if it matches an organization pattern or family prefix)
-        // 3. Stripped down (if one part matches a degree/suffix and gets removed)
         prop_assert!(
             sorted == format!("{}, {}", last, first)
+                || sorted == format!("{}, {}", first, last) // e.g. "John, III" (Generational titles are retained at the end)
                 || sorted == name
                 || sorted == first  // e.g. "John Jr" -> "John" (Suffix removed)
                 || sorted == last,  // e.g. "Dr John" -> "John" (Prefix removed)
