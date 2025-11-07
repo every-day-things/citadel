@@ -49,32 +49,29 @@ pub fn sort_book_title(title: String) -> String {
 /// so this function can be safely called multiple times.
 pub fn register_triggers(conn: &mut SqliteConnection) -> Result<(), diesel::result::Error> {
     // Books insert trigger - auto-generate sort and uuid
-    sql_query("DROP TRIGGER IF EXISTS books_insert_trg")
-        .execute(conn)?;
+    sql_query("DROP TRIGGER IF EXISTS books_insert_trg").execute(conn)?;
     sql_query(
         "CREATE TRIGGER books_insert_trg AFTER INSERT ON books
          BEGIN
              UPDATE books SET sort=title_sort(NEW.title), uuid=uuid4()
              WHERE id=NEW.id;
-         END;"
+         END;",
     )
     .execute(conn)?;
 
     // Books update trigger - update sort when title changes
-    sql_query("DROP TRIGGER IF EXISTS books_update_trg")
-        .execute(conn)?;
+    sql_query("DROP TRIGGER IF EXISTS books_update_trg").execute(conn)?;
     sql_query(
         "CREATE TRIGGER books_update_trg AFTER UPDATE ON books
          BEGIN
              UPDATE books SET sort=title_sort(NEW.title)
              WHERE id=NEW.id AND OLD.title <> NEW.title;
-         END;"
+         END;",
     )
     .execute(conn)?;
 
     // Books delete trigger - cascade delete related records
-    sql_query("DROP TRIGGER IF EXISTS books_delete_trg")
-        .execute(conn)?;
+    sql_query("DROP TRIGGER IF EXISTS books_delete_trg").execute(conn)?;
     sql_query(
         "CREATE TRIGGER books_delete_trg AFTER DELETE ON books
          BEGIN
@@ -89,7 +86,7 @@ pub fn register_triggers(conn: &mut SqliteConnection) -> Result<(), diesel::resu
              DELETE FROM conversion_options WHERE book=OLD.id;
              DELETE FROM books_plugin_data WHERE book=OLD.id;
              DELETE FROM identifiers WHERE book=OLD.id;
-         END;"
+         END;",
     )
     .execute(conn)?;
 
