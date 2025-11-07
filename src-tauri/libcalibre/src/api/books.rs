@@ -65,6 +65,15 @@ impl BooksHandler {
             .set(book)
             .returning(BookRow::as_returning())
             .get_result(&mut *connection)
+            .or(Err(()))?;
+
+        // Note: AFTER UPDATE triggers fire after RETURNING executes, so trigger-generated
+        // field changes (like sort) won't be in the returned BookRow. We need to fetch the
+        // complete record to get these trigger-updated values.
+        books
+            .filter(id.eq(book_id))
+            .select(BookRow::as_select())
+            .first::<BookRow>(&mut *connection)
             .or(Err(()))
     }
 
