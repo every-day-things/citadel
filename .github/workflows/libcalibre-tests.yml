@@ -23,6 +23,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           prefix-key: "v0-rust"
+          shared-key: "build"
           workspaces: "src-tauri"
 
       - name: Build
@@ -45,6 +46,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           prefix-key: "v0-rust"
+          shared-key: "build"
           workspaces: "src-tauri"
 
       - name: Generate HTML coverage report
@@ -106,6 +108,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           prefix-key: "v0-rust"
+          shared-key: "build"
           workspaces: "src-tauri"
 
       - name: Run tests
