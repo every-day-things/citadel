@@ -36,13 +36,14 @@ impl BooksHandler {
             .get_result(&mut *connection)
             .expect("Error saving new book");
 
-        // SQLite doesn't add the UUID until after our `insert_into` call,
-        // so we need to fetch it from the DB to provide it to the caller.
-        let mut book_generated = b.clone();
-        let book_uuid = uuid_for_book(&mut *connection, b.id);
-        book_generated.uuid = book_uuid;
-
-        Ok(book_generated)
+        // Note: AFTER INSERT triggers fire after RETURNING executes, so the trigger-generated
+        // uuid and sort fields won't be in the returned BookRow. We need to fetch the complete
+        // record to get these auto-generated values.
+        books
+            .filter(id.eq(b.id))
+            .select(BookRow::as_select())
+            .first::<BookRow>(&mut *connection)
+            .or(Err(()))
     }
 
     pub fn list(&self) -> Result<Vec<BookRow>, ()> {
@@ -428,14 +429,4 @@ impl BooksHandler {
 
         Ok(map)
     }
-}
-
-fn uuid_for_book(conn: &mut SqliteConnection, book_id: i32) -> Option<String> {
-    use crate::schema::books::dsl::*;
-
-    books
-        .select(uuid)
-        .filter(id.eq(book_id))
-        .first::<Option<String>>(conn)
-        .expect("Error getting book UUID")
 }
