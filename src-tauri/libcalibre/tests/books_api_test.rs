@@ -218,8 +218,14 @@ fn test_find_author_ids_by_book_id() {
         .unwrap();
 
     // Link them
-    client.books().link_author_to_book(book.id, author1.id).unwrap();
-    client.books().link_author_to_book(book.id, author2.id).unwrap();
+    client
+        .books()
+        .link_author_to_book(book.id, author1.id)
+        .unwrap();
+    client
+        .books()
+        .link_author_to_book(book.id, author2.id)
+        .unwrap();
 
     // Find author IDs
     let result = client.books().find_author_ids_by_book_id(book.id);
@@ -258,7 +264,10 @@ fn test_unlink_author_from_book() {
         .unwrap();
 
     // Link them
-    client.books().link_author_to_book(book.id, author.id).unwrap();
+    client
+        .books()
+        .link_author_to_book(book.id, author.id)
+        .unwrap();
 
     // Verify link
     let author_ids = client.books().find_author_ids_by_book_id(book.id).unwrap();
@@ -410,7 +419,9 @@ fn test_delete_book_identifier() {
         })
         .unwrap();
 
-    let result = client.books().delete_book_identifier(book.id, identifier_id);
+    let result = client
+        .books()
+        .delete_book_identifier(book.id, identifier_id);
     assert!(result.is_ok());
 
     // Verify deleted
@@ -587,16 +598,28 @@ fn test_batch_get_descriptions() {
         })
         .unwrap();
 
-    client.books().set_description(book1.id, "Description 1").unwrap();
-    client.books().set_description(book2.id, "Description 2").unwrap();
+    client
+        .books()
+        .set_description(book1.id, "Description 1")
+        .unwrap();
+    client
+        .books()
+        .set_description(book2.id, "Description 2")
+        .unwrap();
 
     let result = client.books().batch_get_descriptions(&[book1.id, book2.id]);
     assert!(result.is_ok());
 
     let descriptions = result.unwrap();
     assert_eq!(descriptions.len(), 2);
-    assert_eq!(descriptions.get(&book1.id), Some(&"Description 1".to_string()));
-    assert_eq!(descriptions.get(&book2.id), Some(&"Description 2".to_string()));
+    assert_eq!(
+        descriptions.get(&book1.id),
+        Some(&"Description 1".to_string())
+    );
+    assert_eq!(
+        descriptions.get(&book2.id),
+        Some(&"Description 2".to_string())
+    );
 }
 
 #[test]
@@ -643,8 +666,14 @@ fn test_batch_get_author_links() {
         })
         .unwrap();
 
-    client.books().link_author_to_book(book1.id, author1.id).unwrap();
-    client.books().link_author_to_book(book1.id, author2.id).unwrap();
+    client
+        .books()
+        .link_author_to_book(book1.id, author1.id)
+        .unwrap();
+    client
+        .books()
+        .link_author_to_book(book1.id, author2.id)
+        .unwrap();
 
     let result = client.books().batch_get_author_links(&[book1.id]);
     assert!(result.is_ok());
