@@ -64,13 +64,14 @@ jobs:
       - name: Generate JSON coverage report (required for comment)
         working-directory: src-tauri
         run: |
-          cargo llvm-cov --package libcalibre --all-features --json --output-path ../target/llvm-cov/coverage-summary.json
+          mkdir -p target/llvm-cov
+          cargo llvm-cov --package libcalibre --all-features --json --output-path target/llvm-cov/coverage-summary.json
 
       - name: Extract coverage percentage
         id: coverage
         working-directory: src-tauri
         run: |
-          COVERAGE=$(jq -r '.data[0].totals.lines.percent' ../target/llvm-cov/coverage-summary.json | xargs printf "%.2f")
+          COVERAGE=$(jq -r '.data[0].totals.lines.percent' target/llvm-cov/coverage-summary.json | xargs printf "%.2f")
           echo "percentage=$COVERAGE" >> $GITHUB_OUTPUT
           echo "Coverage: $COVERAGE%"
 
