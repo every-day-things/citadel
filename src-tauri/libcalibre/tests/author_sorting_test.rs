@@ -20,7 +20,7 @@ proptest! {
             "Empty sort name for input '{}'", name);
     }
 
-    /// Property: Two-word names always produce "Last, First" or unchanged
+    /// Property: Two-word names produce "Last, First" or get stripped if they match degrees/suffixes
     #[test]
     fn two_word_names_format(
         first in "[A-Z][a-z]{2,10}",
@@ -36,9 +36,15 @@ proptest! {
 
         let sorted = author.sortable_name();
 
-        // Should either be "Last, First" or unchanged (if it's an organization, etc.)
+        // Should either be:
+        // 1. "Last, First" (normal case)
+        // 2. Unchanged (if it matches an organization pattern or family prefix)
+        // 3. Stripped down (if one part matches a degree/suffix and gets removed)
         prop_assert!(
-            sorted == format!("{}, {}", last, first) || sorted == name,
+            sorted == format!("{}, {}", last, first)
+                || sorted == name
+                || sorted == first  // e.g. "John Jr" -> "John" (Suffix removed)
+                || sorted == last,  // e.g. "Dr John" -> "John" (Prefix removed)
             "Unexpected format: '{}' -> '{}'", name, sorted
         );
     }
