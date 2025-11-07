@@ -3,11 +3,12 @@ use libcalibre::dtos::author::NewAuthorDto;
 use libcalibre::dtos::book::NewBookDto;
 use libcalibre::dtos::library::NewLibraryEntryDto;
 use libcalibre::util::get_db_path;
+use libcalibre::ClientV2;
 use std::path::PathBuf;
 use tempfile::TempDir;
 
-/// Setup a fresh empty Calibre library in a temporary directory
-pub fn setup_empty_library() -> (TempDir, CalibreClient) {
+/// Setup a fresh empty Calibre library in a temporary directory with CalibreClient
+pub fn setup_with_calibre_client() -> (TempDir, CalibreClient) {
     let temp_dir = tempfile::tempdir().unwrap();
     let db_path = temp_dir.path().join("metadata.db");
 
@@ -32,6 +33,36 @@ pub fn setup_empty_library() -> (TempDir, CalibreClient) {
     let valid_path =
         get_db_path(temp_dir.path().to_str().unwrap()).expect("Failed to get valid DB path");
     let client = CalibreClient::new(valid_path);
+
+    (temp_dir, client)
+}
+
+/// Setup a fresh empty library with ClientV2 for direct API testing
+pub fn setup_with_client_v2() -> (TempDir, ClientV2) {
+    let temp_dir = tempfile::tempdir().unwrap();
+    let db_path = temp_dir.path().join("metadata.db");
+
+    // Copy the empty Calibre library fixture
+    let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("fixtures")
+        .join("empty_library")
+        .join("metadata.db");
+
+    if !fixture_path.exists() {
+        panic!(
+            "Test fixture not found at {:?}\n\
+             Generate this fixture using a real Calibre installation.\n\
+             See tests/README.md for instructions.",
+            fixture_path
+        );
+    }
+
+    std::fs::copy(&fixture_path, &db_path).unwrap();
+
+    let valid_path =
+        get_db_path(temp_dir.path().to_str().unwrap()).expect("Failed to get valid DB path");
+    let client = ClientV2::new(valid_path);
 
     (temp_dir, client)
 }
