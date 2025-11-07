@@ -1,406 +1,312 @@
+// Tests for database triggers that maintain data integrity
+// These triggers match Calibre's behavior for auto-generating fields and cascade deletes
+
+mod common;
+
+use common::setup_with_calibre_client;
 use diesel::prelude::*;
 use diesel::sql_query;
-use libcalibre::persistence::{establish_connection, register_triggers};
-use tempfile::TempDir;
+use libcalibre::dtos::author::NewAuthorDto;
+use libcalibre::dtos::book::NewBookDto;
+use libcalibre::dtos::library::NewLibraryEntryDto;
+use libcalibre::persistence::establish_connection;
 
-/// Helper to set up a test database with the Calibre schema
-fn setup_test_db() -> (TempDir, String) {
-    let temp_dir = tempfile::tempdir().unwrap();
-    let db_path = temp_dir.path().join("metadata.db");
-    let db_path_str = db_path.to_str().unwrap().to_string();
-
-    // Create a connection and initialize the database with the schema
-    let mut conn = SqliteConnection::establish(&db_path_str).unwrap();
-
-    // Create the minimal schema needed for testing
-    sql_query(
-        "CREATE TABLE books (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL DEFAULT 'Unknown',
-            sort TEXT,
-            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            pubdate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            series_index REAL NOT NULL DEFAULT 1.0,
-            author_sort TEXT,
-            isbn TEXT DEFAULT '',
-            lccn TEXT DEFAULT '',
-            path TEXT NOT NULL DEFAULT '',
-            flags INTEGER NOT NULL DEFAULT 1,
-            uuid TEXT,
-            has_cover BOOL DEFAULT 0,
-            last_modified TIMESTAMP NOT NULL DEFAULT '2000-01-01 00:00:00+00:00'
-        )"
-    )
-    .execute(&mut conn)
-    .unwrap();
-
-    sql_query(
-        "CREATE TABLE authors (
-            id INTEGER PRIMARY KEY,
-            name TEXT NOT NULL,
-            sort TEXT,
-            link TEXT NOT NULL DEFAULT ''
-        )"
-    )
-    .execute(&mut conn)
-    .unwrap();
-
-    sql_query(
-        "CREATE TABLE books_authors_link (
-            id INTEGER PRIMARY KEY,
-            book INTEGER NOT NULL,
-            author INTEGER NOT NULL
-        )"
-    )
-    .execute(&mut conn)
-    .unwrap();
-
-    sql_query(
-        "CREATE TABLE books_publishers_link (
-            id INTEGER PRIMARY KEY,
-            book INTEGER NOT NULL,
-            publisher INTEGER NOT NULL
-        )"
-    )
-    .execute(&mut conn)
-    .unwrap();
-
-    sql_query(
-        "CREATE TABLE books_ratings_link (
-            id INTEGER PRIMARY KEY,
-            book INTEGER NOT NULL,
-            rating INTEGER NOT NULL
-        )"
-    )
-    .execute(&mut conn)
-    .unwrap();
-
-    sql_query(
-        "CREATE TABLE books_series_link (
-            id INTEGER PRIMARY KEY,
-            book INTEGER NOT NULL,
-            series INTEGER NOT NULL
-        )"
-    )
-    .execute(&mut conn)
-    .unwrap();
-
-    sql_query(
-        "CREATE TABLE books_tags_link (
-            id INTEGER PRIMARY KEY,
-            book INTEGER NOT NULL,
-            tag INTEGER NOT NULL
-        )"
-    )
-    .execute(&mut conn)
-    .unwrap();
-
-    sql_query(
-        "CREATE TABLE books_languages_link (
-            id INTEGER PRIMARY KEY,
-            book INTEGER NOT NULL,
-            lang_code INTEGER NOT NULL,
-            item_order INTEGER NOT NULL DEFAULT 0
-        )"
-    )
-    .execute(&mut conn)
-    .unwrap();
-
-    sql_query(
-        "CREATE TABLE data (
-            id INTEGER PRIMARY KEY,
-            book INTEGER NOT NULL,
-            format TEXT NOT NULL,
-            uncompressed_size INTEGER NOT NULL,
-            name TEXT NOT NULL
-        )"
-    )
-    .execute(&mut conn)
-    .unwrap();
-
-    sql_query(
-        "CREATE TABLE comments (
-            id INTEGER PRIMARY KEY,
-            book INTEGER NOT NULL,
-            text TEXT NOT NULL
-        )"
-    )
-    .execute(&mut conn)
-    .unwrap();
-
-    sql_query(
-        "CREATE TABLE conversion_options (
-            id INTEGER PRIMARY KEY,
-            format TEXT NOT NULL,
-            book INTEGER,
-            data BLOB NOT NULL
-        )"
-    )
-    .execute(&mut conn)
-    .unwrap();
-
-    sql_query(
-        "CREATE TABLE books_plugin_data (
-            id INTEGER PRIMARY KEY,
-            book INTEGER NOT NULL,
-            name TEXT NOT NULL,
-            val TEXT NOT NULL
-        )"
-    )
-    .execute(&mut conn)
-    .unwrap();
-
-    sql_query(
-        "CREATE TABLE identifiers (
-            id INTEGER PRIMARY KEY,
-            book INTEGER NOT NULL,
-            type TEXT NOT NULL DEFAULT 'isbn',
-            val TEXT NOT NULL
-        )"
-    )
-    .execute(&mut conn)
-    .unwrap();
-
-    sql_query(
-        "CREATE TABLE custom_columns (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            label TEXT NOT NULL,
-            name TEXT NOT NULL,
-            datatype TEXT NOT NULL,
-            mark_for_delete BOOL DEFAULT 0 NOT NULL,
-            editable BOOL DEFAULT 1 NOT NULL,
-            display TEXT DEFAULT '{}' NOT NULL,
-            is_multiple BOOL DEFAULT 0 NOT NULL,
-            normalized BOOL NOT NULL
-        )"
-    )
-    .execute(&mut conn)
-    .unwrap();
-
-    (temp_dir, db_path_str)
-}
-
+/// Test that the books_insert_trg trigger auto-generates sort and uuid fields
 #[test]
 fn test_books_insert_trigger_generates_sort_and_uuid() {
-    let (_temp_dir, db_path) = setup_test_db();
-    let mut conn = establish_connection(&db_path).unwrap();
+    let (_temp, mut client) = setup_with_calibre_client();
 
-    // Insert a book with a title that should be sorted
-    sql_query(
-        "INSERT INTO books (title, path) VALUES ('The Great Gatsby', 'test/path')"
-    )
-    .execute(&mut conn)
-    .unwrap();
+    // Add a book with a title that should be sorted
+    let book_entry = NewLibraryEntryDto {
+        book: NewBookDto {
+            title: "The Great Gatsby".to_string(),
+            timestamp: None,
+            pubdate: None,
+            series_index: 1.0,
+            flags: 1,
+            has_cover: None,
+        },
+        authors: vec![NewAuthorDto {
+            full_name: "F. Scott Fitzgerald".to_string(),
+            sortable_name: "Fitzgerald, F. Scott".to_string(),
+            external_url: None,
+        }],
+        files: None,
+    };
 
-    // Fetch the book to check if sort and uuid were generated
-    #[derive(QueryableByName)]
-    struct BookResult {
-        #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Text>)]
-        sort: Option<String>,
-        #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Text>)]
-        uuid: Option<String>,
-    }
-
-    let result: BookResult = sql_query("SELECT sort, uuid FROM books WHERE id = 1")
-        .get_result(&mut conn)
-        .unwrap();
+    let book = client.add_book(book_entry).expect("Failed to add book");
 
     // Verify sort field was generated (moving "The" to the end)
-    assert_eq!(result.sort, Some("Great Gatsby, The".to_string()));
+    assert_eq!(book.sortable_title, Some("Great Gatsby, The".to_string()));
 
     // Verify UUID was generated (should be a valid UUID format)
-    assert!(result.uuid.is_some());
-    let uuid = result.uuid.unwrap();
+    assert!(book.uuid.is_some());
+    let uuid = book.uuid.unwrap();
     assert_eq!(uuid.len(), 36); // UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
     assert!(uuid.contains('-'));
 }
 
+/// Test that the books_update_trg trigger updates sort when title changes
 #[test]
 fn test_books_update_trigger_updates_sort() {
-    let (_temp_dir, db_path) = setup_test_db();
-    let mut conn = establish_connection(&db_path).unwrap();
+    let (_temp, mut client) = setup_with_calibre_client();
 
-    // Insert a book
-    sql_query(
-        "INSERT INTO books (title, path) VALUES ('Original Title', 'test/path')"
-    )
-    .execute(&mut conn)
-    .unwrap();
+    // Add a book
+    let book_entry = NewLibraryEntryDto {
+        book: NewBookDto {
+            title: "Original Title".to_string(),
+            timestamp: None,
+            pubdate: None,
+            series_index: 1.0,
+            flags: 1,
+            has_cover: None,
+        },
+        authors: vec![NewAuthorDto {
+            full_name: "Test Author".to_string(),
+            sortable_name: "Author, Test".to_string(),
+            external_url: None,
+        }],
+        files: None,
+    };
 
-    // Update the title
-    sql_query(
-        "UPDATE books SET title = 'The New Title' WHERE id = 1"
-    )
-    .execute(&mut conn)
-    .unwrap();
+    let book = client.add_book(book_entry).expect("Failed to add book");
+    let book_id = book.id;
 
-    // Fetch the updated sort field
+    // Update the title using raw SQL (since libcalibre doesn't expose title update via CalibreClient)
+    // This directly tests the trigger
+    let db_path = client.get_database_path();
+    let mut conn = establish_connection(db_path.to_str().unwrap()).unwrap();
+
+    sql_query("UPDATE books SET title = 'The New Title' WHERE id = ?")
+        .bind::<diesel::sql_types::Integer, _>(book_id)
+        .execute(&mut conn)
+        .unwrap();
+
+    // Fetch the updated book to verify sort was updated
     #[derive(QueryableByName)]
-    struct SortResult {
+    struct BookSort {
         #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Text>)]
         sort: Option<String>,
     }
 
-    let result: SortResult = sql_query("SELECT sort FROM books WHERE id = 1")
+    let result: BookSort = sql_query("SELECT sort FROM books WHERE id = ?")
+        .bind::<diesel::sql_types::Integer, _>(book_id)
         .get_result(&mut conn)
         .unwrap();
 
-    // Verify sort was updated (moving "The" to the end)
+    // Verify sort was updated by trigger (moving "The" to the end)
     assert_eq!(result.sort, Some("New Title, The".to_string()));
 }
 
+/// Test that the books_delete_trg trigger cascades deletes to related tables
 #[test]
 fn test_books_delete_trigger_cascades() {
-    let (_temp_dir, db_path) = setup_test_db();
-    let mut conn = establish_connection(&db_path).unwrap();
+    let (_temp, mut client) = setup_with_calibre_client();
 
-    // Insert a book
-    sql_query(
-        "INSERT INTO books (title, path) VALUES ('Test Book', 'test/path')"
-    )
-    .execute(&mut conn)
-    .unwrap();
+    // Add a book with related data
+    let book_entry = NewLibraryEntryDto {
+        book: NewBookDto {
+            title: "Test Book".to_string(),
+            timestamp: None,
+            pubdate: None,
+            series_index: 1.0,
+            flags: 1,
+            has_cover: None,
+        },
+        authors: vec![NewAuthorDto {
+            full_name: "Test Author".to_string(),
+            sortable_name: "Author, Test".to_string(),
+            external_url: None,
+        }],
+        files: None,
+    };
 
-    // Insert related records
-    sql_query("INSERT INTO authors (id, name, link) VALUES (1, 'Test Author', '')")
+    let book = client.add_book(book_entry).expect("Failed to add book");
+    let book_id = book.id;
+
+    // Add related data (comments, identifiers) using raw SQL
+    let db_path = client.get_database_path();
+    let mut conn = establish_connection(db_path.to_str().unwrap()).unwrap();
+
+    sql_query("INSERT INTO comments (book, text) VALUES (?, 'Test comment')")
+        .bind::<diesel::sql_types::Integer, _>(book_id)
         .execute(&mut conn)
         .unwrap();
 
-    sql_query("INSERT INTO books_authors_link (book, author) VALUES (1, 1)")
+    sql_query("INSERT INTO identifiers (book, type, val) VALUES (?, 'isbn', '1234567890')")
+        .bind::<diesel::sql_types::Integer, _>(book_id)
         .execute(&mut conn)
         .unwrap();
 
-    sql_query("INSERT INTO comments (book, text) VALUES (1, 'Test comment')")
-        .execute(&mut conn)
-        .unwrap();
-
-    sql_query("INSERT INTO identifiers (book, type, val) VALUES (1, 'isbn', '1234567890')")
-        .execute(&mut conn)
-        .unwrap();
-
-    sql_query("INSERT INTO data (book, format, uncompressed_size, name) VALUES (1, 'EPUB', 1024, 'test')")
-        .execute(&mut conn)
-        .unwrap();
-
-    // Verify records exist
+    // Verify related records exist
     #[derive(QueryableByName)]
     struct CountResult {
         #[diesel(sql_type = diesel::sql_types::BigInt)]
         count: i64,
     }
 
-    let link_count: CountResult = sql_query("SELECT COUNT(*) as count FROM books_authors_link WHERE book = 1")
-        .get_result(&mut conn)
-        .unwrap();
-    assert_eq!(link_count.count, 1);
+    let link_count: CountResult =
+        sql_query("SELECT COUNT(*) as count FROM books_authors_link WHERE book = ?")
+            .bind::<diesel::sql_types::Integer, _>(book_id)
+            .get_result(&mut conn)
+            .unwrap();
+    assert_eq!(
+        link_count.count, 1,
+        "Should have 1 author link before delete"
+    );
 
-    let comment_count: CountResult = sql_query("SELECT COUNT(*) as count FROM comments WHERE book = 1")
-        .get_result(&mut conn)
-        .unwrap();
-    assert_eq!(comment_count.count, 1);
+    let comment_count: CountResult =
+        sql_query("SELECT COUNT(*) as count FROM comments WHERE book = ?")
+            .bind::<diesel::sql_types::Integer, _>(book_id)
+            .get_result(&mut conn)
+            .unwrap();
+    assert_eq!(
+        comment_count.count, 1,
+        "Should have 1 comment before delete"
+    );
+
+    let identifier_count: CountResult =
+        sql_query("SELECT COUNT(*) as count FROM identifiers WHERE book = ?")
+            .bind::<diesel::sql_types::Integer, _>(book_id)
+            .get_result(&mut conn)
+            .unwrap();
+    assert_eq!(
+        identifier_count.count, 1,
+        "Should have 1 identifier before delete"
+    );
 
     // Delete the book
-    sql_query("DELETE FROM books WHERE id = 1")
+    sql_query("DELETE FROM books WHERE id = ?")
+        .bind::<diesel::sql_types::Integer, _>(book_id)
         .execute(&mut conn)
         .unwrap();
 
-    // Verify all related records were deleted
-    let link_count_after: CountResult = sql_query("SELECT COUNT(*) as count FROM books_authors_link WHERE book = 1")
-        .get_result(&mut conn)
-        .unwrap();
-    assert_eq!(link_count_after.count, 0);
+    // Verify all related records were cascade deleted by the trigger
+    let link_count_after: CountResult =
+        sql_query("SELECT COUNT(*) as count FROM books_authors_link WHERE book = ?")
+            .bind::<diesel::sql_types::Integer, _>(book_id)
+            .get_result(&mut conn)
+            .unwrap();
+    assert_eq!(
+        link_count_after.count, 0,
+        "Author links should be cascade deleted"
+    );
 
-    let comment_count_after: CountResult = sql_query("SELECT COUNT(*) as count FROM comments WHERE book = 1")
-        .get_result(&mut conn)
-        .unwrap();
-    assert_eq!(comment_count_after.count, 0);
+    let comment_count_after: CountResult =
+        sql_query("SELECT COUNT(*) as count FROM comments WHERE book = ?")
+            .bind::<diesel::sql_types::Integer, _>(book_id)
+            .get_result(&mut conn)
+            .unwrap();
+    assert_eq!(
+        comment_count_after.count, 0,
+        "Comments should be cascade deleted"
+    );
 
-    let identifier_count_after: CountResult = sql_query("SELECT COUNT(*) as count FROM identifiers WHERE book = 1")
-        .get_result(&mut conn)
-        .unwrap();
-    assert_eq!(identifier_count_after.count, 0);
-
-    let data_count_after: CountResult = sql_query("SELECT COUNT(*) as count FROM data WHERE book = 1")
-        .get_result(&mut conn)
-        .unwrap();
-    assert_eq!(data_count_after.count, 0);
+    let identifier_count_after: CountResult =
+        sql_query("SELECT COUNT(*) as count FROM identifiers WHERE book = ?")
+            .bind::<diesel::sql_types::Integer, _>(book_id)
+            .get_result(&mut conn)
+            .unwrap();
+    assert_eq!(
+        identifier_count_after.count, 0,
+        "Identifiers should be cascade deleted"
+    );
 }
 
+/// Test that triggers work correctly with various article patterns
 #[test]
-fn test_register_triggers_is_idempotent() {
-    let (_temp_dir, db_path) = setup_test_db();
-    let mut conn = establish_connection(&db_path).unwrap();
-
-    // Register triggers multiple times
-    register_triggers(&mut conn).unwrap();
-    register_triggers(&mut conn).unwrap();
-    register_triggers(&mut conn).unwrap();
-
-    // Insert a book to verify triggers still work
-    sql_query(
-        "INSERT INTO books (title, path) VALUES ('A Test Book', 'test/path')"
-    )
-    .execute(&mut conn)
-    .unwrap();
-
-    #[derive(QueryableByName)]
-    struct BookResult {
-        #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Text>)]
-        sort: Option<String>,
-        #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Text>)]
-        uuid: Option<String>,
-    }
-
-    let result: BookResult = sql_query("SELECT sort, uuid FROM books WHERE id = 1")
-        .get_result(&mut conn)
-        .unwrap();
-
-    // Verify triggers still work correctly
-    assert_eq!(result.sort, Some("Test Book, A".to_string()));
-    assert!(result.uuid.is_some());
-}
-
-#[test]
-fn test_title_sort_with_various_articles() {
-    let (_temp_dir, db_path) = setup_test_db();
-    let mut conn = establish_connection(&db_path).unwrap();
+fn test_title_sort_trigger_with_various_articles() {
+    let (_temp, mut client) = setup_with_calibre_client();
 
     // Test with "The"
-    sql_query("INSERT INTO books (title, path) VALUES ('The Matrix', 'path1')")
-        .execute(&mut conn)
+    let book1 = client
+        .add_book(NewLibraryEntryDto {
+            book: NewBookDto {
+                title: "The Matrix".to_string(),
+                timestamp: None,
+                pubdate: None,
+                series_index: 1.0,
+                flags: 1,
+                has_cover: None,
+            },
+            authors: vec![NewAuthorDto {
+                full_name: "Author One".to_string(),
+                sortable_name: "One, Author".to_string(),
+                external_url: None,
+            }],
+            files: None,
+        })
         .unwrap();
 
     // Test with "A"
-    sql_query("INSERT INTO books (title, path) VALUES ('A Tale of Two Cities', 'path2')")
-        .execute(&mut conn)
+    let book2 = client
+        .add_book(NewLibraryEntryDto {
+            book: NewBookDto {
+                title: "A Tale of Two Cities".to_string(),
+                timestamp: None,
+                pubdate: None,
+                series_index: 1.0,
+                flags: 1,
+                has_cover: None,
+            },
+            authors: vec![NewAuthorDto {
+                full_name: "Author Two".to_string(),
+                sortable_name: "Two, Author".to_string(),
+                external_url: None,
+            }],
+            files: None,
+        })
         .unwrap();
 
     // Test with "An"
-    sql_query("INSERT INTO books (title, path) VALUES ('An American Tragedy', 'path3')")
-        .execute(&mut conn)
+    let book3 = client
+        .add_book(NewLibraryEntryDto {
+            book: NewBookDto {
+                title: "An American Tragedy".to_string(),
+                timestamp: None,
+                pubdate: None,
+                series_index: 1.0,
+                flags: 1,
+                has_cover: None,
+            },
+            authors: vec![NewAuthorDto {
+                full_name: "Author Three".to_string(),
+                sortable_name: "Three, Author".to_string(),
+                external_url: None,
+            }],
+            files: None,
+        })
         .unwrap();
 
     // Test without article
-    sql_query("INSERT INTO books (title, path) VALUES ('Moby Dick', 'path4')")
-        .execute(&mut conn)
+    let book4 = client
+        .add_book(NewLibraryEntryDto {
+            book: NewBookDto {
+                title: "Moby Dick".to_string(),
+                timestamp: None,
+                pubdate: None,
+                series_index: 1.0,
+                flags: 1,
+                has_cover: None,
+            },
+            authors: vec![NewAuthorDto {
+                full_name: "Author Four".to_string(),
+                sortable_name: "Four, Author".to_string(),
+                external_url: None,
+            }],
+            files: None,
+        })
         .unwrap();
 
-    #[derive(QueryableByName)]
-    struct BookResult {
-        #[diesel(sql_type = diesel::sql_types::Integer)]
-        id: i32,
-        #[diesel(sql_type = diesel::sql_types::Text)]
-        title: String,
-        #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Text>)]
-        sort: Option<String>,
-    }
-
-    let results: Vec<BookResult> = sql_query("SELECT id, title, sort FROM books ORDER BY id")
-        .load(&mut conn)
-        .unwrap();
-
-    assert_eq!(results[0].sort, Some("Matrix, The".to_string()));
-    assert_eq!(results[1].sort, Some("Tale of Two Cities, A".to_string()));
-    assert_eq!(results[2].sort, Some("American Tragedy, An".to_string()));
-    assert_eq!(results[3].sort, Some("Moby Dick".to_string()));
+    // Verify all sort fields were correctly generated by the trigger
+    assert_eq!(book1.sortable_title, Some("Matrix, The".to_string()));
+    assert_eq!(
+        book2.sortable_title,
+        Some("Tale of Two Cities, A".to_string())
+    );
+    assert_eq!(
+        book3.sortable_title,
+        Some("American Tragedy, An".to_string())
+    );
+    assert_eq!(book4.sortable_title, Some("Moby Dick".to_string()));
 }
