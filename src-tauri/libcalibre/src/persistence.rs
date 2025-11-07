@@ -3,7 +3,7 @@ use diesel::sql_query;
 use diesel::sql_types::Text;
 use regex::Regex;
 
-use crate::entities::author::Author;
+use crate::sorting;
 
 /// Creates a sortable book title by moving the preposition to the end of the title.
 ///
@@ -42,7 +42,7 @@ pub fn sort_book_title(title: String) -> String {
 
 /// Converts author name to APA-style sortable format for SQL.
 ///
-/// This function wraps Author::sort_author_name_apa() to provide the same
+/// This function wraps sorting::sort_author_name_apa() to provide the same
 /// APA-style sorting logic used throughout the application. It handles:
 /// - Name particles (von, van, de, etc.)
 /// - Generational suffixes (Jr., Sr., III, etc.)
@@ -56,7 +56,7 @@ pub fn sort_book_title(title: String) -> String {
 /// https://github.com/kovidgoyal/calibre/blob/master/src/calibre/ebooks/metadata/__init__.py
 #[allow(unused)]
 pub fn sort_author_name(name: String) -> String {
-    Author::sort_author_name_apa(&name)
+    sorting::sort_author_name_apa(&name)
 }
 
 /// Registers SQLite triggers for maintaining data integrity.
