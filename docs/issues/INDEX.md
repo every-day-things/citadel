@@ -1,8 +1,24 @@
 # libcalibre → Calibre 1:1 Parity: Issue Roadmap
 
 **Last Updated:** 2025-11-06
-**Total Estimated Effort:** 8-12 weeks
 **Issues Created:** 7 of 19 (comprehensive specs provided for all P0/P1/selected P2)
+
+---
+
+## Contributing
+
+When implementing issues:
+
+1. **Research Calibre's approach, understand the issue**
+1. **Create a high-level plan, await human confirmation to create detailed spec**
+1. **Create spec**
+1. **Review & iterate on spec with code reviewer (human)**
+1. **When spec is human-approved, create skipped tests to validate behaviour**
+1. **Wait for tests to be human reviewed to confirm correct intentions**. Follow TDD.
+1. **Unskip failing test, write implementation until correct. Revise tests only as needed if test was wrong.**
+1. **Verify compatibility w/ real Calibre DB**
+1. **Update this index to mark issues complete**. Remove design documents.
+1. **Generate summary of decisions made, new learnings, etc, within a summary document in ai-docs/. Aim to keep document brief but detailed**
 
 ---
 
@@ -47,7 +63,11 @@ Register `title_sort()`, `author_to_author_sort()`, and verify `uuid4()` SQL fun
 
 ---
 
-### ✅ [P0-03: In-Memory Caching Layer](./P0-03-in-memory-caching.md)
+### ❌ [P0-03: In-Memory Caching Layer](./P0-03-in-memory-caching.md)
+**Cancelled**: we do not need to implement Calibre's caching architecture until
+we know we need it. It is my belief that with modern SSD storage, and some
+clever configuration of how the SQLite DB is loaded / written to, we should be
+able to avoid performance bottlenecks.
 **Effort:** 1-2 weeks | **Dependencies:** None
 
 Implement Calibre-style in-memory cache to eliminate repeated database queries.
@@ -83,7 +103,10 @@ Implement CRUD operations for tags, series, publishers, ratings, and languages.
 
 ---
 
-### ✅ [P0-05: Filesystem Path Compatibility](./P0-05-filesystem-path-calibre-compatibility.md)
+### ❌ [P0-05: Filesystem Path Compatibility](./P0-05-filesystem-path-calibre-compatibility.md)
+**Cancelled**: Calibre's ASCII-only filenames are silly. This is a breaking
+change I am willing to support. `libcalibre` is international, localized, and
+UTF8-first.
 **Effort:** 3-4 days | **Dependencies:** None
 
 Replace `sanitise()` crate with Calibre-compatible `ascii_filename()` logic.
@@ -325,50 +348,6 @@ Implement `conversion_options` table for format conversion settings.
 
 ---
 
-## Issue Status Summary
-
-| Priority | Issues | Detailed Specs | Estimate |
-|----------|--------|----------------|----------|
-| P0       | 5      | ✅ All complete | 3-4 weeks |
-| P1       | 5      | ✅ 1 complete | 2-3 weeks |
-| P2       | 4      | ✅ 1 complete | 2-3 weeks |
-| P3       | 5      | ⚠️ Outlines only | 1-2 weeks |
-| **Total** | **19** | **7 detailed** | **8-12 weeks** |
-
----
-
-## Development Workflow
-
-### Phase 1: Foundation (Weeks 1-4)
-Complete all P0 issues to establish solid foundation:
-1. P0-02: SQL Functions (enables triggers)
-2. P0-01: Database Triggers
-3. P0-05: Filesystem Paths
-4. P0-04: Link Tables CRUD
-5. P0-03: In-Memory Caching
-
-### Phase 2: Completeness (Weeks 5-7)
-Complete P1 issues for feature completeness:
-1. P1-01: Schema Versioning
-2. P1-02: Complete Book Creation
-3. P1-04: Format Operations
-4. P1-03: Author Sort Enhancement
-5. P1-05: Transaction Management
-
-### Phase 3: Quality (Weeks 8-10)
-Selected P2 issues for quality and advanced features:
-1. P2-02: Duplicate Handling
-2. P2-01: Custom Columns
-3. P2-03: Batch Operations
-4. P2-04: Missing Tables
-
-### Phase 4: Polish (Weeks 11-12)
-Selected P3 issues for polish:
-1. P3-04: OPF Enhancement
-2. P3-02: Annotations (if time)
-
----
-
 ## Testing Strategy
 
 ### Per-Issue Testing
@@ -405,19 +384,6 @@ Key metrics to track:
 - Schema: `src-tauri/libcalibre/src/schema.rs`
 - Client: `src-tauri/libcalibre/src/calibre_client.rs`
 - APIs: `src-tauri/libcalibre/src/api/`
-
----
-
-## Contributing
-
-When implementing issues:
-
-1. **Read the Research section** - Understand Calibre's approach
-2. **Review Planning decisions** - Follow architectural guidance
-3. **Check Development tasks** - Understand what needs to be done
-4. **Write tests first** - TDD approach recommended
-5. **Test compatibility** - Verify with real Calibre databases
-6. **Update this index** - Mark issues complete, update estimates
 
 ---
 
