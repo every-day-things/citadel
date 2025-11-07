@@ -15,7 +15,12 @@ use diesel::SqliteConnection;
 use std::sync::{Arc, Mutex};
 
 pub use entities::{
-    author::Author, book::Book, book_file::BookFile, book_row::BookRow,
+    author::Author,
+    book::Book,
+    book_file::BookFile,
+    book_row::BookRow,
+    book_row::NewBook,
+    book_row::UpdateBookData,
     book_row::UpsertBookIdentifier,
 };
 
