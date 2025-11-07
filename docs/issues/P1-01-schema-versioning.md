@@ -9,12 +9,26 @@
 
 ## Problem Statement
 
-libcalibre cannot handle existing Calibre databases with different schema versions. Calibre tracks schema version via `PRAGMA user_version` and incrementally upgrades from version 0 to 18+. Without this:
+libcalibre cannot handle existing Calibre databases with different schema
+versions. Calibre tracks schema version via `PRAGMA user_version` and
+incrementally upgrades from version 0 to 18+. Without this:
 
 1. **Can't open older Calibre databases** - Schema differences cause errors
 2. **Can't track libcalibre changes** - No way to know if triggers/tables are current
 3. **Idempotence issues** - May try to create triggers/tables that already exist
 4. **Incompatible with Calibre upgrades** - Calibre may upgrade schema unexpectedly
+
+Currently, `libcalibre` assumes a particular database schema. Identify the current
+expected version, document it, and add support for the same migrations as Calibre, starting
+at the n-2 current version (to allow users who have not upgraded to upgrade, and
+to test our migration system). Ensure we can track which migrations have run,
+presumably similar to how calibre does it. test & validate they work correctly.
+
+Determine some way to track libcalibre version separate from calibre version.
+libcalibre versions may map many-to-one to a calibre schema, in the instance we
+write buggy schema.
+
+Ensure that these migrations are appropriately logged, however possible.
 
 ## Current State
 
@@ -117,23 +131,12 @@ def upgrade_version_18(self):
 
 #### 1. Minimum Schema Version to Support
 
-**Option A:** Support all versions (0-30+)
-- Pros: Maximum compatibility
-- Cons: Complex, 30+ migration methods
-
-**Option B:** Support version 18+ only
-- Pros: Simpler, modern schema
-- Cons: Can't open older Calibre databases
-
-**Option C:** Support version 18+, with detection and error for older
-- Pros: Clear error message for old DBs
-- Cons: Users must upgrade via Calibre first
-
-**Recommendation:** Option C - require modern Calibre database (v18+)
+Two versons behind latest schema verions.
 
 #### 2. libcalibre Version Tracking
 
-**Approach:** Use higher version numbers to track libcalibre changes
+Consider options for tracking libcalibre version, including other PRAGMA or
+using user version but at a higher number. E.g., Use higher version numbers to track libcalibre changes
 
 - Calibre: versions 0-30
 - libcalibre: versions 100+ (to avoid conflicts)
@@ -194,37 +197,11 @@ impl SchemaUpgrade {
 
 ## Development Phase
 
-### Task Breakdown
+### Example tasks
 
-#### 1. Create Schema Version Utilities
+- Define Minimum Version
 
-**Location:** `src-tauri/libcalibre/src/schema_version.rs` (new file)
-
-**Functions Needed:**
-- `get_user_version(conn)` → `Result<i32>` - Read PRAGMA user_version
-- `set_user_version(conn, version)` → `Result<()>` - Set PRAGMA user_version
-- `verify_calibre_schema(conn)` → `Result<()>` - Check required tables exist
-
-#### 2. Implement SchemaUpgrade Struct
-
-**Location:** `src-tauri/libcalibre/src/schema_version.rs`
-
-**Responsibilities:**
-- Run all pending upgrades in transaction
-- Handle rollback on error
-- Provide clear error messages
-- Log upgrade progress
-
-#### 3. Define Minimum Version
-
-**Constant:**
-```rust
-pub const MIN_CALIBRE_VERSION: i32 = 18;
-pub const LIBCALIBRE_VERSION_BASE: i32 = 100;
-pub const CURRENT_VERSION: i32 = 100; // Initial libcalibre version
-```
-
-#### 4. Create Verification Function
+- Create Verification Function
 
 **Purpose:** Verify Calibre database has expected schema
 
@@ -239,19 +216,7 @@ pub const CURRENT_VERSION: i32 = 100; // Initial libcalibre version
 - All link tables
 - library_id, preferences, metadata_dirtied
 
-#### 5. Integrate into Connection Establishment
-
-**Location:** `src-tauri/libcalibre/src/persistence.rs:establish_connection()`
-
-**Steps:**
-1. Open connection
-2. Check schema version
-3. Run upgrades if needed
-4. Register SQL functions
-5. Register triggers (P0-01)
-6. Return connection
-
-#### 6. Create First libcalibre Migration (v100)
+#### Create First libcalibre Migration (v100)
 
 **Purpose:** Establish libcalibre as schema manager
 
@@ -260,21 +225,12 @@ pub const CURRENT_VERSION: i32 = 100; // Initial libcalibre version
 - Add libcalibre metadata table (optional)
 - Set version to 100
 
-#### 7. Error Handling
+#### Error Handling
 
 **Scenarios:**
-- Database too old (< v18) → Clear error with upgrade instructions
-- Corrupt database → Clear error with recovery instructions
+- Database too old → Clear error with upgrade instructions
+- Corrupt database → Clear error with recovery instructions (which??)
 - Migration fails → Rollback transaction, return error
-
-**Error Messages:**
-```
-"Database schema version {v} is too old. Please open this library
-with Calibre 7.0+ to upgrade, then try again."
-
-"Migration from v{old} to v{new} failed: {error}
-Database has been rolled back to v{old}."
-```
 
 #### 8. Testing Strategy
 
@@ -284,12 +240,13 @@ Database has been rolled back to v{old}."
 - Test rollback on error
 
 **Integration Tests:**
-- Create v18 database, verify upgrades to v100
-- Create v25 database (modern Calibre), verify works
-- Create v10 database (old), verify error
+- Create old supported database, verify upgrades to v100
+- Create up-to-date database (modern Calibre), verify works
+- Create old, unsupported database, verify error
 
 **Compatibility Tests:**
-- Test with real Calibre databases
+- Test with real Calibre databases (may require human input: set up space for
+human to provide DB)
 - Verify Calibre can still open after libcalibre modifications
 
 ---
