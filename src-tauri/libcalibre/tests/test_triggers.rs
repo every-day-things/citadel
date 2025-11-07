@@ -3,13 +3,11 @@
 
 mod common;
 
-use common::setup_with_calibre_client;
-use diesel::prelude::*;
-use diesel::sql_query;
+use common::{setup_with_calibre_client, setup_with_client_v2};
 use libcalibre::dtos::author::NewAuthorDto;
 use libcalibre::dtos::book::NewBookDto;
 use libcalibre::dtos::library::NewLibraryEntryDto;
-use libcalibre::persistence::establish_connection;
+use libcalibre::{NewBook, UpdateBookData};
 
 /// Test that the books_insert_trg trigger auto-generates sort and uuid fields
 #[test]
@@ -34,7 +32,7 @@ fn test_books_insert_trigger_generates_sort_and_uuid() {
         files: None,
     };
 
-    let book = client.add_book(book_entry).expect("Failed to add book");
+    let book = client.add_book(book_entry).unwrap();
 
     // Verify sort field was generated (moving "The" to the end)
     assert_eq!(book.sortable_title, Some("Great Gatsby, The".to_string()));
@@ -46,171 +44,23 @@ fn test_books_insert_trigger_generates_sort_and_uuid() {
     assert!(uuid.contains('-'));
 }
 
-/// Test that the books_update_trg trigger updates sort when title changes
+// TODO: Test books_update_trg trigger when API properly refetches after update
+// The books_update_trg trigger should update the sort field when a book's title changes.
+// This test should verify that updating a book's title from "Original Title" to "The New Title"
+// results in sort being updated to "New Title, The".
+//
+// Currently skipped because:
+// - The AFTER UPDATE trigger fires after the RETURNING clause in ClientV2.books().update()
+// - The returned BookRow doesn't include trigger-generated changes
+// - Would need to refetch the book after update to see trigger effects
+// - User requested no SQL queries in tests
+//
+// When a higher-level API method exists that refetches after update, this test can be implemented.
 #[test]
+#[ignore]
 fn test_books_update_trigger_updates_sort() {
-    let (_temp, mut client) = setup_with_calibre_client();
-
-    // Add a book
-    let book_entry = NewLibraryEntryDto {
-        book: NewBookDto {
-            title: "Original Title".to_string(),
-            timestamp: None,
-            pubdate: None,
-            series_index: 1.0,
-            flags: 1,
-            has_cover: None,
-        },
-        authors: vec![NewAuthorDto {
-            full_name: "Test Author".to_string(),
-            sortable_name: "Author, Test".to_string(),
-            external_url: None,
-        }],
-        files: None,
-    };
-
-    let book = client.add_book(book_entry).expect("Failed to add book");
-    let book_id = book.id;
-
-    // Update the title using raw SQL (since libcalibre doesn't expose title update via CalibreClient)
-    // This directly tests the trigger
-    let db_path = client.get_database_path();
-    let mut conn = establish_connection(db_path.to_str().unwrap()).unwrap();
-
-    sql_query("UPDATE books SET title = 'The New Title' WHERE id = ?")
-        .bind::<diesel::sql_types::Integer, _>(book_id)
-        .execute(&mut conn)
-        .unwrap();
-
-    // Fetch the updated book to verify sort was updated
-    #[derive(QueryableByName)]
-    struct BookSort {
-        #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Text>)]
-        sort: Option<String>,
-    }
-
-    let result: BookSort = sql_query("SELECT sort FROM books WHERE id = ?")
-        .bind::<diesel::sql_types::Integer, _>(book_id)
-        .get_result(&mut conn)
-        .unwrap();
-
-    // Verify sort was updated by trigger (moving "The" to the end)
-    assert_eq!(result.sort, Some("New Title, The".to_string()));
-}
-
-/// Test that the books_delete_trg trigger cascades deletes to related tables
-#[test]
-fn test_books_delete_trigger_cascades() {
-    let (_temp, mut client) = setup_with_calibre_client();
-
-    // Add a book with related data
-    let book_entry = NewLibraryEntryDto {
-        book: NewBookDto {
-            title: "Test Book".to_string(),
-            timestamp: None,
-            pubdate: None,
-            series_index: 1.0,
-            flags: 1,
-            has_cover: None,
-        },
-        authors: vec![NewAuthorDto {
-            full_name: "Test Author".to_string(),
-            sortable_name: "Author, Test".to_string(),
-            external_url: None,
-        }],
-        files: None,
-    };
-
-    let book = client.add_book(book_entry).expect("Failed to add book");
-    let book_id = book.id;
-
-    // Add related data (comments, identifiers) using raw SQL
-    let db_path = client.get_database_path();
-    let mut conn = establish_connection(db_path.to_str().unwrap()).unwrap();
-
-    sql_query("INSERT INTO comments (book, text) VALUES (?, 'Test comment')")
-        .bind::<diesel::sql_types::Integer, _>(book_id)
-        .execute(&mut conn)
-        .unwrap();
-
-    sql_query("INSERT INTO identifiers (book, type, val) VALUES (?, 'isbn', '1234567890')")
-        .bind::<diesel::sql_types::Integer, _>(book_id)
-        .execute(&mut conn)
-        .unwrap();
-
-    // Verify related records exist
-    #[derive(QueryableByName)]
-    struct CountResult {
-        #[diesel(sql_type = diesel::sql_types::BigInt)]
-        count: i64,
-    }
-
-    let link_count: CountResult =
-        sql_query("SELECT COUNT(*) as count FROM books_authors_link WHERE book = ?")
-            .bind::<diesel::sql_types::Integer, _>(book_id)
-            .get_result(&mut conn)
-            .unwrap();
-    assert_eq!(
-        link_count.count, 1,
-        "Should have 1 author link before delete"
-    );
-
-    let comment_count: CountResult =
-        sql_query("SELECT COUNT(*) as count FROM comments WHERE book = ?")
-            .bind::<diesel::sql_types::Integer, _>(book_id)
-            .get_result(&mut conn)
-            .unwrap();
-    assert_eq!(
-        comment_count.count, 1,
-        "Should have 1 comment before delete"
-    );
-
-    let identifier_count: CountResult =
-        sql_query("SELECT COUNT(*) as count FROM identifiers WHERE book = ?")
-            .bind::<diesel::sql_types::Integer, _>(book_id)
-            .get_result(&mut conn)
-            .unwrap();
-    assert_eq!(
-        identifier_count.count, 1,
-        "Should have 1 identifier before delete"
-    );
-
-    // Delete the book
-    sql_query("DELETE FROM books WHERE id = ?")
-        .bind::<diesel::sql_types::Integer, _>(book_id)
-        .execute(&mut conn)
-        .unwrap();
-
-    // Verify all related records were cascade deleted by the trigger
-    let link_count_after: CountResult =
-        sql_query("SELECT COUNT(*) as count FROM books_authors_link WHERE book = ?")
-            .bind::<diesel::sql_types::Integer, _>(book_id)
-            .get_result(&mut conn)
-            .unwrap();
-    assert_eq!(
-        link_count_after.count, 0,
-        "Author links should be cascade deleted"
-    );
-
-    let comment_count_after: CountResult =
-        sql_query("SELECT COUNT(*) as count FROM comments WHERE book = ?")
-            .bind::<diesel::sql_types::Integer, _>(book_id)
-            .get_result(&mut conn)
-            .unwrap();
-    assert_eq!(
-        comment_count_after.count, 0,
-        "Comments should be cascade deleted"
-    );
-
-    let identifier_count_after: CountResult =
-        sql_query("SELECT COUNT(*) as count FROM identifiers WHERE book = ?")
-            .bind::<diesel::sql_types::Integer, _>(book_id)
-            .get_result(&mut conn)
-            .unwrap();
-    assert_eq!(
-        identifier_count_after.count, 0,
-        "Identifiers should be cascade deleted"
-    );
+    // TODO: Implement when API refetches book after update
+    todo!("Implement update trigger test when API properly refetches")
 }
 
 /// Test that triggers work correctly with various article patterns
@@ -309,4 +159,27 @@ fn test_title_sort_trigger_with_various_articles() {
         Some("American Tragedy, An".to_string())
     );
     assert_eq!(book4.sortable_title, Some("Moby Dick".to_string()));
+}
+
+// TODO: Test cascade delete behavior when delete API is available
+// The books_delete_trg trigger should cascade delete related records when a book is deleted.
+// This test should verify that:
+// - Deleting a book removes entries from books_authors_link
+// - Deleting a book removes entries from books_publishers_link
+// - Deleting a book removes entries from books_ratings_link
+// - Deleting a book removes entries from books_series_link
+// - Deleting a book removes entries from books_tags_link
+// - Deleting a book removes entries from books_languages_link
+// - Deleting a book removes entries from data (book files)
+// - Deleting a book removes entries from comments
+// - Deleting a book removes entries from conversion_options
+// - Deleting a book removes entries from books_plugin_data
+// - Deleting a book removes entries from identifiers
+//
+// Currently skipped because neither CalibreClient nor ClientV2 exposes book deletion API.
+#[test]
+#[ignore]
+fn test_books_delete_trigger_cascades() {
+    // TODO: Implement when delete_book() API is available
+    todo!("Implement cascade delete test when delete API is available")
 }
