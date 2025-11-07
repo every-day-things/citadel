@@ -44,23 +44,41 @@ fn test_books_insert_trigger_generates_sort_and_uuid() {
     assert!(uuid.contains('-'));
 }
 
-// TODO: Test books_update_trg trigger when API properly refetches after update
-// The books_update_trg trigger should update the sort field when a book's title changes.
-// This test should verify that updating a book's title from "Original Title" to "The New Title"
-// results in sort being updated to "New Title, The".
-//
-// Currently skipped because:
-// - The AFTER UPDATE trigger fires after the RETURNING clause in ClientV2.books().update()
-// - The returned BookRow doesn't include trigger-generated changes
-// - Would need to refetch the book after update to see trigger effects
-// - User requested no SQL queries in tests
-//
-// When a higher-level API method exists that refetches after update, this test can be implemented.
+/// Test that the books_update_trg trigger updates sort when title changes
 #[test]
-#[ignore]
 fn test_books_update_trigger_updates_sort() {
-    // TODO: Implement when API refetches book after update
-    todo!("Implement update trigger test when API properly refetches")
+    let (_temp, mut client) = setup_with_client_v2();
+
+    // Create a book directly with ClientV2
+    let new_book = NewBook {
+        title: "Original Title".to_string(),
+        timestamp: None,
+        pubdate: None,
+        series_index: 1.0,
+        flags: 1,
+        has_cover: None,
+    };
+
+    let book = client.books().create(new_book).unwrap();
+    let book_id = book.id;
+
+    // Verify initial sort
+    assert_eq!(book.sort, Some("Original Title".to_string()));
+
+    // Update the title using ClientV2
+    let updated_book = client
+        .books()
+        .update(
+            book_id,
+            UpdateBookData {
+                title: Some("The New Title".to_string()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+    // Verify sort was updated by trigger (moving "The" to the end)
+    assert_eq!(updated_book.sort, Some("New Title, The".to_string()));
 }
 
 /// Test that triggers work correctly with various article patterns
