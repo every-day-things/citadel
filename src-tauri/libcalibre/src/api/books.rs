@@ -261,7 +261,7 @@ impl BooksHandler {
                 .or(Err(()))?;
 
             sql_query(format!(
-                "CREATE TABLE custom_column_{column_id} (id INTEGER PRIMARY KEY, book INTEGER NOT NULL, value INTEGER NOT NULL);"
+                "CREATE TABLE custom_column_{column_id} (id INTEGER PRIMARY KEY, book INTEGER NOT NULL UNIQUE, value INTEGER NOT NULL);"
             ))
             .execute(connection)
             .or(Err(()))?;
