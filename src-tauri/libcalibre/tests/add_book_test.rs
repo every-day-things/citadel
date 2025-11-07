@@ -1,6 +1,6 @@
 mod common;
 
-use common::{setup_empty_library, standard_test_book, DatabaseSnapshot};
+use common::{setup_with_calibre_client, standard_test_book, DatabaseSnapshot};
 use insta::assert_yaml_snapshot;
 
 /// Test that adding a single book creates the expected database state.
@@ -8,7 +8,7 @@ use insta::assert_yaml_snapshot;
 /// tables or columns that Calibre might create.
 #[test]
 fn test_add_single_book_full_database() {
-    let (_temp, mut client) = setup_empty_library();
+    let (_temp, mut client) = setup_with_calibre_client();
 
     // Add a book via libcalibre
     let result = client.add_book(standard_test_book());
@@ -26,7 +26,7 @@ fn test_add_single_book_full_database() {
 /// Test that the empty library fixture has the expected initial state
 #[test]
 fn test_empty_library_state() {
-    let (_temp, client) = setup_empty_library();
+    let (_temp, client) = setup_with_calibre_client();
 
     let db_path = client.get_database_path();
     let snapshot = DatabaseSnapshot::capture(&db_path)
