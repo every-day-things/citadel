@@ -38,6 +38,66 @@ pub fn sort_book_title(title: String) -> String {
     title.clone()
 }
 
+/// Converts author name from "First Last" to "Last, First" format for SQL.
+///
+/// This is a simplified version for SQL compatibility with Calibre.
+/// For application-level sorting with more complex rules, see Author::sortable_name().
+///
+/// Based on Calibre's implementation:
+/// https://github.com/kovidgoyal/calibre/blob/master/src/calibre/ebooks/metadata/__init__.py
+///
+/// ### Examples
+/// ```
+/// use libcalibre::persistence::sort_author_name;
+/// let name = "John Smith";
+/// let sorted = sort_author_name(name.to_string());
+/// assert_eq!(sorted, "Smith, John");
+/// ```
+///
+/// ```
+/// use libcalibre::persistence::sort_author_name;
+/// let name = "Smith, John";
+/// let sorted = sort_author_name(name.to_string());
+/// assert_eq!(sorted, "Smith, John"); // Already sorted
+/// ```
+///
+/// ```
+/// use libcalibre::persistence::sort_author_name;
+/// let name = "Madonna";
+/// let sorted = sort_author_name(name.to_string());
+/// assert_eq!(sorted, "Madonna"); // Single name unchanged
+/// ```
+#[allow(unused)]
+pub fn sort_author_name(name: String) -> String {
+    let name = name.trim();
+
+    // If empty, return empty
+    if name.is_empty() {
+        return String::new();
+    }
+
+    // If already in "Last, First" format (contains comma), return as-is
+    if name.contains(',') {
+        return name.to_string();
+    }
+
+    // Split by whitespace
+    let parts: Vec<&str> = name.split_whitespace().collect();
+
+    // Single name (e.g., "Madonna")
+    if parts.len() == 1 {
+        return name.to_string();
+    }
+
+    // Multiple names: move last word to front
+    // "John Smith" → "Smith, John"
+    // "John Paul Jones" → "Jones, John Paul"
+    let last = parts[parts.len() - 1];
+    let first = parts[0..parts.len() - 1].join(" ");
+
+    format!("{}, {}", last, first)
+}
+
 /// Registers SQLite triggers for maintaining data integrity.
 ///
 /// This function registers triggers that Calibre uses to:
@@ -98,12 +158,14 @@ pub fn establish_connection(db_path: &str) -> Result<diesel::SqliteConnection, (
     // See: https://github.com/kovidgoyal/calibre/blob/7f3ccb333d906f5867636dd0dc4700b495e5ae6f/src/calibre/library/database.py#L55-L70
     define_sql_function!(fn title_sort(title: Text) -> Text);
     define_sql_function!(fn uuid4() -> Text);
+    define_sql_function!(fn author_to_author_sort(name: Text) -> Text);
 
     let mut connection = diesel::SqliteConnection::establish(db_path).or(Err(()))?;
 
     // Register SQL function implementations. Ignore any errors.
     let _ = title_sort_utils::register_impl(&mut connection, sort_book_title);
-    let _ = uuid4_utils::register_impl(&connection, || uuid::Uuid::new_v4().to_string());
+    let _ = uuid4_utils::register_impl(&mut connection, || uuid::Uuid::new_v4().to_string());
+    let _ = author_to_author_sort_utils::register_impl(&mut connection, sort_author_name);
 
     // Register triggers for data integrity and automatic field generation
     register_triggers(&mut connection)
@@ -111,4 +173,45 @@ pub fn establish_connection(db_path: &str) -> Result<diesel::SqliteConnection, (
         .ok();
 
     Ok(connection)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sort_author_name_simple() {
+        assert_eq!(sort_author_name("John Smith".to_string()), "Smith, John");
+    }
+
+    #[test]
+    fn test_sort_author_name_already_sorted() {
+        assert_eq!(
+            sort_author_name("Smith, John".to_string()),
+            "Smith, John"
+        );
+    }
+
+    #[test]
+    fn test_sort_author_name_single_name() {
+        assert_eq!(sort_author_name("Madonna".to_string()), "Madonna");
+    }
+
+    #[test]
+    fn test_sort_author_name_multiple_names() {
+        assert_eq!(
+            sort_author_name("John Paul Jones".to_string()),
+            "Jones, John Paul"
+        );
+    }
+
+    #[test]
+    fn test_sort_author_name_empty() {
+        assert_eq!(sort_author_name("".to_string()), "");
+    }
+
+    #[test]
+    fn test_sort_author_name_whitespace() {
+        assert_eq!(sort_author_name("  ".to_string()), "");
+    }
 }
