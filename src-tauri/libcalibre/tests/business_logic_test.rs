@@ -158,7 +158,6 @@ mod author_sortable_name_tests {
 
     #[test]
     fn test_surname_prefix_van_der() {
-        // Multi-word prefixes like "van der" are now properly supported
         let author = make_author("Jan van der Berg");
         assert_eq!(author.sortable_name(), "van der Berg, Jan");
     }

@@ -16,8 +16,6 @@ pub struct Author {
 }
 impl Author {
     /// Generate a sortable name for this author.
-    ///
-    /// Delegates to `sorting::sort_author_name_apa()` for the actual sorting logic.
     pub fn sortable_name(&self) -> String {
         sorting::sort_author_name_apa(&self.name)
     }
