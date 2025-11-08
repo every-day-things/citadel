@@ -3,6 +3,8 @@ use diesel::sql_query;
 use diesel::sql_types::Text;
 use regex::Regex;
 
+use crate::entities::author::Author;
+
 /// Creates a sortable book title by moving the preposition to the end of the title.
 ///
 /// "Unused" is allowed because this function is called from SQL, and registered
@@ -38,64 +40,23 @@ pub fn sort_book_title(title: String) -> String {
     title.clone()
 }
 
-/// Converts author name from "First Last" to "Last, First" format for SQL.
+/// Converts author name to APA-style sortable format for SQL.
 ///
-/// This is a simplified version for SQL compatibility with Calibre.
-/// For application-level sorting with more complex rules, see Author::sortable_name().
+/// This function wraps Author::sort_author_name_apa() to provide the same
+/// APA-style sorting logic used throughout the application. It handles:
+/// - Name particles (von, van, de, etc.)
+/// - Generational suffixes (Jr., Sr., III, etc.)
+/// - Academic titles and degrees
+/// - Organization names
+///
+/// "Unused" is allowed because this function is called from SQL, and registered
+/// with the database connection.
 ///
 /// Based on Calibre's implementation:
 /// https://github.com/kovidgoyal/calibre/blob/master/src/calibre/ebooks/metadata/__init__.py
-///
-/// ### Examples
-/// ```
-/// use libcalibre::persistence::sort_author_name;
-/// let name = "John Smith";
-/// let sorted = sort_author_name(name.to_string());
-/// assert_eq!(sorted, "Smith, John");
-/// ```
-///
-/// ```
-/// use libcalibre::persistence::sort_author_name;
-/// let name = "Smith, John";
-/// let sorted = sort_author_name(name.to_string());
-/// assert_eq!(sorted, "Smith, John"); // Already sorted
-/// ```
-///
-/// ```
-/// use libcalibre::persistence::sort_author_name;
-/// let name = "Madonna";
-/// let sorted = sort_author_name(name.to_string());
-/// assert_eq!(sorted, "Madonna"); // Single name unchanged
-/// ```
 #[allow(unused)]
 pub fn sort_author_name(name: String) -> String {
-    let name = name.trim();
-
-    // If empty, return empty
-    if name.is_empty() {
-        return String::new();
-    }
-
-    // If already in "Last, First" format (contains comma), return as-is
-    if name.contains(',') {
-        return name.to_string();
-    }
-
-    // Split by whitespace
-    let parts: Vec<&str> = name.split_whitespace().collect();
-
-    // Single name (e.g., "Madonna")
-    if parts.len() == 1 {
-        return name.to_string();
-    }
-
-    // Multiple names: move last word to front
-    // "John Smith" → "Smith, John"
-    // "John Paul Jones" → "Jones, John Paul"
-    let last = parts[parts.len() - 1];
-    let first = parts[0..parts.len() - 1].join(" ");
-
-    format!("{}, {}", last, first)
+    Author::sort_author_name_apa(&name)
 }
 
 /// Registers SQLite triggers for maintaining data integrity.
@@ -173,45 +134,4 @@ pub fn establish_connection(db_path: &str) -> Result<diesel::SqliteConnection, (
         .ok();
 
     Ok(connection)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_sort_author_name_simple() {
-        assert_eq!(sort_author_name("John Smith".to_string()), "Smith, John");
-    }
-
-    #[test]
-    fn test_sort_author_name_already_sorted() {
-        assert_eq!(
-            sort_author_name("Smith, John".to_string()),
-            "Smith, John"
-        );
-    }
-
-    #[test]
-    fn test_sort_author_name_single_name() {
-        assert_eq!(sort_author_name("Madonna".to_string()), "Madonna");
-    }
-
-    #[test]
-    fn test_sort_author_name_multiple_names() {
-        assert_eq!(
-            sort_author_name("John Paul Jones".to_string()),
-            "Jones, John Paul"
-        );
-    }
-
-    #[test]
-    fn test_sort_author_name_empty() {
-        assert_eq!(sort_author_name("".to_string()), "");
-    }
-
-    #[test]
-    fn test_sort_author_name_whitespace() {
-        assert_eq!(sort_author_name("  ".to_string()), "");
-    }
 }
