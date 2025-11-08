@@ -1,21 +1,14 @@
 // Property-based tests for author name sorting
-// Verifies invariants in Author::sortable_name() logic
+// Verifies invariants in sort_author_name_apa() logic
 
-use libcalibre::Author;
+use libcalibre::sorting::sort_author_name_apa;
 use proptest::prelude::*;
 
 proptest! {
-    /// Property: Author sortable_name always returns a non-empty string for non-empty input
+    /// Property: sort_author_name_apa always returns a non-empty string for non-empty input
     #[test]
     fn sortable_name_non_empty(name in "[A-Za-z ]{1,50}") {
-        let author = Author {
-            id: 1,
-            name: name.clone(),
-            sort: None,
-            link: "".to_string(),
-        };
-
-        let sorted = author.sortable_name();
+        let sorted = sort_author_name_apa(&name);
         prop_assert!(!sorted.is_empty(),
             "Empty sort name for input '{}'", name);
     }
@@ -27,14 +20,7 @@ proptest! {
         last in "[A-Z][a-z]{2,10}",
     ) {
         let name = format!("{} {}", first, last);
-        let author = Author {
-            id: 1,
-            name: name.clone(),
-            sort: None,
-            link: "".to_string(),
-        };
-
-        let sorted = author.sortable_name();
+        let sorted = sort_author_name_apa(&name);
 
         prop_assert!(
             sorted == format!("{}, {}", last, first)
@@ -54,14 +40,7 @@ proptest! {
         bracket_content in "[A-Za-z ]{2,20}",  // At least 2 chars to avoid edge cases
     ) {
         let name = format!("{} ({})", name_base, bracket_content);
-        let author = Author {
-            id: 1,
-            name: name.clone(),
-            sort: None,
-            link: "".to_string(),
-        };
-
-        let sorted = author.sortable_name();
+        let sorted = sort_author_name_apa(&name);
 
         // Brackets and their contents are usually removed
         // (Some edge cases with single chars might be kept)
@@ -75,21 +54,8 @@ proptest! {
     /// Property: Author sorting is deterministic
     #[test]
     fn sorting_is_deterministic(name in "\\PC{1,50}") {
-        let author1 = Author {
-            id: 1,
-            name: name.clone(),
-            sort: None,
-            link: "".to_string(),
-        };
-        let author2 = Author {
-            id: 2,
-            name: name.clone(),
-            sort: None,
-            link: "".to_string(),
-        };
-
-        let sorted1 = author1.sortable_name();
-        let sorted2 = author2.sortable_name();
+        let sorted1 = sort_author_name_apa(&name);
+        let sorted2 = sort_author_name_apa(&name);
 
         prop_assert_eq!(sorted1, sorted2,
             "Non-deterministic sorting for '{}'", name);
