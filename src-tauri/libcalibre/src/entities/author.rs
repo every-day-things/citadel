@@ -284,7 +284,13 @@ impl Author {
             .not()
     }
 
-    fn sort_author_name_apa(name: &str) -> String {
+    pub fn sort_author_name_apa(name: &str) -> String {
+        // If already in "Last, First" format (contains comma), return as-is
+        // This matches Calibre's behavior
+        if name.contains(',') {
+            return name.to_string();
+        }
+
         let sauthor = Author::remove_bracket_content(name);
         let mut tokens: Vec<String> = sauthor.split_whitespace().map(str::to_string).collect();
 
