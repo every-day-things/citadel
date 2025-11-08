@@ -42,16 +42,6 @@ pub fn sort_book_title(title: String) -> String {
 
 /// Converts author name to APA-style sortable format for SQL.
 ///
-/// This function wraps sorting::sort_author_name_apa() to provide the same
-/// APA-style sorting logic used throughout the application. It handles:
-/// - Name particles (von, van, de, etc.)
-/// - Generational suffixes (Jr., Sr., III, etc.)
-/// - Academic titles and degrees
-/// - Organization names
-///
-/// "Unused" is allowed because this function is called from SQL, and registered
-/// with the database connection.
-///
 /// Based on Calibre's implementation:
 /// https://github.com/kovidgoyal/calibre/blob/master/src/calibre/ebooks/metadata/__init__.py
 #[allow(unused)]
