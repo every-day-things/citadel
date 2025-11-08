@@ -29,9 +29,10 @@ fn test_title_sort_sql_function_the() {
 fn test_title_sort_sql_function_a() {
     let mut conn = establish_connection(":memory:").unwrap();
 
-    let result: StringResult = diesel::sql_query("SELECT title_sort('A Tale of Two Cities') as result")
-        .get_result(&mut conn)
-        .unwrap();
+    let result: StringResult =
+        diesel::sql_query("SELECT title_sort('A Tale of Two Cities') as result")
+            .get_result(&mut conn)
+            .unwrap();
 
     assert_eq!(result.result, "Tale of Two Cities, A");
 }
@@ -68,14 +69,21 @@ fn test_uuid4_sql_function() {
 
     // UUID v4 format: 8-4-4-4-12 hex digits
     assert_eq!(result.result.len(), 36, "UUID should be 36 characters");
-    assert_eq!(result.result.chars().filter(|c| *c == '-').count(), 4, "UUID should have 4 dashes");
+    assert_eq!(
+        result.result.chars().filter(|c| *c == '-').count(),
+        4,
+        "UUID should have 4 dashes"
+    );
 
     // Test that calling it twice gives different results
     let result2: StringResult = diesel::sql_query("SELECT uuid4() as result")
         .get_result(&mut conn)
         .unwrap();
 
-    assert_ne!(result.result, result2.result, "uuid4() should generate unique values");
+    assert_ne!(
+        result.result, result2.result,
+        "uuid4() should generate unique values"
+    );
 }
 
 #[test]
@@ -130,10 +138,9 @@ fn test_author_to_author_sort_sql_function_multiple_names() {
 fn test_author_to_author_sort_sql_function_empty() {
     let mut conn = establish_connection(":memory:").unwrap();
 
-    let result: StringResult =
-        diesel::sql_query("SELECT author_to_author_sort('') as result")
-            .get_result(&mut conn)
-            .unwrap();
+    let result: StringResult = diesel::sql_query("SELECT author_to_author_sort('') as result")
+        .get_result(&mut conn)
+        .unwrap();
 
     assert_eq!(result.result, "");
 }
