@@ -87,7 +87,8 @@ fn test_uuid4_sql_function() {
 }
 
 #[test]
-fn test_author_to_author_sort_sql_function_simple() {
+fn test_author_to_author_sort_sql_function_registered() {
+    // Verify that the SQL function is properly registered and callable
     let mut conn = establish_connection(":memory:").unwrap();
 
     let result: StringResult =
@@ -99,48 +100,14 @@ fn test_author_to_author_sort_sql_function_simple() {
 }
 
 #[test]
-fn test_author_to_author_sort_sql_function_already_sorted() {
+fn test_author_to_author_sort_sql_function_complex_case() {
+    // Verify a more complex case to ensure the function logic works in SQL
     let mut conn = establish_connection(":memory:").unwrap();
 
     let result: StringResult =
-        diesel::sql_query("SELECT author_to_author_sort('Smith, John') as result")
+        diesel::sql_query("SELECT author_to_author_sort('Dr. John Doe Jr.') as result")
             .get_result(&mut conn)
             .unwrap();
 
-    assert_eq!(result.result, "Smith, John");
-}
-
-#[test]
-fn test_author_to_author_sort_sql_function_single_name() {
-    let mut conn = establish_connection(":memory:").unwrap();
-
-    let result: StringResult =
-        diesel::sql_query("SELECT author_to_author_sort('Madonna') as result")
-            .get_result(&mut conn)
-            .unwrap();
-
-    assert_eq!(result.result, "Madonna");
-}
-
-#[test]
-fn test_author_to_author_sort_sql_function_multiple_names() {
-    let mut conn = establish_connection(":memory:").unwrap();
-
-    let result: StringResult =
-        diesel::sql_query("SELECT author_to_author_sort('John Paul Jones') as result")
-            .get_result(&mut conn)
-            .unwrap();
-
-    assert_eq!(result.result, "Jones, John Paul");
-}
-
-#[test]
-fn test_author_to_author_sort_sql_function_empty() {
-    let mut conn = establish_connection(":memory:").unwrap();
-
-    let result: StringResult = diesel::sql_query("SELECT author_to_author_sort('') as result")
-        .get_result(&mut conn)
-        .unwrap();
-
-    assert_eq!(result.result, "");
+    assert_eq!(result.result, "Doe, John, Jr.");
 }

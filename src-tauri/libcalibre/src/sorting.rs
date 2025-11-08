@@ -281,16 +281,41 @@ pub fn sort_author_name_apa(name: &str) -> String {
 
     let suffix = tokens[(last + 1)..].join(" ");
 
-    let token_before_last_is_prefix = last > first
-        && FAMILY_NAME_PREFIXES
-            .iter()
-            .map(|s| s.to_lowercase())
-            .any(|prefix| prefix == tokens[last - 1].to_lowercase());
+    // Check for family name prefixes before the last name
+    // Try to match multi-word prefixes first (longest match), then single-word
+    let author_surname_prefixes_lower: Vec<String> = FAMILY_NAME_PREFIXES
+        .iter()
+        .map(|s| s.to_lowercase())
+        .collect();
 
-    if token_before_last_is_prefix {
-        tokens[last - 1] = format!("{} {}", tokens[last - 1], tokens[last]);
-        tokens.remove(last);
-        last -= 1;
+    let mut prefix_token_count = 0;
+
+    // Try matching up to 3 tokens before the last name as a prefix
+    for num_tokens in (1..=3).rev() {
+        if last >= first + num_tokens {
+            let potential_prefix = tokens[(last - num_tokens)..last]
+                .iter()
+                .map(|s| s.to_lowercase())
+                .collect::<Vec<_>>()
+                .join(" ");
+
+            if author_surname_prefixes_lower.contains(&potential_prefix) {
+                prefix_token_count = num_tokens;
+                break;
+            }
+        }
+    }
+
+    if prefix_token_count > 0 {
+        // Combine the prefix tokens with the last name
+        let prefix_start = last - prefix_token_count;
+        let combined = tokens[prefix_start..=last].join(" ");
+        tokens[prefix_start] = combined;
+        // Remove the tokens that were combined
+        for _ in 0..prefix_token_count {
+            tokens.remove(prefix_start + 1);
+        }
+        last = prefix_start;
     }
 
     let mut atokens = vec![tokens[last].clone()];
@@ -303,5 +328,127 @@ pub fn sort_author_name_apa(name: &str) -> String {
         atokens.join(" ")
     } else {
         format!("{}, {}", atokens.join(" "), suffix)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_simple_name() {
+        assert_eq!(sort_author_name_apa("John Doe"), "Doe, John");
+    }
+
+    #[test]
+    fn test_single_name() {
+        assert_eq!(sort_author_name_apa("Madonna"), "Madonna");
+    }
+
+    #[test]
+    fn test_already_sorted() {
+        assert_eq!(sort_author_name_apa("Smith, John"), "Smith, John");
+    }
+
+    #[test]
+    fn test_empty_string() {
+        assert_eq!(sort_author_name_apa(""), "");
+    }
+
+    #[test]
+    fn test_three_word_name() {
+        assert_eq!(sort_author_name_apa("John Paul Jones"), "Jones, John Paul");
+    }
+
+    #[test]
+    fn test_prefix_title_removal() {
+        assert_eq!(sort_author_name_apa("Dr. John Doe"), "Doe, John");
+        assert_eq!(sort_author_name_apa("Mr. John Doe"), "Doe, John");
+        assert_eq!(sort_author_name_apa("Prof. John Doe"), "Doe, John");
+    }
+
+    #[test]
+    fn test_generational_suffix() {
+        assert_eq!(sort_author_name_apa("John Doe Jr."), "Doe, John, Jr.");
+        assert_eq!(sort_author_name_apa("John Doe Sr."), "Doe, John, Sr.");
+        assert_eq!(sort_author_name_apa("John Doe III"), "Doe, John, III");
+    }
+
+    #[test]
+    fn test_post_nominal_removal() {
+        assert_eq!(sort_author_name_apa("John Doe PhD"), "Doe, John");
+        assert_eq!(
+            sort_author_name_apa("John Doe BA Bsc M.S. PhD Esq"),
+            "Doe, John"
+        );
+    }
+
+    #[test]
+    fn test_bracket_removal() {
+        assert_eq!(sort_author_name_apa("John Doe (Author)"), "Doe, John");
+        assert_eq!(sort_author_name_apa("John Doe [Deceased]"), "Doe, John");
+        assert_eq!(
+            sort_author_name_apa("John Doe {Ed.: fictional character}"),
+            "Doe, John"
+        );
+        assert_eq!(
+            sort_author_name_apa("John Doe (Author) [Deceased] {Ed.: fictional character}"),
+            "Doe, John"
+        );
+    }
+
+    #[test]
+    fn test_organization_names() {
+        assert_eq!(sort_author_name_apa("Coca Cola Inc."), "Coca Cola Inc.");
+        assert_eq!(
+            sort_author_name_apa("Microsoft Corporation"),
+            "Microsoft Corporation"
+        );
+        assert_eq!(
+            sort_author_name_apa("National Institute of Health"),
+            "National Institute of Health"
+        );
+    }
+
+    #[test]
+    fn test_family_name_prefix() {
+        assert_eq!(
+            sort_author_name_apa("Example von Cruz"),
+            "von Cruz, Example"
+        );
+        assert_eq!(
+            sort_author_name_apa("John van der Berg"),
+            "van der Berg, John"
+        );
+        assert_eq!(
+            sort_author_name_apa("Marie De la Cruz"),
+            "De la Cruz, Marie"
+        );
+    }
+
+    #[test]
+    fn test_two_word_name_with_family_prefix() {
+        // Two-word names where first word is a family prefix should not be reformatted
+        assert_eq!(sort_author_name_apa("von Neumann"), "von Neumann");
+        assert_eq!(sort_author_name_apa("van Gogh"), "van Gogh");
+    }
+
+    #[test]
+    fn test_combined_prefix_and_suffix() {
+        assert_eq!(sort_author_name_apa("Dr. John Doe Jr."), "Doe, John, Jr.");
+        assert_eq!(
+            sort_author_name_apa("Prof. Marie von Berg Sr."),
+            "von Berg, Marie, Sr."
+        );
+    }
+
+    #[test]
+    fn test_multiple_prefixes() {
+        assert_eq!(sort_author_name_apa("Mr. Dr. John Doe"), "Doe, John");
+    }
+
+    #[test]
+    fn test_whitespace_handling() {
+        assert_eq!(sort_author_name_apa("  John   Doe  "), "Doe, John");
     }
 }
