@@ -5,14 +5,14 @@ pub mod db;
 pub mod dtos;
 mod entities;
 pub mod error;
+pub mod library;
 pub mod mime_type;
 pub mod models;
 pub mod persistence;
 mod schema;
 pub mod sorting;
-pub mod util;
-pub mod library;
 pub mod types;
+pub mod util;
 
 use diesel::SqliteConnection;
 use std::sync::{Arc, Mutex};
