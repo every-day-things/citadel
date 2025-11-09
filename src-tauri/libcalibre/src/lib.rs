@@ -11,6 +11,8 @@ pub mod persistence;
 mod schema;
 pub mod sorting;
 pub mod util;
+pub mod library;
+pub mod types;
 
 use diesel::SqliteConnection;
 use std::sync::{Arc, Mutex};
