@@ -516,10 +516,7 @@ mod tests {
 
     #[test]
     fn test_title_sort_article_in_middle() {
-        assert_eq!(
-            sort_book_title("War of the Worlds"),
-            "War of the Worlds"
-        );
+        assert_eq!(sort_book_title("War of the Worlds"), "War of the Worlds");
     }
 
     #[test]
