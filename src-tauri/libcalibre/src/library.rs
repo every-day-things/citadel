@@ -4,6 +4,7 @@ use chrono::{NaiveDate, NaiveDateTime};
 use diesel::SqliteConnection;
 
 use crate::{
+    operations,
     persistence::establish_connection,
     types::{AuthorId, BookId},
     util::ValidDbPath,
@@ -22,13 +23,13 @@ pub struct Book {
     pub uuid: String,
     pub title: String,
     pub authors: Vec<Author>,
-    pub tags: Vec<String>,
-    pub series: Option<String>,
-    pub series_index: Option<f32>,
-    pub publisher: Option<String>,
-    pub publication_date: Option<NaiveDate>,
-    pub rating: Option<i32>, // 0-10
-    pub comments: Option<String>,
+    // pub tags: Vec<String>,
+    // pub series: Option<String>,
+    // pub series_index: Option<f32>,
+    // pub publisher: Option<String>,
+    // pub publication_date: Option<NaiveDate>,
+    // pub rating: Option<i32>, // 0-10
+    pub description: Option<String>,
     // Identifiers are unique across type + value. For example, a book can have
     // only one ISBN.
     pub identifiers: HashMap<String, String>, // {"isbn": "...", "amazon": "..."}
@@ -60,6 +61,7 @@ pub struct BookAdd {
 
 pub struct BookUpdate {
     pub title: Option<String>,
+
     /// If provided, replaces all authors with the provided list. Authors
     /// not already in the database will be created. Removes any author not
     /// included in the list.
@@ -70,6 +72,9 @@ pub struct BookUpdate {
     /// included in the list.
     /// **Do not use both `author_names` and `author_ids` at the same time.**
     pub author_ids: Option<Vec<AuthorId>>,
+
+    pub description: Option<String>,
+
     pub tags: Option<Vec<String>>,
     pub series: Option<String>,
     pub series_index: Option<f32>,
@@ -80,6 +85,7 @@ pub struct BookUpdate {
     pub identifiers: Option<HashMap<String, String>>, // {"isbn": "...", "amazon": "..."}
 }
 
+#[derive(Clone, Debug)]
 pub struct Author {
     pub id: AuthorId,
     pub name: String,
@@ -137,12 +143,11 @@ impl Library {
     }
 
     pub fn books(&mut self) -> Result<Vec<Book>, CalibreError> {
-        todo!()
+        operations::books::all(&mut self.conn)
     }
 
-    // TODO: Add BookId / AuthorId types
     pub fn get_book(&mut self, book_id: BookId) -> Result<Book, CalibreError> {
-        todo!()
+        operations::books::get_book(&mut self.conn, book_id)
     }
 
     pub fn update_book(
@@ -150,13 +155,15 @@ impl Library {
         book_id: BookId,
         update: BookUpdate,
     ) -> Result<Book, CalibreError> {
-        todo!()
+        operations::books::update_book(&mut self.conn, book_id, update)?;
+
+        self.get_book(book_id)
     }
 
     /// Delete a set of books by their IDs. Returns the list of successfully
     /// deleted book IDs.
-    pub fn remove_books(&mut self, book_ids: Vec<BookId>) -> Result<Vec<BookId>, CalibreError> {
-        todo!()
+    pub fn remove_books(&mut self, _book_ids: Vec<BookId>) -> Result<Vec<BookId>, CalibreError> {
+        unimplemented!()
     }
 
     //          .o.                                       .
@@ -174,7 +181,7 @@ impl Library {
 
     /// We avoid including these in the Book entity b/c they are large binary blobs.
     pub fn get_book_cover(&mut self, book_id: BookId) -> Result<Vec<u8>, CalibreError> {
-        todo!()
+        operations::assets::get_book_cover(&self.db_path.library_path, &mut self.conn, book_id)
     }
 
     /// Upserts book cover data: if image file is missing, it is created
@@ -197,31 +204,69 @@ impl Library {
 
     /// Read contents of a book file in a specific format (e.g., "epub", "mobi",
     /// etc)
-    // TODO: find way to support streaming these bytes
     pub fn get_book_file(
         &mut self,
         book_id: BookId,
-        format: &str,
+        file_format: &str,
     ) -> Result<Vec<u8>, CalibreError> {
-        // Read contents from disk, based on book ID and format
-        todo!()
+        operations::assets::get_book_file(
+            &self.db_path.library_path,
+            &mut self.conn,
+            book_id,
+            file_format,
+        )
     }
 
-    pub fn get_book_file_path(&self, id: BookId, format: &str) -> Result<PathBuf, CalibreError> {
-        todo!()
+    pub fn get_book_file_path(
+        &mut self,
+        id: BookId,
+        format: &str,
+    ) -> Result<PathBuf, CalibreError> {
+        operations::assets::get_book_file_path(
+            &self.db_path.library_path,
+            &mut self.conn,
+            id,
+            format,
+        )
     }
 
     pub fn remove_book_file(&mut self, book_id: BookId, format: &str) -> Result<(), CalibreError> {
-        todo!()
+        operations::assets::remove_book_file(
+            &self.db_path.library_path,
+            &mut self.conn,
+            book_id,
+            format,
+        )
     }
 
-    pub fn add_book_file(
+    pub fn add_book_file_from_bytes(
         &mut self,
         book_id: BookId,
-        format: &str,
+        file_format: String,
         file_data: Vec<u8>,
     ) -> Result<(), CalibreError> {
-        todo!()
+        operations::assets::add_book_file_from_bytes(
+            &self.db_path.library_path,
+            &mut self.conn,
+            book_id,
+            file_format,
+            file_data,
+        )
+    }
+
+    pub fn add_book_file_from_path(
+        &mut self,
+        book_id: BookId,
+        file_format: String,
+        file_path: String,
+    ) -> Result<(), CalibreError> {
+        operations::assets::add_book_file_from_path(
+            &self.db_path.library_path,
+            &mut self.conn,
+            book_id,
+            file_format,
+            file_path,
+        )
     }
 
     #[deprecated(note = "Book files cannot be updated; they must be deleted and re-added")]
@@ -245,34 +290,33 @@ impl Library {
     //    o88o     o8888o  `V88V"V8P'   "888" o888o o888o `Y8bod8P' d888b    8""888P'
     //
 
-    pub fn add_author(&mut self, author: &AuthorAdd) -> Result<AuthorId, CalibreError> {
-        todo!()
+    pub fn add_author(&mut self, author: AuthorAdd) -> Result<AuthorId, CalibreError> {
+        let new_author = operations::authors::add(&mut self.conn, author)?;
+        Ok(new_author.id)
     }
 
     pub fn authors(&mut self) -> Result<Vec<Author>, CalibreError> {
-        todo!()
+        operations::authors::all(&mut self.conn)
     }
 
     pub fn get_author(&mut self, author_id: AuthorId) -> Result<Author, CalibreError> {
-        todo!()
+        operations::authors::get(&mut self.conn, author_id)
     }
 
-    /// Upsers an author by name, returning their ID.
-    // Likely easier to lookup author by name and deduplicate by using this upsert
-    // method than having create & updates, but maybe not...?
     pub fn update_author(
         &mut self,
         author_id: AuthorId,
         update: AuthorUpdate,
-    ) -> Result<AuthorId, CalibreError> {
-        todo!()
+    ) -> Result<Author, CalibreError> {
+        operations::authors::update(&mut self.conn, author_id, update)
     }
 
     /// Delete an author by ID if they have no associated books.
     /// If they have no associated books and are deleted, returns their ID. An
     /// error is returned otherwise.
     pub fn remove_author(&mut self, author_id: AuthorId) -> Result<AuthorId, CalibreError> {
-        todo!()
+        operations::authors::remove(&mut self.conn, author_id)?;
+        Ok(author_id)
     }
 
     //     .oooooo..o                                        oooo

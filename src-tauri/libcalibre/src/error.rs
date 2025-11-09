@@ -7,6 +7,9 @@ pub enum CalibreError {
     #[error("Database error: {0}")]
     Database(String),
 
+    #[error("Database integrity error: {0}")]
+    DatabaseIntegrity(String),
+
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
 
@@ -19,8 +22,8 @@ pub enum CalibreError {
     AuthorNotFound(AuthorId),
 
     /// Book file with given ID was not found.
-    #[error("Book file not found")]
-    BookFileNotFound,
+    #[error("Book file not found for book {0} with format {1}")]
+    BookFileNotFound(BookId, String),
 
     /// Book file with given ID was not found.
     #[error("Book file not found")]
@@ -34,6 +37,9 @@ pub enum CalibreError {
 
     #[error("Not implemented")]
     NotImplemented,
+
+    #[error("Filesystem error: {0}")]
+    FileSystem(String),
 
     /// Error indicating that a banned function was called, or a legal function
     /// was called with illegal parameters.

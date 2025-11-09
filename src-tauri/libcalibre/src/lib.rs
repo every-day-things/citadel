@@ -1,4 +1,5 @@
 mod api;
+mod assets;
 pub mod calibre_client;
 mod cover_image;
 pub mod db;

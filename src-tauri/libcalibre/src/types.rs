@@ -15,6 +15,10 @@ pub struct BookId(pub i32);
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct AuthorId(pub i32);
 
+/// Type-safe wrapper for book file IDs.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub struct BookFileId(pub i32);
+
 // === Macro to reduce boilerplate ===
 
 macro_rules! impl_id_type {
@@ -62,6 +66,7 @@ macro_rules! impl_id_type {
 
 impl_id_type!(BookId, "book");
 impl_id_type!(AuthorId, "author");
+impl_id_type!(BookFileId, "book_file");
 
 #[cfg(test)]
 mod tests {
