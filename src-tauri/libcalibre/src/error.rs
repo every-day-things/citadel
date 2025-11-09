@@ -1,5 +1,7 @@
 use std::fmt;
 
+use crate::types::{AuthorId, BookId};
+
 #[derive(Debug, thiserror::Error)]
 pub enum CalibreError {
     #[error("Database error: {0}")]
@@ -8,14 +10,39 @@ pub enum CalibreError {
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
 
-    #[error("Book not found")]
-    BookNotFound(i32),
+    /// Book with given ID was not found.
+    #[error("Book not found: {0}")]
+    BookNotFound(BookId),
 
-    #[error("Author not found")]
-    AuthorNotFound(i32),
+    /// Author with given ID was not found.
+    #[error("Author not found: {0}")]
+    AuthorNotFound(AuthorId),
+
+    /// Book file with given ID was not found.
+    #[error("Book file not found")]
+    BookFileNotFound,
+
+    /// Book file with given ID was not found.
+    #[error("Book file not found")]
+    BookCoverNotFound,
+
+    #[error("Author cannot be deleted; they have associated books")]
+    AuthorHasAssociatedBooks(Vec<BookId>),
 
     #[error("Library not initialized")]
     LibraryNotInitialized,
+
+    #[error("Not implemented")]
+    NotImplemented,
+
+    /// Error indicating that a banned function was called, or a legal function
+    /// was called with illegal parameters.
+    ///
+    /// Functions or function parameter values may be banned for security,
+    /// stability, performance, or other reasons. Any time a ban error is
+    /// returned, a reason is provideed.
+    #[error("Banned function invocation")]
+    BannedFunctionInvocation(String),
 
     #[error("Unknown error: {0}")]
     Unknown(String),
