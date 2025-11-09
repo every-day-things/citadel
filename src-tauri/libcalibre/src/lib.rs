@@ -8,6 +8,7 @@ pub mod error;
 pub mod library;
 pub mod mime_type;
 pub mod models;
+mod operations;
 pub mod persistence;
 mod queries;
 mod schema;
