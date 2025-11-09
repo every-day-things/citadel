@@ -1,43 +1,23 @@
 use diesel::prelude::*;
 use diesel::sql_query;
 use diesel::sql_types::Text;
-use regex::Regex;
 
 use crate::sorting;
 
-/// Creates a sortable book title by moving the preposition to the end of the title.
+/// Converts book title to sortable format for SQL.
+///
+/// This function wraps sorting::sort_book_title() to provide the same
+/// title sorting logic used throughout the application. It moves leading
+/// articles (A, An, The) to the end of the title.
 ///
 /// "Unused" is allowed because this function is called from SQL, and registered
 /// with the database connection.
 ///
-/// ### Examples
-/// ```
-/// use libcalibre::persistence::sort_book_title;
-/// let title = "A War of the Worlds";
-/// let new_title = sort_book_title(title.to_string());
-/// assert_eq!(new_title, "War of the Worlds, A");
-/// ````
-///
-/// ```
-/// use libcalibre::persistence::sort_book_title;
-/// let title = "The War of the Worlds";
-/// let new_title = sort_book_title(title.to_string());
-/// assert_eq!(new_title, "War of the Worlds, The");
-/// ```
+/// Based on Calibre's implementation:
+/// https://github.com/kovidgoyal/calibre/blob/7f3ccb333d906f5867636dd0dc4700b495e5ae6f/src/calibre/library/database.py#L61C1-L69C54
 #[allow(unused)]
 pub fn sort_book_title(title: String) -> String {
-    let title_pattern: &str = r"(A|The|An)\s+";
-    let title_pattern_regex: Regex = Regex::new(title_pattern).unwrap();
-    // Based on Calibre's implementation
-    // https://github.com/kovidgoyal/calibre/blob/7f3ccb333d906f5867636dd0dc4700b495e5ae6f/src/calibre/library/database.py#L61C1-L69C54
-
-    if let Some(matched) = title_pattern_regex.find(&title) {
-        let preposition = matched.as_str();
-        let new_title = format!("{}, {}", title.replacen(preposition, "", 1), preposition);
-        return new_title.trim().to_string();
-    }
-
-    title.clone()
+    sorting::sort_book_title(&title)
 }
 
 /// Converts author name to APA-style sortable format for SQL.

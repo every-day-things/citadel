@@ -3,6 +3,41 @@ use std::ops::Not;
 
 use regex::Regex;
 
+/// Creates a sortable book title by moving leading articles to the end.
+///
+/// Moves articles (A, An, The) from the beginning of a title to the end,
+/// separated by a comma. This matches Calibre's title sorting behavior.
+///
+/// Based on Calibre's implementation:
+/// https://github.com/kovidgoyal/calibre/blob/7f3ccb333d906f5867636dd0dc4700b495e5ae6f/src/calibre/library/database.py#L61C1-L69C54
+///
+/// ## Examples
+/// ```
+/// use libcalibre::sorting::sort_book_title;
+/// let title = "A War of the Worlds";
+/// let sorted = sort_book_title(title);
+/// assert_eq!(sorted, "War of the Worlds, A");
+/// ```
+///
+/// ```
+/// use libcalibre::sorting::sort_book_title;
+/// let title = "The Great Gatsby";
+/// let sorted = sort_book_title(title);
+/// assert_eq!(sorted, "Great Gatsby, The");
+/// ```
+pub fn sort_book_title(title: &str) -> String {
+    let title_pattern = r"(A|The|An)\s+";
+    let title_pattern_regex = Regex::new(title_pattern).unwrap();
+
+    if let Some(matched) = title_pattern_regex.find(title) {
+        let preposition = matched.as_str();
+        let new_title = format!("{}, {}", title.replacen(preposition, "", 1), preposition);
+        return new_title.trim().to_string();
+    }
+
+    title.to_string()
+}
+
 /// These titles are moved to the end of an author's name when sorting.
 pub static GENERATIONAL_TITLES: [&str; 10] = [
     "Jr.", "Sr.", "Jr", "Sr", "Junior", "Senior", "I", "II", "III", "IV",
@@ -450,5 +485,65 @@ mod tests {
     #[test]
     fn test_whitespace_handling() {
         assert_eq!(sort_author_name_apa("  John   Doe  "), "Doe, John");
+    }
+
+    // Title sorting tests
+    #[test]
+    fn test_title_sort_with_the() {
+        assert_eq!(sort_book_title("The Great Gatsby"), "Great Gatsby, The");
+    }
+
+    #[test]
+    fn test_title_sort_with_a() {
+        assert_eq!(
+            sort_book_title("A Tale of Two Cities"),
+            "Tale of Two Cities, A"
+        );
+    }
+
+    #[test]
+    fn test_title_sort_with_an() {
+        assert_eq!(
+            sort_book_title("An American Tragedy"),
+            "American Tragedy, An"
+        );
+    }
+
+    #[test]
+    fn test_title_sort_no_article() {
+        assert_eq!(sort_book_title("War and Peace"), "War and Peace");
+    }
+
+    #[test]
+    fn test_title_sort_article_in_middle() {
+        assert_eq!(
+            sort_book_title("War of the Worlds"),
+            "War of the Worlds"
+        );
+    }
+
+    #[test]
+    fn test_title_sort_empty() {
+        assert_eq!(sort_book_title(""), "");
+    }
+
+    #[test]
+    fn test_title_sort_only_article() {
+        assert_eq!(sort_book_title("The"), "The");
+    }
+
+    #[test]
+    fn test_title_sort_single_word() {
+        assert_eq!(sort_book_title("Dune"), "Dune");
+    }
+
+    #[test]
+    fn test_title_sort_with_unicode() {
+        assert_eq!(sort_book_title("El Niño"), "El Niño");
+    }
+
+    #[test]
+    fn test_title_sort_with_numbers() {
+        assert_eq!(sort_book_title("The 39 Steps"), "39 Steps, The");
     }
 }
