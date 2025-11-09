@@ -9,6 +9,7 @@ pub mod library;
 pub mod mime_type;
 pub mod models;
 pub mod persistence;
+mod queries;
 mod schema;
 pub mod sorting;
 pub mod types;
