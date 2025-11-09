@@ -66,3 +66,9 @@ impl From<Box<dyn std::error::Error>> for CalibreError {
         CalibreError::Unknown(error.to_string())
     }
 }
+
+impl From<diesel::result::Error> for CalibreError {
+    fn from(error: diesel::result::Error) -> Self {
+        CalibreError::Database(error.to_string())
+    }
+}
