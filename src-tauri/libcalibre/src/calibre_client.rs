@@ -5,6 +5,7 @@ use crate::dtos::library::NewLibraryEntryDto;
 use crate::dtos::library::NewLibraryFileDto;
 use crate::dtos::library::UpdateLibraryEntryDto;
 use crate::entities::book_file::NewBookFile;
+use crate::types::AuthorId;
 use crate::BookRow;
 use crate::CalibreError;
 use crate::UpsertBookIdentifier;
@@ -210,7 +211,7 @@ impl CalibreClient {
                 let authors = self.client_v2.authors().find_by_id(author_id);
                 match authors {
                     Ok(Some(author)) => Ok(author),
-                    _ => Err(CalibreError::AuthorNotFound(author_id)),
+                    _ => Err(CalibreError::AuthorNotFound(AuthorId(author_id))),
                 }
             })
             .collect::<Result<Vec<Author>, CalibreError>>()?;
