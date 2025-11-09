@@ -131,7 +131,7 @@ impl Library {
 		todo!()
 	}
 
-	pub fn list_books(&mut self) -> Result<Vec<Book>, CalibreError> {
+	pub fn books(&mut self) -> Result<Vec<Book>, CalibreError> {
 		todo!()
 	}
 
@@ -146,7 +146,7 @@ impl Library {
 
 	/// Delete a set of books by their IDs. Returns the list of successfully
 	/// deleted book IDs.
-	pub fn delete_books(&mut self, book_ids: Vec<BookId>) -> Result<Vec<BookId>, CalibreError> {
+	pub fn remove_books(&mut self, book_ids: Vec<BookId>) -> Result<Vec<BookId>, CalibreError> {
 		todo!()
 	}
 
@@ -173,7 +173,7 @@ impl Library {
 		todo!()
 	}
 
-	pub fn delete_book_cover(&mut self, book_id: BookId) -> Result<(), CalibreError> {
+	pub fn remove_book_cover(&mut self, book_id: BookId) -> Result<(), CalibreError> {
 		todo!()
 		// TODO: call set_book_cover with empty data
 	}
@@ -194,7 +194,7 @@ impl Library {
 		todo!()
 	}
 
-	pub fn delete_book_file(&mut self, book_id: BookId, format: &str) -> Result<(), CalibreError> {
+	pub fn remove_book_file(&mut self, book_id: BookId, format: &str) -> Result<(), CalibreError> {
 		todo!()
 	}
 
@@ -220,7 +220,7 @@ impl Library {
 		todo!()
 	}
 
-	pub fn list_authors(&mut self) -> Result<Vec<Author>, CalibreError> {
+	pub fn authors(&mut self) -> Result<Vec<Author>, CalibreError> {
 		todo!()
 	}
 
@@ -238,7 +238,7 @@ impl Library {
 	/// Delete an author by ID if they have no associated books.
 	/// If they have no associated books and are deleted, returns their ID. An
 	/// error is returned otherwise.
-	pub fn delete_author(&mut self, author_id: AuthorId) -> Result<AuthorId, CalibreError> {
+	pub fn remove_author(&mut self, author_id: AuthorId) -> Result<AuthorId, CalibreError> {
 		todo!()
 	}
 
