@@ -13,7 +13,7 @@ import {
 	Title,
 } from "@mantine/core";
 import { Link } from "@tanstack/react-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { AuthorUpdate, LibraryAuthor, LibraryBook } from "@/bindings";
 
@@ -204,6 +204,16 @@ const EditAuthorModal = ({
 		},
 	});
 	type FormValues = typeof form.values;
+
+	useEffect(() => {
+		const nextValues = {
+			displayName: authorToEdit.name ?? "",
+			sortName: authorToEdit.sortable_name ?? "",
+		};
+		form.setValues(nextValues);
+		form.resetDirty(nextValues);
+		form.resetTouched();
+	}, [authorToEdit, form]);
 
 	const onSubmit = useCallback(
 		(values: FormValues) => {
