@@ -1,0 +1,12 @@
+{
+  "productName": "Citadel Dev",
+  "identifier": "software.everydaythings.citadel.dev",
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Citadel Dev"
+      }
+    ]
+  }
+}

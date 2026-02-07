@@ -7,7 +7,7 @@
     "build:app": "tauri build",
     "build:web": "tsc && vite build",
     "dev": "bun run dev:app",
-    "dev:app": "tauri dev",
+    "dev:app": "tauri dev --config src-tauri/tauri.dev.conf.json",
     "dev:web": "vite dev",
     "format": "bun format:web; bun format:backend",
     "format:backend": "cd src-tauri; cargo fmt",
