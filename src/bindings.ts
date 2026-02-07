@@ -150,8 +150,8 @@ export type BookFile = { Local: LocalFile } | { Remote: RemoteFile }
 export type BookUpdate = { author_id_list: string[] | null; title: string | null; timestamp: string | null; publication_date: string | null; is_read: boolean | null; description: string | null }
 export type CalibreClientConfig = { library_path: string }
 export type HardcoverApiStatus = { is_valid: boolean; message: string }
-export type HardcoverBookMetadata = { title: string; description: string | null; image_url: string | null; release_year: number | null; hardcover_id: number | null }
-export type HardcoverSearchResult = { title: string; description: string | null; image_url: string | null; release_year: number | null; hardcover_id: number; authors: string[] }
+export type HardcoverBookMetadata = { title: string; description: string | null; image_url: string | null; release_year: number | null; hardcover_id: number | null; slug: string | null }
+export type HardcoverSearchResult = { title: string; description: string | null; image_url: string | null; release_year: number | null; hardcover_id: number; slug: string | null; authors: string[] }
 /**
  * Book identifiers, such as ISBN, DOI, Google Books ID, etc.
  */

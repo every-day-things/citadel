@@ -9,6 +9,7 @@ pub struct HardcoverBookMetadata {
     pub image_url: Option<String>,
     pub release_year: Option<i32>,
     pub hardcover_id: Option<i32>,
+    pub slug: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Type)]
@@ -18,6 +19,7 @@ pub struct HardcoverSearchResult {
     pub image_url: Option<String>,
     pub release_year: Option<i32>,
     pub hardcover_id: i32,
+    pub slug: Option<String>,
     pub authors: Vec<String>,
 }
 
@@ -246,6 +248,11 @@ pub async fn fetch_hardcover_metadata_by_isbn(
             }
         });
 
+    let slug = book
+        .get("slug")
+        .and_then(|s| s.as_str())
+        .map(|s| s.to_string());
+
     Ok(HardcoverBookMetadata {
         title: book
             .get("title")
@@ -259,6 +266,7 @@ pub async fn fetch_hardcover_metadata_by_isbn(
         image_url,
         release_year: book.get("release_year").and_then(|y| y.as_i64()).map(|y| y as i32),
         hardcover_id,
+        slug,
     })
 }
 
@@ -391,6 +399,11 @@ pub async fn search_hardcover_books(
                 }
             });
 
+        let slug = book
+            .get("slug")
+            .and_then(|s| s.as_str())
+            .map(|s| s.to_string());
+
         search_results.push(HardcoverSearchResult {
             title: book
                 .get("title")
@@ -404,6 +417,7 @@ pub async fn search_hardcover_books(
             image_url,
             release_year: book.get("release_year").and_then(|y| y.as_i64()).map(|y| y as i32),
             hardcover_id,
+            slug,
             authors,
         });
     }
