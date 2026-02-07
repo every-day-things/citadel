@@ -96,14 +96,13 @@ pub async fn test_hardcover_connection(api_key: String) -> Result<HardcoverApiSt
         .map_err(|e| format!("Failed to parse response: {} - Body: {}", e, response_text))?;
 
     if let Some(errors) = json_response.get("errors") {
-        let error_details =
-            serde_json::to_string_pretty(&errors).unwrap_or_else(|_| errors.to_string());
-        log::warn!("Hardcover GraphQL errors: {}", error_details);
-
-        let error_message = errors[0]
-            .get("message")
+        let error_message = errors
+            .as_array()
+            .and_then(|arr| arr.first())
+            .and_then(|e| e.get("message"))
             .and_then(|m| m.as_str())
             .unwrap_or("Unknown error");
+        log::warn!("Hardcover GraphQL error: {}", error_message);
         return Ok(HardcoverApiStatus {
             is_valid: false,
             message: format!("API error: {}", error_message),
@@ -191,8 +190,10 @@ pub async fn fetch_hardcover_metadata_by_isbn(
 
     // Check for GraphQL errors
     if let Some(errors) = json_response.get("errors") {
-        let error_message = errors[0]
-            .get("message")
+        let error_message = errors
+            .as_array()
+            .and_then(|arr| arr.first())
+            .and_then(|e| e.get("message"))
             .and_then(|m| m.as_str())
             .unwrap_or("Unknown error");
         return Err(format!("API error: {}", error_message));
@@ -340,8 +341,10 @@ pub async fn search_hardcover_books(
 
     // Check for GraphQL errors
     if let Some(errors) = json_response.get("errors") {
-        let error_message = errors[0]
-            .get("message")
+        let error_message = errors
+            .as_array()
+            .and_then(|arr| arr.first())
+            .and_then(|e| e.get("message"))
             .and_then(|m| m.as_str())
             .unwrap_or("Unknown error");
         return Err(format!("API error: {}", error_message));
