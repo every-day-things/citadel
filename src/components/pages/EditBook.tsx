@@ -1,12 +1,6 @@
-import type {
-	BookUpdate,
-	HardcoverSearchResult,
-	LibraryAuthor,
-	LibraryBook,
-} from "@/bindings";
-import { commands } from "@/bindings";
+import type { BookUpdate, LibraryAuthor, LibraryBook } from "@/bindings";
 import { safeAsyncEventHandler } from "@/lib/async";
-import { useSettings } from "@/stores/settings/store";
+import { useHardcoverBookActions } from "@/lib/hooks/use-hardcover-book-actions";
 import {
 	ActionIcon,
 	Alert,
@@ -30,7 +24,6 @@ import {
 } from "@mantine/core";
 import { Form, useForm } from "@mantine/form";
 import { RichTextEditor } from "@mantine/tiptap";
-import { openPath } from "@tauri-apps/plugin-opener";
 import { Link } from "@tiptap/extension-link";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -160,234 +153,13 @@ const EditBookForm = ({
 	);
 	const [newBookIdentifierLabel, setNewBookIdentifierLabel] = useState("");
 
-	// Hardcover integration state
-	const hardcoverApiKey = useSettings((state) => state.hardcoverApiKey);
-	const [isFetchingFromHardcover, setIsFetchingFromHardcover] = useState(false);
-	const [hardcoverMessage, setHardcoverMessage] = useState<{
-		type: "success" | "error";
-		text: string;
-	} | null>(null);
-
-	// Hardcover search state
-	const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
-	const [searchQuery, setSearchQuery] = useState("");
-	const [isSearching, setIsSearching] = useState(false);
-	const [searchResults, setSearchResults] = useState<HardcoverSearchResult[]>(
-		[],
-	);
-
-	// Find ISBN identifier
-	const isbnIdentifier = useMemo(
-		() => book.identifier_list.find((id) => id.label.toLowerCase() === "isbn"),
-		[book.identifier_list],
-	);
-
-	// Find Hardcover ID identifier
-	const hardcoverIdIdentifier = useMemo(
-		() =>
-			book.identifier_list.find((id) => id.label.toLowerCase() === "hardcover"),
-		[book.identifier_list],
-	);
-
-	// Fetch metadata from Hardcover
-	const fetchFromHardcover = async () => {
-		if (!hardcoverApiKey) {
-			setHardcoverMessage({
-				type: "error",
-				text: "Please configure your Hardcover API key in settings first.",
-			});
-			return;
-		}
-
-		if (!isbnIdentifier) {
-			setHardcoverMessage({
-				type: "error",
-				text: "This book needs an ISBN to fetch metadata from Hardcover.",
-			});
-			return;
-		}
-
-		setIsFetchingFromHardcover(true);
-		setHardcoverMessage(null);
-
-		try {
-			const result = await commands.fetchHardcoverMetadataByIsbn(
-				hardcoverApiKey,
-				isbnIdentifier.value,
-			);
-
-			if (result.status === "ok") {
-				const metadata = result.data;
-
-				// Store Hardcover slug as identifier first (triggers book reload + form reset)
-				const slug = metadata.slug ?? metadata.hardcover_id?.toString();
-				if (slug) {
-					await onUpsertIdentifier(
-						book.id,
-						hardcoverIdIdentifier?.id ?? null,
-						"hardcover",
-						slug,
-					);
-				}
-
-				// Yield a microtask so React can flush the state update from
-				// onUpsertIdentifier (which triggers book reload → useEffect resets form).
-				// Not a hard guarantee, but sufficient in practice with React's sync rendering.
-				await new Promise((r) => setTimeout(r, 0));
-
-				// Now set form values (after the reset from the book reload)
-				if (metadata.title) {
-					form.setFieldValue("title", metadata.title);
-				}
-				if (metadata.description) {
-					form.setFieldValue("description", metadata.description);
-				}
-
-				setHardcoverMessage({
-					type: "success",
-					text: "Successfully fetched metadata from Hardcover!",
-				});
-			} else {
-				setHardcoverMessage({
-					type: "error",
-					text: result.error,
-				});
-			}
-		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : String(error);
-			setHardcoverMessage({
-				type: "error",
-				text: `Error: ${errorMessage}`,
-			});
-		} finally {
-			setIsFetchingFromHardcover(false);
-		}
-	};
-
-	// Open book in Hardcover
-	const openInHardcover = async () => {
-		if (!hardcoverIdIdentifier) {
-			return;
-		}
-
-		try {
-			const slug = hardcoverIdIdentifier.value;
-			if (!/^[a-z0-9-]+$/.test(slug)) {
-				setHardcoverMessage({
-					type: "error",
-					text: "Invalid Hardcover identifier — expected a slug like 'the-forever-war'",
-				});
-				return;
-			}
-			const url = `https://hardcover.app/books/${slug}`;
-			await openPath(url);
-		} catch (error) {
-			console.error("Failed to open Hardcover URL:", error);
-			const errorMessage =
-				error instanceof Error ? error.message : String(error);
-			setHardcoverMessage({
-				type: "error",
-				text: `Failed to open Hardcover: ${errorMessage}`,
-			});
-		}
-	};
-
-	// Search Hardcover
-	const searchHardcover = async (queryOverride?: string) => {
-		const query = queryOverride ?? searchQuery;
-
-		if (!hardcoverApiKey) {
-			setHardcoverMessage({
-				type: "error",
-				text: "Please configure your Hardcover API key in settings first.",
-			});
-			return;
-		}
-
-		if (!query.trim()) {
-			return;
-		}
-
-		setIsSearching(true);
-		setSearchResults([]);
-		setHardcoverMessage(null);
-
-		try {
-			const result = await commands.searchHardcoverBooks(
-				hardcoverApiKey,
-				query,
-			);
-
-			if (result.status === "ok") {
-				setSearchResults(result.data);
-				setIsSearchModalOpen(true);
-				if (result.data.length === 0) {
-					setHardcoverMessage({
-						type: "error",
-						text: "No books found for your search query.",
-					});
-				}
-			} else {
-				setHardcoverMessage({
-					type: "error",
-					text: result.error,
-				});
-			}
-		} catch (error) {
-			const errorMessage =
-				error instanceof Error ? error.message : String(error);
-			setHardcoverMessage({
-				type: "error",
-				text: `Error: ${errorMessage}`,
-			});
-		} finally {
-			setIsSearching(false);
-		}
-	};
-
-	// Populate book data from a selected search result
-	const selectSearchResult = async (result: HardcoverSearchResult) => {
-		// Create any new authors first
-		if (result.authors && result.authors.length > 0) {
-			for (const authorName of result.authors) {
-				if (!allAuthorNames.includes(authorName)) {
-					await createAuthor(authorName);
-				}
-			}
-		}
-
-		// Store Hardcover slug as identifier (triggers book reload + form reset)
-		const slug = result.slug ?? result.hardcover_id.toString();
-		await onUpsertIdentifier(
-			book.id,
-			hardcoverIdIdentifier?.id ?? null,
-			"hardcover",
-			slug,
-		);
-
-		// Yield a microtask so React can flush the state update from
-		// onUpsertIdentifier (which triggers book reload → useEffect resets form).
-		// Not a hard guarantee, but sufficient in practice with React's sync rendering.
-		await new Promise((r) => setTimeout(r, 0));
-
-		// Now set form values (after the reset from the book reload)
-		if (result.title) {
-			form.setFieldValue("title", result.title);
-		}
-		if (result.description) {
-			form.setFieldValue("description", result.description);
-		}
-		if (result.authors && result.authors.length > 0) {
-			form.setFieldValue("authorList", result.authors);
-		}
-
-		setIsSearchModalOpen(false);
-		setHardcoverMessage({
-			type: "success",
-			text: "Successfully populated book data from Hardcover!",
-		});
-	};
+	const hc = useHardcoverBookActions({
+		book,
+		allAuthorNames,
+		form,
+		onUpsertIdentifier,
+		onCreateAuthor: createAuthor,
+	});
 
 	const editor = useEditor({
 		extensions: [
@@ -545,12 +317,12 @@ const EditBookForm = ({
 													).catch(console.error);
 												}}
 											/>
-											{hardcoverApiKey && label.toLowerCase() === "isbn" && (
+											{hc.hardcoverApiKey && label.toLowerCase() === "isbn" && (
 												<Tooltip label="Look up metadata">
 													<ActionIcon
 														variant="subtle"
-														onClick={() => void fetchFromHardcover()}
-														loading={isFetchingFromHardcover}
+														onClick={() => void hc.fetchFromHardcover()}
+														loading={hc.isFetchingFromHardcover}
 														mt={LABEL_OFFSET_MARGIN}
 													>
 														↓
@@ -561,7 +333,7 @@ const EditBookForm = ({
 												<Tooltip label="View on Hardcover">
 													<ActionIcon
 														variant="subtle"
-														onClick={() => void openInHardcover()}
+														onClick={() => void hc.openInHardcover()}
 														mt={LABEL_OFFSET_MARGIN}
 													>
 														↗
@@ -612,7 +384,7 @@ const EditBookForm = ({
 							</Group>
 						)}
 					</Group>
-					{hardcoverApiKey && (
+					{hc.hardcoverApiKey && (
 						<Text
 							size="sm"
 							c="dimmed"
@@ -620,23 +392,23 @@ const EditBookForm = ({
 							td="underline"
 							onClick={() => {
 								const query = form.values.title || "";
-								setSearchQuery(query);
-								setIsSearchModalOpen(true);
+								hc.setSearchQuery(query);
+								hc.setIsSearchModalOpen(true);
 								if (query) {
-									void searchHardcover(query);
+									void hc.searchHardcover(query);
 								}
 							}}
 						>
 							Find on Hardcover...
 						</Text>
 					)}
-					{hardcoverMessage && (
+					{hc.hardcoverMessage && (
 						<Alert
-							color={hardcoverMessage.type === "success" ? "green" : "red"}
-							onClose={() => setHardcoverMessage(null)}
+							color={hc.hardcoverMessage.type === "success" ? "green" : "red"}
+							onClose={() => hc.setHardcoverMessage(null)}
 							withCloseButton
 						>
-							{hardcoverMessage.text}
+							{hc.hardcoverMessage.text}
 						</Alert>
 					)}
 					<Paper shadow="sm" p="lg">
@@ -715,8 +487,8 @@ const EditBookForm = ({
 
 			{/* Hardcover Search Modal */}
 			<Modal
-				opened={isSearchModalOpen}
-				onClose={() => setIsSearchModalOpen(false)}
+				opened={hc.isSearchModalOpen}
+				onClose={() => hc.setIsSearchModalOpen(false)}
 				title="Find on Hardcover"
 				size="xl"
 			>
@@ -724,11 +496,11 @@ const EditBookForm = ({
 					<Group>
 						<TextInput
 							placeholder="Search by title or author..."
-							value={searchQuery}
-							onChange={(event) => setSearchQuery(event.target.value)}
+							value={hc.searchQuery}
+							onChange={(event) => hc.setSearchQuery(event.target.value)}
 							onKeyDown={(event) => {
 								if (event.key === "Enter") {
-									void searchHardcover();
+									void hc.searchHardcover();
 								}
 							}}
 							style={{ flex: 1 }}
@@ -736,32 +508,32 @@ const EditBookForm = ({
 						<Button
 							variant="light"
 							size="sm"
-							onClick={() => void searchHardcover()}
-							loading={isSearching}
+							onClick={() => void hc.searchHardcover()}
+							loading={hc.isSearching}
 						>
 							Search
 						</Button>
 					</Group>
 					<ScrollArea style={{ height: "55vh" }}>
 						<Stack gap="md">
-							{searchResults.length === 0 ? (
+							{hc.searchResults.length === 0 ? (
 								<Text c="dimmed" ta="center">
-									{isSearching ? (
+									{hc.isSearching ? (
 										<Loader size="sm" />
-									) : searchQuery ? (
+									) : hc.searchQuery ? (
 										"No results found. Try a different search query."
 									) : (
 										"Enter a title or author name to search."
 									)}
 								</Text>
 							) : (
-								searchResults.map((result) => (
+								hc.searchResults.map((result) => (
 									<Card
 										key={result.hardcover_id}
 										shadow="sm"
 										padding="lg"
 										style={{ cursor: "pointer" }}
-										onClick={() => void selectSearchResult(result)}
+										onClick={() => void hc.selectSearchResult(result)}
 									>
 										<Group align="flex-start" gap="md">
 											{result.image_url && (
