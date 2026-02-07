@@ -111,20 +111,12 @@ proptest! {
         author_last in "[A-Z][a-z]{2,15}",
         book_id in 1..100000i32,
     ) {
-        use libcalibre::Author;
-        use libcalibre::persistence::sort_book_title;
+        use libcalibre::sorting;
 
         // Simulate the complete workflow
         let author_name = format!("{} {}", author_first, author_last);
-        let author = Author {
-            id: 1,
-            name: author_name.clone(),
-            sort: None,
-            link: "".to_string(),
-        };
-
-        let sorted_title = sort_book_title(title.clone());
-        let sorted_author = author.sortable_name();
+        let sorted_title = sorting::sort_book_title(&title);
+        let sorted_author = sorting::sort_author_name_apa(&author_name);
         let folder_name = sanitise(&format!("{} ({})", sorted_title, book_id));
         let file_name = sanitise(&format!("{} - {}", sorted_title, author_name));
 

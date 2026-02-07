@@ -125,21 +125,6 @@ pub(crate) fn delete(conn: &mut SqliteConnection, author_id: AuthorId) -> Result
     Ok(())
 }
 
-pub(crate) fn bulk_get(
-    conn: &mut SqliteConnection,
-    author_ids: Vec<AuthorId>,
-) -> Result<Vec<Author>, CalibreError> {
-    use crate::schema::authors::dsl::*;
-
-    let id_values: Vec<i32> = author_ids.iter().map(|aid| aid.as_i32()).collect();
-
-    authors
-        .filter(id.eq_any(id_values))
-        .select(Author::as_select())
-        .load(conn)
-        .map_err(CalibreError::from)
-}
-
 // =============================================================================
 // Relationships
 // =============================================================================
