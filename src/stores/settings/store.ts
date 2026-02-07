@@ -1,13 +1,13 @@
 import type { Option } from "@/lib/option";
 import { none, some } from "@/lib/option";
 import { createTauriSettingsManager } from "@/lib/settings-manager/tauri-settings";
-import { createWebSettingsManager } from "@/lib/settings-manager/web-settings";
 import type {
 	SettingsKey,
 	SettingsManager,
 	SettingsSchema,
 	SettingsValue,
 } from "@/lib/settings-manager/types";
+import { createWebSettingsManager } from "@/lib/settings-manager/web-settings";
 import { isTauri } from "@tauri-apps/api/core";
 import { create } from "zustand";
 
@@ -25,6 +25,7 @@ interface SettingsStore extends SettingsSchema {
 	getActiveLibrary: () => Option<
 		import("@/lib/settings-manager/types").LibraryPath
 	>;
+	setHardcoverApiKey: (apiKey: string) => Promise<void>;
 }
 
 const defaultSettings: SettingsSchema = {
@@ -32,6 +33,7 @@ const defaultSettings: SettingsSchema = {
 	startFullscreen: false,
 	activeLibraryId: "",
 	libraryPaths: [],
+	hardcoverApiKey: "",
 };
 
 const createSettingsManager = (
@@ -126,6 +128,10 @@ export const useSettings = create<SettingsStore>((set, get) => ({
 		if (activeLibrary === undefined) return none();
 
 		return some(activeLibrary);
+	},
+
+	setHardcoverApiKey: async (apiKey) => {
+		await persistSetting(set, "hardcoverApiKey", apiKey);
 	},
 }));
 

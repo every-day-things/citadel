@@ -1,24 +1,33 @@
 import type { BookUpdate, LibraryAuthor, LibraryBook } from "@/bindings";
 import { safeAsyncEventHandler } from "@/lib/async";
+import { useHardcoverBookActions } from "@/lib/hooks/use-hardcover-book-actions";
 import {
 	ActionIcon,
+	Alert,
+	Badge,
+	Box,
 	Button,
+	Card,
 	Fieldset,
 	Group,
+	Image,
+	Loader,
+	Modal,
 	Paper,
+	ScrollArea,
 	Stack,
 	Switch,
 	Text,
 	TextInput,
 	Title,
-	Box,
+	Tooltip,
 } from "@mantine/core";
+import { Form, useForm } from "@mantine/form";
 import { RichTextEditor } from "@mantine/tiptap";
 import { Link } from "@tiptap/extension-link";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import DOMPurify from "dompurify";
-import { Form, useForm } from "@mantine/form";
 import { type HTMLProps, useEffect, useMemo, useState } from "react";
 import { BookCover } from "../atoms/BookCover";
 import { MultiSelectCreatable } from "../atoms/Multiselect";
@@ -143,6 +152,14 @@ const EditBookForm = ({
 		[allAuthorList],
 	);
 	const [newBookIdentifierLabel, setNewBookIdentifierLabel] = useState("");
+
+	const hc = useHardcoverBookActions({
+		book,
+		allAuthorNames,
+		form,
+		onUpsertIdentifier,
+		onCreateAuthor: createAuthor,
+	});
 
 	const editor = useEditor({
 		extensions: [
@@ -300,6 +317,29 @@ const EditBookForm = ({
 													).catch(console.error);
 												}}
 											/>
+											{hc.hardcoverApiKey && label.toLowerCase() === "isbn" && (
+												<Tooltip label="Look up metadata">
+													<ActionIcon
+														variant="subtle"
+														onClick={() => void hc.fetchFromHardcover()}
+														loading={hc.isFetchingFromHardcover}
+														mt={LABEL_OFFSET_MARGIN}
+													>
+														↓
+													</ActionIcon>
+												</Tooltip>
+											)}
+											{label.toLowerCase() === "hardcover" && (
+												<Tooltip label="View on Hardcover">
+													<ActionIcon
+														variant="subtle"
+														onClick={() => void hc.openInHardcover()}
+														mt={LABEL_OFFSET_MARGIN}
+													>
+														↗
+													</ActionIcon>
+												</Tooltip>
+											)}
 											<ActionIcon
 												variant="outline"
 												color="red"
@@ -344,6 +384,33 @@ const EditBookForm = ({
 							</Group>
 						)}
 					</Group>
+					{hc.hardcoverApiKey && (
+						<Text
+							size="sm"
+							c="dimmed"
+							style={{ cursor: "pointer" }}
+							td="underline"
+							onClick={() => {
+								const query = form.values.title || "";
+								hc.setSearchQuery(query);
+								hc.setIsSearchModalOpen(true);
+								if (query) {
+									void hc.searchHardcover(query);
+								}
+							}}
+						>
+							Find on Hardcover...
+						</Text>
+					)}
+					{hc.hardcoverMessage && (
+						<Alert
+							color={hc.hardcoverMessage.type === "success" ? "green" : "red"}
+							onClose={() => hc.setHardcoverMessage(null)}
+							withCloseButton
+						>
+							{hc.hardcoverMessage.text}
+						</Alert>
+					)}
 					<Paper shadow="sm" p="lg">
 						<Group justify="space-between">
 							<Text size="lg">Description</Text>
@@ -417,6 +484,103 @@ const EditBookForm = ({
 					</Paper>
 				</Stack>
 			</Group>
+
+			{/* Hardcover Search Modal */}
+			<Modal
+				opened={hc.isSearchModalOpen}
+				onClose={() => hc.setIsSearchModalOpen(false)}
+				title="Find on Hardcover"
+				size="xl"
+			>
+				<Stack gap="md">
+					<Group>
+						<TextInput
+							placeholder="Search by title or author..."
+							value={hc.searchQuery}
+							onChange={(event) => hc.setSearchQuery(event.target.value)}
+							onKeyDown={(event) => {
+								if (event.key === "Enter") {
+									void hc.searchHardcover();
+								}
+							}}
+							style={{ flex: 1 }}
+						/>
+						<Button
+							variant="light"
+							size="sm"
+							onClick={() => void hc.searchHardcover()}
+							loading={hc.isSearching}
+						>
+							Search
+						</Button>
+					</Group>
+					<ScrollArea style={{ height: "55vh" }}>
+						<Stack gap="md">
+							{hc.searchResults.length === 0 ? (
+								<Text c="dimmed" ta="center">
+									{hc.isSearching ? (
+										<Loader size="sm" />
+									) : hc.searchQuery ? (
+										"No results found. Try a different search query."
+									) : (
+										"Enter a title or author name to search."
+									)}
+								</Text>
+							) : (
+								hc.searchResults.map((result) => (
+									<Card
+										key={result.hardcover_id}
+										shadow="sm"
+										padding="lg"
+										style={{ cursor: "pointer" }}
+										onClick={() => void hc.selectSearchResult(result)}
+									>
+										<Group align="flex-start" gap="md">
+											{result.image_url && (
+												<Image
+													src={result.image_url}
+													alt={result.title}
+													width={100}
+													height={150}
+													fit="contain"
+												/>
+											)}
+											<Stack flex={1} gap="xs">
+												<Text size="lg" fw={700}>
+													{result.title}
+												</Text>
+												{result.authors && result.authors.length > 0 && (
+													<Group gap="xs">
+														{result.authors.map((author) => (
+															<Badge key={author} variant="light">
+																{author}
+															</Badge>
+														))}
+													</Group>
+												)}
+												{result.release_year && (
+													<Text size="sm" c="dimmed">
+														Published: {result.release_year}
+													</Text>
+												)}
+												{result.description && (
+													<Text
+														size="sm"
+														lineClamp={3}
+														style={{ whiteSpace: "pre-wrap" }}
+													>
+														{result.description.replace(/<[^>]*>/g, "")}
+													</Text>
+												)}
+											</Stack>
+										</Group>
+									</Card>
+								))
+							)}
+						</Stack>
+					</ScrollArea>
+				</Stack>
+			</Modal>
 		</Form>
 	);
 };

@@ -104,6 +104,30 @@ async clbCmdDeleteAuthor(authorId: string) : Promise<Result<null, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async testHardcoverConnection(apiKey: string) : Promise<Result<HardcoverApiStatus, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("test_hardcover_connection", { apiKey }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async fetchHardcoverMetadataByIsbn(apiKey: string, isbn: string) : Promise<Result<HardcoverBookMetadata, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("fetch_hardcover_metadata_by_isbn", { apiKey, isbn }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async searchHardcoverBooks(apiKey: string, query: string) : Promise<Result<HardcoverSearchResult[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("search_hardcover_books", { apiKey, query }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -121,6 +145,9 @@ export type AuthorUpdate = { full_name: string | null; sortable_name: string | n
 export type BookFile = { Local: LocalFile } | { Remote: RemoteFile }
 export type BookUpdate = { author_id_list: string[] | null; title: string | null; timestamp: string | null; publication_date: string | null; is_read: boolean | null; description: string | null }
 export type CalibreClientConfig = { library_path: string }
+export type HardcoverApiStatus = { is_valid: boolean; message: string }
+export type HardcoverBookMetadata = { title: string; description: string | null; image_url: string | null; release_year: number | null; hardcover_id: number | null; slug: string | null }
+export type HardcoverSearchResult = { title: string; description: string | null; image_url: string | null; release_year: number | null; hardcover_id: number; slug: string | null; authors: string[] }
 /**
  * Book identifiers, such as ISBN, DOI, Google Books ID, etc.
  */

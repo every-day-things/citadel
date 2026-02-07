@@ -10,6 +10,7 @@ export type SettingsSchema = {
 	startFullscreen: boolean;
 	activeLibraryId: string;
 	libraryPaths: LibraryPath[];
+	hardcoverApiKey: string;
 };
 
 export type SettingsKey = keyof SettingsSchema;
