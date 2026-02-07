@@ -219,22 +219,26 @@ const EditBookForm = ({
 			if (result.status === "ok") {
 				const metadata = result.data;
 
-				// Update form with fetched data
+				// Store Hardcover slug as identifier first (triggers book reload + form reset)
+				const slug = metadata.slug ?? metadata.hardcover_id?.toString();
+				if (slug) {
+					await onUpsertIdentifier(
+						book.id,
+						hardcoverIdIdentifier?.id ?? null,
+						"hardcover",
+						slug,
+					);
+				}
+
+				// Yield so React processes the book reload before we set form values
+				await new Promise((r) => setTimeout(r, 0));
+
+				// Now set form values (after the reset from the book reload)
 				if (metadata.title) {
 					form.setFieldValue("title", metadata.title);
 				}
 				if (metadata.description) {
 					form.setFieldValue("description", metadata.description);
-				}
-
-				// Store Hardcover ID if we got one
-				if (metadata.hardcover_id) {
-					await onUpsertIdentifier(
-						book.id,
-						hardcoverIdIdentifier?.id ?? null,
-						"hardcover",
-						metadata.hardcover_id.toString(),
-					);
 				}
 
 				setHardcoverMessage({
@@ -266,8 +270,8 @@ const EditBookForm = ({
 		}
 
 		try {
-			const hardcoverId = hardcoverIdIdentifier.value;
-			const url = `https://hardcover.app/books/${hardcoverId}`;
+			const slug = hardcoverIdIdentifier.value;
+			const url = `https://hardcover.app/books/${slug}`;
 			await openPath(url);
 		} catch (error) {
 			console.error("Failed to open Hardcover URL:", error);
@@ -281,7 +285,9 @@ const EditBookForm = ({
 	};
 
 	// Search Hardcover
-	const searchHardcover = async () => {
+	const searchHardcover = async (queryOverride?: string) => {
+		const query = queryOverride ?? searchQuery;
+
 		if (!hardcoverApiKey) {
 			setHardcoverMessage({
 				type: "error",
@@ -290,11 +296,7 @@ const EditBookForm = ({
 			return;
 		}
 
-		if (!searchQuery.trim()) {
-			setHardcoverMessage({
-				type: "error",
-				text: "Please enter a search query.",
-			});
+		if (!query.trim()) {
 			return;
 		}
 
@@ -305,7 +307,7 @@ const EditBookForm = ({
 		try {
 			const result = await commands.searchHardcoverBooks(
 				hardcoverApiKey,
-				searchQuery,
+				query,
 			);
 
 			if (result.status === "ok") {
@@ -337,32 +339,37 @@ const EditBookForm = ({
 
 	// Populate book data from a selected search result
 	const selectSearchResult = async (result: HardcoverSearchResult) => {
-		// Update form with fetched data
+		// Create any new authors first
+		if (result.authors && result.authors.length > 0) {
+			for (const authorName of result.authors) {
+				if (!allAuthorNames.includes(authorName)) {
+					await createAuthor(authorName);
+				}
+			}
+		}
+
+		// Store Hardcover slug as identifier (triggers book reload + form reset)
+		const slug = result.slug ?? result.hardcover_id.toString();
+		await onUpsertIdentifier(
+			book.id,
+			hardcoverIdIdentifier?.id ?? null,
+			"hardcover",
+			slug,
+		);
+
+		// Yield so React processes the book reload before we set form values
+		await new Promise((r) => setTimeout(r, 0));
+
+		// Now set form values (after the reset from the book reload)
 		if (result.title) {
 			form.setFieldValue("title", result.title);
 		}
 		if (result.description) {
 			form.setFieldValue("description", result.description);
 		}
-
-		// Update authors if available
 		if (result.authors && result.authors.length > 0) {
-			// Create any new authors that don't exist
-			for (const authorName of result.authors) {
-				if (!allAuthorNames.includes(authorName)) {
-					await createAuthor(authorName);
-				}
-			}
 			form.setFieldValue("authorList", result.authors);
 		}
-
-		// Store Hardcover ID
-		await onUpsertIdentifier(
-			book.id,
-			hardcoverIdIdentifier?.id ?? null,
-			"hardcover",
-			result.hardcover_id.toString(),
-		);
 
 		setIsSearchModalOpen(false);
 		setHardcoverMessage({
@@ -487,64 +494,6 @@ const EditBookForm = ({
 							</Group>
 						)}
 					</Group>
-					{hardcoverApiKey && (
-						<Stack gap="sm">
-							{isbnIdentifier && (
-								<Group>
-									<Button
-										variant="outline"
-										size="sm"
-										onClick={() => void fetchFromHardcover()}
-										loading={isFetchingFromHardcover}
-									>
-										Fetch from Hardcover
-									</Button>
-									{hardcoverIdIdentifier && (
-										<Button
-											variant="outline"
-											size="sm"
-											onClick={() => void openInHardcover()}
-										>
-											View in Hardcover
-										</Button>
-									)}
-									<Text size="sm" c="dimmed">
-										Uses ISBN: {isbnIdentifier.value}
-									</Text>
-								</Group>
-							)}
-							<Group>
-								<TextInput
-									placeholder="Search by title or author..."
-									value={searchQuery}
-									onChange={(event) => setSearchQuery(event.target.value)}
-									onKeyDown={(event) => {
-										if (event.key === "Enter") {
-											void searchHardcover();
-										}
-									}}
-									style={{ flex: 1 }}
-								/>
-								<Button
-									variant="filled"
-									size="sm"
-									onClick={() => void searchHardcover()}
-									loading={isSearching}
-								>
-									Search Hardcover
-								</Button>
-							</Group>
-						</Stack>
-					)}
-					{hardcoverMessage && (
-						<Alert
-							color={hardcoverMessage.type === "success" ? "green" : "red"}
-							onClose={() => setHardcoverMessage(null)}
-							withCloseButton
-						>
-							{hardcoverMessage.text}
-						</Alert>
-					)}
 					<Group flex={1}>
 						<TextInput
 							label="Title"
@@ -585,6 +534,30 @@ const EditBookForm = ({
 													).catch(console.error);
 												}}
 											/>
+											{hardcoverApiKey &&
+												label.toLowerCase() === "isbn" && (
+													<Tooltip label="Look up metadata">
+														<ActionIcon
+															variant="subtle"
+															onClick={() => void fetchFromHardcover()}
+															loading={isFetchingFromHardcover}
+															mt={LABEL_OFFSET_MARGIN}
+														>
+															↓
+														</ActionIcon>
+													</Tooltip>
+												)}
+											{label.toLowerCase() === "hardcover" && (
+												<Tooltip label="View on Hardcover">
+													<ActionIcon
+														variant="subtle"
+														onClick={() => void openInHardcover()}
+														mt={LABEL_OFFSET_MARGIN}
+													>
+														↗
+													</ActionIcon>
+												</Tooltip>
+											)}
 											<ActionIcon
 												variant="outline"
 												color="red"
@@ -629,6 +602,33 @@ const EditBookForm = ({
 							</Group>
 						)}
 					</Group>
+					{hardcoverApiKey && (
+						<Text
+							size="sm"
+							c="dimmed"
+							style={{ cursor: "pointer" }}
+							td="underline"
+							onClick={() => {
+								const query = form.values.title || "";
+								setSearchQuery(query);
+								setIsSearchModalOpen(true);
+								if (query) {
+									void searchHardcover(query);
+								}
+							}}
+						>
+							Find on Hardcover...
+						</Text>
+					)}
+					{hardcoverMessage && (
+						<Alert
+							color={hardcoverMessage.type === "success" ? "green" : "red"}
+							onClose={() => setHardcoverMessage(null)}
+							withCloseButton
+						>
+							{hardcoverMessage.text}
+						</Alert>
+					)}
 					<Paper shadow="sm" p="lg">
 						<Group justify="space-between">
 							<Text size="lg">Description</Text>
@@ -703,24 +703,48 @@ const EditBookForm = ({
 				</Stack>
 			</Group>
 
-			{/* Search Results Modal */}
+			{/* Hardcover Search Modal */}
 			<Modal
 				opened={isSearchModalOpen}
 				onClose={() => setIsSearchModalOpen(false)}
-				title={`Search Results for "${searchQuery}"`}
+				title="Find on Hardcover"
 				size="xl"
 			>
-				<ScrollArea style={{ height: "60vh" }}>
-					<Stack gap="md">
-						{searchResults.length === 0 ? (
-							<Text c="dimmed" ta="center">
-								{isSearching ? (
-									<Loader size="sm" />
-								) : (
-									"No results found. Try a different search query."
-								)}
-							</Text>
-						) : (
+				<Stack gap="md">
+					<Group>
+						<TextInput
+							placeholder="Search by title or author..."
+							value={searchQuery}
+							onChange={(event) => setSearchQuery(event.target.value)}
+							onKeyDown={(event) => {
+								if (event.key === "Enter") {
+									void searchHardcover();
+								}
+							}}
+							style={{ flex: 1 }}
+						/>
+						<Button
+							variant="light"
+							size="sm"
+							onClick={() => void searchHardcover()}
+							loading={isSearching}
+						>
+							Search
+						</Button>
+					</Group>
+					<ScrollArea style={{ height: "55vh" }}>
+						<Stack gap="md">
+							{searchResults.length === 0 ? (
+								<Text c="dimmed" ta="center">
+									{isSearching ? (
+										<Loader size="sm" />
+									) : searchQuery ? (
+										"No results found. Try a different search query."
+									) : (
+										"Enter a title or author name to search."
+									)}
+								</Text>
+							) : (
 							searchResults.map((result) => (
 								<Card
 									key={result.hardcover_id}
@@ -771,8 +795,9 @@ const EditBookForm = ({
 								</Card>
 							))
 						)}
-					</Stack>
-				</ScrollArea>
+						</Stack>
+					</ScrollArea>
+				</Stack>
 			</Modal>
 		</Form>
 	);
