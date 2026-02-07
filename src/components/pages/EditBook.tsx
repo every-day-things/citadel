@@ -230,7 +230,9 @@ const EditBookForm = ({
 					);
 				}
 
-				// Yield so React processes the book reload before we set form values
+				// Yield a microtask so React can flush the state update from
+				// onUpsertIdentifier (which triggers book reload → useEffect resets form).
+				// Not a hard guarantee, but sufficient in practice with React's sync rendering.
 				await new Promise((r) => setTimeout(r, 0));
 
 				// Now set form values (after the reset from the book reload)
@@ -271,7 +273,7 @@ const EditBookForm = ({
 
 		try {
 			const slug = hardcoverIdIdentifier.value;
-			if (!/^[a-z0-9-]+$/i.test(slug)) {
+			if (!/^[a-z0-9-]+$/.test(slug)) {
 				setHardcoverMessage({
 					type: "error",
 					text: "Invalid Hardcover identifier — expected a slug like 'the-forever-war'",
@@ -364,7 +366,9 @@ const EditBookForm = ({
 			slug,
 		);
 
-		// Yield so React processes the book reload before we set form values
+		// Yield a microtask so React can flush the state update from
+		// onUpsertIdentifier (which triggers book reload → useEffect resets form).
+		// Not a hard guarantee, but sufficient in practice with React's sync rendering.
 		await new Promise((r) => setTimeout(r, 0));
 
 		// Now set form values (after the reset from the book reload)
