@@ -3,7 +3,7 @@
 ## Commands
 - **Production build**: `bun run build` (builds frontend then backend via Tauri)
 - **Dev mode**: `bun run dev` (starts Tauri app with hot reload)
-- **Format**: `bun format` (formats both frontend & backend)
+- **Format**: `bun format` (formats both frontend & backend). Always use this instead of `cargo fmt`, which only formats the root crate and misses workspace members like `libcalibre`.
 - **Lint**: `bun lint` (lints both)
 - **Test**: `cargo test` (for Rust), `vitest` or `bun test` (for frontend)
 - **Run single test**: `cargo test test_name` or `vitest run path/to/test.ts`
