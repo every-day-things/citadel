@@ -47,4 +47,3 @@ pub struct UpdateBookData {
     pub flags: Option<i32>,
     pub has_cover: Option<bool>,
 }
-

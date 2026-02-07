@@ -14,12 +14,12 @@ pub mod types;
 pub mod util;
 
 // Re-export the main API types
+pub use error::CalibreError;
 pub use library::{
-    Author as LibraryAuthor, AuthorAdd, AuthorUpdate, Book as LibraryBook, BookAdd,
-    BookFileInfo, BookIdentifier, BookUpdate, Library,
+    Author as LibraryAuthor, AuthorAdd, AuthorUpdate, Book as LibraryBook, BookAdd, BookFileInfo,
+    BookIdentifier, BookUpdate, Library,
 };
 pub use types::{AuthorId, BookFileId, BookId};
-pub use error::CalibreError;
 
 // Keep entity exports that are needed internally (for operations/queries)
 pub(crate) use entities::{

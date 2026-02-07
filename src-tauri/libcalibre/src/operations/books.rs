@@ -244,7 +244,11 @@ fn to_library_authors(author_models: Vec<crate::Author>) -> Vec<crate::library::
             id: AuthorId(a.id),
             name: a.name,
             sort: a.sort.unwrap_or_default(),
-            link: if a.link.is_empty() { None } else { Some(a.link) },
+            link: if a.link.is_empty() {
+                None
+            } else {
+                Some(a.link)
+            },
         })
         .collect()
 }
@@ -264,7 +268,11 @@ fn get_authors_map(
                     id: AuthorId(a.id),
                     name: a.name,
                     sort: a.sort.unwrap_or_default(),
-                    link: if a.link.is_empty() { None } else { Some(a.link) },
+                    link: if a.link.is_empty() {
+                        None
+                    } else {
+                        Some(a.link)
+                    },
                 },
             )
         })

@@ -1,7 +1,9 @@
 use std::{collections::HashMap, path::Path, path::PathBuf};
 
 use chrono::{NaiveDate, NaiveDateTime};
-use diesel::{prelude::*, sql_query, sql_types::Integer, QueryableByName, RunQueryDsl, SqliteConnection};
+use diesel::{
+    prelude::*, sql_query, sql_types::Integer, QueryableByName, RunQueryDsl, SqliteConnection,
+};
 use sanitise_file_name::sanitise;
 
 use crate::{
@@ -156,9 +158,9 @@ impl Library {
         let new_book = NewBook {
             title: book.title.clone(),
             timestamp: None,
-            pubdate: book.publication_date.map(|d| {
-                NaiveDateTime::new(d, chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap())
-            }),
+            pubdate: book
+                .publication_date
+                .map(|d| NaiveDateTime::new(d, chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap())),
             series_index: book.series_index.unwrap_or(1.0),
             flags: 0,
             has_cover: None,
@@ -185,19 +187,16 @@ impl Library {
         );
 
         for author in &created_authors {
-            author_queries::link_book(
-                &mut self.conn,
-                AuthorId(author.id),
-                BookId(book_row.id),
-            )?;
+            author_queries::link_book(&mut self.conn, AuthorId(author.id), BookId(book_row.id))?;
         }
 
         // 4. Create directories
-        let primary_author = created_authors.first().map(|a| a.name.clone()).unwrap_or_default();
+        let primary_author = created_authors
+            .first()
+            .map(|a| a.name.clone())
+            .unwrap_or_default();
         let author_dir_name = primary_author.clone();
-        let book_dir_name = sanitise(
-            &format!("{} ({})", &book.title, book_row.id),
-        );
+        let book_dir_name = sanitise(&format!("{} ({})", &book.title, book_row.id));
         let book_dir_relative = Path::new(&author_dir_name).join(&book_dir_name);
         let library_root = Path::new(&self.db_path.library_path);
 
