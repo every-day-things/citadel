@@ -17,9 +17,12 @@ pub fn clb_cmd_update_book(
 ) -> Result<i32, String> {
     state.with_library(|lib| {
         let book_id_int = book_id.parse::<i32>().map_err(|e| e.to_string())?;
-        lib.update_book(libcalibre::BookId::from(book_id_int), updates.to_library_update())
-            .map(|entry| entry.id.as_i32())
-            .map_err(|e| e.to_string())
+        lib.update_book(
+            libcalibre::BookId::from(book_id_int),
+            updates.to_library_update(),
+        )
+        .map(|entry| entry.id.as_i32())
+        .map_err(|e| e.to_string())
     })?
 }
 

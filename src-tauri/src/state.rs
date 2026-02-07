@@ -53,6 +53,9 @@ impl CitadelState {
 
     /// Check if a library is currently loaded
     pub fn is_initialized(&self) -> bool {
-        self.library.lock().expect("Library mutex poisoned").is_some()
+        self.library
+            .lock()
+            .expect("Library mutex poisoned")
+            .is_some()
     }
 }
