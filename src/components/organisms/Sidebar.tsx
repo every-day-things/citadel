@@ -24,8 +24,10 @@ import {
 } from "../molecules/AddBookForm";
 import { F7SunMaxFill } from "@/components/icons/F7SunMaxFill";
 import { F7Gear } from "@/components/icons/F7Gear";
+import { F7BookFill } from "@/components/icons/F7BookFill";
 import { useThemeModal } from "@/lib/contexts/modal-theme/hooks";
 import { useLibrarySelectModal } from "@/lib/contexts/modal-library-select/hooks";
+import { useHardcoverModal } from "@/lib/contexts/modal-hardcover/hooks";
 import { FluentLibraryFilled } from "@/components/icons/FluentLibraryFilled";
 
 export const Sidebar = () => {
@@ -43,6 +45,7 @@ export const Sidebar = () => {
 	] = useDisclosure(false);
 
 	const [, { open: openThemeModal }] = useThemeModal();
+	const [, { open: openHardcoverModal }] = useHardcoverModal();
 
 	const onCreateAuthor = useCallback(
 		async (newAuthorName: string) => {
@@ -123,6 +126,7 @@ export const Sidebar = () => {
 				switchLibraryHandler={openLibrarySelectModal}
 				shelves={shelves}
 				openThemeModal={openThemeModal}
+				openHardcoverModal={openHardcoverModal}
 			/>
 		</>
 	);
@@ -180,6 +184,7 @@ interface SidebarPureProps {
 		isActive: () => boolean;
 	}[];
 	openThemeModal: () => void;
+	openHardcoverModal: () => void;
 }
 
 const SidebarPure = ({
@@ -187,6 +192,7 @@ const SidebarPure = ({
 	switchLibraryHandler,
 	shelves,
 	openThemeModal,
+	openHardcoverModal,
 }: SidebarPureProps) => {
 	return (
 		<Stack justify="space-between" h="100%">
@@ -234,6 +240,13 @@ const SidebarPure = ({
 							onClick={switchLibraryHandler}
 						>
 							Switch library
+						</Menu.Item>
+
+						<Menu.Item
+							leftSection={<F7BookFill />}
+							onClick={openHardcoverModal}
+						>
+							Hardcover API
 						</Menu.Item>
 					</Menu.Dropdown>
 				</Menu>
