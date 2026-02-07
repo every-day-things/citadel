@@ -2,6 +2,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use specta::Type;
 
+// ---------------------------------------------------------------------------
+// Public return types (unchanged, used by specta for TS bindings)
+// ---------------------------------------------------------------------------
+
 #[derive(Debug, Serialize, Deserialize, Type)]
 pub struct HardcoverBookMetadata {
     pub title: String,
@@ -29,6 +33,149 @@ pub struct HardcoverApiStatus {
     pub message: String,
 }
 
+// ---------------------------------------------------------------------------
+// Private GraphQL response types (serde deserialization)
+// ---------------------------------------------------------------------------
+
+/// Hardcover returns IDs as either strings or integers.
+struct FlexibleId(Option<i32>);
+
+impl<'de> Deserialize<'de> for FlexibleId {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let value = serde_json::Value::deserialize(deserializer)?;
+        let id = match &value {
+            serde_json::Value::String(s) => s.parse::<i32>().ok(),
+            serde_json::Value::Number(n) => n.as_i64().map(|n| n as i32),
+            _ => None,
+        };
+        Ok(FlexibleId(id))
+    }
+}
+
+/// Hardcover returns images as either a string URL or `{"url": "..."}`.
+struct FlexibleImage(Option<String>);
+
+impl<'de> Deserialize<'de> for FlexibleImage {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let value = serde_json::Value::deserialize(deserializer)?;
+        let url = match &value {
+            serde_json::Value::String(s) => Some(s.clone()),
+            serde_json::Value::Object(obj) => {
+                obj.get("url").and_then(|u| u.as_str()).map(String::from)
+            }
+            _ => None,
+        };
+        Ok(FlexibleImage(url))
+    }
+}
+
+#[derive(Deserialize)]
+struct GqlAuthor {
+    name: String,
+}
+
+#[derive(Deserialize)]
+struct GqlContribution {
+    author: GqlAuthor,
+}
+
+#[derive(Deserialize)]
+struct GqlBookDocument {
+    id: FlexibleId,
+    title: Option<String>,
+    description: Option<String>,
+    image: Option<FlexibleImage>,
+    release_year: Option<i32>,
+    slug: Option<String>,
+    #[serde(default)]
+    contributions: Vec<GqlContribution>,
+}
+
+#[derive(Deserialize)]
+struct GqlSearchHit {
+    document: GqlBookDocument,
+}
+
+#[derive(Deserialize)]
+struct GqlSearchResults {
+    hits: Vec<GqlSearchHit>,
+}
+
+#[derive(Deserialize)]
+struct GqlSearchData {
+    #[allow(dead_code)]
+    ids: Vec<serde_json::Value>,
+    results: GqlSearchResults,
+}
+
+// ---------------------------------------------------------------------------
+// Private helpers
+// ---------------------------------------------------------------------------
+
+const HARDCOVER_API_URL: &str = "https://api.hardcover.app/v1/graphql";
+
+/// Normalize an API key into a Bearer authorization header value.
+fn make_auth_header(api_key: &str) -> String {
+    if api_key.starts_with("Bearer ") {
+        api_key.to_string()
+    } else {
+        format!("Bearer {}", api_key)
+    }
+}
+
+/// Build a configured request to the Hardcover GraphQL API.
+fn hardcover_request(api_key: &str) -> reqwest::RequestBuilder {
+    reqwest::Client::new()
+        .post(HARDCOVER_API_URL)
+        .header("authorization", make_auth_header(api_key))
+        .header("content-type", "application/json")
+}
+
+/// Read a GraphQL response: check HTTP status, parse JSON, check for GraphQL
+/// errors, and return the `data` field.
+async fn execute_graphql(response: reqwest::Response) -> Result<serde_json::Value, String> {
+    let status = response.status();
+    let body = response
+        .text()
+        .await
+        .map_err(|e| format!("Failed to read response: {}", e))?;
+
+    log::debug!("Hardcover API: status={}, body_len={}", status, body.len());
+
+    if !status.is_success() {
+        return Err(format!("Hardcover API returned status {}", status));
+    }
+
+    let json: serde_json::Value =
+        serde_json::from_str(&body).map_err(|e| format!("Failed to parse response: {}", e))?;
+
+    if let Some(errors) = json.get("errors") {
+        let message = errors
+            .as_array()
+            .and_then(|arr| arr.first())
+            .and_then(|e| e.get("message"))
+            .and_then(|m| m.as_str())
+            .unwrap_or("Unknown error");
+        log::warn!("Hardcover GraphQL error: {}", message);
+        return Err(format!("API error: {}", message));
+    }
+
+    json.get("data")
+        .cloned()
+        .ok_or_else(|| "No data in GraphQL response".to_string())
+}
+
+/// Deserialize the `search` field from GraphQL data into typed search results.
+fn parse_search_data(data: &serde_json::Value) -> Result<GqlSearchData, String> {
+    let search = data.get("search").ok_or("No search data in response")?;
+    serde_json::from_value(search.clone())
+        .map_err(|e| format!("Failed to parse search results: {}", e))
+}
+
+// ---------------------------------------------------------------------------
+// Public Tauri commands
+// ---------------------------------------------------------------------------
+
 #[tauri::command]
 #[specta::specta]
 pub async fn test_hardcover_connection(api_key: String) -> Result<HardcoverApiStatus, String> {
@@ -41,89 +188,32 @@ pub async fn test_hardcover_connection(api_key: String) -> Result<HardcoverApiSt
         });
     }
 
-    // GraphQL query to test the connection - simple query to get user info
-    let query = r#"
-        query {
-            me {
-                id
-                username
-            }
-        }
-    "#;
+    let query = r#"query { me { id username } }"#;
 
-    let client = reqwest::Client::new();
-
-    // Handle case where user copied "Bearer <token>" from Hardcover
-    let auth_header = if api_key.starts_with("Bearer ") {
-        api_key.to_string()
-    } else {
-        format!("Bearer {}", api_key)
-    };
-
-    let response = client
-        .post("https://api.hardcover.app/v1/graphql")
-        .header("authorization", auth_header)
-        .header("content-type", "application/json")
-        .json(&json!({
-            "query": query
-        }))
+    let response = hardcover_request(api_key)
+        .json(&json!({ "query": query }))
         .send()
         .await
         .map_err(|e| format!("Failed to connect to Hardcover API: {}", e))?;
 
-    let status_code = response.status();
-    let response_text = response
-        .text()
-        .await
-        .map_err(|e| format!("Failed to read response: {}", e))?;
-
-    log::debug!(
-        "Hardcover connection test: status={}, body_len={}",
-        status_code,
-        response_text.len()
-    );
-
-    // Check if the response contains errors
-    if !status_code.is_success() {
-        return Ok(HardcoverApiStatus {
+    match execute_graphql(response).await {
+        Ok(data) => {
+            if data.get("me").is_some() {
+                Ok(HardcoverApiStatus {
+                    is_valid: true,
+                    message: "Connection successful".to_string(),
+                })
+            } else {
+                Ok(HardcoverApiStatus {
+                    is_valid: false,
+                    message: "Invalid API response format".to_string(),
+                })
+            }
+        }
+        Err(e) => Ok(HardcoverApiStatus {
             is_valid: false,
-            message: format!("API returned status {}: {}", status_code, response_text),
-        });
-    }
-
-    // Parse the JSON response to check for GraphQL errors
-    let json_response: serde_json::Value = serde_json::from_str(&response_text)
-        .map_err(|e| format!("Failed to parse response: {} - Body: {}", e, response_text))?;
-
-    if let Some(errors) = json_response.get("errors") {
-        let error_message = errors
-            .as_array()
-            .and_then(|arr| arr.first())
-            .and_then(|e| e.get("message"))
-            .and_then(|m| m.as_str())
-            .unwrap_or("Unknown error");
-        log::warn!("Hardcover GraphQL error: {}", error_message);
-        return Ok(HardcoverApiStatus {
-            is_valid: false,
-            message: format!("API error: {}", error_message),
-        });
-    }
-
-    // Check if we got data back
-    if json_response
-        .get("data")
-        .and_then(|d| d.get("me"))
-        .is_some()
-    {
-        Ok(HardcoverApiStatus {
-            is_valid: true,
-            message: "Connection successful".to_string(),
-        })
-    } else {
-        Ok(HardcoverApiStatus {
-            is_valid: false,
-            message: "Invalid API response format".to_string(),
-        })
+            message: e,
+        }),
     }
 }
 
@@ -139,142 +229,39 @@ pub async fn fetch_hardcover_metadata_by_isbn(
     if api_key.is_empty() {
         return Err("API key is empty".to_string());
     }
-
     if isbn.is_empty() {
         return Err("ISBN is empty".to_string());
     }
 
-    // GraphQL query to search for book by ISBN, using variables to avoid injection
     let query = r#"
         query SearchByIsbn($isbn: String!) {
-            search(query: $isbn, query_type: BOOK) {
-                ids
-                results
-            }
+            search(query: $isbn, query_type: BOOK) { ids results }
         }
     "#;
 
-    // Handle case where user copied "Bearer <token>" from Hardcover
-    let auth_header = if api_key.starts_with("Bearer ") {
-        api_key.to_string()
-    } else {
-        format!("Bearer {}", api_key)
-    };
-
-    let client = reqwest::Client::new();
-    let response = client
-        .post("https://api.hardcover.app/v1/graphql")
-        .header("authorization", auth_header)
-        .header("content-type", "application/json")
-        .json(&json!({
-            "query": query,
-            "variables": { "isbn": isbn }
-        }))
+    let response = hardcover_request(api_key)
+        .json(&json!({ "query": query, "variables": { "isbn": isbn } }))
         .send()
         .await
         .map_err(|e| format!("Failed to connect to Hardcover API: {}", e))?;
 
-    let response_text = response
-        .text()
-        .await
-        .map_err(|e| format!("Failed to read response: {}", e))?;
+    let data = execute_graphql(response).await?;
+    let search = parse_search_data(&data)?;
 
-    log::debug!(
-        "Hardcover ISBN search for '{}': body_len={}",
-        isbn,
-        response_text.len()
-    );
-
-    let json_response: serde_json::Value = serde_json::from_str(&response_text)
-        .map_err(|e| format!("Failed to parse response: {}", e))?;
-
-    // Check for GraphQL errors
-    if let Some(errors) = json_response.get("errors") {
-        let error_message = errors
-            .as_array()
-            .and_then(|arr| arr.first())
-            .and_then(|e| e.get("message"))
-            .and_then(|m| m.as_str())
-            .unwrap_or("Unknown error");
-        return Err(format!("API error: {}", error_message));
-    }
-
-    // Extract search results
-    let search_data = json_response
-        .get("data")
-        .and_then(|d| d.get("search"))
-        .ok_or("No search data in response")?;
-
-    // Get the IDs array
-    let ids = search_data
-        .get("ids")
-        .and_then(|i| i.as_array())
-        .ok_or("No IDs in search results")?;
-
-    if ids.is_empty() {
-        return Err(format!("No book found with ISBN: {}", isbn));
-    }
-
-    // Results is already an object, not a string
-    let results = search_data
-        .get("results")
-        .ok_or("No results in search data")?;
-
-    // Get hits array from results
-    let hits = results
-        .get("hits")
-        .and_then(|h| h.as_array())
-        .ok_or("No hits in search results")?;
-
-    if hits.is_empty() {
-        return Err(format!("No book found with ISBN: {}", isbn));
-    }
-
-    // Get the document from the first hit
-    let book = hits[0].get("document").ok_or("No document in search hit")?;
-
-    // ID can be string or number in search results
-    let hardcover_id = book.get("id").and_then(|i| {
-        if let Some(s) = i.as_str() {
-            s.parse::<i32>().ok()
-        } else {
-            i.as_i64().map(|n| n as i32)
-        }
-    });
-
-    // Image is an object with url field in search results
-    let image_url = book.get("image").and_then(|img| {
-        if let Some(s) = img.as_str() {
-            Some(s.to_string())
-        } else {
-            img.get("url")
-                .and_then(|u| u.as_str())
-                .map(|s| s.to_string())
-        }
-    });
-
-    let slug = book
-        .get("slug")
-        .and_then(|s| s.as_str())
-        .map(|s| s.to_string());
+    let hit = search
+        .results
+        .hits
+        .first()
+        .ok_or_else(|| format!("No book found with ISBN: {}", isbn))?;
+    let doc = &hit.document;
 
     Ok(HardcoverBookMetadata {
-        title: book
-            .get("title")
-            .and_then(|t| t.as_str())
-            .unwrap_or("")
-            .to_string(),
-        description: book
-            .get("description")
-            .and_then(|d| d.as_str())
-            .map(|s| s.to_string()),
-        image_url,
-        release_year: book
-            .get("release_year")
-            .and_then(|y| y.as_i64())
-            .map(|y| y as i32),
-        hardcover_id,
-        slug,
+        title: doc.title.clone().unwrap_or_default(),
+        description: doc.description.clone(),
+        image_url: doc.image.as_ref().and_then(|i| i.0.clone()),
+        release_year: doc.release_year,
+        hardcover_id: doc.id.0,
+        slug: doc.slug.clone(),
     })
 }
 
@@ -290,154 +277,47 @@ pub async fn search_hardcover_books(
     if api_key.is_empty() {
         return Err("API key is empty".to_string());
     }
-
     if query.is_empty() {
         return Err("Search query is empty".to_string());
     }
 
-    // GraphQL query to search for books, using variables to avoid injection
     let graphql_query = r#"
         query SearchBooks($query: String!) {
-            search(query: $query, query_type: BOOK) {
-                ids
-                results
-            }
+            search(query: $query, query_type: BOOK) { ids results }
         }
     "#;
 
-    // Handle case where user copied "Bearer <token>" from Hardcover
-    let auth_header = if api_key.starts_with("Bearer ") {
-        api_key.to_string()
-    } else {
-        format!("Bearer {}", api_key)
-    };
-
-    let client = reqwest::Client::new();
-    let response = client
-        .post("https://api.hardcover.app/v1/graphql")
-        .header("authorization", auth_header)
-        .header("content-type", "application/json")
-        .json(&json!({
-            "query": graphql_query,
-            "variables": { "query": query }
-        }))
+    let response = hardcover_request(api_key)
+        .json(&json!({ "query": graphql_query, "variables": { "query": query } }))
         .send()
         .await
         .map_err(|e| format!("Failed to connect to Hardcover API: {}", e))?;
 
-    let response_text = response
-        .text()
-        .await
-        .map_err(|e| format!("Failed to read response: {}", e))?;
+    let data = execute_graphql(response).await?;
+    let search = parse_search_data(&data)?;
 
-    log::debug!(
-        "Hardcover book search for '{}': body_len={}",
-        query,
-        response_text.len()
-    );
-
-    let json_response: serde_json::Value = serde_json::from_str(&response_text)
-        .map_err(|e| format!("Failed to parse response: {}", e))?;
-
-    // Check for GraphQL errors
-    if let Some(errors) = json_response.get("errors") {
-        let error_message = errors
-            .as_array()
-            .and_then(|arr| arr.first())
-            .and_then(|e| e.get("message"))
-            .and_then(|m| m.as_str())
-            .unwrap_or("Unknown error");
-        return Err(format!("API error: {}", error_message));
-    }
-
-    // Extract search results
-    let search_data = json_response
-        .get("data")
-        .and_then(|d| d.get("search"))
-        .ok_or("No search data in response")?;
-
-    // Get the results object
-    let results = search_data
-        .get("results")
-        .ok_or("No results in search data")?;
-
-    // Get hits array from results
-    let hits = results
-        .get("hits")
-        .and_then(|h| h.as_array())
-        .ok_or("No hits in search results")?;
-
-    if hits.is_empty() {
-        return Ok(Vec::new()); // Return empty list instead of error
-    }
-
-    // Parse all search results
-    let mut search_results = Vec::new();
-    for hit in hits {
-        let book = hit.get("document").ok_or("No document in search hit")?;
-
-        // Extract authors from contributions
-        let mut authors = Vec::new();
-        if let Some(contributions) = book.get("contributions").and_then(|c| c.as_array()) {
-            for contribution in contributions {
-                if let Some(author_name) = contribution
-                    .get("author")
-                    .and_then(|a| a.get("name"))
-                    .and_then(|n| n.as_str())
-                {
-                    authors.push(author_name.to_string());
-                }
-            }
-        }
-
-        // ID can be string or number in search results
-        let hardcover_id = book
-            .get("id")
-            .and_then(|i| {
-                if let Some(s) = i.as_str() {
-                    s.parse::<i32>().ok()
-                } else {
-                    i.as_i64().map(|n| n as i32)
-                }
+    search
+        .results
+        .hits
+        .iter()
+        .map(|hit| {
+            let doc = &hit.document;
+            Ok(HardcoverSearchResult {
+                title: doc.title.clone().unwrap_or_default(),
+                description: doc.description.clone(),
+                image_url: doc.image.as_ref().and_then(|i| i.0.clone()),
+                release_year: doc.release_year,
+                hardcover_id: doc
+                    .id
+                    .0
+                    .ok_or("Missing or invalid hardcover_id in search result")?,
+                slug: doc.slug.clone(),
+                authors: doc
+                    .contributions
+                    .iter()
+                    .map(|c| c.author.name.clone())
+                    .collect(),
             })
-            .ok_or("Missing or invalid hardcover_id in search result")?;
-
-        // Image is an object with url field in search results
-        let image_url = book.get("image").and_then(|img| {
-            if let Some(s) = img.as_str() {
-                Some(s.to_string())
-            } else {
-                img.get("url")
-                    .and_then(|u| u.as_str())
-                    .map(|s| s.to_string())
-            }
-        });
-
-        let slug = book
-            .get("slug")
-            .and_then(|s| s.as_str())
-            .map(|s| s.to_string());
-
-        search_results.push(HardcoverSearchResult {
-            title: book
-                .get("title")
-                .and_then(|t| t.as_str())
-                .unwrap_or("")
-                .to_string(),
-            description: book
-                .get("description")
-                .and_then(|d| d.as_str())
-                .map(|s| s.to_string()),
-            image_url,
-            release_year: book
-                .get("release_year")
-                .and_then(|y| y.as_i64())
-                .map(|y| y as i32),
-            hardcover_id,
-            slug,
-            authors,
-        });
-    }
-
-    Ok(search_results)
+        })
+        .collect()
 }
