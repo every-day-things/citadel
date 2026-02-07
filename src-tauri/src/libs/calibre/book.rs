@@ -33,15 +33,18 @@ fn book_cover_image(
     }
 }
 
-pub fn list_all(library_root: String, lib: &mut Library) -> Vec<LibraryBook> {
-    let results = lib.books().expect("Could not load books from DB");
+pub fn list_all(
+    library_root: String,
+    lib: &mut Library,
+) -> Result<Vec<LibraryBook>, libcalibre::CalibreError> {
+    let results = lib.books()?;
 
-    results
+    Ok(results
         .iter()
         .map(|book| {
             let mut library_book = LibraryBook::from_library_book(book, &library_root);
             library_book.cover_image = book_cover_image(&library_root, book);
             library_book
         })
-        .collect()
+        .collect())
 }

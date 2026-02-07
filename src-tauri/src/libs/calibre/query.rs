@@ -18,7 +18,8 @@ pub fn clb_query_list_all_books(
         .get_library_path()
         .ok_or("No library loaded".to_string())?;
 
-    state.with_library(|lib| book::list_all(library_root, lib))
+    let books = state.with_library(|lib| book::list_all(library_root, lib))?;
+    books.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
