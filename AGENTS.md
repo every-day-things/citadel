@@ -39,3 +39,4 @@
 - Strict mode: `strictNullChecks` and `noUncheckedIndexedAccess` enabled; always handle undefined/null cases
 - Use functional programming concepts
 - Prefer Rust-style safety, utility types like Result and Option
+- **Functional core, imperative shell**: Components should be pure renderers. Extract all behavior (API calls, async operations, state machines) into custom hooks or service modules. Components receive state and callbacks, nothing more.
