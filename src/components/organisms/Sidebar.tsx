@@ -1,4 +1,11 @@
-import { NewAuthor, type ImportableBookMetadata } from "@/bindings";
+import { type ImportableBookMetadata, NewAuthor } from "@/bindings";
+import { F7BookFill } from "@/components/icons/F7BookFill";
+import { F7Gear } from "@/components/icons/F7Gear";
+import { F7SunMaxFill } from "@/components/icons/F7SunMaxFill";
+import { FluentLibraryFilled } from "@/components/icons/FluentLibraryFilled";
+import { useHardcoverModal } from "@/lib/contexts/modal-hardcover/hooks";
+import { useLibrarySelectModal } from "@/lib/contexts/modal-library-select/hooks";
+import { useThemeModal } from "@/lib/contexts/modal-theme/hooks";
 import {
 	LibraryState,
 	useAuthors,
@@ -22,13 +29,6 @@ import {
 	AddBookForm,
 	title as addBookFormTitle,
 } from "../molecules/AddBookForm";
-import { F7SunMaxFill } from "@/components/icons/F7SunMaxFill";
-import { F7Gear } from "@/components/icons/F7Gear";
-import { F7BookFill } from "@/components/icons/F7BookFill";
-import { useThemeModal } from "@/lib/contexts/modal-theme/hooks";
-import { useLibrarySelectModal } from "@/lib/contexts/modal-library-select/hooks";
-import { useHardcoverModal } from "@/lib/contexts/modal-hardcover/hooks";
-import { FluentLibraryFilled } from "@/components/icons/FluentLibraryFilled";
 
 export const Sidebar = () => {
 	const state = useLibraryState();

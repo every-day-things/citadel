@@ -1,41 +1,41 @@
 import type {
 	BookUpdate,
+	HardcoverSearchResult,
 	LibraryAuthor,
 	LibraryBook,
-	HardcoverSearchResult,
 } from "@/bindings";
 import { commands } from "@/bindings";
 import { safeAsyncEventHandler } from "@/lib/async";
 import { useSettings } from "@/stores/settings/store";
 import {
 	ActionIcon,
+	Alert,
+	Badge,
+	Box,
 	Button,
+	Card,
 	Fieldset,
 	Group,
+	Image,
+	Loader,
+	Modal,
 	Paper,
+	ScrollArea,
 	Stack,
 	Switch,
 	Text,
 	TextInput,
 	Title,
-	Box,
-	Alert,
-	Modal,
-	Image,
-	Card,
-	Badge,
-	ScrollArea,
-	Loader,
 	Tooltip,
 } from "@mantine/core";
+import { Form, useForm } from "@mantine/form";
 import { RichTextEditor } from "@mantine/tiptap";
+import { openPath } from "@tauri-apps/plugin-opener";
 import { Link } from "@tiptap/extension-link";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import DOMPurify from "dompurify";
-import { Form, useForm } from "@mantine/form";
 import { type HTMLProps, useEffect, useMemo, useState } from "react";
-import { openPath } from "@tauri-apps/plugin-opener";
 import { BookCover } from "../atoms/BookCover";
 import { MultiSelectCreatable } from "../atoms/Multiselect";
 import styles from "./EditBook.module.css";
@@ -534,19 +534,18 @@ const EditBookForm = ({
 													).catch(console.error);
 												}}
 											/>
-											{hardcoverApiKey &&
-												label.toLowerCase() === "isbn" && (
-													<Tooltip label="Look up metadata">
-														<ActionIcon
-															variant="subtle"
-															onClick={() => void fetchFromHardcover()}
-															loading={isFetchingFromHardcover}
-															mt={LABEL_OFFSET_MARGIN}
-														>
-															↓
-														</ActionIcon>
-													</Tooltip>
-												)}
+											{hardcoverApiKey && label.toLowerCase() === "isbn" && (
+												<Tooltip label="Look up metadata">
+													<ActionIcon
+														variant="subtle"
+														onClick={() => void fetchFromHardcover()}
+														loading={isFetchingFromHardcover}
+														mt={LABEL_OFFSET_MARGIN}
+													>
+														↓
+													</ActionIcon>
+												</Tooltip>
+											)}
 											{label.toLowerCase() === "hardcover" && (
 												<Tooltip label="View on Hardcover">
 													<ActionIcon
@@ -745,56 +744,56 @@ const EditBookForm = ({
 									)}
 								</Text>
 							) : (
-							searchResults.map((result) => (
-								<Card
-									key={result.hardcover_id}
-									shadow="sm"
-									padding="lg"
-									style={{ cursor: "pointer" }}
-									onClick={() => void selectSearchResult(result)}
-								>
-									<Group align="flex-start" gap="md">
-										{result.image_url && (
-											<Image
-												src={result.image_url}
-												alt={result.title}
-												width={100}
-												height={150}
-												fit="contain"
-											/>
-										)}
-										<Stack flex={1} gap="xs">
-											<Text size="lg" fw={700}>
-												{result.title}
-											</Text>
-											{result.authors && result.authors.length > 0 && (
-												<Group gap="xs">
-													{result.authors.map((author) => (
-														<Badge key={author} variant="light">
-															{author}
-														</Badge>
-													))}
-												</Group>
+								searchResults.map((result) => (
+									<Card
+										key={result.hardcover_id}
+										shadow="sm"
+										padding="lg"
+										style={{ cursor: "pointer" }}
+										onClick={() => void selectSearchResult(result)}
+									>
+										<Group align="flex-start" gap="md">
+											{result.image_url && (
+												<Image
+													src={result.image_url}
+													alt={result.title}
+													width={100}
+													height={150}
+													fit="contain"
+												/>
 											)}
-											{result.release_year && (
-												<Text size="sm" c="dimmed">
-													Published: {result.release_year}
+											<Stack flex={1} gap="xs">
+												<Text size="lg" fw={700}>
+													{result.title}
 												</Text>
-											)}
-											{result.description && (
-												<Text
-													size="sm"
-													lineClamp={3}
-													style={{ whiteSpace: "pre-wrap" }}
-												>
-													{result.description.replace(/<[^>]*>/g, "")}
-												</Text>
-											)}
-										</Stack>
-									</Group>
-								</Card>
-							))
-						)}
+												{result.authors && result.authors.length > 0 && (
+													<Group gap="xs">
+														{result.authors.map((author) => (
+															<Badge key={author} variant="light">
+																{author}
+															</Badge>
+														))}
+													</Group>
+												)}
+												{result.release_year && (
+													<Text size="sm" c="dimmed">
+														Published: {result.release_year}
+													</Text>
+												)}
+												{result.description && (
+													<Text
+														size="sm"
+														lineClamp={3}
+														style={{ whiteSpace: "pre-wrap" }}
+													>
+														{result.description.replace(/<[^>]*>/g, "")}
+													</Text>
+												)}
+											</Stack>
+										</Group>
+									</Card>
+								))
+							)}
 						</Stack>
 					</ScrollArea>
 				</Stack>
