@@ -271,6 +271,13 @@ const EditBookForm = ({
 
 		try {
 			const slug = hardcoverIdIdentifier.value;
+			if (!/^[a-z0-9-]+$/i.test(slug)) {
+				setHardcoverMessage({
+					type: "error",
+					text: "Invalid Hardcover identifier — expected a slug like 'the-forever-war'",
+				});
+				return;
+			}
 			const url = `https://hardcover.app/books/${slug}`;
 			await openPath(url);
 		} catch (error) {
