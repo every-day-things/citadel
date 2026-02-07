@@ -28,21 +28,6 @@ pub(crate) fn get(
         .map_err(CalibreError::from)
 }
 
-pub(crate) fn get_many(
-    conn: &mut SqliteConnection,
-    book_ids: Vec<BookId>,
-) -> Result<Vec<BookRow>, CalibreError> {
-    use crate::schema::books::dsl::*;
-
-    let ids: Vec<i32> = book_ids.iter().map(|bid| bid.as_i32()).collect();
-
-    books
-        .filter(id.eq_any(ids))
-        .select(BookRow::as_select())
-        .load(conn)
-        .map_err(CalibreError::from)
-}
-
 pub(crate) fn all(conn: &mut SqliteConnection) -> Result<Vec<BookRow>, CalibreError> {
     use crate::schema::books::dsl::*;
 
@@ -82,21 +67,6 @@ pub(crate) fn delete(conn: &mut SqliteConnection, book_id: BookId) -> Result<boo
         .execute(conn)
         .map_err(CalibreError::from)
         .map(|affected_rows| affected_rows > 0)
-}
-
-pub(crate) fn bulk_get(
-    conn: &mut SqliteConnection,
-    book_ids: Vec<BookId>,
-) -> Result<Vec<BookRow>, CalibreError> {
-    use crate::schema::books::dsl::*;
-
-    let ids: Vec<i32> = book_ids.iter().map(|bid| bid.as_i32()).collect();
-
-    books
-        .filter(id.eq_any(ids))
-        .select(BookRow::as_select())
-        .load(conn)
-        .map_err(CalibreError::from)
 }
 
 // =============================================================================

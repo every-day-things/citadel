@@ -3,9 +3,6 @@ use std::path::PathBuf;
 use crate::state::CitadelState;
 
 use chrono::NaiveDateTime;
-use libcalibre::dtos::author::UpdateAuthorDto;
-use libcalibre::dtos::book::UpdateBookDto;
-use libcalibre::dtos::library::UpdateLibraryEntryDto;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -48,17 +45,26 @@ pub struct BookUpdate {
 }
 
 impl BookUpdate {
-    pub fn to_dto(&self) -> UpdateLibraryEntryDto {
-        UpdateLibraryEntryDto {
-            book: UpdateBookDto {
-                title: self.title.clone(),
-                timestamp: self.timestamp,
-                pubdate: self.publication_date,
-                is_read: self.is_read,
-                description: self.description.clone(),
-                ..UpdateBookDto::default()
-            },
-            author_id_list: self.author_id_list.clone(),
+    pub fn to_library_update(&self) -> libcalibre::BookUpdate {
+        libcalibre::BookUpdate {
+            title: self.title.clone(),
+            author_names: None,
+            author_ids: self.author_id_list.as_ref().map(|ids| {
+                ids.iter()
+                    .filter_map(|id| id.parse::<i32>().ok())
+                    .map(libcalibre::AuthorId::from)
+                    .collect()
+            }),
+            description: self.description.clone(),
+            is_read: self.is_read,
+            publication_date: self.publication_date.map(|dt| dt.date()),
+            tags: None,
+            series: None,
+            series_index: None,
+            publisher: None,
+            rating: None,
+            comments: None,
+            identifiers: None,
         }
     }
 }
@@ -71,11 +77,11 @@ pub struct AuthorUpdate {
 }
 
 impl AuthorUpdate {
-    pub fn to_dto(&self) -> UpdateAuthorDto {
-        UpdateAuthorDto {
-            full_name: self.full_name.clone(),
-            sortable_name: self.sortable_name.clone(),
-            external_url: self.external_url.clone(),
+    pub fn to_library_update(&self) -> libcalibre::AuthorUpdate {
+        libcalibre::AuthorUpdate {
+            name: self.full_name.clone(),
+            sort: self.sortable_name.clone(),
+            link: self.external_url.clone(),
         }
     }
 }

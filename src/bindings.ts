@@ -38,10 +38,6 @@ async clbQueryIsFileImportable(pathToFile: string) : Promise<ImportableFile | nu
 async clbQueryImportableFileMetadata(file: ImportableFile) : Promise<ImportableBookMetadata | null> {
     return await TAURI_INVOKE("clb_query_importable_file_metadata", { file });
 },
-/**
- * Lists all importable file types. Those are files that Citadel knows how
- * to import, and that libcalibre supports.
- */
 async clbQueryListAllFiletypes() : Promise<([string, string])[]> {
     return await TAURI_INVOKE("clb_query_list_all_filetypes");
 },

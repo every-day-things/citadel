@@ -1,14 +1,6 @@
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf};
 
-use chrono::{NaiveDate, NaiveDateTime};
-use libcalibre::{
-    dtos::{
-        author::NewAuthorDto,
-        book::NewBookDto,
-        library::{NewLibraryEntryDto, NewLibraryFileDto},
-    },
-    Book,
-};
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, specta::Type, Deserialize, Clone)]
@@ -63,19 +55,16 @@ pub struct LibraryBook {
 }
 
 impl LibraryBook {
-    pub fn from_book(book: &Book, library_path: &String) -> Self {
+    pub fn from_library_book(book: &libcalibre::library::Book, library_path: &str) -> Self {
         Self {
-            id: book.id.to_string(),
-            uuid: book.uuid.clone(),
+            id: book.id.as_i32().to_string(),
+            uuid: Some(book.uuid.clone()),
             title: book.title.clone(),
             author_list: book.authors.iter().map(LibraryAuthor::from).collect(),
             sortable_title: book.sortable_title.clone(),
             identifier_list: book.identifiers.iter().map(Identifier::from).collect(),
-            description: book.metadata.description_html.clone(),
-            is_read: book.metadata.is_read,
-            /*
-              TODO: implement cover image extraction
-            */
+            description: book.description.clone(),
+            is_read: book.is_read,
             cover_image: None,
             file_list: book
                 .files
@@ -86,7 +75,7 @@ impl LibraryBook {
 
                     BookFile::Local(LocalFile {
                         path: PathBuf::from(library_path)
-                            .join(book.path.clone())
+                            .join(&book.book_dir_path)
                             .join(file_name_with_ext),
                         mime_type: file.format.clone(),
                     })
@@ -143,34 +132,31 @@ pub struct ImportableBookMetadata {
 }
 
 impl ImportableBookMetadata {
-    pub fn to_new_library_entry_dto(&self) -> NewLibraryEntryDto {
-        NewLibraryEntryDto {
-            book: NewBookDto {
-                title: self.title.clone(),
-                timestamp: None,
-                pubdate: Some(NaiveDateTime::new(
-                    self.publication_date
-                        .unwrap_or(NaiveDate::from_ymd_opt(1970, 1, 1).unwrap()),
-                    chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap(),
-                )),
-                series_index: 1.0,
-                flags: 0,
-                has_cover: None,
+    pub fn to_book_add(&self) -> libcalibre::BookAdd {
+        libcalibre::BookAdd {
+            title: self.title.clone(),
+            author_names: self.author_names.clone().unwrap_or_default(),
+            tags: if self.tags.is_empty() {
+                None
+            } else {
+                Some(self.tags.clone())
             },
-            authors: match &self.author_names {
-                Some(authors) => authors
-                    .iter()
-                    .map(|name| NewAuthorDto {
-                        full_name: name.clone(),
-                        sortable_name: "".to_string(),
-                        external_url: None,
-                    })
-                    .collect(),
-                None => vec![],
-            },
-            files: Some(vec![NewLibraryFileDto {
-                path: self.path.clone(),
-            }]),
+            series: None,
+            series_index: None,
+            publisher: self.publisher.clone(),
+            publication_date: self.publication_date,
+            rating: None,
+            comments: None,
+            identifiers: self
+                .identifier
+                .as_ref()
+                .map(|id| {
+                    let mut map = HashMap::new();
+                    map.insert("isbn".to_string(), id.clone());
+                    map
+                })
+                .unwrap_or_default(),
+            file_paths: vec![self.path.clone()],
         }
     }
 }
@@ -183,12 +169,12 @@ pub struct Identifier {
     pub value: String,
 }
 
-impl From<&libcalibre::models::Identifier> for Identifier {
-    fn from(identifier: &libcalibre::models::Identifier) -> Self {
+impl From<&libcalibre::BookIdentifier> for Identifier {
+    fn from(identifier: &libcalibre::BookIdentifier) -> Self {
         Identifier {
             id: identifier.id,
-            label: identifier.type_.clone(),
-            value: identifier.val.clone(),
+            label: identifier.label.clone(),
+            value: identifier.value.clone(),
         }
     }
 }

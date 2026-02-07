@@ -48,10 +48,3 @@ pub struct UpdateBookData {
     pub has_cover: Option<bool>,
 }
 
-#[derive(Deserialize, Default, Debug)]
-pub struct UpsertBookIdentifier {
-    pub book_id: i32,
-    pub id: Option<i32>,
-    pub label: String,
-    pub value: String,
-}

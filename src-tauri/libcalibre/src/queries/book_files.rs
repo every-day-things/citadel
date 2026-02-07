@@ -8,62 +8,12 @@ use std::collections::HashMap;
 use diesel::prelude::*;
 use diesel::{QueryDsl, RunQueryDsl, SqliteConnection};
 
-use crate::entities::book_file::{NewBookFile, UpdateBookFile};
+use crate::entities::book_file::NewBookFile;
 use crate::BookFile;
 use crate::{
     types::{BookFileId, BookId},
     CalibreError,
 };
-
-pub(crate) fn get(
-    conn: &mut SqliteConnection,
-    file_id: BookFileId,
-) -> Result<Option<BookFile>, CalibreError> {
-    use crate::schema::data::dsl::*;
-
-    data.filter(id.eq(file_id.as_i32()))
-        .select(BookFile::as_returning())
-        .get_result(conn)
-        .optional()
-        .map_err(CalibreError::from)
-}
-
-pub(crate) fn get_many(
-    conn: &mut SqliteConnection,
-    file_ids: Vec<BookFileId>,
-) -> Result<Vec<BookFile>, CalibreError> {
-    use crate::schema::data::dsl::*;
-
-    let ids: Vec<i32> = file_ids.iter().map(|fid| fid.as_i32()).collect();
-
-    data.filter(book.eq_any(ids))
-        .select(BookFile::as_returning())
-        .load(conn)
-        .map_err(CalibreError::from)
-}
-
-pub(crate) fn all(conn: &mut SqliteConnection) -> Result<Vec<BookFile>, CalibreError> {
-    use crate::schema::data::dsl::*;
-
-    data.select(BookFile::as_returning())
-        .load(conn)
-        .map_err(CalibreError::from)
-}
-
-pub(crate) fn update(
-    conn: &mut SqliteConnection,
-    file_id: BookFileId,
-    update: UpdateBookFile,
-) -> Result<BookFile, CalibreError> {
-    use crate::schema::data::dsl::*;
-
-    diesel::update(data)
-        .filter(id.eq(file_id.as_i32()))
-        .set(update)
-        .returning(BookFile::as_returning())
-        .get_result(conn)
-        .map_err(CalibreError::from)
-}
 
 pub(crate) fn create(
     conn: &mut SqliteConnection,

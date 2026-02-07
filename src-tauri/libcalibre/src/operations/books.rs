@@ -4,7 +4,7 @@ use chrono::NaiveDateTime;
 use diesel::{Connection, SqliteConnection};
 
 use crate::{
-    library::{Book, BookUpdate},
+    library::{Book, BookFileInfo, BookIdentifier, BookUpdate},
     queries::{authors, book_descriptions, book_files, book_identifiers, books},
     types::{AuthorId, BookId},
     CalibreError, UpdateBookData,
@@ -16,37 +16,45 @@ pub fn update_book(
     update: BookUpdate,
 ) -> Result<(), CalibreError> {
     if update.author_names.is_some() && update.author_ids.is_some() {
-        // TODO: Encode this in the struct
         return Err(CalibreError::BannedFunctionInvocation(
             "Cannot provide both author_names and author_ids".to_string(),
         ));
     }
 
     conn.transaction::<(), CalibreError, _>(|conn| {
-        let book_update = UpdateBookData {
-            title: update.title,
-            pubdate: update.publication_date.map(|d| NaiveDateTime::from(d)),
-            series_index: update.series_index,
+        // Only update the book row if there are actual book-row field changes
+        let has_book_row_changes = update.title.is_some()
+            || update.publication_date.is_some()
+            || update.series_index.is_some();
 
-            author_sort: None, // Managed via trigger
-            flags: None,       // Not implemented yet
-            has_cover: None,   // Not implemented yet
+        if has_book_row_changes {
+            let book_update = UpdateBookData {
+                title: update.title,
+                pubdate: update.publication_date.map(NaiveDateTime::from),
+                series_index: update.series_index,
 
-            timestamp: None, // Never update created at timestamp
-            path: None,      // Cannot be updated here
-        };
+                author_sort: None,
+                flags: None,
+                has_cover: None,
+                timestamp: None,
+                path: None,
+            };
 
-        books::update(conn, book_id, book_update)?;
+            books::update(conn, book_id, book_update)?;
+        }
 
         if let Some(description) = update.description {
-            book_descriptions::update(conn, book_id, description)?;
+            let existing = book_descriptions::get(conn, book_id)?;
+            if existing.is_some() {
+                book_descriptions::update(conn, book_id, description)?;
+            } else {
+                book_descriptions::create(conn, book_id, description)?;
+            }
         }
 
         if let Some(author_names) = update.author_names {
             let existing = books::find_authors(conn, book_id)?;
-            let existing_authors = authors::get_many(conn, existing)?
-                .into_iter()
-                .collect::<Vec<_>>();
+            let existing_authors = authors::get_many(conn, existing)?;
 
             let to_unlink: Vec<AuthorId> = existing_authors
                 .iter()
@@ -66,16 +74,13 @@ pub fn update_book(
 
             for author_name in to_link {
                 let author = authors::create_if_not_exists(conn, author_name.as_str())?;
-
                 authors::link_book(conn, AuthorId(author.id), book_id)?;
             }
         }
 
         if let Some(author_ids) = update.author_ids {
             let existing = books::find_authors(conn, book_id)?;
-            let existing_authors = authors::get_many(conn, existing)?
-                .into_iter()
-                .collect::<Vec<_>>();
+            let existing_authors = authors::get_many(conn, existing)?;
 
             let to_unlink: Vec<AuthorId> = existing_authors
                 .iter()
@@ -107,29 +112,29 @@ pub fn get_book(conn: &mut SqliteConnection, book_id: BookId) -> Result<Book, Ca
     let book_desc = book_descriptions::get(conn, book_id)?;
     let author_ids = books::find_authors(conn, book_id)?;
     let author_models = authors::get_many(conn, author_ids)?;
-    let identifer_models = book_identifiers::get(conn, book_id)?;
+    let identifier_models = book_identifiers::get(conn, book_id)?;
+    let file_models = book_files::find_by_book_id(conn, book_id)?;
 
-    let authors: Vec<crate::library::Author> = author_models
+    let book_authors = to_library_authors(author_models);
+
+    let identifiers: Vec<BookIdentifier> = identifier_models
         .into_iter()
-        .map(|a| crate::library::Author {
-            id: AuthorId(a.id),
-            name: a.name,
-            sort: a.sort.unwrap_or_default(),
-            link: if a.link.is_empty() {
-                None
-            } else {
-                Some(a.link)
-            },
+        .map(|id| BookIdentifier {
+            id: id.id,
+            label: id.type_,
+            value: id.val,
         })
         .collect();
 
-    let identifiers: HashMap<String, String> = identifer_models
+    let files: Vec<BookFileInfo> = file_models
         .into_iter()
-        .map(|id| (id.type_, id.val))
+        .map(|f| BookFileInfo {
+            id: f.id,
+            format: f.format,
+            name: f.name,
+            uncompressed_size: f.uncompressed_size,
+        })
         .collect();
-
-    let files = book_files::find_by_book_id(conn, book_id)?;
-    let file_formats = files.into_iter().map(|f| f.format).collect::<Vec<String>>();
 
     Ok(Book {
         id: BookId(book.id),
@@ -137,12 +142,14 @@ pub fn get_book(conn: &mut SqliteConnection, book_id: BookId) -> Result<Book, Ca
             "Book missing required UUID".to_string(),
         ))?,
         title: book.title,
-        authors,
+        sortable_title: book.sort,
+        authors: book_authors,
         identifiers,
         description: book_desc,
         has_cover: book.has_cover.unwrap_or(false),
-        file_formats,
-        created_at: book.timestamp.unwrap_or_else(|| NaiveDateTime::UNIX_EPOCH),
+        is_read: false, // Populated by Library via read state queries
+        files,
+        created_at: book.timestamp.unwrap_or(NaiveDateTime::UNIX_EPOCH),
         updated_at: book.last_modified,
         book_dir_path: book.path,
     })
@@ -150,15 +157,12 @@ pub fn get_book(conn: &mut SqliteConnection, book_id: BookId) -> Result<Book, Ca
 
 pub fn all(conn: &mut SqliteConnection) -> Result<Vec<Book>, CalibreError> {
     let book_rows = books::all(conn)?;
-    let book_ids = book_rows
-        .iter()
-        .map(|b| BookId(b.id))
-        .collect::<Vec<BookId>>();
+    let book_ids: Vec<BookId> = book_rows.iter().map(|b| BookId(b.id)).collect();
 
     let author_ids_by_book = authors::find_author_ids_by_book_ids(conn, book_ids.clone())?;
-    let book_descriptions = book_descriptions::find_many_by_book_ids(conn, book_ids.clone())?;
-    let identifiers = book_identifiers::find_many_by_book_ids(conn, book_ids.clone())?;
-    let book_files = book_files::find_many_by_book_ids(conn, book_ids)?;
+    let descriptions_map = book_descriptions::find_many_by_book_ids(conn, book_ids.clone())?;
+    let identifiers_map = book_identifiers::find_many_by_book_ids(conn, book_ids.clone())?;
+    let files_map = book_files::find_many_by_book_ids(conn, book_ids)?;
 
     let unique_author_ids: Vec<AuthorId> = author_ids_by_book
         .values()
@@ -168,50 +172,46 @@ pub fn all(conn: &mut SqliteConnection) -> Result<Vec<Book>, CalibreError> {
         .into_iter()
         .collect();
 
-    let authors_by_id = get_authors(conn, unique_author_ids)?;
+    let authors_by_id = get_authors_map(conn, unique_author_ids)?;
 
-    // Assemble books from fetched data
     let mut book_list = Vec::with_capacity(book_rows.len());
 
     for book_row in book_rows {
         let book_id = BookId(book_row.id);
 
         let book_authors = match author_ids_by_book.get(&book_id) {
-            Some(author_ids) => author_ids
+            Some(ids) => ids
                 .iter()
-                .filter_map(|author_id| {
-                    match authors_by_id.get(author_id) {
-                        Some(author) => Some(author.clone()),
-                        None => {
-                            // TODO: Have a better story around logging
-                            eprintln!(
-                                "WARNING: Book {} references missing author {}",
-                                book_id, author_id
-                            );
-                            None
-                        }
-                    }
-                })
+                .filter_map(|author_id| authors_by_id.get(author_id).cloned())
                 .collect(),
             None => Vec::new(),
         };
 
-        let book_description = book_descriptions.get(&book_id).cloned();
-        let book_files = book_files.get(&book_id).cloned().unwrap_or_default();
+        let book_description = descriptions_map.get(&book_id).cloned();
+        let raw_files = files_map.get(&book_id).cloned().unwrap_or_default();
 
-        let book_identifiers = identifiers
+        let book_identifiers = identifiers_map
             .get(&book_id)
             .map(|ids| {
                 ids.iter()
-                    .map(|id| (id.type_.clone(), id.val.clone()))
-                    .collect::<HashMap<String, String>>()
+                    .map(|id| BookIdentifier {
+                        id: id.id,
+                        label: id.type_.clone(),
+                        value: id.val.clone(),
+                    })
+                    .collect()
             })
             .unwrap_or_default();
 
-        let file_formats = book_files
-            .iter()
-            .map(|f| f.format.clone())
-            .collect::<Vec<String>>();
+        let files: Vec<BookFileInfo> = raw_files
+            .into_iter()
+            .map(|f| BookFileInfo {
+                id: f.id,
+                format: f.format,
+                name: f.name,
+                uncompressed_size: f.uncompressed_size,
+            })
+            .collect();
 
         let book_model = Book {
             id: book_id,
@@ -219,14 +219,14 @@ pub fn all(conn: &mut SqliteConnection) -> Result<Vec<Book>, CalibreError> {
                 "Book missing required UUID".to_string(),
             ))?,
             title: book_row.title,
+            sortable_title: book_row.sort,
             authors: book_authors,
             identifiers: book_identifiers,
             description: book_description,
             has_cover: book_row.has_cover.unwrap_or(false),
-            file_formats,
-            created_at: book_row
-                .timestamp
-                .unwrap_or_else(|| NaiveDateTime::UNIX_EPOCH),
+            is_read: false, // Populated by Library via read state queries
+            files,
+            created_at: book_row.timestamp.unwrap_or(NaiveDateTime::UNIX_EPOCH),
             updated_at: book_row.last_modified,
             book_dir_path: book_row.path,
         };
@@ -237,13 +237,25 @@ pub fn all(conn: &mut SqliteConnection) -> Result<Vec<Book>, CalibreError> {
     Ok(book_list)
 }
 
-fn get_authors(
+fn to_library_authors(author_models: Vec<crate::Author>) -> Vec<crate::library::Author> {
+    author_models
+        .into_iter()
+        .map(|a| crate::library::Author {
+            id: AuthorId(a.id),
+            name: a.name,
+            sort: a.sort.unwrap_or_default(),
+            link: if a.link.is_empty() { None } else { Some(a.link) },
+        })
+        .collect()
+}
+
+fn get_authors_map(
     conn: &mut SqliteConnection,
     author_ids: Vec<AuthorId>,
 ) -> Result<HashMap<AuthorId, crate::library::Author>, CalibreError> {
     let authors = authors::get_many(conn, author_ids)?;
 
-    let mapping = authors
+    Ok(authors
         .into_iter()
         .map(|a| {
             (
@@ -252,15 +264,9 @@ fn get_authors(
                     id: AuthorId(a.id),
                     name: a.name,
                     sort: a.sort.unwrap_or_default(),
-                    link: if a.link.is_empty() {
-                        None
-                    } else {
-                        Some(a.link)
-                    },
+                    link: if a.link.is_empty() { None } else { Some(a.link) },
                 },
             )
         })
-        .collect::<HashMap<AuthorId, crate::library::Author>>();
-
-    Ok(mapping)
+        .collect())
 }

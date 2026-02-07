@@ -8,7 +8,6 @@ use std::collections::HashMap;
 use diesel::prelude::*;
 use diesel::{QueryDsl, RunQueryDsl, SqliteConnection};
 
-use crate::library::Book;
 use crate::{types::BookId, CalibreError};
 
 pub(crate) fn get(
@@ -23,42 +22,6 @@ pub(crate) fn get(
         .first(conn)
         .optional()
         .map_err(CalibreError::from)
-}
-
-pub(crate) fn get_many(
-    conn: &mut SqliteConnection,
-    book_ids: Vec<BookId>,
-) -> Result<Vec<(BookId, String)>, CalibreError> {
-    use crate::schema::comments::dsl::*;
-
-    let ids: Vec<i32> = book_ids.iter().map(|bid| bid.as_i32()).collect();
-
-    let results: Vec<(i32, String)> = comments
-        .filter(book.eq_any(ids))
-        .select((book, text))
-        .load(conn)
-        .map_err(CalibreError::from)?;
-
-    let mapped_results: Vec<(BookId, String)> = results
-        .into_iter()
-        .map(|(b_id, desc)| (BookId(b_id), desc))
-        .collect();
-
-    Ok(mapped_results)
-}
-
-pub(crate) fn all(conn: &mut SqliteConnection) -> Result<Vec<(BookId, String)>, CalibreError> {
-    use crate::schema::comments::dsl::*;
-
-    let results: Vec<(i32, String)> = comments
-        .select((book, text))
-        .load(conn)
-        .map_err(CalibreError::from)?;
-    let mapped_results: Vec<(BookId, String)> = results
-        .into_iter()
-        .map(|(b_id, desc)| (BookId(b_id), desc))
-        .collect();
-    Ok(mapped_results)
 }
 
 pub(crate) fn update(

@@ -1,32 +1,28 @@
-mod api;
 mod assets;
-pub mod calibre_client;
 mod cover_image;
-pub mod db;
-pub mod dtos;
 mod entities;
 pub mod error;
 pub mod library;
 pub mod mime_type;
-pub mod models;
+pub(crate) mod models;
 mod operations;
 pub mod persistence;
 mod queries;
-mod schema;
+pub(crate) mod schema;
 pub mod sorting;
 pub mod types;
 pub mod util;
 
-use diesel::SqliteConnection;
-use std::sync::{Arc, Mutex};
-
-pub use entities::{
-    author::Author, book::Book, book_file::BookFile, book_row::BookRow, book_row::NewBook,
-    book_row::UpdateBookData, book_row::UpsertBookIdentifier,
+// Re-export the main API types
+pub use library::{
+    Author as LibraryAuthor, AuthorAdd, AuthorUpdate, Book as LibraryBook, BookAdd,
+    BookFileInfo, BookIdentifier, BookUpdate, Library,
 };
-
+pub use types::{AuthorId, BookFileId, BookId};
 pub use error::CalibreError;
 
-pub struct ClientV2 {
-    connection: Arc<Mutex<SqliteConnection>>,
-}
+// Keep entity exports that are needed internally (for operations/queries)
+pub(crate) use entities::{
+    author::Author, book_file::BookFile, book_row::BookRow, book_row::NewBook,
+    book_row::UpdateBookData,
+};

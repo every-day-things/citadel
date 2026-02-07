@@ -1,16 +1,16 @@
 use std::sync::Mutex;
 
-use libcalibre::calibre_client::CalibreClient;
+use libcalibre::Library;
 
 pub struct CitadelState {
-    client: Mutex<Option<CalibreClient>>,
+    library: Mutex<Option<Library>>,
     current_library_path: Mutex<Option<String>>,
 }
 
 impl CitadelState {
     pub fn new() -> Self {
         Self {
-            client: Mutex::new(None),
+            library: Mutex::new(None),
             current_library_path: Mutex::new(None),
         }
     }
@@ -20,9 +20,9 @@ impl CitadelState {
         let db_path = libcalibre::util::get_db_path(&library_path)
             .ok_or_else(|| format!("Invalid library path: {}", library_path))?;
 
-        let client = CalibreClient::new(db_path);
+        let lib = Library::new(db_path).map_err(|e| format!("Failed to open library: {}", e))?;
 
-        *self.client.lock().expect("Client mutex poisoned") = Some(client);
+        *self.library.lock().expect("Library mutex poisoned") = Some(lib);
         *self
             .current_library_path
             .lock()
@@ -31,14 +31,14 @@ impl CitadelState {
         Ok(())
     }
 
-    /// Execute a function with mutable access to the client
-    pub fn with_client<F, R>(&self, f: F) -> Result<R, String>
+    /// Execute a function with mutable access to the library
+    pub fn with_library<F, R>(&self, f: F) -> Result<R, String>
     where
-        F: FnOnce(&mut CalibreClient) -> R,
+        F: FnOnce(&mut Library) -> R,
     {
-        let mut client_guard = self.client.lock().expect("Client mutex poisoned");
-        match client_guard.as_mut() {
-            Some(client) => Ok(f(client)),
+        let mut lib_guard = self.library.lock().expect("Library mutex poisoned");
+        match lib_guard.as_mut() {
+            Some(lib) => Ok(f(lib)),
             None => Err("No library initialized. Please load a library first.".to_string()),
         }
     }
@@ -53,6 +53,6 @@ impl CitadelState {
 
     /// Check if a library is currently loaded
     pub fn is_initialized(&self) -> bool {
-        self.client.lock().expect("Client mutex poisoned").is_some()
+        self.library.lock().expect("Library mutex poisoned").is_some()
     }
 }

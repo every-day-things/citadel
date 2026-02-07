@@ -18,7 +18,7 @@ pub fn clb_query_list_all_books(
         .get_library_path()
         .ok_or("No library loaded".to_string())?;
 
-    state.with_client(|client| book::list_all(library_root, client))
+    state.with_library(|lib| book::list_all(library_root, lib))
 }
 
 #[tauri::command]
@@ -27,9 +27,8 @@ pub fn clb_query_list_all_authors(
     state: tauri::State<CitadelState>,
 ) -> Result<Vec<LibraryAuthor>, String> {
     state
-        .with_client(|client| {
-            client
-                .list_all_authors()
+        .with_library(|lib| {
+            lib.authors()
                 .map(|author_list| author_list.iter().map(LibraryAuthor::from).collect())
         })
         .and_then(|result| result.map_err(|e| format!("Failed to list authors: {}", e)))
@@ -50,8 +49,6 @@ pub fn clb_query_importable_file_metadata(file: ImportableFile) -> Option<Import
 }
 #[tauri::command]
 #[specta::specta]
-/// Lists all importable file types. Those are files that Citadel knows how
-/// to import, and that libcalibre supports.
 pub fn clb_query_list_all_filetypes() -> Vec<(String, String)> {
     file_formats::SupportedFormats::list_all()
         .iter()

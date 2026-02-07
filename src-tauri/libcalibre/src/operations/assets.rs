@@ -153,7 +153,7 @@ pub fn remove_book_file(
     })
 }
 
-fn delete_entire_book(
+pub(crate) fn delete_entire_book(
     library_root: &String,
     conn: &mut SqliteConnection,
     book_id: BookId,

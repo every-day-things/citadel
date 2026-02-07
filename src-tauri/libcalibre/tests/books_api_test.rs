@@ -1,778 +1,359 @@
-// Tests for BooksHandler API methods to improve code coverage
+// Tests for Library book API methods
 mod common;
 
-use common::setup_with_client_v2;
-use libcalibre::dtos::author::NewAuthorDto;
-use libcalibre::{NewBook, UpdateBookData, UpsertBookIdentifier};
+use common::setup_with_library;
+use libcalibre::{AuthorAdd, BookAdd, BookId, BookUpdate};
+use std::collections::HashMap;
+
+fn empty_book(title: &str) -> BookAdd {
+    BookAdd {
+        title: title.to_string(),
+        author_names: vec![],
+        tags: None,
+        series: None,
+        series_index: None,
+        publisher: None,
+        publication_date: None,
+        rating: None,
+        comments: None,
+        identifiers: HashMap::new(),
+        file_paths: vec![],
+    }
+}
+
+fn empty_update() -> BookUpdate {
+    BookUpdate {
+        title: None,
+        author_names: None,
+        author_ids: None,
+        description: None,
+        is_read: None,
+        tags: None,
+        series: None,
+        series_index: None,
+        publisher: None,
+        publication_date: None,
+        rating: None,
+        comments: None,
+        identifiers: None,
+    }
+}
 
 #[test]
-fn test_create_book() {
-    let (_temp, mut client) = setup_with_client_v2();
-    let books_handler = client.books();
+fn test_add_book() {
+    let (_temp, mut lib) = setup_with_library();
 
-    let new_book = NewBook {
-        title: "Test Book".to_string(),
-        timestamp: None,
-        pubdate: None,
-        series_index: 1.0,
-        flags: 1,
-        has_cover: None,
-    };
-
-    let result = books_handler.create(new_book);
+    let result = lib.add_book(empty_book("Test Book"));
     assert!(result.is_ok());
 
     let book = result.unwrap();
     assert_eq!(book.title, "Test Book");
-    assert!(book.id > 0);
-    assert!(book.uuid.is_some());
+    assert!(!book.uuid.is_empty());
 }
 
 #[test]
 fn test_list_books_empty() {
-    let (_temp, mut client) = setup_with_client_v2();
-    let books_handler = client.books();
+    let (_temp, mut lib) = setup_with_library();
 
-    let result = books_handler.list();
+    let result = lib.books();
     assert!(result.is_ok());
     assert_eq!(result.unwrap().len(), 0);
 }
 
 #[test]
 fn test_list_books_with_data() {
-    let (_temp, mut client) = setup_with_client_v2();
-    let books_handler = client.books();
+    let (_temp, mut lib) = setup_with_library();
 
-    // Create a few books
-    books_handler
-        .create(NewBook {
-            title: "Book 1".to_string(),
-            timestamp: None,
-            pubdate: None,
-            series_index: 1.0,
-            flags: 1,
-            has_cover: None,
-        })
-        .unwrap();
+    lib.add_book(empty_book("Book 1")).unwrap();
+    lib.add_book(empty_book("Book 2")).unwrap();
 
-    books_handler
-        .create(NewBook {
-            title: "Book 2".to_string(),
-            timestamp: None,
-            pubdate: None,
-            series_index: 1.0,
-            flags: 1,
-            has_cover: None,
-        })
-        .unwrap();
-
-    let result = books_handler.list();
+    let result = lib.books();
     assert!(result.is_ok());
     assert_eq!(result.unwrap().len(), 2);
 }
 
 #[test]
-fn test_find_by_id_exists() {
-    let (_temp, mut client) = setup_with_client_v2();
-    let mut books_handler = client.books();
+fn test_get_book_exists() {
+    let (_temp, mut lib) = setup_with_library();
 
-    let created = books_handler
-        .create(NewBook {
-            title: "Findable Book".to_string(),
-            timestamp: None,
-            pubdate: None,
-            series_index: 1.0,
-            flags: 1,
-            has_cover: None,
-        })
-        .unwrap();
+    let created = lib.add_book(empty_book("Findable Book")).unwrap();
 
-    let result = books_handler.find_by_id(created.id);
+    let result = lib.get_book(created.id);
     assert!(result.is_ok());
-
-    let found = result.unwrap();
-    assert!(found.is_some());
-    assert_eq!(found.unwrap().title, "Findable Book");
+    assert_eq!(result.unwrap().title, "Findable Book");
 }
 
 #[test]
-fn test_find_by_id_not_exists() {
-    let (_temp, mut client) = setup_with_client_v2();
-    let mut books_handler = client.books();
+fn test_get_book_not_exists() {
+    let (_temp, mut lib) = setup_with_library();
 
-    let result = books_handler.find_by_id(9999);
-    assert!(result.is_ok());
-    assert!(result.unwrap().is_none());
-}
-
-#[test]
-fn test_update_book() {
-    let (_temp, mut client) = setup_with_client_v2();
-    let mut books_handler = client.books();
-
-    let created = books_handler
-        .create(NewBook {
-            title: "Original Title".to_string(),
-            timestamp: None,
-            pubdate: None,
-            series_index: 1.0,
-            flags: 1,
-            has_cover: None,
-        })
-        .unwrap();
-
-    let update = UpdateBookData {
-        title: Some("Updated Title".to_string()),
-        author_sort: Some("Test Author".to_string()),
-        ..Default::default()
-    };
-
-    let result = books_handler.update(created.id, update);
-    assert!(result.is_ok());
-
-    let updated = result.unwrap();
-    assert_eq!(updated.title, "Updated Title");
-    assert_eq!(updated.author_sort, Some("Test Author".to_string()));
-}
-
-#[test]
-fn test_update_nonexistent_book() {
-    let (_temp, mut client) = setup_with_client_v2();
-    let mut books_handler = client.books();
-
-    let update = UpdateBookData {
-        title: Some("Test".to_string()),
-        ..Default::default()
-    };
-
-    let result = books_handler.update(9999, update);
+    let result = lib.get_book(BookId::from(9999));
     assert!(result.is_err());
 }
 
 #[test]
-fn test_link_author_to_book() {
-    let (_temp, mut client) = setup_with_client_v2();
+fn test_update_book_title() {
+    let (_temp, mut lib) = setup_with_library();
 
-    // Create a book
-    let book = client
-        .books()
-        .create(NewBook {
-            title: "Test Book".to_string(),
-            timestamp: None,
-            pubdate: None,
-            series_index: 1.0,
-            flags: 1,
-            has_cover: None,
-        })
-        .unwrap();
+    let created = lib.add_book(empty_book("Original Title")).unwrap();
 
-    // Create an author
-    let author = client
-        .authors()
-        .create(NewAuthorDto {
-            full_name: "Test Author".to_string(),
-            sortable_name: "Author, Test".to_string(),
-            external_url: None,
-        })
-        .unwrap();
-
-    // Link them
-    let result = client.books().link_author_to_book(book.id, author.id);
+    let result = lib.update_book(
+        created.id,
+        BookUpdate {
+            title: Some("Updated Title".to_string()),
+            ..empty_update()
+        },
+    );
     assert!(result.is_ok());
+    assert_eq!(result.unwrap().title, "Updated Title");
 }
 
 #[test]
-fn test_find_author_ids_by_book_id() {
-    let (_temp, mut client) = setup_with_client_v2();
+fn test_update_nonexistent_book() {
+    let (_temp, mut lib) = setup_with_library();
 
-    // Create a book
-    let book = client
-        .books()
-        .create(NewBook {
-            title: "Test Book".to_string(),
-            timestamp: None,
-            pubdate: None,
-            series_index: 1.0,
-            flags: 1,
-            has_cover: None,
-        })
-        .unwrap();
+    let result = lib.update_book(
+        BookId::from(9999),
+        BookUpdate {
+            title: Some("Test".to_string()),
+            ..empty_update()
+        },
+    );
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_update_book_authors_by_id() {
+    let (_temp, mut lib) = setup_with_library();
+
+    let book = lib.add_book(empty_book("Test Book")).unwrap();
 
     // Create authors
-    let author1 = client
-        .authors()
-        .create(NewAuthorDto {
-            full_name: "Author One".to_string(),
-            sortable_name: "One, Author".to_string(),
-            external_url: None,
+    let author1_id = lib
+        .add_author(AuthorAdd {
+            name: "Author One".to_string(),
+            sort: Some("One, Author".to_string()),
+            link: None,
         })
         .unwrap();
 
-    let author2 = client
-        .authors()
-        .create(NewAuthorDto {
-            full_name: "Author Two".to_string(),
-            sortable_name: "Two, Author".to_string(),
-            external_url: None,
+    let author2_id = lib
+        .add_author(AuthorAdd {
+            name: "Author Two".to_string(),
+            sort: Some("Two, Author".to_string()),
+            link: None,
         })
         .unwrap();
 
-    // Link them
-    client
-        .books()
-        .link_author_to_book(book.id, author1.id)
-        .unwrap();
-    client
-        .books()
-        .link_author_to_book(book.id, author2.id)
+    // Link authors to book via update
+    let updated = lib
+        .update_book(
+            book.id,
+            BookUpdate {
+                author_ids: Some(vec![author1_id, author2_id]),
+                ..empty_update()
+            },
+        )
         .unwrap();
 
-    // Find author IDs
-    let result = client.books().find_author_ids_by_book_id(book.id);
-    assert!(result.is_ok());
-
-    let author_ids = result.unwrap();
-    assert_eq!(author_ids.len(), 2);
-    assert!(author_ids.contains(&author1.id));
-    assert!(author_ids.contains(&author2.id));
+    assert_eq!(updated.authors.len(), 2);
 }
 
 #[test]
-fn test_unlink_author_from_book() {
-    let (_temp, mut client) = setup_with_client_v2();
+fn test_update_book_description() {
+    let (_temp, mut lib) = setup_with_library();
 
-    // Create a book and author
-    let book = client
-        .books()
-        .create(NewBook {
-            title: "Test Book".to_string(),
-            timestamp: None,
-            pubdate: None,
-            series_index: 1.0,
-            flags: 1,
-            has_cover: None,
-        })
+    let book = lib.add_book(empty_book("Test Book")).unwrap();
+    assert!(book.description.is_none());
+
+    let updated = lib
+        .update_book(
+            book.id,
+            BookUpdate {
+                description: Some("A great book.".to_string()),
+                ..empty_update()
+            },
+        )
         .unwrap();
+    assert_eq!(updated.description, Some("A great book.".to_string()));
 
-    let author = client
-        .authors()
-        .create(NewAuthorDto {
-            full_name: "Test Author".to_string(),
-            sortable_name: "Author, Test".to_string(),
-            external_url: None,
-        })
-        .unwrap();
-
-    // Link them
-    client
-        .books()
-        .link_author_to_book(book.id, author.id)
-        .unwrap();
-
-    // Verify link
-    let author_ids = client.books().find_author_ids_by_book_id(book.id).unwrap();
-    assert_eq!(author_ids.len(), 1);
-
-    // Unlink
-    let result = client.books().unlink_author_from_book(book.id, author.id);
-    assert!(result.is_ok());
-
-    // Verify unlinked
-    let author_ids = client.books().find_author_ids_by_book_id(book.id).unwrap();
-    assert_eq!(author_ids.len(), 0);
+    // Verify via get_book
+    let fetched = lib.get_book(book.id).unwrap();
+    assert_eq!(fetched.description, Some("A great book.".to_string()));
 }
 
 #[test]
-fn test_create_book_identifier() {
-    let (_temp, mut client) = setup_with_client_v2();
+fn test_update_book_read_state() {
+    let (_temp, mut lib) = setup_with_library();
 
-    let book = client
-        .books()
-        .create(NewBook {
-            title: "Test Book".to_string(),
-            timestamp: None,
-            pubdate: None,
-            series_index: 1.0,
-            flags: 1,
-            has_cover: None,
-        })
+    let book = lib.add_book(empty_book("Test Book")).unwrap();
+    assert!(!book.is_read);
+
+    // Mark as read
+    let updated = lib
+        .update_book(
+            book.id,
+            BookUpdate {
+                is_read: Some(true),
+                ..empty_update()
+            },
+        )
         .unwrap();
+    assert!(updated.is_read);
 
-    let upsert = UpsertBookIdentifier {
-        book_id: book.id,
-        id: None,
-        label: "ISBN".to_string(),
-        value: "978-0-123456-78-9".to_string(),
-    };
+    // Verify via get_book
+    let fetched = lib.get_book(book.id).unwrap();
+    assert!(fetched.is_read);
 
-    let result = client.books().upsert_book_identifier(upsert);
-    assert!(result.is_ok());
-    assert!(result.unwrap() > 0);
+    // Mark as unread
+    let updated = lib
+        .update_book(
+            book.id,
+            BookUpdate {
+                is_read: Some(false),
+                ..empty_update()
+            },
+        )
+        .unwrap();
+    assert!(!updated.is_read);
 }
 
 #[test]
-fn test_update_book_identifier() {
-    let (_temp, mut client) = setup_with_client_v2();
+fn test_upsert_book_identifier_create() {
+    let (_temp, mut lib) = setup_with_library();
 
-    let book = client
-        .books()
-        .create(NewBook {
-            title: "Test Book".to_string(),
-            timestamp: None,
-            pubdate: None,
-            series_index: 1.0,
-            flags: 1,
-            has_cover: None,
-        })
-        .unwrap();
+    let book = lib.add_book(empty_book("Test Book")).unwrap();
 
-    // Create identifier
-    let identifier_id = client
-        .books()
-        .upsert_book_identifier(UpsertBookIdentifier {
-            book_id: book.id,
-            id: None,
-            label: "ISBN".to_string(),
-            value: "978-0-123456-78-9".to_string(),
-        })
-        .unwrap();
-
-    // Update identifier
-    let result = client.books().upsert_book_identifier(UpsertBookIdentifier {
-        book_id: book.id,
-        id: Some(identifier_id),
-        label: "ISBN".to_string(),
-        value: "978-0-987654-32-1".to_string(),
-    });
-
+    let result = lib.upsert_book_identifier(
+        book.id,
+        "ISBN".to_string(),
+        "978-0-123456-78-9".to_string(),
+        None,
+    );
     assert!(result.is_ok());
-    assert_eq!(result.unwrap(), identifier_id);
+
+    // Verify via get_book
+    let fetched = lib.get_book(book.id).unwrap();
+    assert_eq!(fetched.identifiers.len(), 1);
+    assert_eq!(fetched.identifiers[0].label, "isbn"); // Calibre stores labels lowercase
+    assert_eq!(fetched.identifiers[0].value, "978-0-123456-78-9");
 }
 
 #[test]
-fn test_list_identifiers_for_book() {
-    let (_temp, mut client) = setup_with_client_v2();
+fn test_upsert_book_identifier_update() {
+    let (_temp, mut lib) = setup_with_library();
 
-    let book = client
-        .books()
-        .create(NewBook {
-            title: "Test Book".to_string(),
-            timestamp: None,
-            pubdate: None,
-            series_index: 1.0,
-            flags: 1,
-            has_cover: None,
-        })
-        .unwrap();
+    let book = lib.add_book(empty_book("Test Book")).unwrap();
 
-    // Create identifiers
-    client
-        .books()
-        .upsert_book_identifier(UpsertBookIdentifier {
-            book_id: book.id,
-            id: None,
-            label: "ISBN".to_string(),
-            value: "978-0-123456-78-9".to_string(),
-        })
-        .unwrap();
+    // Create
+    lib.upsert_book_identifier(
+        book.id,
+        "ISBN".to_string(),
+        "978-0-123456-78-9".to_string(),
+        None,
+    )
+    .unwrap();
 
-    client
-        .books()
-        .upsert_book_identifier(UpsertBookIdentifier {
-            book_id: book.id,
-            id: None,
-            label: "ASIN".to_string(),
-            value: "B00ABCDEFG".to_string(),
-        })
-        .unwrap();
+    let fetched = lib.get_book(book.id).unwrap();
+    let identifier_id = fetched.identifiers[0].id;
 
-    let result = client.books().list_identifiers_for_book(book.id);
-    assert!(result.is_ok());
+    // Update
+    lib.upsert_book_identifier(
+        book.id,
+        "ISBN".to_string(),
+        "978-0-987654-32-1".to_string(),
+        Some(identifier_id),
+    )
+    .unwrap();
 
-    let identifiers = result.unwrap();
-    assert_eq!(identifiers.len(), 2);
+    let fetched = lib.get_book(book.id).unwrap();
+    assert_eq!(fetched.identifiers.len(), 1);
+    assert_eq!(fetched.identifiers[0].value, "978-0-987654-32-1");
 }
 
 #[test]
 fn test_delete_book_identifier() {
-    let (_temp, mut client) = setup_with_client_v2();
+    let (_temp, mut lib) = setup_with_library();
 
-    let book = client
-        .books()
-        .create(NewBook {
-            title: "Test Book".to_string(),
-            timestamp: None,
-            pubdate: None,
-            series_index: 1.0,
-            flags: 1,
-            has_cover: None,
-        })
-        .unwrap();
+    let book = lib.add_book(empty_book("Test Book")).unwrap();
 
-    let identifier_id = client
-        .books()
-        .upsert_book_identifier(UpsertBookIdentifier {
-            book_id: book.id,
-            id: None,
-            label: "ISBN".to_string(),
-            value: "978-0-123456-78-9".to_string(),
-        })
-        .unwrap();
+    lib.upsert_book_identifier(
+        book.id,
+        "ISBN".to_string(),
+        "978-0-123456-78-9".to_string(),
+        None,
+    )
+    .unwrap();
 
-    let result = client
-        .books()
-        .delete_book_identifier(book.id, identifier_id);
+    let fetched = lib.get_book(book.id).unwrap();
+    let identifier_id = fetched.identifiers[0].id;
+
+    let result = lib.delete_book_identifier(book.id, identifier_id);
     assert!(result.is_ok());
 
     // Verify deleted
-    let identifiers = client.books().list_identifiers_for_book(book.id).unwrap();
-    assert_eq!(identifiers.len(), 0);
+    let fetched = lib.get_book(book.id).unwrap();
+    assert_eq!(fetched.identifiers.len(), 0);
 }
 
 #[test]
-fn test_get_description_none() {
-    let (_temp, mut client) = setup_with_client_v2();
+fn test_remove_books() {
+    let (_temp, mut lib) = setup_with_library();
 
-    let book = client
-        .books()
-        .create(NewBook {
-            title: "Test Book".to_string(),
-            timestamp: None,
-            pubdate: None,
-            series_index: 1.0,
-            flags: 1,
-            has_cover: None,
-        })
-        .unwrap();
+    let book1 = lib.add_book(empty_book("Book 1")).unwrap();
+    let book2 = lib.add_book(empty_book("Book 2")).unwrap();
 
-    let result = client.books().get_description(book.id);
-    assert!(result.is_ok());
-    assert!(result.unwrap().is_none());
+    assert_eq!(lib.books().unwrap().len(), 2);
+
+    lib.remove_books(vec![book1.id, book2.id]).unwrap();
+
+    assert_eq!(lib.books().unwrap().len(), 0);
 }
 
 #[test]
-fn test_set_and_get_description() {
-    let (_temp, mut client) = setup_with_client_v2();
+fn test_add_book_with_authors() {
+    let (_temp, mut lib) = setup_with_library();
 
-    let book = client
-        .books()
-        .create(NewBook {
-            title: "Test Book".to_string(),
-            timestamp: None,
-            pubdate: None,
-            series_index: 1.0,
-            flags: 1,
-            has_cover: None,
+    let book = lib
+        .add_book(BookAdd {
+            title: "Multi-Author Book".to_string(),
+            author_names: vec!["Author One".to_string(), "Author Two".to_string()],
+            tags: None,
+            series: None,
+            series_index: None,
+            publisher: None,
+            publication_date: None,
+            rating: None,
+            comments: None,
+            identifiers: HashMap::new(),
+            file_paths: vec![],
         })
         .unwrap();
 
-    let description = "This is a test book description.";
-
-    let result = client.books().set_description(book.id, description);
-    assert!(result.is_ok());
-
-    let result = client.books().get_description(book.id);
-    assert!(result.is_ok());
-    assert_eq!(result.unwrap(), Some(description.to_string()));
+    assert_eq!(book.authors.len(), 2);
+    assert_eq!(lib.authors().unwrap().len(), 2);
 }
 
 #[test]
-fn test_update_description() {
-    let (_temp, mut client) = setup_with_client_v2();
+fn test_books_returns_read_state() {
+    let (_temp, mut lib) = setup_with_library();
 
-    let book = client
-        .books()
-        .create(NewBook {
-            title: "Test Book".to_string(),
-            timestamp: None,
-            pubdate: None,
-            series_index: 1.0,
-            flags: 1,
-            has_cover: None,
-        })
-        .unwrap();
+    let book1 = lib.add_book(empty_book("Book 1")).unwrap();
+    let book2 = lib.add_book(empty_book("Book 2")).unwrap();
 
-    // Set initial description
-    client
-        .books()
-        .set_description(book.id, "Original description")
-        .unwrap();
+    lib.update_book(
+        book1.id,
+        BookUpdate {
+            is_read: Some(true),
+            ..empty_update()
+        },
+    )
+    .unwrap();
 
-    // Update description
-    let updated_description = "Updated description";
-    let result = client.books().set_description(book.id, updated_description);
-    assert!(result.is_ok());
+    let all_books = lib.books().unwrap();
+    let b1 = all_books.iter().find(|b| b.id == book1.id).unwrap();
+    let b2 = all_books.iter().find(|b| b.id == book2.id).unwrap();
 
-    let result = client.books().get_description(book.id);
-    assert_eq!(result.unwrap(), Some(updated_description.to_string()));
-}
-
-#[test]
-fn test_get_book_read_state_default() {
-    let (_temp, mut client) = setup_with_client_v2();
-
-    let book = client
-        .books()
-        .create(NewBook {
-            title: "Test Book".to_string(),
-            timestamp: None,
-            pubdate: None,
-            series_index: 1.0,
-            flags: 1,
-            has_cover: None,
-        })
-        .unwrap();
-
-    let result = client.books().get_book_read_state(book.id);
-    assert!(result.is_ok());
-    // Default should be false
-    assert_eq!(result.unwrap(), Some(false));
-}
-
-#[test]
-fn test_set_and_get_book_read_state() {
-    let (_temp, mut client) = setup_with_client_v2();
-
-    let book = client
-        .books()
-        .create(NewBook {
-            title: "Test Book".to_string(),
-            timestamp: None,
-            pubdate: None,
-            series_index: 1.0,
-            flags: 1,
-            has_cover: None,
-        })
-        .unwrap();
-
-    // Set as read
-    let result = client.books().set_book_read_state(book.id, true);
-    assert!(result.is_ok());
-
-    let result = client.books().get_book_read_state(book.id);
-    assert_eq!(result.unwrap(), Some(true));
-
-    // Toggle to unread
-    let result = client.books().set_book_read_state(book.id, false);
-    assert!(result.is_ok());
-
-    let result = client.books().get_book_read_state(book.id);
-    assert_eq!(result.unwrap(), Some(false));
-}
-
-#[test]
-fn test_batch_get_descriptions_empty() {
-    let (_temp, mut client) = setup_with_client_v2();
-    let mut books_handler = client.books();
-
-    let result = books_handler.batch_get_descriptions(&[]);
-    assert!(result.is_ok());
-    assert_eq!(result.unwrap().len(), 0);
-}
-
-#[test]
-fn test_batch_get_descriptions() {
-    let (_temp, mut client) = setup_with_client_v2();
-
-    let book1 = client
-        .books()
-        .create(NewBook {
-            title: "Book 1".to_string(),
-            timestamp: None,
-            pubdate: None,
-            series_index: 1.0,
-            flags: 1,
-            has_cover: None,
-        })
-        .unwrap();
-
-    let book2 = client
-        .books()
-        .create(NewBook {
-            title: "Book 2".to_string(),
-            timestamp: None,
-            pubdate: None,
-            series_index: 1.0,
-            flags: 1,
-            has_cover: None,
-        })
-        .unwrap();
-
-    client
-        .books()
-        .set_description(book1.id, "Description 1")
-        .unwrap();
-    client
-        .books()
-        .set_description(book2.id, "Description 2")
-        .unwrap();
-
-    let result = client.books().batch_get_descriptions(&[book1.id, book2.id]);
-    assert!(result.is_ok());
-
-    let descriptions = result.unwrap();
-    assert_eq!(descriptions.len(), 2);
-    assert_eq!(
-        descriptions.get(&book1.id),
-        Some(&"Description 1".to_string())
-    );
-    assert_eq!(
-        descriptions.get(&book2.id),
-        Some(&"Description 2".to_string())
-    );
-}
-
-#[test]
-fn test_batch_get_author_links_empty() {
-    let (_temp, mut client) = setup_with_client_v2();
-    let mut books_handler = client.books();
-
-    let result = books_handler.batch_get_author_links(&[]);
-    assert!(result.is_ok());
-    assert_eq!(result.unwrap().len(), 0);
-}
-
-#[test]
-fn test_batch_get_author_links() {
-    let (_temp, mut client) = setup_with_client_v2();
-
-    let book1 = client
-        .books()
-        .create(NewBook {
-            title: "Book 1".to_string(),
-            timestamp: None,
-            pubdate: None,
-            series_index: 1.0,
-            flags: 1,
-            has_cover: None,
-        })
-        .unwrap();
-
-    let author1 = client
-        .authors()
-        .create(NewAuthorDto {
-            full_name: "Author 1".to_string(),
-            sortable_name: "1, Author".to_string(),
-            external_url: None,
-        })
-        .unwrap();
-
-    let author2 = client
-        .authors()
-        .create(NewAuthorDto {
-            full_name: "Author 2".to_string(),
-            sortable_name: "2, Author".to_string(),
-            external_url: None,
-        })
-        .unwrap();
-
-    client
-        .books()
-        .link_author_to_book(book1.id, author1.id)
-        .unwrap();
-    client
-        .books()
-        .link_author_to_book(book1.id, author2.id)
-        .unwrap();
-
-    let result = client.books().batch_get_author_links(&[book1.id]);
-    assert!(result.is_ok());
-
-    let links = result.unwrap();
-    assert_eq!(links.len(), 1);
-    assert_eq!(links.get(&book1.id).unwrap().len(), 2);
-}
-
-#[test]
-fn test_batch_get_read_states_empty() {
-    let (_temp, mut client) = setup_with_client_v2();
-    let mut books_handler = client.books();
-
-    let result = books_handler.batch_get_read_states(&[]);
-    assert!(result.is_ok());
-    assert_eq!(result.unwrap().len(), 0);
-}
-
-#[test]
-fn test_batch_get_read_states() {
-    let (_temp, mut client) = setup_with_client_v2();
-
-    let book1 = client
-        .books()
-        .create(NewBook {
-            title: "Book 1".to_string(),
-            timestamp: None,
-            pubdate: None,
-            series_index: 1.0,
-            flags: 1,
-            has_cover: None,
-        })
-        .unwrap();
-
-    let book2 = client
-        .books()
-        .create(NewBook {
-            title: "Book 2".to_string(),
-            timestamp: None,
-            pubdate: None,
-            series_index: 1.0,
-            flags: 1,
-            has_cover: None,
-        })
-        .unwrap();
-
-    client.books().set_book_read_state(book1.id, true).unwrap();
-    client.books().set_book_read_state(book2.id, false).unwrap();
-
-    let result = client.books().batch_get_read_states(&[book1.id, book2.id]);
-    assert!(result.is_ok());
-
-    let states = result.unwrap();
-    assert_eq!(states.len(), 2);
-    assert_eq!(states.get(&book1.id), Some(&true));
-    assert_eq!(states.get(&book2.id), Some(&false));
-}
-
-#[test]
-fn test_batch_get_identifiers_empty() {
-    let (_temp, mut client) = setup_with_client_v2();
-    let mut books_handler = client.books();
-
-    let result = books_handler.batch_get_identifiers(&[]);
-    assert!(result.is_ok());
-    assert_eq!(result.unwrap().len(), 0);
-}
-
-#[test]
-fn test_batch_get_identifiers() {
-    let (_temp, mut client) = setup_with_client_v2();
-
-    let book1 = client
-        .books()
-        .create(NewBook {
-            title: "Book 1".to_string(),
-            timestamp: None,
-            pubdate: None,
-            series_index: 1.0,
-            flags: 1,
-            has_cover: None,
-        })
-        .unwrap();
-
-    client
-        .books()
-        .upsert_book_identifier(UpsertBookIdentifier {
-            book_id: book1.id,
-            id: None,
-            label: "ISBN".to_string(),
-            value: "978-0-123456-78-9".to_string(),
-        })
-        .unwrap();
-
-    let result = client.books().batch_get_identifiers(&[book1.id]);
-    assert!(result.is_ok());
-
-    let identifiers = result.unwrap();
-    assert_eq!(identifiers.len(), 1);
-    assert_eq!(identifiers.get(&book1.id).unwrap().len(), 1);
+    assert!(b1.is_read);
+    assert!(!b2.is_read);
 }
