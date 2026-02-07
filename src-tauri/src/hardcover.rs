@@ -77,8 +77,11 @@ pub async fn test_hardcover_connection(api_key: String) -> Result<HardcoverApiSt
         .await
         .map_err(|e| format!("Failed to read response: {}", e))?;
 
-    log::debug!("Hardcover response status: {}", status_code);
-    log::debug!("Hardcover response body: {}", response_text);
+    log::debug!(
+        "Hardcover connection test: status={}, body_len={}",
+        status_code,
+        response_text.len()
+    );
 
     // Check if the response contains errors
     if !status_code.is_success() {
@@ -142,19 +145,15 @@ pub async fn fetch_hardcover_metadata_by_isbn(
         return Err("ISBN is empty".to_string());
     }
 
-    // GraphQL query to search for book by ISBN
-    // Use the search API which handles ISBN lookups
-    let query = format!(
-        r#"
-        query {{
-            search(query: "{}", query_type: BOOK) {{
+    // GraphQL query to search for book by ISBN, using variables to avoid injection
+    let query = r#"
+        query SearchByIsbn($isbn: String!) {
+            search(query: $isbn, query_type: BOOK) {
                 ids
                 results
-            }}
-        }}
-        "#,
-        isbn
-    );
+            }
+        }
+    "#;
 
     // Handle case where user copied "Bearer <token>" from Hardcover
     let auth_header = if api_key.starts_with("Bearer ") {
@@ -169,7 +168,8 @@ pub async fn fetch_hardcover_metadata_by_isbn(
         .header("authorization", auth_header)
         .header("content-type", "application/json")
         .json(&json!({
-            "query": query
+            "query": query,
+            "variables": { "isbn": isbn }
         }))
         .send()
         .await
@@ -180,7 +180,11 @@ pub async fn fetch_hardcover_metadata_by_isbn(
         .await
         .map_err(|e| format!("Failed to read response: {}", e))?;
 
-    log::debug!("Hardcover ISBN search for '{}': {}", isbn, response_text);
+    log::debug!(
+        "Hardcover ISBN search for '{}': body_len={}",
+        isbn,
+        response_text.len()
+    );
 
     let json_response: serde_json::Value = serde_json::from_str(&response_text)
         .map_err(|e| format!("Failed to parse response: {}", e))?;
@@ -290,18 +294,15 @@ pub async fn search_hardcover_books(
         return Err("Search query is empty".to_string());
     }
 
-    // GraphQL query to search for books
-    let graphql_query = format!(
-        r#"
-        query {{
-            search(query: "{}", query_type: BOOK) {{
+    // GraphQL query to search for books, using variables to avoid injection
+    let graphql_query = r#"
+        query SearchBooks($query: String!) {
+            search(query: $query, query_type: BOOK) {
                 ids
                 results
-            }}
-        }}
-        "#,
-        query.replace('"', "\\\"") // Escape quotes in the query
-    );
+            }
+        }
+    "#;
 
     // Handle case where user copied "Bearer <token>" from Hardcover
     let auth_header = if api_key.starts_with("Bearer ") {
@@ -316,7 +317,8 @@ pub async fn search_hardcover_books(
         .header("authorization", auth_header)
         .header("content-type", "application/json")
         .json(&json!({
-            "query": graphql_query
+            "query": graphql_query,
+            "variables": { "query": query }
         }))
         .send()
         .await
@@ -327,7 +329,11 @@ pub async fn search_hardcover_books(
         .await
         .map_err(|e| format!("Failed to read response: {}", e))?;
 
-    log::debug!("Hardcover book search for '{}': {}", query, response_text);
+    log::debug!(
+        "Hardcover book search for '{}': body_len={}",
+        query,
+        response_text.len()
+    );
 
     let json_response: serde_json::Value = serde_json::from_str(&response_text)
         .map_err(|e| format!("Failed to parse response: {}", e))?;
