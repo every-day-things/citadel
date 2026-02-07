@@ -34,7 +34,6 @@ pub fn update_book(
                 series_index: update.series_index,
 
                 author_sort: None,
-                flags: None,
                 has_cover: None,
                 timestamp: None,
                 path: None,

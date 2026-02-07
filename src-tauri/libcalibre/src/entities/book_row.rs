@@ -18,7 +18,6 @@ pub struct BookRow {
     pub series_index: f32,
     pub author_sort: Option<String>,
     pub path: String,
-    pub flags: i32,
     pub has_cover: Option<bool>,
     pub last_modified: NaiveDateTime,
 }
@@ -31,7 +30,6 @@ pub struct NewBook {
     pub timestamp: Option<NaiveDateTime>,
     pub pubdate: Option<NaiveDateTime>,
     pub series_index: f32,
-    pub flags: i32,
     pub has_cover: Option<bool>,
 }
 
@@ -44,6 +42,5 @@ pub struct UpdateBookData {
     pub pubdate: Option<NaiveDateTime>,
     pub series_index: Option<f32>,
     pub path: Option<String>,
-    pub flags: Option<i32>,
     pub has_cover: Option<bool>,
 }

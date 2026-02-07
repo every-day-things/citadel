@@ -162,7 +162,6 @@ impl Library {
                 .publication_date
                 .map(|d| NaiveDateTime::new(d, chrono::NaiveTime::from_hms_opt(0, 0, 0).unwrap())),
             series_index: book.series_index.unwrap_or(1.0),
-            flags: 0,
             has_cover: None,
         };
         let book_row = book_queries::create(&mut self.conn, new_book)?;
