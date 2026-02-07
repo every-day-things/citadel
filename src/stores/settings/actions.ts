@@ -20,3 +20,7 @@ export const setTheme = (theme: "dark" | "light" | "auto"): Promise<void> => {
 export const setStartFullscreen = (enabled: boolean): Promise<void> => {
 	return useSettings.getState().setStartFullscreen(enabled);
 };
+
+export const setHardcoverApiKey = (apiKey: string): Promise<void> => {
+	return useSettings.getState().setHardcoverApiKey(apiKey);
+};

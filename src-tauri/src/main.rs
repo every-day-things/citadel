@@ -13,6 +13,7 @@ pub mod libs {
     mod util;
 }
 mod book;
+mod hardcover;
 mod state;
 
 fn run_tauri_backend() -> std::io::Result<()> {
@@ -36,6 +37,10 @@ fn run_tauri_backend() -> std::io::Result<()> {
         calibre::command::clb_cmd_create_authors,
         calibre::command::clb_cmd_update_author,
         calibre::command::clb_cmd_delete_author,
+        // Hardcover integration commands
+        hardcover::test_hardcover_connection,
+        hardcover::fetch_hardcover_metadata_by_isbn,
+        hardcover::search_hardcover_books,
     ]);
 
     #[cfg(debug_assertions)] // <- Only export on non-release builds

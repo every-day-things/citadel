@@ -1,5 +1,12 @@
-import type { BookUpdate, LibraryAuthor, LibraryBook } from "@/bindings";
+import type {
+	BookUpdate,
+	LibraryAuthor,
+	LibraryBook,
+	HardcoverSearchResult,
+} from "@/bindings";
+import { commands } from "@/bindings";
 import { safeAsyncEventHandler } from "@/lib/async";
+import { useSettings } from "@/stores/settings/store";
 import {
 	ActionIcon,
 	Button,
@@ -12,6 +19,14 @@ import {
 	TextInput,
 	Title,
 	Box,
+	Alert,
+	Modal,
+	Image,
+	Card,
+	Badge,
+	ScrollArea,
+	Loader,
+	Tooltip,
 } from "@mantine/core";
 import { RichTextEditor } from "@mantine/tiptap";
 import { Link } from "@tiptap/extension-link";
@@ -20,6 +35,7 @@ import StarterKit from "@tiptap/starter-kit";
 import DOMPurify from "dompurify";
 import { Form, useForm } from "@mantine/form";
 import { type HTMLProps, useEffect, useMemo, useState } from "react";
+import { openPath } from "@tauri-apps/plugin-opener";
 import { BookCover } from "../atoms/BookCover";
 import { MultiSelectCreatable } from "../atoms/Multiselect";
 import styles from "./EditBook.module.css";
@@ -144,6 +160,217 @@ const EditBookForm = ({
 	);
 	const [newBookIdentifierLabel, setNewBookIdentifierLabel] = useState("");
 
+	// Hardcover integration state
+	const hardcoverApiKey = useSettings((state) => state.hardcoverApiKey);
+	const [isFetchingFromHardcover, setIsFetchingFromHardcover] = useState(false);
+	const [hardcoverMessage, setHardcoverMessage] = useState<{
+		type: "success" | "error";
+		text: string;
+	} | null>(null);
+
+	// Hardcover search state
+	const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+	const [searchQuery, setSearchQuery] = useState("");
+	const [isSearching, setIsSearching] = useState(false);
+	const [searchResults, setSearchResults] = useState<HardcoverSearchResult[]>(
+		[],
+	);
+
+	// Find ISBN identifier
+	const isbnIdentifier = useMemo(
+		() => book.identifier_list.find((id) => id.label.toLowerCase() === "isbn"),
+		[book.identifier_list],
+	);
+
+	// Find Hardcover ID identifier
+	const hardcoverIdIdentifier = useMemo(
+		() =>
+			book.identifier_list.find((id) => id.label.toLowerCase() === "hardcover"),
+		[book.identifier_list],
+	);
+
+	// Fetch metadata from Hardcover
+	const fetchFromHardcover = async () => {
+		if (!hardcoverApiKey) {
+			setHardcoverMessage({
+				type: "error",
+				text: "Please configure your Hardcover API key in settings first.",
+			});
+			return;
+		}
+
+		if (!isbnIdentifier) {
+			setHardcoverMessage({
+				type: "error",
+				text: "This book needs an ISBN to fetch metadata from Hardcover.",
+			});
+			return;
+		}
+
+		setIsFetchingFromHardcover(true);
+		setHardcoverMessage(null);
+
+		try {
+			const result = await commands.fetchHardcoverMetadataByIsbn(
+				hardcoverApiKey,
+				isbnIdentifier.value,
+			);
+
+			if (result.status === "ok") {
+				const metadata = result.data;
+
+				// Update form with fetched data
+				if (metadata.title) {
+					form.setFieldValue("title", metadata.title);
+				}
+				if (metadata.description) {
+					form.setFieldValue("description", metadata.description);
+				}
+
+				// Store Hardcover ID if we got one
+				if (metadata.hardcover_id) {
+					await onUpsertIdentifier(
+						book.id,
+						hardcoverIdIdentifier?.id ?? null,
+						"hardcover",
+						metadata.hardcover_id.toString(),
+					);
+				}
+
+				setHardcoverMessage({
+					type: "success",
+					text: "Successfully fetched metadata from Hardcover!",
+				});
+			} else {
+				setHardcoverMessage({
+					type: "error",
+					text: result.error,
+				});
+			}
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error ? error.message : String(error);
+			setHardcoverMessage({
+				type: "error",
+				text: `Error: ${errorMessage}`,
+			});
+		} finally {
+			setIsFetchingFromHardcover(false);
+		}
+	};
+
+	// Open book in Hardcover
+	const openInHardcover = async () => {
+		if (!hardcoverIdIdentifier) {
+			return;
+		}
+
+		try {
+			const hardcoverId = hardcoverIdIdentifier.value;
+			const url = `https://hardcover.app/books/${hardcoverId}`;
+			await openPath(url);
+		} catch (error) {
+			console.error("Failed to open Hardcover URL:", error);
+			const errorMessage =
+				error instanceof Error ? error.message : String(error);
+			setHardcoverMessage({
+				type: "error",
+				text: `Failed to open Hardcover: ${errorMessage}`,
+			});
+		}
+	};
+
+	// Search Hardcover
+	const searchHardcover = async () => {
+		if (!hardcoverApiKey) {
+			setHardcoverMessage({
+				type: "error",
+				text: "Please configure your Hardcover API key in settings first.",
+			});
+			return;
+		}
+
+		if (!searchQuery.trim()) {
+			setHardcoverMessage({
+				type: "error",
+				text: "Please enter a search query.",
+			});
+			return;
+		}
+
+		setIsSearching(true);
+		setSearchResults([]);
+		setHardcoverMessage(null);
+
+		try {
+			const result = await commands.searchHardcoverBooks(
+				hardcoverApiKey,
+				searchQuery,
+			);
+
+			if (result.status === "ok") {
+				setSearchResults(result.data);
+				setIsSearchModalOpen(true);
+				if (result.data.length === 0) {
+					setHardcoverMessage({
+						type: "error",
+						text: "No books found for your search query.",
+					});
+				}
+			} else {
+				setHardcoverMessage({
+					type: "error",
+					text: result.error,
+				});
+			}
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error ? error.message : String(error);
+			setHardcoverMessage({
+				type: "error",
+				text: `Error: ${errorMessage}`,
+			});
+		} finally {
+			setIsSearching(false);
+		}
+	};
+
+	// Populate book data from a selected search result
+	const selectSearchResult = async (result: HardcoverSearchResult) => {
+		// Update form with fetched data
+		if (result.title) {
+			form.setFieldValue("title", result.title);
+		}
+		if (result.description) {
+			form.setFieldValue("description", result.description);
+		}
+
+		// Update authors if available
+		if (result.authors && result.authors.length > 0) {
+			// Create any new authors that don't exist
+			for (const authorName of result.authors) {
+				if (!allAuthorNames.includes(authorName)) {
+					await createAuthor(authorName);
+				}
+			}
+			form.setFieldValue("authorList", result.authors);
+		}
+
+		// Store Hardcover ID
+		await onUpsertIdentifier(
+			book.id,
+			hardcoverIdIdentifier?.id ?? null,
+			"hardcover",
+			result.hardcover_id.toString(),
+		);
+
+		setIsSearchModalOpen(false);
+		setHardcoverMessage({
+			type: "success",
+			text: "Successfully populated book data from Hardcover!",
+		});
+	};
+
 	const editor = useEditor({
 		extensions: [
 			StarterKit,
@@ -260,6 +487,64 @@ const EditBookForm = ({
 							</Group>
 						)}
 					</Group>
+					{hardcoverApiKey && (
+						<Stack gap="sm">
+							{isbnIdentifier && (
+								<Group>
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={() => void fetchFromHardcover()}
+										loading={isFetchingFromHardcover}
+									>
+										Fetch from Hardcover
+									</Button>
+									{hardcoverIdIdentifier && (
+										<Button
+											variant="outline"
+											size="sm"
+											onClick={() => void openInHardcover()}
+										>
+											View in Hardcover
+										</Button>
+									)}
+									<Text size="sm" c="dimmed">
+										Uses ISBN: {isbnIdentifier.value}
+									</Text>
+								</Group>
+							)}
+							<Group>
+								<TextInput
+									placeholder="Search by title or author..."
+									value={searchQuery}
+									onChange={(event) => setSearchQuery(event.target.value)}
+									onKeyDown={(event) => {
+										if (event.key === "Enter") {
+											void searchHardcover();
+										}
+									}}
+									style={{ flex: 1 }}
+								/>
+								<Button
+									variant="filled"
+									size="sm"
+									onClick={() => void searchHardcover()}
+									loading={isSearching}
+								>
+									Search Hardcover
+								</Button>
+							</Group>
+						</Stack>
+					)}
+					{hardcoverMessage && (
+						<Alert
+							color={hardcoverMessage.type === "success" ? "green" : "red"}
+							onClose={() => setHardcoverMessage(null)}
+							withCloseButton
+						>
+							{hardcoverMessage.text}
+						</Alert>
+					)}
 					<Group flex={1}>
 						<TextInput
 							label="Title"
@@ -417,6 +702,78 @@ const EditBookForm = ({
 					</Paper>
 				</Stack>
 			</Group>
+
+			{/* Search Results Modal */}
+			<Modal
+				opened={isSearchModalOpen}
+				onClose={() => setIsSearchModalOpen(false)}
+				title={`Search Results for "${searchQuery}"`}
+				size="xl"
+			>
+				<ScrollArea style={{ height: "60vh" }}>
+					<Stack gap="md">
+						{searchResults.length === 0 ? (
+							<Text c="dimmed" ta="center">
+								{isSearching ? (
+									<Loader size="sm" />
+								) : (
+									"No results found. Try a different search query."
+								)}
+							</Text>
+						) : (
+							searchResults.map((result) => (
+								<Card
+									key={result.hardcover_id}
+									shadow="sm"
+									padding="lg"
+									style={{ cursor: "pointer" }}
+									onClick={() => void selectSearchResult(result)}
+								>
+									<Group align="flex-start" gap="md">
+										{result.image_url && (
+											<Image
+												src={result.image_url}
+												alt={result.title}
+												width={100}
+												height={150}
+												fit="contain"
+											/>
+										)}
+										<Stack flex={1} gap="xs">
+											<Text size="lg" fw={700}>
+												{result.title}
+											</Text>
+											{result.authors && result.authors.length > 0 && (
+												<Group gap="xs">
+													{result.authors.map((author) => (
+														<Badge key={author} variant="light">
+															{author}
+														</Badge>
+													))}
+												</Group>
+											)}
+											{result.release_year && (
+												<Text size="sm" c="dimmed">
+													Published: {result.release_year}
+												</Text>
+											)}
+											{result.description && (
+												<Text
+													size="sm"
+													lineClamp={3}
+													style={{ whiteSpace: "pre-wrap" }}
+												>
+													{result.description.replace(/<[^>]*>/g, "")}
+												</Text>
+											)}
+										</Stack>
+									</Group>
+								</Card>
+							))
+						)}
+					</Stack>
+				</ScrollArea>
+			</Modal>
 		</Form>
 	);
 };
