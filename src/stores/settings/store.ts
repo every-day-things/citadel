@@ -1,13 +1,13 @@
 import type { Option } from "@/lib/option";
 import { none, some } from "@/lib/option";
 import { createTauriSettingsManager } from "@/lib/settings-manager/tauri-settings";
-import { createWebSettingsManager } from "@/lib/settings-manager/web-settings";
 import type {
 	SettingsKey,
 	SettingsManager,
 	SettingsSchema,
 	SettingsValue,
 } from "@/lib/settings-manager/types";
+import { createWebSettingsManager } from "@/lib/settings-manager/web-settings";
 import { isTauri } from "@tauri-apps/api/core";
 import { create } from "zustand";
 

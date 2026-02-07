@@ -1,16 +1,16 @@
+import { commands } from "@/bindings";
 import { useHardcoverModal } from "@/lib/contexts/modal-hardcover/hooks";
 import { useSettings } from "@/stores/settings/store";
 import {
-	Modal,
-	Stack,
-	TextInput,
+	Alert,
 	Button,
 	Group,
+	Modal,
+	Stack,
 	Text,
-	Alert,
+	TextInput,
 } from "@mantine/core";
-import { useState, useCallback } from "react";
-import { commands } from "@/bindings";
+import { useCallback, useState } from "react";
 
 export const HardcoverSettingsModal = () => {
 	const [isHardcoverModalOpen, { close: closeHardcoverModal }] =
@@ -50,7 +50,9 @@ export const HardcoverSettingsModal = () => {
 		} catch (error) {
 			setTestResult({
 				success: false,
-				message: `Error: ${error}`,
+				message: `Error: ${
+					error instanceof Error ? error.message : String(error)
+				}`,
 			});
 		} finally {
 			setIsTesting(false);
@@ -69,9 +71,9 @@ export const HardcoverSettingsModal = () => {
 			onClose={closeHardcoverModal}
 			apiKeyInput={apiKeyInput}
 			onApiKeyInputChange={setApiKeyInput}
-			onSave={handleSave}
-			onTest={handleTest}
-			onClear={handleClear}
+			onSave={() => void handleSave()}
+			onTest={() => void handleTest()}
+			onClear={() => void handleClear()}
 			isTesting={isTesting}
 			testResult={testResult}
 		/>

@@ -93,8 +93,8 @@ pub async fn test_hardcover_connection(api_key: String) -> Result<HardcoverApiSt
         .map_err(|e| format!("Failed to parse response: {} - Body: {}", e, response_text))?;
 
     if let Some(errors) = json_response.get("errors") {
-        let error_details = serde_json::to_string_pretty(&errors)
-            .unwrap_or_else(|_| errors.to_string());
+        let error_details =
+            serde_json::to_string_pretty(&errors).unwrap_or_else(|_| errors.to_string());
         log::warn!("Hardcover GraphQL errors: {}", error_details);
 
         let error_message = errors[0]
@@ -108,7 +108,11 @@ pub async fn test_hardcover_connection(api_key: String) -> Result<HardcoverApiSt
     }
 
     // Check if we got data back
-    if json_response.get("data").and_then(|d| d.get("me")).is_some() {
+    if json_response
+        .get("data")
+        .and_then(|d| d.get("me"))
+        .is_some()
+    {
         Ok(HardcoverApiStatus {
             is_valid: true,
             message: "Connection successful".to_string(),
@@ -222,31 +226,27 @@ pub async fn fetch_hardcover_metadata_by_isbn(
     }
 
     // Get the document from the first hit
-    let book = hits[0]
-        .get("document")
-        .ok_or("No document in search hit")?;
+    let book = hits[0].get("document").ok_or("No document in search hit")?;
 
     // ID can be string or number in search results
-    let hardcover_id = book
-        .get("id")
-        .and_then(|i| {
-            if let Some(s) = i.as_str() {
-                s.parse::<i32>().ok()
-            } else {
-                i.as_i64().map(|n| n as i32)
-            }
-        });
+    let hardcover_id = book.get("id").and_then(|i| {
+        if let Some(s) = i.as_str() {
+            s.parse::<i32>().ok()
+        } else {
+            i.as_i64().map(|n| n as i32)
+        }
+    });
 
     // Image is an object with url field in search results
-    let image_url = book
-        .get("image")
-        .and_then(|img| {
-            if let Some(s) = img.as_str() {
-                Some(s.to_string())
-            } else {
-                img.get("url").and_then(|u| u.as_str()).map(|s| s.to_string())
-            }
-        });
+    let image_url = book.get("image").and_then(|img| {
+        if let Some(s) = img.as_str() {
+            Some(s.to_string())
+        } else {
+            img.get("url")
+                .and_then(|u| u.as_str())
+                .map(|s| s.to_string())
+        }
+    });
 
     let slug = book
         .get("slug")
@@ -264,7 +264,10 @@ pub async fn fetch_hardcover_metadata_by_isbn(
             .and_then(|d| d.as_str())
             .map(|s| s.to_string()),
         image_url,
-        release_year: book.get("release_year").and_then(|y| y.as_i64()).map(|y| y as i32),
+        release_year: book
+            .get("release_year")
+            .and_then(|y| y.as_i64())
+            .map(|y| y as i32),
         hardcover_id,
         slug,
     })
@@ -362,15 +365,17 @@ pub async fn search_hardcover_books(
     // Parse all search results
     let mut search_results = Vec::new();
     for hit in hits {
-        let book = hit
-            .get("document")
-            .ok_or("No document in search hit")?;
+        let book = hit.get("document").ok_or("No document in search hit")?;
 
         // Extract authors from contributions
         let mut authors = Vec::new();
         if let Some(contributions) = book.get("contributions").and_then(|c| c.as_array()) {
             for contribution in contributions {
-                if let Some(author_name) = contribution.get("author").and_then(|a| a.get("name")).and_then(|n| n.as_str()) {
+                if let Some(author_name) = contribution
+                    .get("author")
+                    .and_then(|a| a.get("name"))
+                    .and_then(|n| n.as_str())
+                {
                     authors.push(author_name.to_string());
                 }
             }
@@ -389,15 +394,15 @@ pub async fn search_hardcover_books(
             .ok_or("Missing or invalid hardcover_id in search result")?;
 
         // Image is an object with url field in search results
-        let image_url = book
-            .get("image")
-            .and_then(|img| {
-                if let Some(s) = img.as_str() {
-                    Some(s.to_string())
-                } else {
-                    img.get("url").and_then(|u| u.as_str()).map(|s| s.to_string())
-                }
-            });
+        let image_url = book.get("image").and_then(|img| {
+            if let Some(s) = img.as_str() {
+                Some(s.to_string())
+            } else {
+                img.get("url")
+                    .and_then(|u| u.as_str())
+                    .map(|s| s.to_string())
+            }
+        });
 
         let slug = book
             .get("slug")
@@ -415,7 +420,10 @@ pub async fn search_hardcover_books(
                 .and_then(|d| d.as_str())
                 .map(|s| s.to_string()),
             image_url,
-            release_year: book.get("release_year").and_then(|y| y.as_i64()).map(|y| y as i32),
+            release_year: book
+                .get("release_year")
+                .and_then(|y| y.as_i64())
+                .map(|y| y as i32),
             hardcover_id,
             slug,
             authors,
