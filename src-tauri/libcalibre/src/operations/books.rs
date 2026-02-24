@@ -108,7 +108,7 @@ pub fn update_book(
 }
 
 pub fn get_book(conn: &mut SqliteConnection, book_id: BookId) -> Result<Book, CalibreError> {
-    let book = books::get(conn, book_id)?.ok_or(CalibreError::BookNotFound(book_id))?;
+    let book = books::find(conn, book_id)?.ok_or(CalibreError::BookNotFound(book_id))?;
     let book_desc = book_descriptions::get(conn, book_id)?;
     let author_ids = books::find_authors(conn, book_id)?;
     let author_models = authors::get_many(conn, author_ids)?;
@@ -156,7 +156,7 @@ pub fn get_book(conn: &mut SqliteConnection, book_id: BookId) -> Result<Book, Ca
 }
 
 pub fn all(conn: &mut SqliteConnection) -> Result<Vec<Book>, CalibreError> {
-    let book_rows = books::all(conn)?;
+    let book_rows = books::list(conn)?;
     let book_ids: Vec<BookId> = book_rows.iter().map(|b| BookId(b.id)).collect();
 
     let author_ids_by_book = authors::find_author_ids_by_book_ids(conn, book_ids.clone())?;

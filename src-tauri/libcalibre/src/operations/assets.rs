@@ -12,7 +12,7 @@ pub fn get_book_cover(
     conn: &mut SqliteConnection,
     book_id: BookId,
 ) -> Result<Vec<u8>, CalibreError> {
-    let book = books::get(conn, book_id)?.ok_or(CalibreError::BookNotFound(book_id))?;
+    let book = books::find(conn, book_id)?.ok_or(CalibreError::BookNotFound(book_id))?;
     let file_path = assets::asset_path(library_root, &book.path, COVER_FILENAME);
 
     assets::read(&file_path)
@@ -24,7 +24,7 @@ pub fn get_book_file_path(
     book_id: BookId,
     file_format: &str,
 ) -> Result<std::path::PathBuf, CalibreError> {
-    let book = books::get(conn, book_id)?.ok_or(CalibreError::BookNotFound(book_id))?;
+    let book = books::find(conn, book_id)?.ok_or(CalibreError::BookNotFound(book_id))?;
     let file = book_files::find_by_book_and_format(conn, book_id, file_format.to_string())?;
 
     match file {
@@ -59,7 +59,7 @@ pub fn add_book_file_from_bytes(
     file_format: String,
     data: Vec<u8>,
 ) -> Result<(), CalibreError> {
-    let book = books::get(conn, book_id)?.ok_or(CalibreError::BookNotFound(book_id))?;
+    let book = books::find(conn, book_id)?.ok_or(CalibreError::BookNotFound(book_id))?;
 
     let book_filename = filename(book.path.clone(), file_format.clone());
     let file_path = assets::asset_path(library_root, &book.path, &book_filename);
@@ -89,7 +89,7 @@ pub fn add_book_file_from_path(
     file_format: String,
     file_path: String,
 ) -> Result<(), CalibreError> {
-    let book = books::get(conn, book_id)?.ok_or(CalibreError::BookNotFound(book_id))?;
+    let book = books::find(conn, book_id)?.ok_or(CalibreError::BookNotFound(book_id))?;
 
     let book_filename = filename(book.path.clone(), file_format.clone());
     let dest_path = assets::asset_path(library_root, &book.path, &book_filename);
@@ -123,7 +123,7 @@ pub fn remove_book_file(
     file_format: &str,
 ) -> Result<(), CalibreError> {
     conn.transaction::<(), CalibreError, _>(|conn| {
-        let book = books::get(conn, book_id)?.ok_or(CalibreError::BookNotFound(book_id))?;
+        let book = books::find(conn, book_id)?.ok_or(CalibreError::BookNotFound(book_id))?;
 
         let file =
             book_files::find_by_book_and_format(conn, book_id, file_format.to_string())?.ok_or(

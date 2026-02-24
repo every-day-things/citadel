@@ -17,7 +17,8 @@ use crate::{BookRow, NewBook, UpdateBookData};
 // Core queries
 // =============================================================================
 
-pub(crate) fn get(
+/// Find a book by ID. Returns `None` if not found.
+pub fn find(
     conn: &mut SqliteConnection,
     book_id: BookId,
 ) -> Result<Option<BookRow>, CalibreError> {
@@ -31,7 +32,8 @@ pub(crate) fn get(
         .map_err(CalibreError::from)
 }
 
-pub(crate) fn all(conn: &mut SqliteConnection) -> Result<Vec<BookRow>, CalibreError> {
+/// List all books in the library.
+pub fn list(conn: &mut SqliteConnection) -> Result<Vec<BookRow>, CalibreError> {
     use crate::schema::books::dsl::*;
 
     books
@@ -40,7 +42,7 @@ pub(crate) fn all(conn: &mut SqliteConnection) -> Result<Vec<BookRow>, CalibreEr
         .map_err(CalibreError::from)
 }
 
-pub(crate) fn create(conn: &mut SqliteConnection, book: NewBook) -> Result<BookRow, CalibreError> {
+pub fn create(conn: &mut SqliteConnection, book: NewBook) -> Result<BookRow, CalibreError> {
     use crate::schema::books::dsl::*;
 
     diesel::insert_into(books)
@@ -50,20 +52,23 @@ pub(crate) fn create(conn: &mut SqliteConnection, book: NewBook) -> Result<BookR
         .map_err(CalibreError::from)
 }
 
-pub(crate) fn update(
+/// Update a book, returning the updated row.
+pub fn update(
     conn: &mut SqliteConnection,
     book_id: BookId,
     update: UpdateBookData,
-) -> Result<usize, CalibreError> {
+) -> Result<BookRow, CalibreError> {
     use crate::schema::books::dsl::*;
 
     diesel::update(books.filter(id.eq(book_id.as_i32())))
         .set(update)
-        .execute(conn)
+        .returning(BookRow::as_returning())
+        .get_result(conn)
         .map_err(CalibreError::from)
 }
 
-pub(crate) fn delete(conn: &mut SqliteConnection, book_id: BookId) -> Result<bool, CalibreError> {
+/// Delete a book. Returns `true` if a row was deleted.
+pub fn delete(conn: &mut SqliteConnection, book_id: BookId) -> Result<bool, CalibreError> {
     use crate::schema::books::dsl::*;
 
     diesel::delete(books.filter(id.eq(book_id.as_i32())))
@@ -76,7 +81,7 @@ pub(crate) fn delete(conn: &mut SqliteConnection, book_id: BookId) -> Result<boo
 // Relationships
 // =============================================================================
 
-pub(crate) fn find_authors(
+pub fn find_authors(
     conn: &mut SqliteConnection,
     book_id: BookId,
 ) -> Result<Vec<AuthorId>, CalibreError> {
@@ -92,15 +97,124 @@ pub(crate) fn find_authors(
     Ok(author_ids)
 }
 
+/// Link an author to a book.
+pub fn link_author(
+    conn: &mut SqliteConnection,
+    book_id: BookId,
+    author_id: AuthorId,
+) -> Result<(), CalibreError> {
+    use crate::schema::books_authors_link::dsl::*;
+
+    diesel::insert_into(books_authors_link)
+        .values((book.eq(book_id.as_i32()), author.eq(author_id.as_i32())))
+        .execute(conn)
+        .map(|_| ())
+        .map_err(CalibreError::from)
+}
+
+/// Unlink an author from a book.
+pub fn unlink_author(
+    conn: &mut SqliteConnection,
+    book_id: BookId,
+    author_id: AuthorId,
+) -> Result<(), CalibreError> {
+    use crate::schema::books_authors_link::dsl::*;
+
+    diesel::delete(
+        books_authors_link
+            .filter(book.eq(book_id.as_i32()))
+            .filter(author.eq(author_id.as_i32())),
+    )
+    .execute(conn)
+    .map(|_| ())
+    .map_err(CalibreError::from)
+}
+
+/// Replace all authors for a book atomically.
+pub fn replace_authors(
+    conn: &mut SqliteConnection,
+    book_id: BookId,
+    new_author_ids: &[AuthorId],
+) -> Result<(), CalibreError> {
+    use crate::schema::books_authors_link::dsl::*;
+
+    diesel::delete(books_authors_link.filter(book.eq(book_id.as_i32())))
+        .execute(conn)
+        .map_err(CalibreError::from)?;
+
+    if !new_author_ids.is_empty() {
+        let values: Vec<_> = new_author_ids
+            .iter()
+            .map(|aid| (book.eq(book_id.as_i32()), author.eq(aid.as_i32())))
+            .collect();
+
+        diesel::insert_into(books_authors_link)
+            .values(&values)
+            .execute(conn)
+            .map_err(CalibreError::from)?;
+    }
+
+    Ok(())
+}
+
+// =============================================================================
+// Descriptions
+// =============================================================================
+
+/// Get the description (HTML) for a book.
+pub fn get_description(
+    conn: &mut SqliteConnection,
+    book_id: BookId,
+) -> Result<Option<String>, CalibreError> {
+    use crate::schema::comments::dsl::*;
+
+    comments
+        .filter(book.eq(book_id.as_i32()))
+        .select(text)
+        .first(conn)
+        .optional()
+        .map_err(CalibreError::from)
+}
+
+/// Set or update the description for a book (upsert).
+pub fn set_description(
+    conn: &mut SqliteConnection,
+    book_id: BookId,
+    description: &str,
+) -> Result<(), CalibreError> {
+    use crate::schema::comments::dsl::*;
+
+    let existing_id: Option<i32> = comments
+        .filter(book.eq(book_id.as_i32()))
+        .select(id)
+        .first(conn)
+        .optional()
+        .map_err(CalibreError::from)?;
+
+    match existing_id {
+        Some(comment_id) => {
+            diesel::update(comments.filter(id.eq(comment_id)))
+                .set(text.eq(description))
+                .execute(conn)
+                .map(|_| ())
+                .map_err(CalibreError::from)
+        }
+        None => {
+            diesel::insert_into(comments)
+                .values((book.eq(book_id.as_i32()), text.eq(description)))
+                .execute(conn)
+                .map(|_| ())
+                .map_err(CalibreError::from)
+        }
+    }
+}
+
 // =============================================================================
 // Batch Operations (for performance)
 // =============================================================================
 
-/// Batch fetch descriptions for multiple books.
-///
-/// Returns a HashMap mapping BookId to description text.
-/// More efficient than calling get_description for each book individually.
-pub(crate) fn batch_get_descriptions(
+/// Batch fetch descriptions for multiple books in a single query.
+pub fn batch_get_descriptions(
     conn: &mut SqliteConnection,
     book_ids: &[BookId],
 ) -> Result<HashMap<BookId, String>, CalibreError> {
@@ -124,11 +238,8 @@ pub(crate) fn batch_get_descriptions(
         .collect())
 }
 
-/// Batch fetch author links for multiple books.
-///
-/// Returns a HashMap mapping BookId to a Vec of AuthorIds.
-/// More efficient than calling find_authors for each book individually.
-pub(crate) fn batch_get_author_links(
+/// Batch fetch author links for multiple books in a single query.
+pub fn batch_get_author_links(
     conn: &mut SqliteConnection,
     book_ids: &[BookId],
 ) -> Result<HashMap<BookId, Vec<AuthorId>>, CalibreError> {
@@ -156,11 +267,8 @@ pub(crate) fn batch_get_author_links(
     Ok(map)
 }
 
-/// Batch fetch identifiers for multiple books.
-///
-/// Returns a HashMap mapping BookId to a Vec of Identifiers.
-/// More efficient than fetching per-book individually.
-pub(crate) fn batch_get_identifiers(
+/// Batch fetch identifiers for multiple books in a single query.
+pub fn batch_get_identifiers(
     conn: &mut SqliteConnection,
     book_ids: &[BookId],
 ) -> Result<HashMap<BookId, Vec<Identifier>>, CalibreError> {

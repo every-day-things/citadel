@@ -21,7 +21,7 @@ impl Author {
     }
 }
 
-#[derive(Insertable)]
+#[derive(Insertable, Clone)]
 #[diesel(table_name = authors)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct NewAuthor {

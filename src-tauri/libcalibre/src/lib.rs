@@ -1,6 +1,6 @@
 mod assets;
 mod cover_image;
-mod entities;
+pub mod entities;
 pub mod error;
 pub mod library;
 pub mod mime_type;
@@ -8,7 +8,7 @@ pub(crate) mod models;
 mod operations;
 pub mod persistence;
 pub mod queries;
-pub(crate) mod schema;
+pub mod schema;
 pub mod sorting;
 #[cfg(test)]
 mod test_utils;

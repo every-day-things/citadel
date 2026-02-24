@@ -3,10 +3,6 @@
 //! Provides functions to interact with `authors` in the Calibre database.
 //! All functions use type-safe IDs and accept a mutable SQLite connection.
 
-// =============================================================================
-// Core queries
-// =============================================================================
-
 use std::collections::HashMap;
 
 use diesel::prelude::*;
@@ -17,7 +13,12 @@ use crate::sorting;
 use crate::types::BookId;
 use crate::{types::AuthorId, Author, CalibreError};
 
-pub(crate) fn get(
+// =============================================================================
+// Core queries
+// =============================================================================
+
+/// Find an author by ID. Returns `None` if not found.
+pub fn find(
     conn: &mut SqliteConnection,
     author_id: AuthorId,
 ) -> Result<Option<Author>, CalibreError> {
@@ -31,6 +32,7 @@ pub(crate) fn get(
         .map_err(CalibreError::from)
 }
 
+/// Fetch multiple authors by their IDs, returning a Vec preserving order.
 pub(crate) fn get_many(
     conn: &mut SqliteConnection,
     author_ids: Vec<AuthorId>,
@@ -46,7 +48,33 @@ pub(crate) fn get_many(
         .map_err(CalibreError::from)
 }
 
-pub(crate) fn find_by_name(
+/// Fetch multiple authors by their IDs, returning a HashMap keyed by AuthorId.
+/// Authors that don't exist will not appear in the map.
+pub fn batch_find(
+    conn: &mut SqliteConnection,
+    author_ids: &[AuthorId],
+) -> Result<HashMap<AuthorId, Author>, CalibreError> {
+    use crate::schema::authors::dsl::*;
+
+    if author_ids.is_empty() {
+        return Ok(HashMap::new());
+    }
+
+    let id_values: Vec<i32> = author_ids.iter().map(|aid| aid.as_i32()).collect();
+
+    let results: Vec<Author> = authors
+        .filter(id.eq_any(id_values))
+        .select(Author::as_select())
+        .load(conn)
+        .map_err(CalibreError::from)?;
+
+    Ok(results
+        .into_iter()
+        .map(|author| (AuthorId(author.id), author))
+        .collect())
+}
+
+pub fn find_by_name(
     conn: &mut SqliteConnection,
     author_name: &str,
 ) -> Result<Option<Author>, CalibreError> {
@@ -60,7 +88,8 @@ pub(crate) fn find_by_name(
         .map_err(CalibreError::from)
 }
 
-pub(crate) fn all(conn: &mut SqliteConnection) -> Result<Vec<Author>, CalibreError> {
+/// List all authors in the library.
+pub fn list(conn: &mut SqliteConnection) -> Result<Vec<Author>, CalibreError> {
     use crate::schema::authors::dsl::*;
 
     authors
@@ -69,7 +98,7 @@ pub(crate) fn all(conn: &mut SqliteConnection) -> Result<Vec<Author>, CalibreErr
         .map_err(CalibreError::from)
 }
 
-pub(crate) fn create(
+pub fn create(
     conn: &mut SqliteConnection,
     new_author: NewAuthor,
 ) -> Result<Author, CalibreError> {
@@ -82,26 +111,36 @@ pub(crate) fn create(
         .map_err(CalibreError::from)
 }
 
+/// Create an author if one with the given name doesn't already exist.
+pub fn create_if_missing(
+    conn: &mut SqliteConnection,
+    new_author: NewAuthor,
+) -> Result<Author, CalibreError> {
+    match find_by_name(conn, &new_author.name)? {
+        Some(existing) => Ok(existing),
+        None => create(conn, new_author),
+    }
+}
+
+/// Create an author by name if they don't already exist (generates sort name).
 pub(crate) fn create_if_not_exists(
     conn: &mut SqliteConnection,
     author_name: &str,
 ) -> Result<Author, CalibreError> {
     match find_by_name(conn, author_name)? {
         Some(existing) => Ok(existing),
-
         None => {
             let new_author = NewAuthor {
                 name: author_name.to_string(),
                 sort: Some(sorting::sort_author_name_apa(author_name)),
                 link: None,
             };
-
             create(conn, new_author)
         }
     }
 }
 
-pub(crate) fn update(
+pub fn update(
     conn: &mut SqliteConnection,
     author_id: AuthorId,
     update: UpdateAuthorData,
@@ -115,7 +154,13 @@ pub(crate) fn update(
         .map_err(CalibreError::from)
 }
 
-pub(crate) fn delete(conn: &mut SqliteConnection, author_id: AuthorId) -> Result<(), CalibreError> {
+/// Delete an author. Returns an error if the author has associated books.
+pub fn delete(conn: &mut SqliteConnection, author_id: AuthorId) -> Result<(), CalibreError> {
+    let book_ids = find_books(conn, author_id)?;
+    if !book_ids.is_empty() {
+        return Err(CalibreError::AuthorHasAssociatedBooks(book_ids));
+    }
+
     use crate::schema::authors::dsl::*;
 
     diesel::delete(authors.filter(id.eq(author_id.as_i32())))
@@ -129,7 +174,7 @@ pub(crate) fn delete(conn: &mut SqliteConnection, author_id: AuthorId) -> Result
 // Relationships
 // =============================================================================
 
-pub(crate) fn find_books(
+pub fn find_books(
     conn: &mut SqliteConnection,
     author_id: AuthorId,
 ) -> Result<Vec<BookId>, CalibreError> {
@@ -147,7 +192,7 @@ pub(crate) fn find_books(
 }
 
 /// Count how many books an author has.
-pub(crate) fn count_books(
+pub fn count_books(
     conn: &mut SqliteConnection,
     author_id: AuthorId,
 ) -> Result<usize, CalibreError> {
@@ -196,9 +241,6 @@ pub(crate) fn unlink_book(
 }
 
 /// Batch fetch author IDs grouped by book ID.
-///
-/// Returns a HashMap mapping BookId to a Vec of AuthorIds.
-/// More efficient than calling find_books for each book individually.
 pub(crate) fn find_author_ids_by_book_ids(
     conn: &mut SqliteConnection,
     book_ids: Vec<BookId>,

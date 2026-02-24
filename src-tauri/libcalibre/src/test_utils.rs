@@ -6,6 +6,7 @@
 #![cfg(test)]
 
 use crate::types::{AuthorId, BookId};
+use diesel::connection::SimpleConnection;
 use diesel::prelude::*;
 use diesel::sqlite::SqliteConnection;
 
@@ -14,8 +15,9 @@ pub fn setup_test_db() -> SqliteConnection {
     let mut conn = SqliteConnection::establish(":memory:")
         .expect("Failed to create in-memory database");
 
-    // Create minimal schema for testing
-    diesel::sql_query(
+    // Create minimal schema for testing.
+    // Uses batch_execute so all statements run (sql_query only executes the first statement).
+    conn.batch_execute(
         r#"
         CREATE TABLE IF NOT EXISTS books (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -83,11 +85,8 @@ pub fn setup_test_db() -> SqliteConnection {
             is_multiple INTEGER DEFAULT 0 NOT NULL,
             normalized INTEGER NOT NULL
         );
-
-        -- Register custom SQL functions for Calibre compatibility
         "#,
     )
-    .execute(&mut conn)
     .expect("Failed to create schema");
 
     conn
@@ -112,13 +111,13 @@ impl TestFixtures {
     }
 
     /// Create a test author with the given name.
-    pub fn create_author(&mut self, name: &str) -> AuthorId {
+    pub fn create_author(&mut self, author_name: &str) -> AuthorId {
         use crate::schema::authors::dsl::*;
 
         let result = diesel::insert_into(authors)
             .values((
-                name.eq(name),
-                sort.eq(name),
+                name.eq(author_name),
+                sort.eq(Some(author_name)),
                 link.eq(""),
             ))
             .returning(id)
@@ -129,15 +128,16 @@ impl TestFixtures {
     }
 
     /// Create a test book with the given title.
-    pub fn create_book(&mut self, title: &str) -> BookId {
+    pub fn create_book(&mut self, book_title: &str) -> BookId {
         use crate::schema::books::dsl::*;
 
         let result = diesel::insert_into(books)
             .values((
-                title.eq(title),
-                sort.eq(title),
+                title.eq(book_title),
+                sort.eq(Some(book_title)),
+                path.eq(""),
                 flags.eq(1),
-                series_index.eq(1.0),
+                series_index.eq(1.0f32),
             ))
             .returning(id)
             .get_result::<i32>(&mut self.conn)

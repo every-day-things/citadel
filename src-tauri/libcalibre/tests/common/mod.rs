@@ -10,6 +10,7 @@ pub use in_memory::*;
 
 /// In-memory test utilities for lightweight query module testing.
 mod in_memory {
+    use diesel::connection::SimpleConnection;
     use diesel::prelude::*;
     use diesel::sqlite::SqliteConnection;
     use libcalibre::types::{AuthorId, BookId};
@@ -19,8 +20,9 @@ mod in_memory {
         let mut conn = SqliteConnection::establish(":memory:")
             .expect("Failed to create in-memory database");
 
-        // Create minimal schema matching Calibre structure
-        diesel::sql_query(
+        // Create minimal schema matching Calibre structure.
+        // Uses batch_execute so all statements run (sql_query only executes the first statement).
+        conn.batch_execute(
             r#"
             CREATE TABLE books (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -78,18 +80,17 @@ mod in_memory {
             );
             "#,
         )
-        .execute(&mut conn)
         .expect("Failed to create test schema");
 
         conn
     }
 
     /// Helper to create a test author.
-    pub fn create_test_author(conn: &mut SqliteConnection, name: &str) -> AuthorId {
+    pub fn create_test_author(conn: &mut SqliteConnection, author_name: &str) -> AuthorId {
         use libcalibre::schema::authors::dsl::*;
 
         let result = diesel::insert_into(authors)
-            .values((name.eq(name), sort.eq(name), link.eq("")))
+            .values((name.eq(author_name), sort.eq(Some(author_name)), link.eq("")))
             .returning(id)
             .get_result::<i32>(conn)
             .expect("Failed to create test author");
@@ -102,7 +103,12 @@ mod in_memory {
         use libcalibre::schema::books::dsl::*;
 
         let result = diesel::insert_into(books)
-            .values((title.eq(title_text), sort.eq(title_text), flags.eq(1)))
+            .values((
+                title.eq(title_text),
+                sort.eq(Some(title_text)),
+                path.eq(""),
+                flags.eq(1),
+            ))
             .returning(id)
             .get_result::<i32>(conn)
             .expect("Failed to create test book");

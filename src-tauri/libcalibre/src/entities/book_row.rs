@@ -28,6 +28,7 @@ pub struct BookRow {
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct NewBook {
     pub title: String,
+    pub path: String,
     pub timestamp: Option<NaiveDateTime>,
     pub pubdate: Option<NaiveDateTime>,
     pub series_index: f32,

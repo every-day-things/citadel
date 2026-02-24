@@ -44,6 +44,7 @@ fn test_books_create() {
 
     let new_book = NewBook {
         title: "New Book".to_string(),
+        path: String::new(),
         timestamp: None,
         pubdate: None,
         series_index: 1.0,
@@ -215,7 +216,7 @@ fn test_authors_create() {
     let new_author = NewAuthor {
         name: "New Author".to_string(),
         sort: Some("Author, New".to_string()),
-        link: "".to_string(),
+        link: None,
     };
 
     let created = authors::create(&mut conn, new_author).unwrap();
@@ -230,7 +231,7 @@ fn test_authors_create_if_missing() {
     let new_author = NewAuthor {
         name: "Unique Author".to_string(),
         sort: None,
-        link: "".to_string(),
+        link: None,
     };
 
     // First call creates
@@ -434,7 +435,7 @@ fn test_complete_book_workflow() {
         NewAuthor {
             name: "F. Scott Fitzgerald".to_string(),
             sort: Some("Fitzgerald, F. Scott".to_string()),
-            link: "".to_string(),
+            link: None,
         },
     )
     .unwrap();
@@ -444,6 +445,7 @@ fn test_complete_book_workflow() {
         &mut conn,
         NewBook {
             title: "The Great Gatsby".to_string(),
+            path: String::new(),
             timestamp: None,
             pubdate: None,
             series_index: 1.0,

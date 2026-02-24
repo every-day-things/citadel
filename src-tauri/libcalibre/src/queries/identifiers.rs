@@ -13,11 +13,11 @@ use diesel::prelude::*;
 // ============================================================================
 
 /// Find an identifier by its ID.
-pub fn find(conn: &mut SqliteConnection, id: IdentifierId) -> Result<Option<Identifier>> {
+pub fn find(conn: &mut SqliteConnection, identifier_id: IdentifierId) -> Result<Option<Identifier>> {
     use crate::schema::identifiers::dsl::*;
 
     identifiers
-        .filter(crate::schema::identifiers::id.eq(id.as_i32()))
+        .filter(crate::schema::identifiers::id.eq(identifier_id.as_i32()))
         .select(Identifier::as_returning())
         .first(conn)
         .optional()

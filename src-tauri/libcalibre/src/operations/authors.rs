@@ -9,7 +9,7 @@ use crate::{
 };
 
 pub fn all(conn: &mut SqliteConnection) -> Result<Vec<crate::library::Author>, CalibreError> {
-    let author_rows = authors::all(conn)?;
+    let author_rows = authors::list(conn)?;
 
     let author_list = author_rows
         .into_iter()
@@ -95,7 +95,7 @@ pub fn get(
     conn: &mut SqliteConnection,
     author_id: AuthorId,
 ) -> Result<crate::library::Author, CalibreError> {
-    let author_row = crate::queries::authors::get(conn, author_id)?;
+    let author_row = crate::queries::authors::find(conn, author_id)?;
 
     if let Some(author) = author_row {
         Ok(crate::library::Author {

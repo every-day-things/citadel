@@ -157,6 +157,7 @@ impl Library {
         // 2. Create book record
         let new_book = NewBook {
             title: book.title.clone(),
+            path: String::new(), // updated below once the book id is known
             timestamp: None,
             pubdate: book
                 .publication_date
@@ -168,7 +169,7 @@ impl Library {
         let book_row = book_queries::create(&mut self.conn, new_book)?;
 
         // Re-fetch to get trigger-generated uuid and sort
-        let book_row = book_queries::get(&mut self.conn, BookId(book_row.id))?
+        let book_row = book_queries::find(&mut self.conn, BookId(book_row.id))?
             .ok_or(CalibreError::BookNotFound(BookId(book_row.id)))?;
 
         // 3. Set author_sort and link authors
@@ -272,7 +273,7 @@ impl Library {
         }
 
         // 7. Generate metadata.opf
-        let book_row_final = book_queries::get(&mut self.conn, BookId(book_row.id))?
+        let book_row_final = book_queries::find(&mut self.conn, BookId(book_row.id))?
             .ok_or(CalibreError::BookNotFound(BookId(book_row.id)))?;
         let metadata_opf = format_metadata_opf(&book_row_final, &created_authors);
         if let Ok(contents) = metadata_opf {
@@ -322,7 +323,7 @@ impl Library {
     pub fn remove_books(&mut self, book_ids: Vec<BookId>) -> Result<Vec<BookId>, CalibreError> {
         let mut removed = Vec::new();
         for book_id in book_ids {
-            let book = book_queries::get(&mut self.conn, book_id)?
+            let book = book_queries::find(&mut self.conn, book_id)?
                 .ok_or(CalibreError::BookNotFound(book_id))?;
             operations::assets::delete_entire_book(
                 &self.db_path.library_path,

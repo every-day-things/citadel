@@ -1,4 +1,4 @@
-use crate::types::{AuthorId, BookFileId, BookId, IdentifierId};
+use crate::types::{AuthorId, BookId, IdentifierId};
 use std::fmt;
 use std::num::ParseIntError;
 
