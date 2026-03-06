@@ -15,6 +15,25 @@ type LibraryBookWithCoverImage = LibraryBook & {
 	cover_image: NonNullable<LibraryBook["cover_image"]>;
 };
 
+const spineBackground = `
+  linear-gradient(
+    to right,
+    rgba(0,0,0,0.55) 0%,
+    rgba(255,255,255,0.4) 1%,
+    rgba(255,255,255,0.15) 3.5%,
+    rgba(0,0,0,0.2) 5%,
+    rgba(255,255,255,0.1) 6.5%,
+    transparent 9%
+  ),
+  linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.04) 0%,
+    transparent 8%,
+    transparent 92%,
+    rgba(0,0,0,0.08) 100%
+  )
+`;
+
 const BookCoverUsingImage = ({
 	book,
 	disableFade,
@@ -26,7 +45,11 @@ const BookCoverUsingImage = ({
 	const [isHovering, setIsHovering] = useState(false);
 	return (
 		<div
-			style={{ height: "200px", width: "auto", position: "relative" }}
+			style={{
+				width: "133px",
+				position: "relative",
+				boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+			}}
 			{...props}
 			onPointerOver={() => {
 				setIsHovering(true);
@@ -39,9 +62,18 @@ const BookCoverUsingImage = ({
 				src={book.cover_image.url}
 				alt={book.title}
 				style={{
-					height: "200px",
-					width: "auto",
-					objectFit: "contain",
+					width: "133px",
+					height: "auto",
+					display: "block",
+				}}
+			/>
+			<div
+				style={{
+					position: "absolute",
+					inset: 0,
+					background: spineBackground,
+					pointerEvents: "none",
+					zIndex: 1,
 				}}
 			/>
 			<Transition
@@ -96,6 +128,7 @@ const BookCoverWithPlaceholder = ({
 					height: "200px",
 					display: "grid",
 					gridTemplateAreas: "overlap",
+					boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
 				}}
 			>
 				<img
@@ -119,6 +152,7 @@ const BookCoverWithPlaceholder = ({
 						gridArea: "overlap",
 						padding: "0.3rem",
 						zIndex: 1,
+						background: spineBackground,
 					}}
 				>
 					<Text
@@ -127,7 +161,7 @@ const BookCoverWithPlaceholder = ({
 						c="white"
 						style={{ textShadow: "0px 1px #888" }}
 					>
-						{shortenToChars(book.title, 45)}
+						{shortenToChars(book.title, 36)}
 					</Text>
 					<Text size="md" c="#ccc" style={{ textShadow: "0px 2px #222" }}>
 						{formatAuthorList(book.author_list)}
