@@ -1,6 +1,6 @@
 import { shortenToChars } from "$lib/domain/book";
 import { LibraryBook } from "@/bindings";
-import { AspectRatio, Overlay, Text, Transition } from "@mantine/core";
+import { AspectRatio, Overlay, Text, Transition, useMantineColorScheme } from "@mantine/core";
 import { HTMLAttributes, useState } from "react";
 import { formatAuthorList } from "@/lib/authors";
 import { selectByStringHash } from "@/lib/hash-string";
@@ -43,12 +43,16 @@ const BookCoverUsingImage = ({
 	disableFade: boolean;
 } & HTMLAttributes<HTMLDivElement>) => {
 	const [isHovering, setIsHovering] = useState(false);
+	const { colorScheme } = useMantineColorScheme();
+	const isDark = colorScheme === "dark";
 	return (
 		<div
 			style={{
 				width: "133px",
 				position: "relative",
-				boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+				boxShadow: isDark
+					? "0 0 0 1px rgba(255,255,255,0.08), 0 2px 8px rgba(0,0,0,0.5)"
+					: "0 2px 8px rgba(0,0,0,0.18)",
 			}}
 			{...props}
 			onPointerOver={() => {
@@ -103,6 +107,8 @@ const BookCoverWithPlaceholder = ({
 	disableFade: boolean;
 } & HTMLAttributes<HTMLDivElement>) => {
 	const [isHovering, setIsHovering] = useState(false);
+	const { colorScheme } = useMantineColorScheme();
+	const isDark = colorScheme === "dark";
 
 	const imgUrl = selectByStringHash(
 		[img1Url, img2Url, img3Url, img4Url, img5Url],
@@ -128,7 +134,9 @@ const BookCoverWithPlaceholder = ({
 					height: "200px",
 					display: "grid",
 					gridTemplateAreas: "overlap",
-					boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
+					boxShadow: isDark
+						? "0 0 0 1px rgba(255,255,255,0.08), 0 2px 8px rgba(0,0,0,0.5)"
+						: "0 2px 8px rgba(0,0,0,0.18)",
 				}}
 			>
 				<img
