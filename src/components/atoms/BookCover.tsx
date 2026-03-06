@@ -82,7 +82,6 @@ const BookCoverWithPlaceholder = ({
 			ratio={9 / 6}
 			h={200}
 			w={133}
-			m="xs"
 			onPointerOver={() => {
 				setIsHovering(true);
 			}}
