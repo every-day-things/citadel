@@ -184,8 +184,8 @@ jobs:
         with:
           tauriScript: bun tauri
           args: --config '{"bundle":{"createUpdaterArtifacts":true}}'
-          tagName: v__VERSION__
-          releaseName: Citadel v__VERSION__
+          tagName: v${{ steps.version.outputs.version }}
+          releaseName: Citadel v${{ steps.version.outputs.version }}
           releaseBody: |
             Automated ${{ steps.version.outputs.release_type }} release.
 
