@@ -7,7 +7,7 @@ import { useMemo, useState } from "react";
 export interface HardcoverMessage {
 	type: "success" | "error";
 	text: string;
-				}
+}
 
 interface FormSetter {
 	setFieldValue: (field: string, value: unknown) => void;
@@ -271,7 +271,7 @@ export const useHardcoverBookActions = ({
 					image_url: string | null;
 					isbn: string | null;
 					slug: string | null;
-			}
+			  }
 			| undefined;
 
 		if (hardcoverApiKey) {
