@@ -14,6 +14,10 @@ browser engine installed on the user's system.
 - **[Migration Example](../ai-docs/MIGRATION_EXAMPLE.md)** - Step-by-step guide for migrating the books feature to the new architecture
 - **[Patterns Quick Reference](../ai-docs/PATTERNS_QUICK_REFERENCE.md)** - Cheat sheet of common patterns and best practices
 
+## 🚀 Release & updater docs
+
+- **[Updater and release operations](./updater-and-releases.md)** - Tauri updater setup, GitHub release flow, and verification checklist
+
 **Start here if you're:**
 - 🚀 **New to the project**: Read the Overview below, then [Architecture Recommendations](../ai-docs/ARCHITECTURE_RECOMMENDATIONS.md)
 - 🔧 **Adding a feature**: Check [Patterns Quick Reference](../ai-docs/PATTERNS_QUICK_REFERENCE.md)

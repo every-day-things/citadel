@@ -3,7 +3,9 @@
 	"identifier": "minimal",
 	"description": "Essential capabilities for Citadel app",
 	"local": true,
-	"windows": ["main"],
+	"windows": [
+		"main"
+	],
 	"permissions": [
 		"core:default",
 		"core:window:default",
@@ -38,6 +40,7 @@
 		"drag:default",
 		"store:default",
 		"opener:default",
+		"updater:default",
 		{
 			"identifier": "opener:allow-open-path",
 			"allow": [

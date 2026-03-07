@@ -93,6 +93,11 @@ bun install
 bun run build
 ```
 
+### Auto-updater and releases
+
+Citadel can check for app updates and install them on request. Automatic update checks can be disabled in Settings (`Auto updates: On/Off`), and installs are always explicit (`Install and restart`). For maintainer setup and release workflow details, see [`docs/updater-and-releases.md`](docs/updater-and-releases.md).
+
+
 ## Additional Credit & Related Projects
 
 This project would not be possible without the north star created by Kovid Goyal,

@@ -1,0 +1,160 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: "Release type"
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - nightly
+          - custom
+        default: patch
+      custom_version:
+        description: "Custom semver (used only when release_type=custom)"
+        required: false
+        type: string
+      prerelease:
+        description: "Mark as prerelease"
+        required: false
+        default: false
+        type: boolean
+  schedule:
+    - cron: "0 7 * * *"
+
+jobs:
+  release:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ubuntu-22.04, macos-15]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute release version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+
+          if [[ "${{ github.event_name }}" == "schedule" ]]; then
+            RELEASE_TYPE="nightly"
+            PRERELEASE="true"
+          else
+            RELEASE_TYPE="${{ github.event.inputs.release_type }}"
+            PRERELEASE="${{ github.event.inputs.prerelease }}"
+          fi
+
+          if [[ "$RELEASE_TYPE" == "custom" ]]; then
+            VERSION="${{ github.event.inputs.custom_version }}"
+            if [[ -z "$VERSION" ]]; then
+              echo "custom_version is required when release_type=custom"
+              exit 1
+            fi
+          elif [[ "$RELEASE_TYPE" == "nightly" ]]; then
+            MAJOR=$(echo "$CURRENT_VERSION" | cut -d. -f1)
+            MINOR=$(echo "$CURRENT_VERSION" | cut -d. -f2)
+            PATCH=$(echo "$CURRENT_VERSION" | cut -d. -f3)
+            NIGHTLY_DATE=$(date -u +%Y%m%d)
+            VERSION="${MAJOR}.${MINOR}.${PATCH}-nightly.${NIGHTLY_DATE}.${GITHUB_RUN_NUMBER}"
+          else
+            VERSION=$(node -e "
+              const [major, minor, patch] = process.argv[1].split('.').map((v) => parseInt(v, 10));
+              const releaseType = process.argv[2];
+              if ([major, minor, patch].some((v) => Number.isNaN(v))) {
+                throw new Error('Current version must be semver core x.y.z');
+              }
+              if (releaseType === 'patch') console.log(`${major}.${minor}.${patch + 1}`);
+              else if (releaseType === 'minor') console.log(`${major}.${minor + 1}.0`);
+              else if (releaseType === 'major') console.log(`${major + 1}.0.0`);
+              else throw new Error(`Unsupported release_type: ${releaseType}`);
+            " "$CURRENT_VERSION" "$RELEASE_TYPE")
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
+          echo "release_type=$RELEASE_TYPE" >> "$GITHUB_OUTPUT"
+
+      - name: Apply version across project files
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION='${{ steps.version.outputs.version }}'
+
+          node -e "
+            const fs = require('node:fs');
+            const version = process.argv[1];
+
+            const packageJsonPath = 'package.json';
+            const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+            packageJson.version = version;
+            fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + '\\n');
+
+            const tauriConfigPath = 'src-tauri/tauri.conf.json';
+            const tauriConfig = JSON.parse(fs.readFileSync(tauriConfigPath, 'utf8'));
+            tauriConfig.version = version;
+            fs.writeFileSync(tauriConfigPath, JSON.stringify(tauriConfig, null, 2) + '\\n');
+          " "$VERSION"
+
+          perl -0pi -e "s/^version = \"[^\"]+\"/version = \"$VERSION\"/m" src-tauri/Cargo.toml
+
+      - name: Persist version bump to repository
+        if: github.event_name == 'workflow_dispatch' && matrix.platform == 'ubuntu-22.04' && steps.version.outputs.release_type != 'nightly'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json
+          if git diff --cached --quiet; then
+            echo "No version changes to commit."
+            exit 0
+          fi
+          git commit -m "chore(release): bump version to v${{ steps.version.outputs.version }}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - run: rustup toolchain install stable --profile minimal
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: "v1-release-rust"
+          workspaces: "src-tauri"
+
+      - name: (Ubuntu only) Install dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Install node packages
+        run: bun install
+
+      - name: Build and publish release assets
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tauriScript: bun tauri
+          args: --config '{"bundle":{"createUpdaterArtifacts":true}}'
+          tagName: v__VERSION__
+          releaseName: Citadel v__VERSION__
+          releaseBody: |
+            Automated ${{ steps.version.outputs.release_type }} release.
+
+            Includes updater metadata (`latest.json`) for Tauri updater clients.
+          prerelease: ${{ steps.version.outputs.prerelease == 'true' }}
+          generateReleaseNotes: true
