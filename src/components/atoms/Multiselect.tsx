@@ -80,7 +80,17 @@ export function MultiSelectCreatable({
 	};
 
 	const values = _value.map((item) => (
-		<Pill key={item} withRemoveButton onRemove={() => handleValueRemove(item)}>
+		<Pill
+			key={item}
+			withRemoveButton
+			onRemove={() => handleValueRemove(item)}
+			style={{
+				backgroundColor: "var(--ctd-surface-muted)",
+				border: "1px solid var(--ctd-border)",
+				color: "var(--ctd-control-text)",
+				fontWeight: 600,
+			}}
+		>
 			{item}
 		</Pill>
 	));
@@ -103,7 +113,21 @@ export function MultiSelectCreatable({
 			withinPortal={false}
 		>
 			<Combobox.DropdownTarget>
-				<PillsInput onClick={() => combobox.openDropdown()} label={label}>
+				<PillsInput
+					onClick={() => combobox.openDropdown()}
+					label={label}
+					styles={{
+						label: {
+							fontWeight: 600,
+							color: "var(--ctd-ink-soft)",
+						},
+						input: {
+							backgroundColor: "var(--ctd-control-bg)",
+							borderColor: "var(--ctd-border)",
+							color: "var(--ctd-control-text)",
+						},
+					}}
+				>
 					<Pill.Group>
 						{values}
 
@@ -113,6 +137,9 @@ export function MultiSelectCreatable({
 								onBlur={() => combobox.closeDropdown()}
 								value={search}
 								placeholder={placeholder}
+								style={{
+									color: "var(--ctd-control-text)",
+								}}
 								onChange={(event) => {
 									combobox.updateSelectedOptionIndex();
 									setSearch(event.currentTarget.value);
@@ -131,7 +158,12 @@ export function MultiSelectCreatable({
 				</PillsInput>
 			</Combobox.DropdownTarget>
 
-			<Combobox.Dropdown>
+			<Combobox.Dropdown
+				style={{
+					borderColor: "var(--ctd-border)",
+					backgroundColor: "var(--ctd-control-bg-strong)",
+				}}
+			>
 				<Combobox.Options
 					style={{
 						maxHeight: "10rem",

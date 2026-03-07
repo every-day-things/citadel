@@ -309,6 +309,7 @@ export const Sidebar = () => {
 				/>
 			)}
 			<SidebarPure
+				currentPathname={location.pathname}
 				addBookHandler={selectAndEditBookFile}
 				switchLibraryHandler={openLibrarySelectModalHandler}
 				shelves={shelves}
@@ -347,12 +348,27 @@ const AddBookModalPure = ({
 	return (
 		<Modal.Root opened={isOpen} onClose={onClose} size={"lg"}>
 			<Modal.Overlay blur={3} backgroundOpacity={0.35} />
-			<Modal.Content>
-				<Modal.Header>
+			<Modal.Content
+				style={{
+					background: "var(--ctd-drawer-gradient)",
+					border: "1px solid var(--ctd-border)",
+				}}
+			>
+				<Modal.Header
+					style={{
+						backgroundColor: "transparent",
+						borderBottom: "1px solid var(--ctd-border)",
+					}}
+				>
 					<Modal.Title>{addBookFormTitle}</Modal.Title>
-					<Modal.CloseButton />
+					<Modal.CloseButton
+						style={{
+							border: "1px solid var(--ctd-border)",
+							backgroundColor: "var(--ctd-control-bg)",
+						}}
+					/>
 				</Modal.Header>
-				<Modal.Body>
+				<Modal.Body style={{ paddingTop: "0.9rem" }}>
 					<AddBookForm
 						initial={{
 							authorList: metadata?.author_names ?? [],
@@ -371,6 +387,7 @@ const AddBookModalPure = ({
 };
 
 interface SidebarPureProps {
+	currentPathname: string;
 	addBookHandler: () => void;
 	switchLibraryHandler: () => void;
 	shelves: {
@@ -389,6 +406,7 @@ interface SidebarPureProps {
 }
 
 const SidebarPure = ({
+	currentPathname,
 	addBookHandler,
 	switchLibraryHandler,
 	shelves,
@@ -401,10 +419,35 @@ const SidebarPure = ({
 	checkForUpdatesHandler,
 	toggleAutoUpdateCheckingHandler,
 }: SidebarPureProps) => {
+	const baseTextColor = "var(--ctd-ink-soft)";
+	const hoverBackground = "var(--ctd-nav-hover-bg)";
+	const activeBackground = "var(--ctd-nav-active-bg)";
+	const activeTextColor = "var(--ctd-nav-active-text)";
+
 	return (
-		<Stack justify="space-between" h="100%">
-			<Stack>
-				<Title order={5}>My library</Title>
+		<Stack
+			justify="space-between"
+			h="100%"
+			p="md"
+			style={{
+				paddingTop: "1rem",
+				backgroundColor: "var(--ctd-nav-bg)",
+				borderRadius: "10px",
+				border: "1px solid var(--ctd-border)",
+				boxShadow: "var(--ctd-shadow-soft)",
+			}}
+		>
+			<Stack gap="xs">
+				<Title
+					order={5}
+					style={{
+						fontFamily:
+							'"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif',
+						letterSpacing: "0.01em",
+					}}
+				>
+					My library
+				</Title>
 				<Button variant="filled" onPointerDown={addBookHandler}>
 					⊕ Add book
 				</Button>
@@ -412,10 +455,45 @@ const SidebarPure = ({
 					label="Authors"
 					component={Link}
 					to="/authors"
-					active={location.pathname === "/authors"}
+					active={currentPathname === "/authors"}
+					variant="subtle"
+					styles={{
+						root: {
+							borderRadius: "0.375rem",
+							padding: "0.45rem 0.65rem",
+							transition: "background-color 140ms ease, color 140ms ease",
+							backgroundColor:
+								currentPathname === "/authors"
+									? activeBackground
+									: "transparent",
+							color:
+								currentPathname === "/authors"
+									? activeTextColor
+									: baseTextColor,
+							"&:hover": {
+								backgroundColor: hoverBackground,
+							},
+							"&[data-active]": {
+								backgroundColor: activeBackground,
+								color: activeTextColor,
+							},
+							"&[data-active]:hover": {
+								backgroundColor: activeBackground,
+							},
+						},
+					}}
 				/>
 				<Divider my="md" />
-				<Title order={5}>Shelves</Title>
+				<Title
+					order={5}
+					style={{
+						fontFamily:
+							'"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif',
+						letterSpacing: "0.01em",
+					}}
+				>
+					Shelves
+				</Title>
 				{shelves.map(({ title, path, isActive }) => (
 					<NavLink
 						key={path}
@@ -423,6 +501,26 @@ const SidebarPure = ({
 						component={Link}
 						to={path}
 						active={isActive()}
+						variant="subtle"
+						styles={{
+							root: {
+								borderRadius: "0.375rem",
+								padding: "0.35rem 0.65rem",
+								transition: "background-color 140ms ease, color 140ms ease",
+								backgroundColor: isActive() ? activeBackground : "transparent",
+								color: isActive() ? activeTextColor : baseTextColor,
+								"&:hover": {
+									backgroundColor: hoverBackground,
+								},
+								"&[data-active]": {
+									backgroundColor: activeBackground,
+									color: activeTextColor,
+								},
+								"&[data-active]:hover": {
+									backgroundColor: activeBackground,
+								},
+							},
+						}}
 					/>
 				))}
 			</Stack>
@@ -433,6 +531,14 @@ const SidebarPure = ({
 					opened={isSettingsMenuOpen}
 					onChange={onSettingsMenuChange}
 					closeOnItemClick={false}
+					styles={{
+						item: {
+							color: "var(--ctd-ink)",
+							"&:where([data-hovered])": {
+								backgroundColor: "var(--ctd-nav-hover-bg)",
+							},
+						},
+					}}
 				>
 					<Menu.Target>
 						<ActionIcon color={"text"} aria-label="Settings" size={"sm"}>
@@ -440,7 +546,13 @@ const SidebarPure = ({
 						</ActionIcon>
 					</Menu.Target>
 
-					<Menu.Dropdown ml="xs">
+					<Menu.Dropdown
+						ml="xs"
+						style={{
+							backgroundColor: "var(--ctd-surface-strong)",
+							border: "1px solid var(--ctd-border)",
+						}}
+					>
 						<Menu.Item
 							leftSection={<F7SunMaxFill title="Colour scheme" />}
 							onClick={openThemeModal}

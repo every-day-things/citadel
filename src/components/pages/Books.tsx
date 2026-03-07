@@ -154,8 +154,23 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 				opened={isBookSidebarOpen}
 				position="right"
 				onClose={closeBookSidebar}
-				title=""
+				title={null}
+				withCloseButton={false}
 				overlayProps={{ blur: 3, backgroundOpacity: 0.35 }}
+				styles={{
+					content: {
+						background: "var(--ctd-drawer-gradient)",
+						border: "1px solid var(--ctd-border)",
+					},
+					header: {
+						background: "transparent",
+						padding: 0,
+						minHeight: 0,
+					},
+					body: {
+						paddingTop: "0.4rem",
+					},
+				}}
 			>
 				{selectedSidebarBook && <BookDetails book={selectedSidebarBook} />}
 			</Drawer>
@@ -220,9 +235,9 @@ function FilterControls({ form }: { form: BookViewForm }) {
 	return (
 		<Flex
 			mih={50}
-			gap="sm"
+			gap="md"
 			miw={100}
-			justify="space-between"
+			justify="flex-start"
 			align="center"
 			direction="row"
 			wrap="wrap"
@@ -230,12 +245,34 @@ function FilterControls({ form }: { form: BookViewForm }) {
 			<TextInput
 				miw="32ch"
 				placeholder="Search book titles and authors"
+				radius="md"
+				size="md"
+				styles={{
+					input: {
+						backgroundColor: "var(--ctd-control-bg)",
+						borderColor: "var(--ctd-border)",
+						color: "var(--ctd-control-text)",
+					},
+				}}
 				{...form.getInputProps("query")}
 			/>
 			<Select
 				placeholder="Sort Order"
 				allowDeselect={false}
-				w={150}
+				w={180}
+				radius="md"
+				size="md"
+				styles={{
+					input: {
+						backgroundColor: "var(--ctd-control-bg)",
+						borderColor: "var(--ctd-border)",
+						color: "var(--ctd-control-text)",
+					},
+					dropdown: {
+						backgroundColor: "var(--ctd-surface-strong)",
+						borderColor: "var(--ctd-border)",
+					},
+				}}
 				data={LBSOSEntries.map(([key]) => ({
 					value: key,
 					label: LibraryBookSortOrderStrings[key],
@@ -243,9 +280,48 @@ function FilterControls({ form }: { form: BookViewForm }) {
 				{...form.getInputProps("sortOrder")}
 			/>
 
-			<SegmentedControl data={viewControls} {...form.getInputProps("view")} />
+			<SegmentedControl
+				radius="md"
+				size="md"
+				data={viewControls}
+				styles={{
+					root: {
+						backgroundColor: "var(--ctd-segmented-root-bg)",
+						border: "1px solid var(--ctd-border)",
+					},
+					indicator: {
+						background: "var(--ctd-segmented-indicator-bg)",
+						boxShadow: "var(--ctd-shadow-soft)",
+					},
+					label: {
+						color: "var(--ctd-segmented-label)",
+						fontWeight: 600,
+					},
+					control: {
+						transition: "background-color 120ms ease",
+					},
+				}}
+				{...form.getInputProps("view")}
+			/>
 
-			<Switch label="Hide read" {...form.getInputProps("hideRead")} />
+			<Switch
+				label="Hide read"
+				color="sepia"
+				styles={{
+					label: {
+						fontWeight: 600,
+						color: "var(--ctd-ink-soft)",
+					},
+					track: {
+						borderColor: "var(--ctd-border-strong)",
+						backgroundColor: "var(--ctd-control-bg)",
+					},
+					thumb: {
+						borderColor: "var(--ctd-border-strong)",
+					},
+				}}
+				{...form.getInputProps("hideRead")}
+			/>
 		</Flex>
 	);
 }
@@ -260,12 +336,20 @@ function Header({
 	totalBookCount: number;
 }) {
 	return (
-		<Stack>
-			<Title order={1} mb="xs">
-				Books
+		<Stack
+			gap="xs"
+			p="md"
+			style={{
+				backgroundColor: "var(--ctd-surface-soft)",
+				border: "1px solid var(--ctd-border)",
+				borderRadius: "12px",
+			}}
+		>
+			<Title order={1} mb={2} style={{ letterSpacing: "0.01em" }}>
+				Your Library
 			</Title>
 			<FilterControls form={form} />
-			<Text>
+			<Text c="dimmed" fw={500}>
 				Showing {viewBookCount} of {totalBookCount} books
 			</Text>
 		</Stack>
@@ -275,7 +359,7 @@ function Header({
 const BookDetails = ({ book }: { book: LibraryBook }) => {
 	return (
 		<>
-			<Stack h={"100%"}>
+			<Stack h={"100%"} gap="md">
 				<Group wrap={"nowrap"} align="flex-start">
 					<BookCover book={book} disableFade />
 					<Stack
@@ -283,15 +367,23 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 						mih={"200px"}
 						maw="calc(400px - 133px)"
 					>
-						<Stack ml={"sm"} align="flex-start" justify="flex-start">
-							<Text size="xl" fw={"700"}>
+						<Stack ml={"sm"} align="flex-start" justify="flex-start" gap={4}>
+							<Text
+								size="xl"
+								fw={"700"}
+								style={{
+									fontFamily:
+										'"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif',
+									lineHeight: 1.15,
+								}}
+							>
 								{book.title}
 							</Text>
-							<Text size="md">
+							<Text size="md" c="dimmed">
 								{book.author_list.map((author) => author.name).join(", ")}
 							</Text>
 						</Stack>
-						<Group justify="space-evenly" w={"100%"}>
+						<Group justify="space-between" w={"100%"}>
 							<Button
 								variant="subtle"
 								onPointerDown={safeAsyncEventHandler(async () => {
@@ -316,6 +408,15 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 					<>
 						<Divider />
 						<Stack>
+							<Text
+								fw={700}
+								style={{
+									fontFamily:
+										'"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif',
+								}}
+							>
+								Description
+							</Text>
 							{/* We're using DOMPurify to sanitize the HTML before rendering */}
 							<div
 								className="description-html"
@@ -328,18 +429,31 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 					</>
 				)}
 				<Divider />
-				<Stack>
+				<Stack gap={6}>
 					{book.identifier_list.length > 0 && (
 						<BookIdentifiers identifier_list={book.identifier_list} />
 					)}
-					<p>
-						<span>Formats</span>:{" "}
+					<Text
+						fw={700}
+						style={{
+							fontFamily:
+								'"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif',
+						}}
+					>
+						Formats
+					</Text>
+					<p style={{ marginTop: 0 }}>
 						{book.file_list
 							.filter((item): item is { Local: LocalFile } => "Local" in item)
 							.map((f1) => (
 								<span
 									key={f1.Local.path}
-									style={{ textDecoration: "underline", marginRight: "1rem" }}
+									style={{
+										display: "inline-flex",
+										textDecoration: "underline",
+										marginRight: "0.75rem",
+										fontSize: "0.9rem",
+									}}
 									onPointerDown={safeAsyncEventHandler(async () => {
 										await revealItemInDir(f1.Local.path);
 									})}
@@ -378,7 +492,16 @@ const BookIdentifiers = ({
 }) => {
 	return (
 		<Stack gap={"xs"}>
-			<Text size="xs">IDs</Text>
+			<Text
+				size="sm"
+				fw={700}
+				style={{
+					fontFamily:
+						'"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif',
+				}}
+			>
+				Identifiers
+			</Text>
 			<ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
 				{identifier_list.map(({ label, value }) => {
 					if (isKnownLabel(label)) {
@@ -396,7 +519,12 @@ const BookIdentifiers = ({
 										{label.toUpperCase()}
 									</Text>
 									:{" "}
-									<a href={url} target="_blank" rel={"noreferrer"}>
+									<a
+										href={url}
+										target="_blank"
+										rel={"noreferrer"}
+										style={{ color: "var(--ctd-link)" }}
+									>
 										{value}
 									</a>
 									<ActionIcon
