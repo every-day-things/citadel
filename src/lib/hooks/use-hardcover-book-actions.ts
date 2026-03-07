@@ -9,6 +9,14 @@ export interface HardcoverMessage {
 	text: string;
 }
 
+interface ResolvedHardcoverMetadata {
+	title: string;
+	description: string | null;
+	image_url: string | null;
+	isbn: string | null;
+	slug: string | null;
+}
+
 interface FormSetter {
 	setFieldValue: (field: string, value: unknown) => void;
 }
@@ -264,15 +272,7 @@ export const useHardcoverBookActions = ({
 	};
 
 	const selectSearchResult = async (result: HardcoverSearchResult) => {
-		let resolvedMetadata:
-			| {
-					title: string;
-					description: string | null;
-					image_url: string | null;
-					isbn: string | null;
-					slug: string | null;
-			  }
-			| undefined;
+		let resolvedMetadata: ResolvedHardcoverMetadata | undefined;
 
 		if (hardcoverApiKey) {
 			const metadataById = await commands.fetchHardcoverMetadataByBookId(
