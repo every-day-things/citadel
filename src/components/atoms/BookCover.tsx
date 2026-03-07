@@ -1,6 +1,12 @@
 import { shortenToChars } from "$lib/domain/book";
 import { LibraryBook } from "@/bindings";
-import { AspectRatio, Overlay, Text, Transition, useMantineColorScheme } from "@mantine/core";
+import {
+	AspectRatio,
+	Overlay,
+	Text,
+	Transition,
+	useMantineColorScheme,
+} from "@mantine/core";
 import { HTMLAttributes, useState } from "react";
 import { formatAuthorList } from "@/lib/authors";
 import { selectByStringHash } from "@/lib/hash-string";
@@ -158,9 +164,8 @@ const BookCoverWithPlaceholder = ({
 						alignContent: "flex-start",
 						justifyContent: "flex-end",
 						gridArea: "overlap",
-						padding: "0.3rem",
+						padding: "0.3rem 0.3rem 0.3rem calc(0.3rem + 6px)",
 						zIndex: 1,
-						background: spineBackground,
 					}}
 				>
 					<Text
@@ -189,6 +194,16 @@ const BookCoverWithPlaceholder = ({
 						)}
 					</Transition>
 				</div>
+				<div
+					style={{
+						gridArea: "overlap",
+						width: "133px",
+						height: "200px",
+						background: spineBackground,
+						pointerEvents: "none",
+						zIndex: 2,
+					}}
+				/>
 			</div>
 		</AspectRatio>
 	);
