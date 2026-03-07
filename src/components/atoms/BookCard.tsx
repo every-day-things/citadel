@@ -6,25 +6,25 @@ import { BookCover } from "./BookCover";
 type BookAction = (bookId: LibraryBook["id"]) => void;
 
 interface BookActions {
-  onViewBook: BookAction;
+	onViewBook: BookAction;
 }
 
 interface BookCard {
-  book: LibraryBook;
-  actions: BookActions;
+	book: LibraryBook;
+	actions: BookActions;
 }
 
 export const BookCard = React.memo(function BookCard({
-  book,
-  actions: { onViewBook },
+	book,
+	actions: { onViewBook },
 }: BookCard) {
-  const onCoverTouch = useCallback(() => {
-    onViewBook(book.id);
-  }, [onViewBook, book]);
+	const onCoverTouch = useCallback(() => {
+		onViewBook(book.id);
+	}, [onViewBook, book]);
 
-  return (
-    <Center>
-      <BookCover book={book} onPointerDown={onCoverTouch} />
-    </Center>
-  );
+	return (
+		<Center>
+			<BookCover book={book} onPointerDown={onCoverTouch} />
+		</Center>
+	);
 });
