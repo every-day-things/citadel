@@ -190,12 +190,52 @@ jobs:
       - name: Install node packages
         run: bun install
 
+      - name: (macOS only) Prepare Apple notarization key
+        if: matrix.platform == 'macos-15'
+        shell: bash
+        env:
+          APPLE_API_KEY_SECRET: ${{ secrets.APPLE_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${APPLE_API_KEY_SECRET}" ]]; then
+            echo "Missing required secret: APPLE_API_KEY"
+            exit 1
+          fi
+
+          KEY_FILE="$RUNNER_TEMP/apple_api_key.p8"
+
+          # Support APPLE_API_KEY being stored either as raw .p8 contents
+          # or base64-encoded .p8 contents.
+          if echo "${APPLE_API_KEY_SECRET}" | base64 --decode > "$KEY_FILE" 2>/dev/null \
+            && grep -q "BEGIN PRIVATE KEY" "$KEY_FILE"; then
+            echo "Using base64-decoded APPLE_API_KEY secret."
+          else
+            printf "%s" "${APPLE_API_KEY_SECRET}" > "$KEY_FILE"
+            if ! grep -q "BEGIN PRIVATE KEY" "$KEY_FILE"; then
+              echo "APPLE_API_KEY is neither valid base64 .p8 nor raw .p8 content."
+              exit 1
+            fi
+            echo "Using raw APPLE_API_KEY secret."
+          fi
+
+          {
+            echo "APPLE_API_KEY<<__EOF__"
+            cat "$KEY_FILE"
+            echo "__EOF__"
+          } >> "$GITHUB_ENV"
+
       - name: Build and publish release assets
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.CITADEL_RELEASE_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_API_KEY: ${{ env.APPLE_API_KEY }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         with:
           tauriScript: bun tauri
           args: --config '{"bundle":{"createUpdaterArtifacts":true}}'
