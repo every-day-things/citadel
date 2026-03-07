@@ -214,7 +214,10 @@ fn normalize_isbn(raw: &str) -> Option<String> {
 }
 
 fn pick_preferred_isbn(isbns: &[String]) -> Option<String> {
-    let normalized: Vec<String> = isbns.iter().filter_map(|isbn| normalize_isbn(isbn)).collect();
+    let normalized: Vec<String> = isbns
+        .iter()
+        .filter_map(|isbn| normalize_isbn(isbn))
+        .collect();
     normalized
         .iter()
         .find(|isbn| isbn.len() == 13)
@@ -252,8 +255,8 @@ async fn fetch_hardcover_metadata_by_id_inner(
         .and_then(|v| v.as_array())
         .ok_or("No books data in response")?;
     let first = books.first().ok_or("No book found for Hardcover ID")?;
-    let doc: GqlBookDocument =
-        serde_json::from_value(first.clone()).map_err(|e| format!("Failed to parse book: {}", e))?;
+    let doc: GqlBookDocument = serde_json::from_value(first.clone())
+        .map_err(|e| format!("Failed to parse book: {}", e))?;
 
     Ok(HardcoverBookMetadata {
         title: doc.title.unwrap_or_default(),

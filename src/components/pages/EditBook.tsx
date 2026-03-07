@@ -65,15 +65,15 @@ export const BookPage = ({
 				</Text>{" "}
 				– {book.title}
 			</Title>
-				<EditBookForm
-					allAuthorList={allAuthorList}
-					onCreateAuthor={onCreateAuthor}
-					book={book}
-					onSave={onSave}
-					onDeleteIdentifier={onDeleteIdentifier}
-					onReloadBooks={onReloadBooks}
-					onUpsertIdentifier={onUpsertIdentifier}
-				/>
+			<EditBookForm
+				allAuthorList={allAuthorList}
+				onCreateAuthor={onCreateAuthor}
+				book={book}
+				onSave={onSave}
+				onDeleteIdentifier={onDeleteIdentifier}
+				onReloadBooks={onReloadBooks}
+				onUpsertIdentifier={onUpsertIdentifier}
+			/>
 		</Stack>
 	);
 };
