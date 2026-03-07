@@ -20,6 +20,8 @@ interface SettingsStore extends SettingsSchema {
 	// Domain-specific actions
 	setTheme: (theme: "dark" | "light" | "auto") => Promise<void>;
 	setStartFullscreen: (enabled: boolean) => Promise<void>;
+	setAutoUpdateCheckingEnabled: (enabled: boolean) => Promise<void>;
+	setHasCompletedFirstLaunch: (enabled: boolean) => Promise<void>;
 	setActiveLibrary: (libraryId: string) => Promise<void>;
 	createLibrary: (absolutePath: string) => Promise<string>;
 	getActiveLibrary: () => Option<
@@ -31,6 +33,8 @@ interface SettingsStore extends SettingsSchema {
 const defaultSettings: SettingsSchema = {
 	theme: "auto",
 	startFullscreen: false,
+	autoUpdateCheckingEnabled: true,
+	hasCompletedFirstLaunch: false,
 	activeLibraryId: "",
 	libraryPaths: [],
 	hardcoverApiKey: "",
@@ -88,6 +92,14 @@ export const useSettings = create<SettingsStore>((set, get) => ({
 
 	setStartFullscreen: async (enabled) => {
 		await persistSetting(set, "startFullscreen", enabled);
+	},
+
+	setAutoUpdateCheckingEnabled: async (enabled) => {
+		await persistSetting(set, "autoUpdateCheckingEnabled", enabled);
+	},
+
+	setHasCompletedFirstLaunch: async (enabled) => {
+		await persistSetting(set, "hasCompletedFirstLaunch", enabled);
 	},
 
 	setActiveLibrary: async (libraryId) => {

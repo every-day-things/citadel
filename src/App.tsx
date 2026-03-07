@@ -1,6 +1,10 @@
 import { safeAsyncEventHandler } from "$lib/async";
+import { IS_DEV } from "@/lib/env";
+import { checkForUpdates } from "@/lib/services/app-updates";
+import { isTauri } from "@tauri-apps/api/core";
 import { theme } from "$lib/theme";
 import { ColorSchemeScript, MantineProvider } from "@mantine/core";
+import { notifications, Notifications } from "@mantine/notifications";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { FirstTimeSetup } from "./components/pages/firstTimeSetup";
@@ -28,6 +32,38 @@ export const App = () => {
 		}
 	}, [hydrated]);
 
+	useEffect(() => {
+		if (!hydrated || !isTauri() || IS_DEV) return;
+
+		const {
+			autoUpdateCheckingEnabled,
+			hasCompletedFirstLaunch,
+			setHasCompletedFirstLaunch,
+		} = useSettings.getState();
+
+		if (!autoUpdateCheckingEnabled) return;
+		if (!hasCompletedFirstLaunch) {
+			safeAsyncEventHandler(async () => {
+				await setHasCompletedFirstLaunch(true);
+			})();
+			return;
+		}
+
+		safeAsyncEventHandler(async () => {
+			const updateCheckResult = await checkForUpdates();
+			if (updateCheckResult.has_update) {
+				notifications.show({
+					id: "auto-update-available",
+					title: "Update available",
+					message:
+						"A new version is available in Settings > Check for updates.",
+					color: "blue",
+					autoClose: 7000,
+				});
+			}
+		})();
+	}, [hydrated]);
+
 	if (!hydrated) {
 		// No window is shown until settings are hydrated
 		return null;
@@ -36,6 +72,7 @@ export const App = () => {
 	if (!libraryPath.isSome) {
 		return (
 			<MantineProvider theme={theme} defaultColorScheme="auto">
+				<Notifications />
 				<FirstTimeSetup />
 			</MantineProvider>
 		);
@@ -45,6 +82,7 @@ export const App = () => {
 		<>
 			<ColorSchemeScript defaultColorScheme="auto" />
 			<MantineProvider theme={theme} defaultColorScheme="auto">
+				<Notifications />
 				<LibraryStoreInitializer>
 					<RouterProvider router={router} />
 				</LibraryStoreInitializer>

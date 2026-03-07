@@ -128,6 +128,22 @@ async searchHardcoverBooks(apiKey: string, query: string) : Promise<Result<Hardc
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async clbCmdCheckForUpdates() : Promise<Result<UpdateCheckResult, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clb_cmd_check_for_updates") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async clbCmdInstallUpdateIfAvailable() : Promise<Result<string, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clb_cmd_install_update_if_available") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -190,6 +206,7 @@ export type LocalOrRemote = "Local" | "Remote"
 export type LocalOrRemoteUrl = { kind: LocalOrRemote; url: string; local_path: string | null }
 export type NewAuthor = { name: string; sortable_name: string | null }
 export type RemoteFile = { url: string }
+export type UpdateCheckResult = { has_update: boolean; version: string | null }
 
 /** tauri-specta globals **/
 

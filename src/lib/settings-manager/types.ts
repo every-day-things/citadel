@@ -8,6 +8,8 @@ export interface LibraryPath {
 export type SettingsSchema = {
 	theme: "dark" | "light" | "auto";
 	startFullscreen: boolean;
+	autoUpdateCheckingEnabled: boolean;
+	hasCompletedFirstLaunch: boolean;
 	activeLibraryId: string;
 	libraryPaths: LibraryPath[];
 	hardcoverApiKey: string;
