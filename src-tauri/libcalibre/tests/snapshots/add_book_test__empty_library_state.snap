@@ -1,5 +1,6 @@
 ---
 source: libcalibre/tests/add_book_test.rs
+assertion_line: 35
 expression: snapshot
 ---
 schema:
@@ -203,20 +204,8 @@ schema:
         type_name: TEXT
         nullable: true
         primary_key: false
-      - name: isbn
-        type_name: TEXT
-        nullable: true
-        primary_key: false
-      - name: lccn
-        type_name: TEXT
-        nullable: true
-        primary_key: false
       - name: path
         type_name: TEXT
-        nullable: false
-        primary_key: false
-      - name: flags
-        type_name: INTEGER
         nullable: false
         primary_key: false
       - name: uuid
