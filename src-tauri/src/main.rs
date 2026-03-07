@@ -2,11 +2,12 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use libs::calibre;
+#[cfg(debug_assertions)]
 use specta_typescript::Typescript;
-use std::env;
 use tauri::Manager;
 use tauri_specta::{collect_commands, Builder};
 
+mod app_updates;
 pub mod libs {
     pub mod calibre;
     pub mod file_formats;
@@ -41,6 +42,8 @@ fn run_tauri_backend() -> std::io::Result<()> {
         hardcover::test_hardcover_connection,
         hardcover::fetch_hardcover_metadata_by_isbn,
         hardcover::search_hardcover_books,
+        app_updates::clb_cmd_check_for_updates,
+        app_updates::clb_cmd_install_update_if_available,
     ]);
 
     #[cfg(debug_assertions)] // <- Only export on non-release builds
@@ -50,6 +53,7 @@ fn run_tauri_backend() -> std::io::Result<()> {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(state::CitadelState::new())
         .invoke_handler(builder.invoke_handler())
         .plugin(tauri_plugin_store::Builder::new().build())
