@@ -85,16 +85,16 @@ const EditBookRoute = () => {
 	}
 
 	return (
-			<BookPage
-				allAuthorList={allAuthorList}
-				book={book}
-				onCreateAuthor={onCreateAuthor}
-				onSave={onSave}
-				onUpsertIdentifier={onUpsertIdentifier}
-				onDeleteIdentifier={onDeleteIdentifier}
-				onReloadBooks={onReloadBooks}
-			/>
-		);
+		<BookPage
+			allAuthorList={allAuthorList}
+			book={book}
+			onCreateAuthor={onCreateAuthor}
+			onSave={onSave}
+			onUpsertIdentifier={onUpsertIdentifier}
+			onDeleteIdentifier={onDeleteIdentifier}
+			onReloadBooks={onReloadBooks}
+		/>
+	);
 };
 
 export const Route = createFileRoute("/books/$bookId")({
