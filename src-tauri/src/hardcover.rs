@@ -11,6 +11,7 @@ pub struct HardcoverBookMetadata {
     pub title: String,
     pub description: Option<String>,
     pub image_url: Option<String>,
+    pub isbn: Option<String>,
     pub release_year: Option<i32>,
     pub hardcover_id: Option<i32>,
     pub slug: Option<String>,
@@ -21,6 +22,7 @@ pub struct HardcoverSearchResult {
     pub title: String,
     pub description: Option<String>,
     pub image_url: Option<String>,
+    pub isbn: Option<String>,
     pub release_year: Option<i32>,
     pub hardcover_id: i32,
     pub slug: Option<String>,
@@ -63,6 +65,12 @@ impl<'de> Deserialize<'de> for FlexibleImage {
             serde_json::Value::Object(obj) => {
                 obj.get("url").and_then(|u| u.as_str()).map(String::from)
             }
+            serde_json::Value::Array(items) => items.iter().find_map(|item| {
+                item.as_object()
+                    .and_then(|obj| obj.get("url"))
+                    .and_then(|u| u.as_str())
+                    .map(String::from)
+            }),
             _ => None,
         };
         Ok(FlexibleImage(url))
@@ -85,6 +93,8 @@ struct GqlBookDocument {
     title: Option<String>,
     description: Option<String>,
     image: Option<FlexibleImage>,
+    #[serde(default)]
+    isbns: Vec<String>,
     release_year: Option<i32>,
     slug: Option<String>,
     #[serde(default)]
@@ -170,6 +180,90 @@ fn parse_search_data(data: &serde_json::Value) -> Result<GqlSearchData, String> 
     let search = data.get("search").ok_or("No search data in response")?;
     serde_json::from_value(search.clone())
         .map_err(|e| format!("Failed to parse search results: {}", e))
+}
+
+fn normalize_isbn(raw: &str) -> Option<String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    let without_prefix = trimmed
+        .strip_prefix("ISBN:")
+        .or_else(|| trimmed.strip_prefix("isbn:"))
+        .unwrap_or(trimmed)
+        .trim();
+
+    let compact: String = without_prefix
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .collect();
+    if compact.is_empty() {
+        return None;
+    }
+
+    let upper = compact.to_uppercase();
+    let valid = upper.len() == 13 && upper.chars().all(|c| c.is_ascii_digit())
+        || (upper.len() == 10
+            && upper[..9].chars().all(|c| c.is_ascii_digit())
+            && upper[9..].chars().all(|c| c.is_ascii_digit() || c == 'X'));
+    if valid {
+        Some(upper)
+    } else {
+        None
+    }
+}
+
+fn pick_preferred_isbn(isbns: &[String]) -> Option<String> {
+    let normalized: Vec<String> = isbns.iter().filter_map(|isbn| normalize_isbn(isbn)).collect();
+    normalized
+        .iter()
+        .find(|isbn| isbn.len() == 13)
+        .cloned()
+        .or_else(|| normalized.into_iter().next())
+}
+
+async fn fetch_hardcover_metadata_by_id_inner(
+    api_key: &str,
+    hardcover_id: i32,
+) -> Result<HardcoverBookMetadata, String> {
+    let query = r#"
+        query BookById($hardcoverId: Int!) {
+            books(where: { id: { _eq: $hardcoverId } }, limit: 1) {
+                id
+                title
+                description
+                image
+                release_year
+                slug
+                isbns
+            }
+        }
+    "#;
+
+    let response = hardcover_request(api_key)
+        .json(&json!({ "query": query, "variables": { "hardcoverId": hardcover_id } }))
+        .send()
+        .await
+        .map_err(|e| format!("Failed to connect to Hardcover API: {}", e))?;
+
+    let data = execute_graphql(response).await?;
+    let books = data
+        .get("books")
+        .and_then(|v| v.as_array())
+        .ok_or("No books data in response")?;
+    let first = books.first().ok_or("No book found for Hardcover ID")?;
+    let doc: GqlBookDocument =
+        serde_json::from_value(first.clone()).map_err(|e| format!("Failed to parse book: {}", e))?;
+
+    Ok(HardcoverBookMetadata {
+        title: doc.title.unwrap_or_default(),
+        description: doc.description,
+        image_url: doc.image.and_then(|i| i.0),
+        isbn: pick_preferred_isbn(&doc.isbns),
+        release_year: doc.release_year,
+        hardcover_id: doc.id.0,
+        slug: doc.slug,
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -259,10 +353,28 @@ pub async fn fetch_hardcover_metadata_by_isbn(
         title: doc.title.clone().unwrap_or_default(),
         description: doc.description.clone(),
         image_url: doc.image.as_ref().and_then(|i| i.0.clone()),
+        isbn: pick_preferred_isbn(&doc.isbns).or_else(|| normalize_isbn(isbn)),
         release_year: doc.release_year,
         hardcover_id: doc.id.0,
         slug: doc.slug.clone(),
     })
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn fetch_hardcover_metadata_by_book_id(
+    api_key: String,
+    hardcover_id: i32,
+) -> Result<HardcoverBookMetadata, String> {
+    let api_key = api_key.trim();
+    if api_key.is_empty() {
+        return Err("API key is empty".to_string());
+    }
+    if hardcover_id <= 0 {
+        return Err("Hardcover ID must be positive".to_string());
+    }
+
+    fetch_hardcover_metadata_by_id_inner(api_key, hardcover_id).await
 }
 
 #[tauri::command]
@@ -306,6 +418,7 @@ pub async fn search_hardcover_books(
                 title: doc.title.clone().unwrap_or_default(),
                 description: doc.description.clone(),
                 image_url: doc.image.as_ref().and_then(|i| i.0.clone()),
+                isbn: pick_preferred_isbn(&doc.isbns),
                 release_year: doc.release_year,
                 hardcover_id: doc
                     .id

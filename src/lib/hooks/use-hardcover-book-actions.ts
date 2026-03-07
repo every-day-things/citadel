@@ -17,6 +17,7 @@ interface UseHardcoverBookActionsParams {
 	book: LibraryBook;
 	allAuthorNames: string[];
 	form: FormSetter;
+	onReloadBooks: () => Promise<void>;
 	onUpsertIdentifier: (
 		bookId: string,
 		identifierId: number | null,
@@ -48,10 +49,26 @@ export interface UseHardcoverBookActionsReturn {
 	selectSearchResult: (result: HardcoverSearchResult) => Promise<void>;
 }
 
+const normalizeIsbn = (raw: string): string | undefined => {
+	const trimmed = raw.trim();
+	if (!trimmed) return undefined;
+
+	const withoutPrefix =
+		trimmed.toLowerCase().startsWith("isbn:")
+			? trimmed.slice("isbn:".length).trim()
+			: trimmed;
+
+	const compact = withoutPrefix.replace(/[^0-9xX]/g, "").toUpperCase();
+	if (/^\d{13}$/.test(compact)) return compact;
+	if (/^\d{9}[\dX]$/.test(compact)) return compact;
+	return undefined;
+};
+
 export const useHardcoverBookActions = ({
 	book,
 	allAuthorNames,
 	form,
+	onReloadBooks,
 	onUpsertIdentifier,
 	onCreateAuthor,
 }: UseHardcoverBookActionsParams): UseHardcoverBookActionsReturn => {
@@ -103,23 +120,39 @@ export const useHardcoverBookActions = ({
 				isbnIdentifier.value,
 			);
 
-			if (result.status === "ok") {
-				const metadata = result.data;
+				if (result.status === "ok") {
+					const metadata = result.data;
 
-				// Store Hardcover slug as identifier first (triggers book reload + form reset)
-				const slug = metadata.slug ?? metadata.hardcover_id?.toString();
-				if (slug) {
-					await onUpsertIdentifier(
+					if (metadata.image_url) {
+						await commands.clbCmdSetBookCoverFromUrl(book.id, metadata.image_url);
+						await onReloadBooks();
+					}
+
+					// Store Hardcover slug as identifier first (triggers book reload + form reset)
+					const slug = metadata.slug ?? metadata.hardcover_id?.toString();
+					if (slug) {
+						await onUpsertIdentifier(
 						book.id,
 						hardcoverIdIdentifier?.id ?? null,
 						"hardcover",
-						slug,
-					);
-				}
+							slug,
+						);
+					}
+					if (metadata.isbn) {
+						const normalizedIsbn = normalizeIsbn(metadata.isbn);
+						if (normalizedIsbn) {
+							await onUpsertIdentifier(
+								book.id,
+								isbnIdentifier?.id ?? null,
+								"isbn",
+								normalizedIsbn,
+							);
+						}
+					}
 
-				// Yield a microtask so React can flush the state update from
-				// onUpsertIdentifier (which triggers book reload → useEffect resets form).
-				// Not a hard guarantee, but sufficient in practice with React's sync rendering.
+					// Yield a microtask so React can flush the state update from
+					// onUpsertIdentifier (which triggers book reload → useEffect resets form).
+					// Not a hard guarantee, but sufficient in practice with React's sync rendering.
 				await new Promise((r) => setTimeout(r, 0));
 
 				// Now set form values (after the reset from the book reload)
@@ -232,6 +265,26 @@ export const useHardcoverBookActions = ({
 	};
 
 	const selectSearchResult = async (result: HardcoverSearchResult) => {
+		let resolvedMetadata:
+			| {
+					title: string;
+					description: string | null;
+					image_url: string | null;
+					isbn: string | null;
+					slug: string | null;
+			  }
+			| undefined;
+
+		if (hardcoverApiKey) {
+			const metadataById = await commands.fetchHardcoverMetadataByBookId(
+				hardcoverApiKey,
+				result.hardcover_id,
+			);
+			if (metadataById.status === "ok") {
+				resolvedMetadata = metadataById.data;
+			}
+		}
+
 		if (result.authors && result.authors.length > 0) {
 			for (const authorName of result.authors) {
 				if (!allAuthorNames.includes(authorName)) {
@@ -241,13 +294,31 @@ export const useHardcoverBookActions = ({
 		}
 
 		// Store Hardcover slug as identifier (triggers book reload + form reset)
-		const slug = result.slug ?? result.hardcover_id.toString();
+		const slug =
+			resolvedMetadata?.slug ?? result.slug ?? result.hardcover_id.toString();
 		await onUpsertIdentifier(
 			book.id,
 			hardcoverIdIdentifier?.id ?? null,
 			"hardcover",
 			slug,
 		);
+		const isbnValue = resolvedMetadata?.isbn ?? result.isbn;
+		if (isbnValue) {
+			const normalizedIsbn = normalizeIsbn(isbnValue);
+			if (normalizedIsbn) {
+				await onUpsertIdentifier(
+					book.id,
+					isbnIdentifier?.id ?? null,
+					"isbn",
+					normalizedIsbn,
+				);
+			}
+		}
+		const imageUrl = resolvedMetadata?.image_url ?? result.image_url;
+		if (imageUrl) {
+			await commands.clbCmdSetBookCoverFromUrl(book.id, imageUrl);
+			await onReloadBooks();
+		}
 
 		// Yield a microtask so React can flush the state update from
 		// onUpsertIdentifier (which triggers book reload → useEffect resets form).
@@ -255,11 +326,13 @@ export const useHardcoverBookActions = ({
 		await new Promise((r) => setTimeout(r, 0));
 
 		// Now set form values (after the reset from the book reload)
-		if (result.title) {
-			form.setFieldValue("title", result.title);
+		const selectedTitle = resolvedMetadata?.title ?? result.title;
+		const selectedDescription = resolvedMetadata?.description ?? result.description;
+		if (selectedTitle) {
+			form.setFieldValue("title", selectedTitle);
 		}
-		if (result.description) {
-			form.setFieldValue("description", result.description);
+		if (selectedDescription) {
+			form.setFieldValue("description", selectedDescription);
 		}
 		if (result.authors && result.authors.length > 0) {
 			form.setFieldValue("authorList", result.authors);

@@ -4,7 +4,7 @@ use crate::{
     assets::{self, COVER_FILENAME},
     queries::{authors, book_descriptions, book_files, book_identifiers, books},
     types::BookId,
-    CalibreError,
+    CalibreError, UpdateBookData,
 };
 
 pub fn get_book_cover(
@@ -114,6 +114,27 @@ pub fn add_book_file_from_path(
             Err(e)
         }
     }
+}
+
+pub fn set_book_cover(
+    library_root: &String,
+    conn: &mut SqliteConnection,
+    book_id: BookId,
+    cover_data: Vec<u8>,
+) -> Result<(), CalibreError> {
+    conn.transaction::<(), CalibreError, _>(|conn| {
+        let book = books::get(conn, book_id)?.ok_or(CalibreError::BookNotFound(book_id))?;
+        let cover_path = assets::asset_path(library_root, &book.path, COVER_FILENAME);
+
+        assets::write(&cover_path, &cover_data)?;
+
+        let update = UpdateBookData {
+            has_cover: Some(true),
+            ..Default::default()
+        };
+        books::update(conn, book_id, update)?;
+        Ok(())
+    })
 }
 
 pub fn remove_book_file(

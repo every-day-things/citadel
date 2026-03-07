@@ -39,6 +39,7 @@ interface BookPageProps {
 	onCreateAuthor: (authorName: string) => Promise<void>;
 	onSave: (bookUpdate: BookUpdate) => Promise<void>;
 	onDeleteIdentifier: (bookId: string, identifierId: number) => Promise<void>;
+	onReloadBooks: () => Promise<void>;
 	onUpsertIdentifier: (
 		bookId: string,
 		identifierId: number | null,
@@ -54,6 +55,7 @@ export const BookPage = ({
 	onSave,
 	onUpsertIdentifier,
 	onDeleteIdentifier,
+	onReloadBooks,
 }: BookPageProps) => {
 	return (
 		<Stack h={"100%"}>
@@ -63,14 +65,15 @@ export const BookPage = ({
 				</Text>{" "}
 				– {book.title}
 			</Title>
-			<EditBookForm
-				allAuthorList={allAuthorList}
-				onCreateAuthor={onCreateAuthor}
-				book={book}
-				onSave={onSave}
-				onDeleteIdentifier={onDeleteIdentifier}
-				onUpsertIdentifier={onUpsertIdentifier}
-			/>
+				<EditBookForm
+					allAuthorList={allAuthorList}
+					onCreateAuthor={onCreateAuthor}
+					book={book}
+					onSave={onSave}
+					onDeleteIdentifier={onDeleteIdentifier}
+					onReloadBooks={onReloadBooks}
+					onUpsertIdentifier={onUpsertIdentifier}
+				/>
 		</Stack>
 	);
 };
@@ -128,12 +131,14 @@ const EditBookForm = ({
 	onSave,
 	onUpsertIdentifier,
 	onDeleteIdentifier,
+	onReloadBooks,
 }: {
 	allAuthorList: LibraryAuthor[];
 	book: LibraryBook;
 	onCreateAuthor: (name: string) => Promise<void>;
 	onSave: (update: BookUpdate) => Promise<void>;
 	onDeleteIdentifier: (bookId: string, identifierId: number) => Promise<void>;
+	onReloadBooks: () => Promise<void>;
 	onUpsertIdentifier: (
 		bookId: string,
 		identifierId: number | null,
@@ -159,6 +164,7 @@ const EditBookForm = ({
 		form,
 		onUpsertIdentifier,
 		onCreateAuthor: createAuthor,
+		onReloadBooks,
 	});
 
 	const editor = useEditor({
