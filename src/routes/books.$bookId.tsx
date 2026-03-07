@@ -71,6 +71,12 @@ const EditBookRoute = () => {
 		[actions],
 	);
 
+	const onReloadBooks = useCallback(async () => {
+		if (actions) {
+			await actions.loadBooks();
+		}
+	}, [actions]);
+
 	if (state !== LibraryState.ready) {
 		return <div>Loading...</div>;
 	}
@@ -79,15 +85,16 @@ const EditBookRoute = () => {
 	}
 
 	return (
-		<BookPage
-			allAuthorList={allAuthorList}
-			book={book}
-			onCreateAuthor={onCreateAuthor}
-			onSave={onSave}
-			onUpsertIdentifier={onUpsertIdentifier}
-			onDeleteIdentifier={onDeleteIdentifier}
-		/>
-	);
+			<BookPage
+				allAuthorList={allAuthorList}
+				book={book}
+				onCreateAuthor={onCreateAuthor}
+				onSave={onSave}
+				onUpsertIdentifier={onUpsertIdentifier}
+				onDeleteIdentifier={onDeleteIdentifier}
+				onReloadBooks={onReloadBooks}
+			/>
+		);
 };
 
 export const Route = createFileRoute("/books/$bookId")({

@@ -33,6 +33,7 @@ fn run_tauri_backend() -> std::io::Result<()> {
         calibre::command::clb_cmd_update_book,
         calibre::command::clb_cmd_upsert_book_identifier,
         calibre::command::clb_cmd_delete_book_identifier,
+        calibre::command::clb_cmd_set_book_cover_from_url,
         // Author query and manipulation commands
         calibre::query::clb_query_list_all_authors,
         calibre::command::clb_cmd_create_authors,
@@ -41,6 +42,7 @@ fn run_tauri_backend() -> std::io::Result<()> {
         // Hardcover integration commands
         hardcover::test_hardcover_connection,
         hardcover::fetch_hardcover_metadata_by_isbn,
+        hardcover::fetch_hardcover_metadata_by_book_id,
         hardcover::search_hardcover_books,
         app_updates::clb_cmd_check_for_updates,
         app_updates::clb_cmd_install_update_if_available,

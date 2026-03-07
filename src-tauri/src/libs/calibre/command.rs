@@ -109,6 +109,43 @@ pub fn clb_cmd_delete_book_identifier(
 
 #[tauri::command]
 #[specta::specta]
+pub async fn clb_cmd_set_book_cover_from_url(
+    state: tauri::State<'_, CitadelState>,
+    book_id: String,
+    image_url: String,
+) -> Result<(), String> {
+    let book_id_int = book_id.parse::<i32>().map_err(|e| e.to_string())?;
+    let image_url = image_url.trim();
+    if image_url.is_empty() {
+        return Err("Image URL is empty".to_string());
+    }
+
+    let response = reqwest::Client::new()
+        .get(image_url)
+        .send()
+        .await
+        .map_err(|e| format!("Failed to download cover image: {}", e))?;
+
+    if !response.status().is_success() {
+        return Err(format!(
+            "Cover image request returned status {}",
+            response.status()
+        ));
+    }
+
+    let bytes = response
+        .bytes()
+        .await
+        .map_err(|e| format!("Failed to read cover image bytes: {}", e))?;
+
+    state.with_library(|lib| {
+        lib.set_book_cover(libcalibre::BookId::from(book_id_int), bytes.to_vec())
+            .map_err(|e| e.to_string())
+    })?
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn clb_cmd_update_author(
     state: tauri::State<CitadelState>,
     author_id: String,

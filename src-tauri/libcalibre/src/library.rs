@@ -344,10 +344,10 @@ impl Library {
 
     pub fn set_book_cover(
         &mut self,
-        _book_id: BookId,
-        _cover_data: Vec<u8>,
+        book_id: BookId,
+        cover_data: Vec<u8>,
     ) -> Result<(), CalibreError> {
-        todo!()
+        operations::assets::set_book_cover(&self.db_path.library_path, &mut self.conn, book_id, cover_data)
     }
 
     pub fn remove_book_cover(&mut self, _book_id: BookId) -> Result<(), CalibreError> {
