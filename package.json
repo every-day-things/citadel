@@ -68,6 +68,7 @@
     "@mantine/core": "^7.7.0",
     "@mantine/form": "^7.7.0",
     "@mantine/hooks": "^7.7.0",
+    "@mantine/notifications": "7.7.0",
     "@mantine/tiptap": "^8.1.1",
     "@tanstack/react-router": "^1.29.2",
     "@tauri-apps/api": "^2.0.0",

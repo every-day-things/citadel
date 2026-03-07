@@ -4,6 +4,7 @@ import { App } from "./App";
 import "./styles.css";
 import "@mantine/core/styles.css";
 import "@mantine/core/styles.layer.css";
+import "@mantine/notifications/styles.css";
 import "mantine-datatable/styles.css";
 import { useSettings } from "@/stores/settings/store";
 
