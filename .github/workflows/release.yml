@@ -221,6 +221,9 @@ jobs:
           {
             echo "APPLE_API_KEY<<__EOF__"
             cat "$KEY_FILE"
+            # Ensure the closing marker is always on its own line even if the
+            # key payload has no trailing newline.
+            echo
             echo "__EOF__"
           } >> "$GITHUB_ENV"
 
