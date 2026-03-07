@@ -26,7 +26,41 @@ on:
     - cron: "0 7 * * *"
 
 jobs:
+  check-changes:
+    runs-on: ubuntu-22.04
+    outputs:
+      has_changes: ${{ steps.check.outputs.has_changes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for same-day commits (UTC)
+        id: check
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "Manual dispatch — bypassing change-detection, proceeding with release."
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          TODAY_UTC=$(date -u +%Y-%m-%dT00:00:00Z)
+          COMMIT_COUNT=$(git log --oneline --after="$TODAY_UTC" | wc -l | tr -d ' ')
+
+          if [[ "$COMMIT_COUNT" -gt 0 ]]; then
+            echo "Found ${COMMIT_COUNT} commit(s) since ${TODAY_UTC} — proceeding with nightly release."
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No commits since ${TODAY_UTC} — skipping nightly release (no same-day changes)."
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          fi
+
   release:
+    needs: check-changes
+    if: needs.check-changes.outputs.has_changes == 'true'
     permissions:
       contents: write
     strategy:
