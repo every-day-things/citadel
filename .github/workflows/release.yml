@@ -100,17 +100,25 @@ jobs:
             NIGHTLY_DATE=$(date -u +%Y%m%d)
             VERSION="${MAJOR}.${MINOR}.${PATCH}-nightly.${NIGHTLY_DATE}.${GITHUB_RUN_NUMBER}"
           else
-            VERSION=$(node -e "
-              const [major, minor, patch] = process.argv[1].split('.').map((v) => parseInt(v, 10));
-              const releaseType = process.argv[2];
-              if ([major, minor, patch].some((v) => Number.isNaN(v))) {
-                throw new Error('Current version must be semver core x.y.z');
-              }
-              if (releaseType === 'patch') console.log(`${major}.${minor}.${patch + 1}`);
-              else if (releaseType === 'minor') console.log(`${major}.${minor + 1}.0`);
-              else if (releaseType === 'major') console.log(`${major + 1}.0.0`);
-              else throw new Error(`Unsupported release_type: ${releaseType}`);
-            " "$CURRENT_VERSION" "$RELEASE_TYPE")
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+            if [[ -z "${MAJOR:-}" || -z "${MINOR:-}" || -z "${PATCH:-}" ]]; then
+              echo "Current version must be semver core x.y.z, got: $CURRENT_VERSION"
+              exit 1
+            fi
+            if ! [[ "$MAJOR" =~ ^[0-9]+$ && "$MINOR" =~ ^[0-9]+$ && "$PATCH" =~ ^[0-9]+$ ]]; then
+              echo "Current version must be numeric semver core x.y.z, got: $CURRENT_VERSION"
+              exit 1
+            fi
+
+            case "$RELEASE_TYPE" in
+              patch) VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))" ;;
+              minor) VERSION="${MAJOR}.$((MINOR + 1)).0" ;;
+              major) VERSION="$((MAJOR + 1)).0.0" ;;
+              *)
+                echo "Unsupported release_type: $RELEASE_TYPE"
+                exit 1
+                ;;
+            esac
           fi
 
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
