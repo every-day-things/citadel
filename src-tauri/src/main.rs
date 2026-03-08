@@ -53,7 +53,15 @@ fn run_tauri_backend() -> std::io::Result<()> {
         .export(Typescript::default(), "../src/bindings.ts")
         .expect("Failed to export typescript bindings");
 
-    tauri::Builder::default()
+    let mut tauri_builder = tauri::Builder::default();
+
+    // WebDriver server for automated e2e testing; debug builds only.
+    #[cfg(debug_assertions)]
+    {
+        tauri_builder = tauri_builder.plugin(tauri_plugin_webdriver_automation::init());
+    }
+
+    tauri_builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(state::CitadelState::new())

@@ -40,3 +40,25 @@
 - Use functional programming concepts
 - Prefer Rust-style safety, utility types like Result and Option
 - **Functional core, imperative shell**: Components should be pure renderers. Extract all behavior (API calls, async operations, state machines) into custom hooks or service modules. Components receive state and callbacks, nothing more.
+
+## Driving the app for e2e verification (agents)
+
+Debug builds embed `tauri-plugin-webdriver-automation` (registered debug-only in
+`src-tauri/src/main.rs`). When the app runs via `bun run dev`, it prints
+`[webdriver] listening on port <N>` (dynamic port, changes on every Rust
+rebuild). POST JSON to `http://127.0.0.1:<N>` to drive the live app fully in
+the background — no window focus, no macOS permissions:
+
+- `/element/find` `{"using":"css","value":"..."}`, `/element/click`,
+  `/element/text`, `/navigate/current`, `/screenshot` (base64 PNG),
+  `/script/execute` (runs in the app's main JS world)
+- Do NOT use `/element/send-keys` on React controlled inputs — it updates
+  React's value tracker without firing onChange. Instead use `/script/execute`
+  with the `HTMLInputElement.prototype` value-setter + dispatched `input` event.
+- Plugin screenshots are WKWebView snapshots: light-scheme, no vibrancy or
+  translucent sidebar — fine for layout/DOM checks, not for visual fidelity.
+- Full endpoint list: https://github.com/danielraffel/tauri-webdriver/blob/main/SPEC.md
+
+`tauri-wd` (W3C WebDriver CLI for WebDriverIO suites) launches its own app
+instance — never run it while `bun run dev` is up; two instances fight over the
+settings store and library database.
