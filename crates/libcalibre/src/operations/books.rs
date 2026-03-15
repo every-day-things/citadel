@@ -148,7 +148,9 @@ pub fn get_book(conn: &mut SqliteConnection, book_id: BookId) -> Result<Book, Ca
         has_cover: book.has_cover.unwrap_or(false),
         is_read: false, // Populated by Library via read state queries
         files,
-        created_at: book.timestamp.unwrap_or(NaiveDateTime::UNIX_EPOCH),
+        created_at: book
+            .timestamp
+            .unwrap_or(chrono::DateTime::UNIX_EPOCH.naive_utc()),
         updated_at: book.last_modified,
         book_dir_path: book.path,
     })
@@ -225,7 +227,9 @@ pub fn all(conn: &mut SqliteConnection) -> Result<Vec<Book>, CalibreError> {
             has_cover: book_row.has_cover.unwrap_or(false),
             is_read: false, // Populated by Library via read state queries
             files,
-            created_at: book_row.timestamp.unwrap_or(NaiveDateTime::UNIX_EPOCH),
+            created_at: book_row
+                .timestamp
+                .unwrap_or(chrono::DateTime::UNIX_EPOCH.naive_utc()),
             updated_at: book_row.last_modified,
             book_dir_path: book_row.path,
         };

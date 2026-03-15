@@ -32,3 +32,5 @@ dist-ssr
 .eslintcache
 
 test-library/metadata.db
+
+/target/

@@ -25,7 +25,7 @@ fn get_epub_cover<R: Read + Seek>(doc: &mut EpubDoc<R>) -> Option<Vec<u8>> {
     // Fallback for hybrid EPUB3 books that use EPUB2-style cover metadata
     // (<meta name="cover" content="manifest-item-id"/>) but epub crate's
     // get_cover() misses it (can happen with newer epub crate versions)
-    let cover_id = doc.mdata("cover")?;
+    let cover_id = doc.mdata("cover")?.value.clone();
     doc.get_resource(&cover_id).map(|(data, _)| data)
 }
 
@@ -33,25 +33,29 @@ pub fn read_metadata(path: &Path) -> Option<EpubMetadata> {
     match EpubDoc::new(path) {
         Err(_) => None,
         Ok(mut doc) => {
-            let creators = doc
+            let creators: Vec<String> = doc
                 .metadata
-                .get("creator")
-                .map(|v| v.to_vec())
-                .unwrap_or(Vec::new());
+                .iter()
+                .filter(|m| m.property == "creator")
+                .map(|m| m.value.clone())
+                .collect();
+
+            let subjects: Vec<String> = doc
+                .metadata
+                .iter()
+                .filter(|m| m.property == "subject")
+                .map(|m| m.value.clone())
+                .collect();
 
             Some(EpubMetadata {
-                title: doc.mdata("title"),
+                title: doc.mdata("title").map(|m| m.value.clone()),
                 creator_list: Some(creators),
-                identifier: doc.mdata("identifier"),
-                publisher: doc.mdata("publisher"),
-                language: doc.mdata("language"),
+                identifier: doc.mdata("identifier").map(|m| m.value.clone()),
+                publisher: doc.mdata("publisher").map(|m| m.value.clone()),
+                language: doc.mdata("language").map(|m| m.value.clone()),
                 cover_image_data: get_epub_cover(&mut doc),
-                publication_date: doc.mdata("date"),
-                subjects: doc
-                    .metadata
-                    .get("subject")
-                    .map(|v| v.to_vec())
-                    .unwrap_or(Vec::new()),
+                publication_date: doc.mdata("date").map(|m| m.value.clone()),
+                subjects,
             })
         }
     }
