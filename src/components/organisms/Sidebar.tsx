@@ -89,18 +89,25 @@ export const Sidebar = () => {
 	const selectAndEditBookFile = useCallback(() => {
 		if (state !== LibraryState.ready) return;
 
-		actions
-			.promptToAddBook()
-			.then((importableMetadata) => {
+		void (async () => {
+			try {
+				const extensions = await actions.listValidFileTypes();
+				const filePath = await platform.dialogs.openFile({
+					filters: [{ name: "Importable files", extensions }],
+				});
+				if (!filePath) return;
+
+				const importableMetadata =
+					await actions.getImportableBookMetadata(filePath);
 				if (importableMetadata) {
 					setMetadata(importableMetadata);
 					openAddBookModal();
 				}
-			})
-			.catch((failure) => {
+			} catch (failure) {
 				console.error("failed to import new book: ", failure);
-			});
-	}, [actions, state, openAddBookModal]);
+			}
+		})();
+	}, [actions, state, openAddBookModal, platform]);
 
 	const addBookByMetadataWithEffects = async (form: AddBookForm) => {
 		if (!metadata || state !== LibraryState.ready) return;
