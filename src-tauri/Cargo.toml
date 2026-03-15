@@ -19,7 +19,7 @@ chrono = { version = "0.4.31", features = ["serde"] }
 diesel = { version = "2.1.0", features = ["sqlite", "chrono", "returning_clauses_for_sqlite_3_35"] }
 epub = "2.1.1"
 mobi = "0.8.0"
-libcalibre = { path = "./libcalibre" }
+libcalibre = { path = "../crates/libcalibre" }
 log = "0.4"
 regex = "1.10.2"
 reqwest = { version = "0.12", features = ["json"] }
@@ -46,7 +46,3 @@ tauri-plugin-updater = "2"
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
 custom-protocol = [ "tauri/custom-protocol" ]
 
-[workspace]
-members = [
-  "libcalibre"
-]

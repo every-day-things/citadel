@@ -698,7 +698,7 @@ fn format_metadata_opf(
         authors = authors_string,
         pub_date = book
             .pubdate
-            .unwrap_or(NaiveDateTime::UNIX_EPOCH)
+            .unwrap_or(chrono::DateTime::UNIX_EPOCH.naive_utc())
             .to_string(),
         now = chrono::Utc::now().to_string(),
         book_title_sortable = book.sort.as_deref().unwrap_or("")

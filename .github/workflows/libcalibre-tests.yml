@@ -28,10 +28,10 @@ jobs:
         with:
           prefix-key: "v0-rust"
           shared-key: "build"
-          workspaces: "src-tauri"
+          workspaces: "."
 
       - name: Build
-        working-directory: src-tauri/libcalibre
+        working-directory: crates/libcalibre
         run: cargo build --all-features
 
   report-coverage:
@@ -51,10 +51,9 @@ jobs:
         with:
           prefix-key: "v0-rust"
           shared-key: "build"
-          workspaces: "src-tauri"
+          workspaces: "."
 
       - name: Generate HTML coverage report
-        working-directory: src-tauri
         run: |
           cargo llvm-cov --package libcalibre --all-features --html
 
@@ -62,18 +61,16 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report-html
-          path: src-tauri/target/llvm-cov/html/
+          path: target/llvm-cov/html/
           retention-days: 14
 
       - name: Generate JSON coverage report (required for comment)
-        working-directory: src-tauri
         run: |
           mkdir -p target/llvm-cov
           cargo llvm-cov --package libcalibre --all-features --json --output-path target/llvm-cov/coverage-summary.json
 
       - name: Extract coverage percentage
         id: coverage
-        working-directory: src-tauri
         run: |
           COVERAGE=$(jq -r '.data[0].totals.lines.percent' target/llvm-cov/coverage-summary.json | xargs printf "%.2f")
           echo "percentage=$COVERAGE" >> $GITHUB_OUTPUT
@@ -114,8 +111,7 @@ jobs:
         with:
           prefix-key: "v0-rust"
           shared-key: "build"
-          workspaces: "src-tauri"
+          workspaces: "."
 
       - name: Run tests
-        working-directory: src-tauri
         run: cargo test --package libcalibre --all-features

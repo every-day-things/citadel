@@ -1,5 +1,5 @@
 [print_schema]
-file = "src/schema.json"
+file = "src/schema.rs"
 
 [migrations_directory]
 dir = "migrations"

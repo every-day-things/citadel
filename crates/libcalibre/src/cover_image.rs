@@ -13,7 +13,7 @@ fn get_epub_cover<R: Read + Seek>(doc: &mut epub::doc::EpubDoc<R>) -> Option<Vec
     if let Some((data, _)) = doc.get_cover() {
         return Some(data);
     }
-    let cover_id = doc.mdata("cover")?;
+    let cover_id = doc.mdata("cover")?.value.clone();
     doc.get_resource(&cover_id).map(|(data, _)| data)
 }
 
