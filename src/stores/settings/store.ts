@@ -1,21 +1,19 @@
 import type { Option } from "@/lib/option";
 import { none, some } from "@/lib/option";
-import { createTauriSettingsManager } from "@/lib/settings-manager/tauri-settings";
 import type {
+	LibraryPath,
 	SettingsKey,
 	SettingsManager,
 	SettingsSchema,
 	SettingsValue,
-} from "@/lib/settings-manager/types";
-import { createWebSettingsManager } from "@/lib/settings-manager/web-settings";
-import { isTauri } from "@tauri-apps/api/core";
+} from "@/lib/platform/settings/types";
 import { create } from "zustand";
 
 interface SettingsStore extends SettingsSchema {
 	hydrated: boolean;
 
 	// Lifecycle
-	init: () => Promise<void>;
+	init: (settingsManager: SettingsManager) => Promise<void>;
 
 	// Domain-specific actions
 	setTheme: (theme: "dark" | "light" | "auto") => Promise<void>;
@@ -24,9 +22,7 @@ interface SettingsStore extends SettingsSchema {
 	setHasCompletedFirstLaunch: (enabled: boolean) => Promise<void>;
 	setActiveLibrary: (libraryId: string) => Promise<void>;
 	createLibrary: (absolutePath: string) => Promise<string>;
-	getActiveLibrary: () => Option<
-		import("@/lib/settings-manager/types").LibraryPath
-	>;
+	getActiveLibrary: () => Option<LibraryPath>;
 	setHardcoverApiKey: (apiKey: string) => Promise<void>;
 }
 
@@ -40,17 +36,7 @@ const defaultSettings: SettingsSchema = {
 	hardcoverApiKey: "",
 };
 
-const createSettingsManager = (
-	defaultSettings: SettingsSchema,
-): SettingsManager => {
-	if (isTauri()) {
-		return createTauriSettingsManager(defaultSettings);
-	}
-
-	return createWebSettingsManager(defaultSettings);
-};
-
-const manager = createSettingsManager(defaultSettings);
+let manager: SettingsManager;
 
 // Helper to update store and persist to disk
 const persistSetting = async <K extends SettingsKey>(
@@ -69,7 +55,8 @@ export const useSettings = create<SettingsStore>((set, get) => ({
 	...defaultSettings,
 	hydrated: false,
 
-	init: async () => {
+	init: async (settingsManager: SettingsManager) => {
+		manager = settingsManager;
 		try {
 			await manager.initialize();
 

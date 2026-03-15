@@ -1,7 +1,7 @@
 import { safeAsyncEventHandler } from "$lib/async";
 import { IS_DEV } from "@/lib/env";
 import { checkForUpdates } from "@/lib/services/app-updates";
-import { isTauri } from "@tauri-apps/api/core";
+import { usePlatform } from "@/lib/platform/context";
 import { theme } from "$lib/theme";
 import { ColorSchemeScript, MantineProvider } from "@mantine/core";
 import { notifications, Notifications } from "@mantine/notifications";
@@ -25,15 +25,17 @@ declare module "@tanstack/react-router" {
 export const App = () => {
 	const hydrated = useSettings((state) => state.hydrated);
 	const libraryPath = useActiveLibraryPath();
+	const platform = usePlatform();
 
 	useEffect(() => {
 		if (hydrated) {
-			safeAsyncEventHandler(setupAppWindow)();
+			safeAsyncEventHandler(() => platform.window.showMainWindow())();
 		}
-	}, [hydrated]);
+	}, [hydrated, platform]);
 
 	useEffect(() => {
-		if (!hydrated || !isTauri() || IS_DEV) return;
+		if (!hydrated || !platform.capabilities.supportsAutoUpdates || IS_DEV)
+			return;
 
 		const {
 			autoUpdateCheckingEnabled,
@@ -62,7 +64,7 @@ export const App = () => {
 				});
 			}
 		})();
-	}, [hydrated]);
+	}, [hydrated, platform]);
 
 	if (!hydrated) {
 		// No window is shown until settings are hydrated
@@ -100,17 +102,3 @@ const LibraryStoreInitializer = ({
 	useInitializeLibraryStore();
 	return <>{children}</>;
 };
-
-/**
- * Set the main App Window to be visible.
- * Used to avoid a flash-of-white during startup. See:
- * https://github.com/tauri-apps/tauri/issues/5170, https://github.com/tauri-apps/tauri/issues/1564,
- * and https://github.com/cloudy-org/roseate/commit/21f445011f8becc81300b42fe10d8f4c419c95bd
- */
-async function setupAppWindow() {
-	const { getCurrentWebviewWindow } = await import(
-		"@tauri-apps/api/webviewWindow"
-	);
-	const appWindow = getCurrentWebviewWindow();
-	safeAsyncEventHandler(async () => appWindow.show())();
-}
