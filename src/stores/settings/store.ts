@@ -1,11 +1,12 @@
 import type { Option } from "@/lib/option";
 import { none, some } from "@/lib/option";
-import type {
-	LibraryPath,
-	SettingsKey,
-	SettingsManager,
-	SettingsSchema,
-	SettingsValue,
+import {
+	defaultSettings,
+	type LibraryPath,
+	type SettingsKey,
+	type SettingsManager,
+	type SettingsSchema,
+	type SettingsValue,
 } from "@/lib/platform/settings/types";
 import { create } from "zustand";
 
@@ -25,16 +26,6 @@ interface SettingsStore extends SettingsSchema {
 	getActiveLibrary: () => Option<LibraryPath>;
 	setHardcoverApiKey: (apiKey: string) => Promise<void>;
 }
-
-const defaultSettings: SettingsSchema = {
-	theme: "auto",
-	startFullscreen: false,
-	autoUpdateCheckingEnabled: true,
-	hasCompletedFirstLaunch: false,
-	activeLibraryId: "",
-	libraryPaths: [],
-	hardcoverApiKey: "",
-};
 
 let manager: SettingsManager;
 

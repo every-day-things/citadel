@@ -9,11 +9,9 @@ import { createWebWindow } from "./window/web";
 import { createTauriSettingsManager } from "./settings/tauri";
 import { createWebSettingsManager } from "./settings/web";
 import type { PlatformAdapter } from "./types";
-import type { SettingsSchema } from "./settings/types";
+import { defaultSettings } from "./settings/types";
 
-export const createTauriPlatform = (
-	defaultSettings: SettingsSchema,
-): PlatformAdapter => ({
+export const createTauriPlatform = (): PlatformAdapter => ({
 	capabilities: {
 		canPickLocalFiles: true,
 		canRevealInFileManager: true,
@@ -28,9 +26,7 @@ export const createTauriPlatform = (
 	settings: createTauriSettingsManager(defaultSettings),
 });
 
-export const createWebPlatform = (
-	defaultSettings: SettingsSchema,
-): PlatformAdapter => ({
+export const createWebPlatform = (): PlatformAdapter => ({
 	capabilities: {
 		canPickLocalFiles: false,
 		canRevealInFileManager: false,

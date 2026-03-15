@@ -15,6 +15,16 @@ export type SettingsSchema = {
 	hardcoverApiKey: string;
 };
 
+export const defaultSettings: SettingsSchema = {
+	theme: "auto",
+	startFullscreen: false,
+	autoUpdateCheckingEnabled: true,
+	hasCompletedFirstLaunch: false,
+	activeLibraryId: "",
+	libraryPaths: [],
+	hardcoverApiKey: "",
+};
+
 export type SettingsKey = keyof SettingsSchema;
 export type SettingsValue<K extends SettingsKey> = SettingsSchema[K];
 

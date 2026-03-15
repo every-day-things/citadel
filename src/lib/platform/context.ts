@@ -1,7 +1,7 @@
 import { createContext, useContext } from "react";
 import type { PlatformAdapter } from "./types";
 
-const PlatformContext = createContext<PlatformAdapter | null>(null);
+export const PlatformContext = createContext<PlatformAdapter | null>(null);
 
 export const PlatformProvider = PlatformContext.Provider;
 

@@ -1,10 +1,9 @@
 import type { FileOpenerAdapter } from "../types";
 
 export const createWebFileOpener = (): FileOpenerAdapter => ({
-	openPath: async (path) => {
+	openPath: (path) => {
 		window.open(path);
+		return Promise.resolve();
 	},
-	revealInFileManager: async () => {
-		// no-op: no file manager in web
-	},
+	revealInFileManager: () => Promise.resolve(),
 });

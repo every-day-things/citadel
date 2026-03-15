@@ -10,21 +10,8 @@ import { isTauri } from "@tauri-apps/api/core";
 import { createTauriPlatform, createWebPlatform } from "@/lib/platform/create";
 import { PlatformProvider } from "@/lib/platform/context";
 import { useSettings } from "@/stores/settings/store";
-import type { SettingsSchema } from "@/lib/platform/settings/types";
 
-const defaultSettings: SettingsSchema = {
-	theme: "auto",
-	startFullscreen: false,
-	autoUpdateCheckingEnabled: true,
-	hasCompletedFirstLaunch: false,
-	activeLibraryId: "",
-	libraryPaths: [],
-	hardcoverApiKey: "",
-};
-
-const platform = isTauri()
-	? createTauriPlatform(defaultSettings)
-	: createWebPlatform(defaultSettings);
+const platform = isTauri() ? createTauriPlatform() : createWebPlatform();
 
 void useSettings.getState().init(platform.settings);
 

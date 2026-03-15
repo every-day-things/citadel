@@ -19,7 +19,7 @@ export interface PlatformCapabilities {
 
 export interface DialogAdapter {
 	openFile(options: {
-		filters?: Array<{ name: string; extensions: string[] }>;
+		filters?: { name: string; extensions: string[] }[];
 	}): Promise<string | null>;
 	openDirectory(options?: { title?: string }): Promise<string | null>;
 }

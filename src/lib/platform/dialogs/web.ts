@@ -1,6 +1,6 @@
 import type { DialogAdapter } from "../types";
 
 export const createWebDialogs = (): DialogAdapter => ({
-	openFile: async () => null,
-	openDirectory: async () => null,
+	openFile: () => Promise.resolve(null),
+	openDirectory: () => Promise.resolve(null),
 });
