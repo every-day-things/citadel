@@ -11,8 +11,8 @@ import {
 	installUpdateIfAvailable,
 } from "@/lib/services/app-updates";
 import { IS_DEV } from "@/lib/env";
+import { usePlatform } from "@/lib/platform/context";
 import { useSettings } from "@/stores/settings/store";
-import { isTauri } from "@tauri-apps/api/core";
 import {
 	LibraryState,
 	useAuthors,
@@ -48,6 +48,7 @@ export const Sidebar = () => {
 	const actions = useLibraryActions();
 	const authors = useAuthors();
 
+	const platform = usePlatform();
 	const [metadata, setMetadata] = useState<ImportableBookMetadata | null>();
 	const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
 	const [isCheckingForUpdates, setIsCheckingForUpdates] = useState(false);
@@ -118,7 +119,7 @@ export const Sidebar = () => {
 	};
 
 	const checkForUpdatesHandler = useCallback(async () => {
-		if (!isTauri()) return;
+		if (!platform.capabilities.supportsAutoUpdates) return;
 
 		setIsCheckingForUpdates(true);
 		notifications.show({
@@ -186,7 +187,7 @@ export const Sidebar = () => {
 		} finally {
 			setIsCheckingForUpdates(false);
 		}
-	}, []);
+	}, [platform]);
 
 	const installAvailableUpdateHandler = useCallback(async () => {
 		setIsInstallingUpdate(true);

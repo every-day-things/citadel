@@ -22,7 +22,7 @@ import {
 import { type UseFormReturnType, useForm } from "@mantine/form";
 import { useDisclosure } from "@mantine/hooks";
 import { Link } from "@tanstack/react-router";
-import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
+import { usePlatform } from "@/lib/platform/context";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BookCover } from "../atoms/BookCover";
 import { F7ListBullet } from "../icons/F7ListBullet";
@@ -32,7 +32,6 @@ import { BookTable } from "../molecules/BookTable";
 import { TablerCopy } from "../icons/TablerCopy";
 import { F7Pencil } from "../icons/F7Pencil";
 import { useBooks, useBooksLoading } from "@/stores/library/store";
-import * as clipboard from "@tauri-apps/plugin-clipboard-manager";
 
 interface BookSearchOptions {
 	search_for_author?: string;
@@ -273,6 +272,7 @@ function Header({
 }
 
 const BookDetails = ({ book }: { book: LibraryBook }) => {
+	const platform = usePlatform();
 	return (
 		<>
 			<Stack h={"100%"}>
@@ -301,7 +301,7 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 									const isLocal = "Local" in firstFile;
 									if (!isLocal) return;
 
-									await openPath(firstFile.Local.path);
+									await platform.fileOpener.openPath(firstFile.Local.path);
 								})}
 							>
 								Read
@@ -341,7 +341,9 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 									key={f1.Local.path}
 									style={{ textDecoration: "underline", marginRight: "1rem" }}
 									onPointerDown={safeAsyncEventHandler(async () => {
-										await revealItemInDir(f1.Local.path);
+										await platform.fileOpener.revealInFileManager(
+											f1.Local.path,
+										);
 									})}
 								>
 									{f1.Local.mime_type} ↗
@@ -376,6 +378,7 @@ const BookIdentifiers = ({
 }: {
 	identifier_list: Identifier[];
 }) => {
+	const platform = usePlatform();
 	return (
 		<Stack gap={"xs"}>
 			<Text size="xs">IDs</Text>
@@ -403,7 +406,7 @@ const BookIdentifiers = ({
 										variant="subtle"
 										color="gray"
 										onPointerDown={safeAsyncEventHandler(async () => {
-											await clipboard.writeText(value);
+											await platform.clipboard.writeText(value);
 										})}
 									>
 										<TablerCopy style={{ width: rem(12) }} />

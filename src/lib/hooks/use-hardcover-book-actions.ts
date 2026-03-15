@@ -1,7 +1,7 @@
 import type { HardcoverSearchResult, LibraryBook } from "@/bindings";
 import { commands } from "@/bindings";
+import { usePlatform } from "@/lib/platform/context";
 import { useSettings } from "@/stores/settings/store";
-import { openPath } from "@tauri-apps/plugin-opener";
 import { useMemo, useState } from "react";
 
 export interface HardcoverMessage {
@@ -79,6 +79,7 @@ export const useHardcoverBookActions = ({
 	onUpsertIdentifier,
 	onCreateAuthor,
 }: UseHardcoverBookActionsParams): UseHardcoverBookActionsReturn => {
+	const platform = usePlatform();
 	const hardcoverApiKey = useSettings((state) => state.hardcoverApiKey);
 	const [isFetchingFromHardcover, setIsFetchingFromHardcover] = useState(false);
 	const [hardcoverMessage, setHardcoverMessage] =
@@ -207,7 +208,7 @@ export const useHardcoverBookActions = ({
 				return;
 			}
 			const url = `https://hardcover.app/books/${slug}`;
-			await openPath(url);
+			await platform.fileOpener.openPath(url);
 		} catch (error) {
 			console.error("Failed to open Hardcover URL:", error);
 			const errorMessage =
