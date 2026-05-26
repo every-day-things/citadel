@@ -28,6 +28,7 @@ interface SettingsStore extends SettingsSchema {
 		import("@/lib/settings-manager/types").LibraryPath
 	>;
 	setHardcoverApiKey: (apiKey: string) => Promise<void>;
+	setLastNotifiedUpdateVersion: (version: string | null) => Promise<void>;
 }
 
 const defaultSettings: SettingsSchema = {
@@ -38,6 +39,7 @@ const defaultSettings: SettingsSchema = {
 	activeLibraryId: "",
 	libraryPaths: [],
 	hardcoverApiKey: "",
+	lastNotifiedUpdateVersion: null,
 };
 
 const createSettingsManager = (
@@ -144,6 +146,10 @@ export const useSettings = create<SettingsStore>((set, get) => ({
 
 	setHardcoverApiKey: async (apiKey) => {
 		await persistSetting(set, "hardcoverApiKey", apiKey);
+	},
+
+	setLastNotifiedUpdateVersion: async (version) => {
+		await persistSetting(set, "lastNotifiedUpdateVersion", version);
 	},
 }));
 

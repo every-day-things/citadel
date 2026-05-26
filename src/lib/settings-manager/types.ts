@@ -13,6 +13,7 @@ export type SettingsSchema = {
 	activeLibraryId: string;
 	libraryPaths: LibraryPath[];
 	hardcoverApiKey: string;
+	lastNotifiedUpdateVersion: string | null;
 };
 
 export type SettingsKey = keyof SettingsSchema;

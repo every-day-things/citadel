@@ -171,3 +171,8 @@ a:any-link {
 	color: var(--ctd-control-disabled-text);
 	opacity: 1;
 }
+
+.mantine-Notification-root {
+	background-color: var(--ctd-surface-strong);
+	border: 1px solid var(--ctd-border);
+}

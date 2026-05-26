@@ -39,6 +39,8 @@ export const App = () => {
 			autoUpdateCheckingEnabled,
 			hasCompletedFirstLaunch,
 			setHasCompletedFirstLaunch,
+			lastNotifiedUpdateVersion,
+			setLastNotifiedUpdateVersion,
 		} = useSettings.getState();
 
 		if (!autoUpdateCheckingEnabled) return;
@@ -51,12 +53,15 @@ export const App = () => {
 
 		safeAsyncEventHandler(async () => {
 			const updateCheckResult = await checkForUpdates();
-			if (updateCheckResult.has_update) {
+			if (
+				updateCheckResult.has_update &&
+				updateCheckResult.version !== lastNotifiedUpdateVersion
+			) {
+				await setLastNotifiedUpdateVersion(updateCheckResult.version);
 				notifications.show({
 					id: "auto-update-available",
 					title: "Update available",
-					message:
-						"A new version is available in Settings > Check for updates.",
+					message: `Version ${updateCheckResult.version} is available. Open ⚙ to install.`,
 					color: "blue",
 					autoClose: 7000,
 				});
