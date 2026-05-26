@@ -37,6 +37,7 @@ pub fn init_client(
 #[derive(Serialize, Deserialize, specta::Type, Debug)]
 pub struct BookUpdate {
     pub author_id_list: Option<Vec<String>>,
+    pub tag_list: Option<Vec<String>>,
     pub title: Option<String>,
     pub timestamp: Option<NaiveDateTime>,
     pub publication_date: Option<NaiveDateTime>,
@@ -58,7 +59,7 @@ impl BookUpdate {
             description: self.description.clone(),
             is_read: self.is_read,
             publication_date: self.publication_date.map(|dt| dt.date()),
-            tags: None,
+            tags: self.tag_list.clone(),
             series: None,
             series_index: None,
             publisher: None,

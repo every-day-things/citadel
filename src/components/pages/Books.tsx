@@ -4,6 +4,7 @@ import { useBreakpoint } from "@/lib/hooks/use-breakpoint";
 import DOMPurify from "dompurify";
 import {
 	ActionIcon,
+	Badge,
 	Button,
 	Center,
 	Divider,
@@ -425,6 +426,27 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 			)}
 			<Divider />
 			<Stack gap={6}>
+				{book.tag_list.length > 0 && (
+					<Stack gap="xs">
+						<Text
+							size="sm"
+							fw={700}
+							style={{
+								fontFamily:
+									'"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif',
+							}}
+						>
+							Tags
+						</Text>
+						<Group gap="xs">
+							{book.tag_list.map((tag) => (
+								<Badge key={tag} variant="light" color="sepia">
+									{tag}
+								</Badge>
+							))}
+						</Group>
+					</Stack>
+				)}
 				{book.identifier_list.length > 0 && (
 					<BookIdentifiers identifier_list={book.identifier_list} />
 				)}

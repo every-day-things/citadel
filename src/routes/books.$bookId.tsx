@@ -18,6 +18,13 @@ const EditBookRoute = () => {
 	// Get data from store - no local state needed!
 	const books = useBooks();
 	const allAuthorList = useAuthors();
+	const allTagList = useMemo(
+		() =>
+			Array.from(
+				new Set(books.flatMap((candidate) => candidate.tag_list)),
+			).sort((left, right) => left.localeCompare(right)),
+		[books],
+	);
 
 	// Find the book from the store
 	const book = useMemo(
@@ -87,6 +94,7 @@ const EditBookRoute = () => {
 	return (
 		<BookPage
 			allAuthorList={allAuthorList}
+			allTagList={allTagList}
 			book={book}
 			onCreateAuthor={onCreateAuthor}
 			onSave={onSave}

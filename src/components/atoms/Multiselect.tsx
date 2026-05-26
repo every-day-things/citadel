@@ -46,6 +46,8 @@ export function MultiSelectCreatable({
 		onDropdownOpen: () => combobox.updateSelectedOptionIndex("active"),
 	});
 	const [search, setSearch] = useState("");
+	const resolvedPlaceholder =
+		_value.length === 0 && search.trim().length === 0 ? placeholder : undefined;
 
 	const exactOptionMatch = _data.some((item) => item === search);
 
@@ -136,7 +138,7 @@ export function MultiSelectCreatable({
 								onFocus={() => combobox.openDropdown()}
 								onBlur={() => combobox.closeDropdown()}
 								value={search}
-								placeholder={placeholder}
+								placeholder={resolvedPlaceholder}
 								style={{
 									color: "var(--ctd-control-text)",
 								}}
