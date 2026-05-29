@@ -3,8 +3,7 @@
 	"assist": { "actions": { "source": { "organizeImports": "on" } } },
 	"formatter": {
 		"enabled": true,
-		"indentStyle": "tab",
-		"lineWidth": 120
+		"indentStyle": "tab"
 	},
 	"linter": {
 		"enabled": true,
@@ -26,6 +25,12 @@
 	},
 	"plugins": ["./lint/biome/no-hardcoded-colors.grit"],
 	"files": {
-		"includes": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.css"]
+		"includes": [
+			"src/**/*.ts",
+			"src/**/*.tsx",
+			"src/**/*.css",
+			"!src/bindings.ts",
+			"!src/routeTree.gen.ts"
+		]
 	}
 }
