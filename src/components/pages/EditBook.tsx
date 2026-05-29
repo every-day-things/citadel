@@ -441,12 +441,12 @@ const EditBookForm = ({
 							</Group>
 						)}
 					</Group>
-						{hc.hardcoverApiKey && (
-							<Text
-								size="sm"
-								c="dimmed"
-								td="underline"
-								onClick={() => {
+					{hc.hardcoverApiKey && (
+						<Text
+							size="sm"
+							c="dimmed"
+							td="underline"
+							onClick={() => {
 								const query = form.values.title || "";
 								hc.setSearchQuery(query);
 								hc.setIsSearchModalOpen(true);
@@ -497,11 +497,11 @@ const EditBookForm = ({
 								<Text className={styles.editorHint}>
 									Type your description here. Use the formatting tools above.
 								</Text>
-									<RichTextEditor
-										editor={editor}
-										className={styles.editorWrapper}
-										classNames={richTextEditorClassNames}
-									>
+								<RichTextEditor
+									editor={editor}
+									className={styles.editorWrapper}
+									classNames={richTextEditorClassNames}
+								>
 									<RichTextEditor.Toolbar sticky stickyOffset={60}>
 										<RichTextEditor.ControlsGroup>
 											<RichTextEditor.Bold />
@@ -594,12 +594,12 @@ const EditBookForm = ({
 								</Text>
 							) : (
 								hc.searchResults.map((result) => (
-										<Card
-											key={result.hardcover_id}
-											shadow="sm"
-											padding="lg"
-											onClick={() => void hc.selectSearchResult(result)}
-										>
+									<Card
+										key={result.hardcover_id}
+										shadow="sm"
+										padding="lg"
+										onClick={() => void hc.selectSearchResult(result)}
+									>
 										<Group align="flex-start" gap="md">
 											{result.image_url && (
 												<Image

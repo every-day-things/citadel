@@ -359,110 +359,106 @@ function Header({
 const BookDetails = ({ book }: { book: LibraryBook }) => {
 	return (
 		<Stack h={"100%"} gap="md">
-				<Group wrap={"nowrap"} align="flex-start">
-					<BookCover book={book} disableFade />
-					<Stack
-						justify="space-between"
-						mih={"200px"}
-						maw="calc(400px - 133px)"
-					>
-						<Stack ml={"sm"} align="flex-start" justify="flex-start" gap={4}>
-							<Text
-								size="xl"
-								fw={"700"}
+			<Group wrap={"nowrap"} align="flex-start">
+				<BookCover book={book} disableFade />
+				<Stack justify="space-between" mih={"200px"} maw="calc(400px - 133px)">
+					<Stack ml={"sm"} align="flex-start" justify="flex-start" gap={4}>
+						<Text
+							size="xl"
+							fw={"700"}
+							style={{
+								fontFamily:
+									'"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif',
+								lineHeight: 1.15,
+							}}
+						>
+							{book.title}
+						</Text>
+						<Text size="md" c="dimmed">
+							{book.author_list.map((author) => author.name).join(", ")}
+						</Text>
+					</Stack>
+					<Group justify="space-between" w={"100%"}>
+						<Button
+							variant="subtle"
+							onPointerDown={safeAsyncEventHandler(async () => {
+								const firstFile = book.file_list[0];
+								if (firstFile === undefined) return;
+
+								const isLocal = "Local" in firstFile;
+								if (!isLocal) return;
+
+								await openPath(firstFile.Local.path);
+							})}
+						>
+							Read
+						</Button>
+						<Link to={`/books/${book.id}`}>
+							<Button leftSection={<F7Pencil />}>Edit</Button>
+						</Link>
+					</Group>
+				</Stack>
+			</Group>
+			{book.description !== null && book.description.length > 0 && (
+				<>
+					<Divider />
+					<Stack>
+						<Text
+							fw={700}
+							style={{
+								fontFamily:
+									'"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif',
+							}}
+						>
+							Description
+						</Text>
+						{/* We're using DOMPurify to sanitize the HTML before rendering */}
+						<div
+							className="description-html"
+							// biome-ignore lint/security/noDangerouslySetInnerHtml: We sanitize with DOMPurify
+							dangerouslySetInnerHTML={{
+								__html: DOMPurify.sanitize(book.description),
+							}}
+						/>
+					</Stack>
+				</>
+			)}
+			<Divider />
+			<Stack gap={6}>
+				{book.identifier_list.length > 0 && (
+					<BookIdentifiers identifier_list={book.identifier_list} />
+				)}
+				<Text
+					fw={700}
+					style={{
+						fontFamily:
+							'"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif',
+					}}
+				>
+					Formats
+				</Text>
+				<p style={{ marginTop: 0 }}>
+					{book.file_list
+						.filter((item): item is { Local: LocalFile } => "Local" in item)
+						.map((f1) => (
+							<span
+								key={f1.Local.path}
 								style={{
-									fontFamily:
-										'"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif',
-									lineHeight: 1.15,
+									display: "inline-flex",
+									textDecoration: "underline",
+									marginRight: "0.75rem",
+									fontSize: "0.9rem",
 								}}
-							>
-								{book.title}
-							</Text>
-							<Text size="md" c="dimmed">
-								{book.author_list.map((author) => author.name).join(", ")}
-							</Text>
-						</Stack>
-						<Group justify="space-between" w={"100%"}>
-							<Button
-								variant="subtle"
 								onPointerDown={safeAsyncEventHandler(async () => {
-									const firstFile = book.file_list[0];
-									if (firstFile === undefined) return;
-
-									const isLocal = "Local" in firstFile;
-									if (!isLocal) return;
-
-									await openPath(firstFile.Local.path);
+									await revealItemInDir(f1.Local.path);
 								})}
 							>
-								Read
-							</Button>
-							<Link to={`/books/${book.id}`}>
-								<Button leftSection={<F7Pencil />}>Edit</Button>
-							</Link>
-						</Group>
-					</Stack>
-				</Group>
-				{book.description !== null && book.description.length > 0 && (
-					<>
-						<Divider />
-						<Stack>
-							<Text
-								fw={700}
-								style={{
-									fontFamily:
-										'"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif',
-								}}
-							>
-								Description
-							</Text>
-							{/* We're using DOMPurify to sanitize the HTML before rendering */}
-							<div
-								className="description-html"
-								// biome-ignore lint/security/noDangerouslySetInnerHtml: We sanitize with DOMPurify
-								dangerouslySetInnerHTML={{
-									__html: DOMPurify.sanitize(book.description),
-								}}
-							/>
-						</Stack>
-					</>
-				)}
-				<Divider />
-				<Stack gap={6}>
-					{book.identifier_list.length > 0 && (
-						<BookIdentifiers identifier_list={book.identifier_list} />
-					)}
-					<Text
-						fw={700}
-						style={{
-							fontFamily:
-								'"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif',
-						}}
-					>
-						Formats
-					</Text>
-					<p style={{ marginTop: 0 }}>
-						{book.file_list
-							.filter((item): item is { Local: LocalFile } => "Local" in item)
-							.map((f1) => (
-								<span
-									key={f1.Local.path}
-									style={{
-										display: "inline-flex",
-										textDecoration: "underline",
-										marginRight: "0.75rem",
-										fontSize: "0.9rem",
-									}}
-									onPointerDown={safeAsyncEventHandler(async () => {
-										await revealItemInDir(f1.Local.path);
-									})}
-								>
-									{f1.Local.mime_type} ↗
-								</span>
-							))}
-					</p>
-				</Stack>
+								{f1.Local.mime_type} ↗
+							</span>
+						))}
+				</p>
 			</Stack>
+		</Stack>
 	);
 };
 

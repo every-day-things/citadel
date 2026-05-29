@@ -12,16 +12,32 @@
 	--ctd-border: rgba(78, 56, 36, 0.28);
 	--ctd-border-strong: rgba(78, 56, 36, 0.4);
 	--ctd-link: #83541f;
-	--ctd-shell-gradient: linear-gradient(180deg, rgba(255, 249, 239, 0.68) 0%, rgba(239, 229, 212, 0.72) 100%);
+	--ctd-shell-gradient: linear-gradient(
+		180deg,
+		rgba(255, 249, 239, 0.68) 0%,
+		rgba(239, 229, 212, 0.72) 100%
+	);
 	--ctd-header-bg: rgba(253, 248, 239, 0.9);
 	--ctd-nav-bg: rgba(253, 248, 239, 0.86);
-	--ctd-main-gradient: linear-gradient(180deg, rgba(247, 242, 233, 0.6) 0%, rgba(238, 226, 206, 0.52) 100%);
-	--ctd-drawer-gradient: linear-gradient(180deg, rgba(255, 250, 242, 0.98) 0%, rgba(246, 236, 220, 0.98) 100%);
+	--ctd-main-gradient: linear-gradient(
+		180deg,
+		rgba(247, 242, 233, 0.6) 0%,
+		rgba(238, 226, 206, 0.52) 100%
+	);
+	--ctd-drawer-gradient: linear-gradient(
+		180deg,
+		rgba(255, 250, 242, 0.98) 0%,
+		rgba(246, 236, 220, 0.98) 100%
+	);
 	--ctd-control-bg: rgba(255, 251, 243, 0.82);
 	--ctd-control-bg-strong: rgba(255, 252, 246, 0.95);
 	--ctd-control-text: rgba(58, 40, 20, 0.95);
 	--ctd-segmented-root-bg: rgba(244, 232, 210, 0.7);
-	--ctd-segmented-indicator-bg: linear-gradient(145deg, rgba(196, 138, 74, 0.95) 8%, rgba(147, 95, 44, 0.96) 92%);
+	--ctd-segmented-indicator-bg: linear-gradient(
+		145deg,
+		rgba(196, 138, 74, 0.95) 8%,
+		rgba(147, 95, 44, 0.96) 92%
+	);
 	--ctd-segmented-label: rgba(60, 42, 24, 0.92);
 	--ctd-nav-hover-bg: rgba(198, 153, 101, 0.28);
 	--ctd-nav-active-bg: rgba(196, 138, 74, 0.34);
@@ -39,7 +55,8 @@
 	--ctd-cover-author: #dfd7ca;
 	--ctd-cover-title-shadow: 0px 1px #343434;
 	--ctd-cover-author-shadow: 0px 2px #222;
-	--ctd-cover-spine-bg: linear-gradient(
+	--ctd-cover-spine-bg:
+		linear-gradient(
 			to right,
 			rgba(0, 0, 0, 0.55) 0%,
 			rgba(255, 255, 255, 0.4) 1%,
@@ -59,13 +76,7 @@
 	--ctd-shadow-lift: 0 18px 34px rgba(54, 35, 14, 0.2);
 
 	font-family:
-		"Avenir Next",
-		"Avenir",
-		"Segoe UI",
-		Roboto,
-		Helvetica,
-		Arial,
-		sans-serif;
+		"Avenir Next", "Avenir", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 	font-size: 16px;
 	line-height: 1.5;
 	font-weight: 400;
@@ -91,16 +102,32 @@
 	--ctd-border: rgba(255, 247, 239, 0.12);
 	--ctd-border-strong: rgba(255, 247, 239, 0.26);
 	--ctd-link: #d9af75;
-	--ctd-shell-gradient: linear-gradient(180deg, rgba(22, 20, 18, 0.82) 0%, rgba(16, 14, 12, 0.86) 100%);
+	--ctd-shell-gradient: linear-gradient(
+		180deg,
+		rgba(22, 20, 18, 0.82) 0%,
+		rgba(16, 14, 12, 0.86) 100%
+	);
 	--ctd-header-bg: rgba(28, 24, 20, 0.9);
 	--ctd-nav-bg: rgba(26, 22, 18, 0.88);
-	--ctd-main-gradient: linear-gradient(180deg, rgba(20, 17, 14, 0.78) 0%, rgba(14, 12, 10, 0.86) 100%);
-	--ctd-drawer-gradient: linear-gradient(180deg, rgba(36, 31, 26, 0.98) 0%, rgba(28, 24, 20, 0.98) 100%);
+	--ctd-main-gradient: linear-gradient(
+		180deg,
+		rgba(20, 17, 14, 0.78) 0%,
+		rgba(14, 12, 10, 0.86) 100%
+	);
+	--ctd-drawer-gradient: linear-gradient(
+		180deg,
+		rgba(36, 31, 26, 0.98) 0%,
+		rgba(28, 24, 20, 0.98) 100%
+	);
 	--ctd-control-bg: rgba(39, 33, 27, 0.9);
 	--ctd-control-bg-strong: rgba(44, 38, 32, 0.98);
 	--ctd-control-text: rgba(247, 241, 234, 0.95);
 	--ctd-segmented-root-bg: rgba(52, 44, 35, 0.85);
-	--ctd-segmented-indicator-bg: linear-gradient(145deg, rgba(186, 133, 70, 0.9) 8%, rgba(133, 88, 44, 0.95) 92%);
+	--ctd-segmented-indicator-bg: linear-gradient(
+		145deg,
+		rgba(186, 133, 70, 0.9) 8%,
+		rgba(133, 88, 44, 0.95) 92%
+	);
 	--ctd-segmented-label: rgba(241, 233, 223, 0.92);
 	--ctd-nav-hover-bg: rgba(122, 92, 58, 0.48);
 	--ctd-nav-active-bg: rgba(184, 129, 69, 0.36);
@@ -112,13 +139,15 @@
 	--ctd-danger-bg-hover: #8f4131;
 	--ctd-danger-text: #fff2ec;
 	--ctd-danger-border: #9a4b3a;
-	--ctd-cover-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 14px 24px rgba(0, 0, 0, 0.48);
+	--ctd-cover-shadow:
+		0 0 0 1px rgba(255, 255, 255, 0.08), 0 14px 24px rgba(0, 0, 0, 0.48);
 	--ctd-cover-overlay: #12161a;
 	--ctd-cover-title: #fdf8ef;
 	--ctd-cover-author: #dfd7ca;
 	--ctd-cover-title-shadow: 0px 1px #343434;
 	--ctd-cover-author-shadow: 0px 2px #222;
-	--ctd-cover-spine-bg: linear-gradient(
+	--ctd-cover-spine-bg:
+		linear-gradient(
 			to right,
 			rgba(0, 0, 0, 0.62) 0%,
 			rgba(255, 255, 255, 0.34) 1%,
@@ -143,8 +172,16 @@ body {
 	padding: 0;
 	overflow: hidden;
 	background:
-		radial-gradient(circle at 15% -20%, rgba(170, 122, 66, 0.24), transparent 46%),
-		radial-gradient(circle at 88% 0%, rgba(198, 162, 103, 0.16), transparent 38%),
+		radial-gradient(
+			circle at 15% -20%,
+			rgba(170, 122, 66, 0.24),
+			transparent 46%
+		),
+		radial-gradient(
+			circle at 88% 0%,
+			rgba(198, 162, 103, 0.16),
+			transparent 38%
+		),
 		linear-gradient(180deg, var(--ctd-bg) 0%, var(--ctd-bg-deep) 100%);
 	color: var(--ctd-ink);
 }
