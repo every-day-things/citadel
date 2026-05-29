@@ -5,7 +5,7 @@ export interface LibraryPath {
 }
 
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
-export type SettingsSchema = {
+export interface SettingsSchema {
 	theme: "dark" | "light" | "auto";
 	startFullscreen: boolean;
 	autoUpdateCheckingEnabled: boolean;
@@ -13,7 +13,8 @@ export type SettingsSchema = {
 	activeLibraryId: string;
 	libraryPaths: LibraryPath[];
 	hardcoverApiKey: string;
-};
+	lastNotifiedUpdateVersion: string | null;
+}
 
 export const defaultSettings: SettingsSchema = {
 	theme: "auto",
@@ -23,6 +24,7 @@ export const defaultSettings: SettingsSchema = {
 	activeLibraryId: "",
 	libraryPaths: [],
 	hardcoverApiKey: "",
+	lastNotifiedUpdateVersion: null,
 };
 
 export type SettingsKey = keyof SettingsSchema;

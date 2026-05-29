@@ -1,13 +1,7 @@
 import { shortenToChars } from "$lib/domain/book";
-import { LibraryBook } from "@/bindings";
-import {
-	AspectRatio,
-	Overlay,
-	Text,
-	Transition,
-	useMantineColorScheme,
-} from "@mantine/core";
-import { HTMLAttributes, useState } from "react";
+import type { LibraryBook } from "@/bindings";
+import { AspectRatio, Overlay, Text, Transition } from "@mantine/core";
+import { type HTMLAttributes, useState } from "react";
 import { formatAuthorList } from "@/lib/authors";
 import { selectByStringHash } from "@/lib/hash-string";
 
@@ -22,22 +16,7 @@ type LibraryBookWithCoverImage = LibraryBook & {
 };
 
 const spineBackground = `
-  linear-gradient(
-    to right,
-    rgba(0,0,0,0.55) 0%,
-    rgba(255,255,255,0.4) 1%,
-    rgba(255,255,255,0.15) 3.5%,
-    rgba(0,0,0,0.2) 5%,
-    rgba(255,255,255,0.1) 6.5%,
-    transparent 9%
-  ),
-  linear-gradient(
-    to bottom,
-    rgba(255,255,255,0.04) 0%,
-    transparent 8%,
-    transparent 92%,
-    rgba(0,0,0,0.08) 100%
-  )
+  var(--ctd-cover-spine-bg)
 `;
 
 const BookCoverUsingImage = ({
@@ -49,16 +28,16 @@ const BookCoverUsingImage = ({
 	disableFade: boolean;
 } & HTMLAttributes<HTMLDivElement>) => {
 	const [isHovering, setIsHovering] = useState(false);
-	const { colorScheme } = useMantineColorScheme();
-	const isDark = colorScheme === "dark";
 	return (
 		<div
 			style={{
 				width: "133px",
 				position: "relative",
-				boxShadow: isDark
-					? "0 0 0 1px rgba(255,255,255,0.08), 0 2px 8px rgba(0,0,0,0.5)"
-					: "0 2px 8px rgba(0,0,0,0.18)",
+				borderRadius: "4px",
+				overflow: "hidden",
+				transition: "transform 180ms ease, box-shadow 180ms ease",
+				boxShadow: "var(--ctd-cover-shadow)",
+				transform: isHovering ? "translateY(-2px)" : "translateY(0px)",
 			}}
 			{...props}
 			onPointerOver={() => {
@@ -94,7 +73,7 @@ const BookCoverUsingImage = ({
 				{(styles) => (
 					<Overlay
 						style={styles}
-						color="#12161a"
+						color="var(--ctd-cover-overlay)"
 						backgroundOpacity={0.8}
 						zIndex={2}
 					/>
@@ -113,8 +92,6 @@ const BookCoverWithPlaceholder = ({
 	disableFade: boolean;
 } & HTMLAttributes<HTMLDivElement>) => {
 	const [isHovering, setIsHovering] = useState(false);
-	const { colorScheme } = useMantineColorScheme();
-	const isDark = colorScheme === "dark";
 
 	const imgUrl = selectByStringHash(
 		[img1Url, img2Url, img3Url, img4Url, img5Url],
@@ -140,9 +117,11 @@ const BookCoverWithPlaceholder = ({
 					height: "200px",
 					display: "grid",
 					gridTemplateAreas: "overlap",
-					boxShadow: isDark
-						? "0 0 0 1px rgba(255,255,255,0.08), 0 2px 8px rgba(0,0,0,0.5)"
-						: "0 2px 8px rgba(0,0,0,0.18)",
+					borderRadius: "4px",
+					overflow: "hidden",
+					transition: "transform 180ms ease, box-shadow 180ms ease",
+					boxShadow: "var(--ctd-cover-shadow)",
+					transform: isHovering ? "translateY(-2px)" : "translateY(0px)",
 				}}
 			>
 				<img
@@ -171,12 +150,25 @@ const BookCoverWithPlaceholder = ({
 					<Text
 						size="lg"
 						fw="bolder"
-						c="white"
-						style={{ textShadow: "0px 1px #888" }}
+						c="var(--ctd-cover-title)"
+						style={{
+							fontFamily:
+								'"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif',
+							letterSpacing: "0.01em",
+							lineHeight: 1.15,
+							textShadow: "var(--ctd-cover-title-shadow)",
+						}}
 					>
 						{shortenToChars(book.title, 36)}
 					</Text>
-					<Text size="md" c="#ccc" style={{ textShadow: "0px 2px #222" }}>
+					<Text
+						size="sm"
+						c="var(--ctd-cover-author)"
+						style={{
+							textShadow: "var(--ctd-cover-author-shadow)",
+							lineHeight: 1.2,
+						}}
+					>
 						{formatAuthorList(book.author_list)}
 					</Text>
 					<Transition
@@ -187,7 +179,7 @@ const BookCoverWithPlaceholder = ({
 						{(styles) => (
 							<Overlay
 								style={styles}
-								color="#12161a"
+								color="var(--ctd-cover-overlay)"
 								backgroundOpacity={0.8}
 								zIndex={2}
 							/>

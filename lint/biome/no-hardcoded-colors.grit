@@ -1,0 +1,11 @@
+// GritQL plugin: ban hardcoded color literals (hex, rgb, rgba, hsl, hsla) in JSX/TSX
+// Use design tokens (`var(--ctd-...)`) instead.
+
+`$value` where {
+  $value <: r"^(?:#(?:[0-9a-fA-F]{3,8})|rgba?\(|hsla?\()",
+  register_diagnostic(
+    span = $value,
+    message = "Use design tokens (`var(--ctd-...)`) instead of hardcoded color literals.",
+    severity = "error"
+  )
+}

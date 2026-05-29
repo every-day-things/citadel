@@ -17,14 +17,17 @@ const Root = () => {
 	return (
 		<AppShell
 			padding="md"
-			header={{ height: 36 }}
+			header={{ height: 44 }}
 			navbar={{
-				width: 200,
+				width: 248,
 				breakpoint: "sm",
 				collapsed: { mobile: !mobileOpened, desktop: !desktopOpened },
 			}}
 			h={"100vh"}
-			style={{ overflowY: "scroll" }}
+			style={{
+				overflowY: "scroll",
+				background: "var(--ctd-shell-gradient)",
+			}}
 		>
 			<Main
 				toggleMobile={toggleMobile}
@@ -55,6 +58,11 @@ const MainPure = ({
 					pl={"75px"}
 					justify="space-between"
 					data-tauri-drag-region
+					style={{
+						backgroundColor: "var(--ctd-header-bg)",
+						backdropFilter: "blur(3px)",
+						borderBottom: "1px solid var(--ctd-border)",
+					}}
 				>
 					<Burger
 						opened={isSidebarOpenMobile}
@@ -78,7 +86,13 @@ const MainPure = ({
 			<LibrarySelectModal />
 			<HardcoverSettingsModal />
 
-			<AppShell.Navbar p="md">
+			<AppShell.Navbar
+				p="md"
+				style={{
+					backgroundColor: "var(--ctd-nav-bg)",
+					borderRight: "1px solid var(--ctd-border)",
+				}}
+			>
 				<Sidebar />
 			</AppShell.Navbar>
 
@@ -86,6 +100,7 @@ const MainPure = ({
 				style={{
 					display: "grid",
 					gridTemplateRows: "1fr",
+					background: "var(--ctd-main-gradient)",
 				}}
 			>
 				<Outlet />
@@ -106,19 +121,17 @@ const Main = ({
 	toggleMobile,
 }: MainProps) => {
 	return (
-		<>
-			<ThemeModalProvider>
-				<LibrarySelectModalProvider>
-					<HardcoverModalProvider>
-						<MainPure
-							toggleDesktop={toggleDesktop}
-							isSidebarOpenMobile={isSidebarOpenMobile}
-							toggleMobile={toggleMobile}
-						/>
-					</HardcoverModalProvider>
-				</LibrarySelectModalProvider>
-			</ThemeModalProvider>
-		</>
+		<ThemeModalProvider>
+			<LibrarySelectModalProvider>
+				<HardcoverModalProvider>
+					<MainPure
+						toggleDesktop={toggleDesktop}
+						isSidebarOpenMobile={isSidebarOpenMobile}
+						toggleMobile={toggleMobile}
+					/>
+				</HardcoverModalProvider>
+			</LibrarySelectModalProvider>
+		</ThemeModalProvider>
 	);
 };
 

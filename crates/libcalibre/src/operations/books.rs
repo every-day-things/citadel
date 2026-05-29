@@ -5,7 +5,7 @@ use diesel::{Connection, SqliteConnection};
 
 use crate::{
     library::{Book, BookFileInfo, BookIdentifier, BookUpdate},
-    queries::{authors, book_descriptions, book_files, book_identifiers, books},
+    queries::{authors, book_descriptions, book_files, book_identifiers, books, tags},
     types::{AuthorId, BookId},
     CalibreError, UpdateBookData,
 };
@@ -102,8 +102,57 @@ pub fn update_book(
             }
         }
 
+        if let Some(tag_names) = update.tags {
+            let tag_names = unique_tag_names(&tag_names);
+            let existing_tags = tags::find_for_book(conn, book_id)?;
+
+            let to_unlink: Vec<i32> = existing_tags
+                .iter()
+                .filter(|tag| {
+                    !tag_names
+                        .iter()
+                        .any(|name| name.eq_ignore_ascii_case(&tag.name))
+                })
+                .map(|tag| tag.id)
+                .collect();
+
+            for tag_id in to_unlink {
+                tags::unlink_book(conn, tag_id, book_id)?;
+            }
+
+            let to_link: Vec<String> = tag_names
+                .iter()
+                .filter(|name| {
+                    !existing_tags
+                        .iter()
+                        .any(|tag| name.eq_ignore_ascii_case(&tag.name))
+                })
+                .map(|name| (*name).to_string())
+                .collect();
+
+            for tag_name in to_link {
+                let tag = tags::create_if_not_exists(conn, &tag_name)?;
+                tags::link_book(conn, tag.id, book_id)?;
+            }
+        }
+
         Ok(())
     })
+}
+
+fn unique_tag_names(tag_names: &[String]) -> Vec<&str> {
+    let mut unique = Vec::new();
+
+    for tag_name in tag_names {
+        if !unique
+            .iter()
+            .any(|existing: &&str| existing.eq_ignore_ascii_case(tag_name))
+        {
+            unique.push(tag_name.as_str());
+        }
+    }
+
+    unique
 }
 
 pub fn get_book(conn: &mut SqliteConnection, book_id: BookId) -> Result<Book, CalibreError> {
@@ -111,6 +160,7 @@ pub fn get_book(conn: &mut SqliteConnection, book_id: BookId) -> Result<Book, Ca
     let book_desc = book_descriptions::get(conn, book_id)?;
     let author_ids = books::find_authors(conn, book_id)?;
     let author_models = authors::get_many(conn, author_ids)?;
+    let tags = tags::find_for_book(conn, book_id)?;
     let identifier_models = book_identifiers::get(conn, book_id)?;
     let file_models = book_files::find_by_book_id(conn, book_id)?;
 
@@ -143,6 +193,7 @@ pub fn get_book(conn: &mut SqliteConnection, book_id: BookId) -> Result<Book, Ca
         title: book.title,
         sortable_title: book.sort,
         authors: book_authors,
+        tags: tags.into_iter().map(|tag| tag.name).collect(),
         identifiers,
         description: book_desc,
         has_cover: book.has_cover.unwrap_or(false),
@@ -163,6 +214,7 @@ pub fn all(conn: &mut SqliteConnection) -> Result<Vec<Book>, CalibreError> {
     let author_ids_by_book = authors::find_author_ids_by_book_ids(conn, book_ids.clone())?;
     let descriptions_map = book_descriptions::find_many_by_book_ids(conn, book_ids.clone())?;
     let identifiers_map = book_identifiers::find_many_by_book_ids(conn, book_ids.clone())?;
+    let tags_map = tags::find_tag_names_by_book_ids(conn, book_ids.clone())?;
     let files_map = book_files::find_many_by_book_ids(conn, book_ids)?;
 
     let unique_author_ids: Vec<AuthorId> = author_ids_by_book
@@ -189,6 +241,7 @@ pub fn all(conn: &mut SqliteConnection) -> Result<Vec<Book>, CalibreError> {
         };
 
         let book_description = descriptions_map.get(&book_id).cloned();
+        let book_tags = tags_map.get(&book_id).cloned().unwrap_or_default();
         let raw_files = files_map.get(&book_id).cloned().unwrap_or_default();
 
         let book_identifiers = identifiers_map
@@ -222,6 +275,7 @@ pub fn all(conn: &mut SqliteConnection) -> Result<Vec<Book>, CalibreError> {
             title: book_row.title,
             sortable_title: book_row.sort,
             authors: book_authors,
+            tags: book_tags,
             identifiers: book_identifiers,
             description: book_description,
             has_cover: book_row.has_cover.unwrap_or(false),

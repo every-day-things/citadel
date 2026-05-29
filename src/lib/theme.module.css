@@ -1,23 +1,36 @@
 .root {
 	&[data-variant="danger"] {
-		background-color: var(--mantine-color-red-9);
-		color: var(--mantine-color-red-0);
-		transition: ease-in-out background-color 100ms;
+		background-color: var(--ctd-danger-bg);
+		color: var(--ctd-danger-text);
+		border: 1px solid var(--ctd-danger-border);
+		transition: ease-in-out background-color 140ms;
 
 		&:hover,
 		&:focus-visible {
-			background-color: var(--mantine-color-red-7);
+			background-color: var(--ctd-danger-bg-hover);
 		}
 	}
 
 	&[data-variant="primary"] {
-		background: linear-gradient(45deg, #4b6cb7 10%, #253b67 90%);
-		color: var(--mantine-color-white);
-		border-width: 0;
+		background: var(--ctd-segmented-indicator-bg);
+		color: var(--ctd-surface-strong);
+		border-width: 1px;
+		border-color: var(--ctd-border-strong);
+		box-shadow: var(--ctd-shadow-soft);
 
 		&:hover,
 		&:focus-visible {
-			background: linear-gradient(45deg, #5879c4 10%, #283e6a 90%);
+			background: var(--ctd-segmented-indicator-bg);
+			transform: translateY(-1px);
+		}
+	}
+
+	&[data-variant="subtle"] {
+		color: var(--ctd-ink-soft);
+
+		&:hover,
+		&:focus-visible {
+			background-color: var(--ctd-surface-muted);
 		}
 	}
 }

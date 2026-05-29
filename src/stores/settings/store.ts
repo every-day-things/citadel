@@ -26,7 +26,16 @@ interface SettingsStore extends SettingsSchema {
 	createLibrary: (absolutePath: string) => Promise<string>;
 	getActiveLibrary: () => Option<LibraryPath>;
 	setHardcoverApiKey: (apiKey: string) => Promise<void>;
+	setLastNotifiedUpdateVersion: (version: string | null) => Promise<void>;
 }
+
+const setSetting = <K extends SettingsKey>(
+	target: SettingsSchema,
+	key: K,
+	value: SettingsValue<K>,
+) => {
+	target[key] = value;
+};
 
 // Helper to update store and persist to disk
 const persistSetting = async <K extends SettingsKey>(
@@ -61,7 +70,7 @@ export const useSettings = create<SettingsStore>((set, get) => ({
 			const initialSettings = {} as SettingsSchema;
 			for (const key of Object.keys(defaultSettings) as SettingsKey[]) {
 				const value = await settingsManager.get(key);
-				(initialSettings as Record<string, unknown>)[key] = value;
+				setSetting(initialSettings, key, value);
 			}
 
 			set({ ...initialSettings, hydrated: true });
@@ -128,6 +137,10 @@ export const useSettings = create<SettingsStore>((set, get) => ({
 
 	setHardcoverApiKey: async (apiKey) => {
 		await persistSetting(set, get, "hardcoverApiKey", apiKey);
+	},
+
+	setLastNotifiedUpdateVersion: async (version) => {
+		await persistSetting(set, get, "lastNotifiedUpdateVersion", version);
 	},
 }));
 

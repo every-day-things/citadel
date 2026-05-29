@@ -8,7 +8,6 @@ import {
 	Box,
 	Button,
 	Card,
-	Fieldset,
 	Group,
 	Image,
 	Loader,
@@ -33,8 +32,17 @@ import { BookCover } from "../atoms/BookCover";
 import { MultiSelectCreatable } from "../atoms/Multiselect";
 import styles from "./EditBook.module.css";
 
+const richTextEditorClassNames = {
+	toolbar: styles.editorToolbar,
+	content: styles.editorContent,
+	controlsGroup: styles.editorControlsGroup,
+	control: styles.editorControl,
+	controlIcon: styles.editorControlIcon,
+} as const;
+
 interface BookPageProps {
 	allAuthorList: LibraryAuthor[];
+	allTagList: string[];
 	book: LibraryBook;
 	onCreateAuthor: (authorName: string) => Promise<void>;
 	onSave: (bookUpdate: BookUpdate) => Promise<void>;
@@ -50,6 +58,7 @@ interface BookPageProps {
 
 export const BookPage = ({
 	allAuthorList,
+	allTagList,
 	book,
 	onCreateAuthor,
 	onSave,
@@ -58,8 +67,8 @@ export const BookPage = ({
 	onReloadBooks,
 }: BookPageProps) => {
 	return (
-		<Stack h={"100%"}>
-			<Title size="md">
+		<Stack h={"100%"} className={styles.page}>
+			<Title size="md" className={styles.pageTitle}>
 				<Text fw={900} component="span">
 					Editing book info
 				</Text>{" "}
@@ -67,6 +76,7 @@ export const BookPage = ({
 			</Title>
 			<EditBookForm
 				allAuthorList={allAuthorList}
+				allTagList={allTagList}
 				onCreateAuthor={onCreateAuthor}
 				book={book}
 				onSave={onSave}
@@ -81,9 +91,10 @@ export const BookPage = ({
 const Formats = ({
 	book,
 	style,
+	...props
 }: { book: LibraryBook } & HTMLProps<HTMLDivElement>) => {
 	return (
-		<div style={style}>
+		<div style={style} {...props}>
 			<Text size="xl">Formats</Text>
 			<ul>
 				{book.file_list.map((file) => {
@@ -114,6 +125,7 @@ const formValuesFromBook = (book: LibraryBook) => ({
 	title: book.title,
 	sortTitle: book.sortable_title ?? "",
 	authorList: book.author_list.map((author) => author.name),
+	tagList: book.tag_list,
 	identifierList: book.identifier_list,
 	description: book.description ?? "",
 	isRead: book.is_read,
@@ -126,6 +138,7 @@ const LABEL_OFFSET_MARGIN = "22px";
 
 const EditBookForm = ({
 	allAuthorList,
+	allTagList,
 	book,
 	onCreateAuthor: createAuthor,
 	onSave,
@@ -134,6 +147,7 @@ const EditBookForm = ({
 	onReloadBooks,
 }: {
 	allAuthorList: LibraryAuthor[];
+	allTagList: string[];
 	book: LibraryBook;
 	onCreateAuthor: (name: string) => Promise<void>;
 	onSave: (update: BookUpdate) => Promise<void>;
@@ -146,6 +160,18 @@ const EditBookForm = ({
 		value: string,
 	) => Promise<void>;
 }) => {
+	const warmInputStyles = {
+		label: {
+			fontWeight: 600,
+			color: "var(--ctd-ink-soft)",
+		},
+		input: {
+			backgroundColor: "var(--ctd-control-bg)",
+			borderColor: "var(--ctd-border)",
+			color: "var(--ctd-control-text)",
+		},
+	};
+
 	const initialValues = useMemo(() => {
 		return formValuesFromBook(book);
 	}, [book]);
@@ -156,6 +182,7 @@ const EditBookForm = ({
 		() => allAuthorList.map((author) => author.name),
 		[allAuthorList],
 	);
+	const tagOptions = useMemo(() => allTagList, [allTagList]);
 	const [newBookIdentifierLabel, setNewBookIdentifierLabel] = useState("");
 
 	const hc = useHardcoverBookActions({
@@ -222,6 +249,7 @@ const EditBookForm = ({
 				const bookUpdate: BookUpdate = {
 					title: form.values.title,
 					author_id_list: authorIdsFromName,
+					tag_list: form.values.tagList,
 					timestamp: null,
 					publication_date: null,
 					is_read: form.values.isRead,
@@ -244,28 +272,39 @@ const EditBookForm = ({
 				gridTemplateRows: "1.4fr 1.4fr",
 				gridTemplateAreas: `"Cover BookInfo"
 				 "Format BookInfo"`,
-				gap: "0px 1rem",
+				gap: "0.8rem 1rem",
 				height: "100%",
 			}}
 		>
-			<div style={{ gridArea: "Cover" }}>
+			<div style={{ gridArea: "Cover" }} className={styles.coverColumn}>
 				<Stack>
 					<Cover book={book} />
 					<Switch
 						label="Finished"
+						styles={{
+							label: {
+								fontWeight: 600,
+								color: "var(--ctd-ink-soft)",
+							},
+						}}
 						{...form.getInputProps("isRead", { type: "checkbox" })}
 					/>
 				</Stack>
 			</div>
-			<Formats book={book} style={{ gridArea: "Format" }} />
+			<Formats
+				book={book}
+				style={{ gridArea: "Format" }}
+				className={styles.formatPanel}
+			/>
 			<Group
 				align="flex-start"
 				preventGrowOverflow
 				style={{ gridArea: "BookInfo" }}
+				className={styles.bookInfoPanel}
 			>
 				<Stack flex={1}>
 					<Group flex={1} justify="space-between">
-						<Text size="xl" p="1" h="36">
+						<Text size="xl" p="1" h="36" className={styles.sectionTitle}>
 							Book info
 						</Text>
 						{form.isDirty() && form.isTouched() && (
@@ -287,6 +326,7 @@ const EditBookForm = ({
 						<TextInput
 							label="Title"
 							flex={1}
+							styles={warmInputStyles}
 							{...form.getInputProps("title")}
 						/>
 						<ActionIcon variant="outline" mt={LABEL_OFFSET_MARGIN}>
@@ -294,25 +334,50 @@ const EditBookForm = ({
 						</ActionIcon>
 						<TextInput
 							label="Sort title"
+							styles={warmInputStyles}
 							{...form.getInputProps("sortTitle")}
 							flex={1}
 						/>
 					</Group>
 					<MultiSelectCreatable
 						label="Authors"
+						placeholder="Search or add author"
 						selectOptions={allAuthorNames}
 						onCreateSelectOption={(name) => void createAuthor(name)}
 						{...form.getInputProps("authorList")}
 					/>
+					<MultiSelectCreatable
+						label="Tags"
+						placeholder="Search or add tag"
+						selectOptions={tagOptions}
+						{...form.getInputProps("tagList")}
+					/>
 					<Group flex={1}>
 						{form.values.identifierList.length > 0 && (
 							<Group flex={1}>
-								<Fieldset legend="Identifiers">
+								<Box
+									style={{
+										width: "100%",
+										border: "1px solid var(--ctd-border)",
+										borderRadius: "8px",
+										padding: "0.75rem",
+										backgroundColor: "var(--ctd-control-bg-strong)",
+									}}
+								>
+									<Text
+										fw={700}
+										mb="xs"
+										className={styles.sectionTitle}
+										style={{ fontSize: "0.95rem" }}
+									>
+										Identifiers
+									</Text>
 									{form.values.identifierList.map(({ label, id }, index) => (
 										<Group key={id} flex={1} align="center">
 											<TextInput
 												flex={"15ch"}
 												label={label.toUpperCase()}
+												styles={warmInputStyles}
 												{...form.getInputProps(`identifierList.${index}.value`)}
 												onBlur={(event) => {
 													onUpsertIdentifier(
@@ -358,11 +423,12 @@ const EditBookForm = ({
 											</ActionIcon>
 										</Group>
 									))}
-									<hr style={{ color: "lightgrey" }} />
+									<hr style={{ borderColor: "var(--ctd-border)" }} />
 									<Group>
 										<TextInput
 											label="Identifier label"
 											placeholder="ISBN"
+											styles={warmInputStyles}
 											value={newBookIdentifierLabel}
 											onChange={(event) =>
 												setNewBookIdentifierLabel(event.target.value)
@@ -380,13 +446,13 @@ const EditBookForm = ({
 													.catch(console.error);
 											}}
 											variant="outline"
-											color="blue"
+											color="sepia"
 											mt={LABEL_OFFSET_MARGIN}
 										>
 											Add identifier
 										</Button>
 									</Group>
-								</Fieldset>
+								</Box>
 							</Group>
 						)}
 					</Group>
@@ -394,7 +460,6 @@ const EditBookForm = ({
 						<Text
 							size="sm"
 							c="dimmed"
-							style={{ cursor: "pointer" }}
 							td="underline"
 							onClick={() => {
 								const query = form.values.title || "";
@@ -417,9 +482,18 @@ const EditBookForm = ({
 							{hc.hardcoverMessage.text}
 						</Alert>
 					)}
-					<Paper shadow="sm" p="lg">
+					<Paper
+						shadow="sm"
+						p="lg"
+						style={{
+							backgroundColor: "var(--ctd-surface-soft)",
+							border: "1px solid var(--ctd-border)",
+						}}
+					>
 						<Group justify="space-between">
-							<Text size="lg">Description</Text>
+							<Text size="lg" className={styles.sectionTitle}>
+								Description
+							</Text>
 							<Button
 								variant="subtle"
 								onClick={() =>
@@ -441,6 +515,7 @@ const EditBookForm = ({
 								<RichTextEditor
 									editor={editor}
 									className={styles.editorWrapper}
+									classNames={richTextEditorClassNames}
 								>
 									<RichTextEditor.Toolbar sticky stickyOffset={60}>
 										<RichTextEditor.ControlsGroup>
@@ -538,7 +613,6 @@ const EditBookForm = ({
 										key={result.hardcover_id}
 										shadow="sm"
 										padding="lg"
-										style={{ cursor: "pointer" }}
 										onClick={() => void hc.selectSearchResult(result)}
 									>
 										<Group align="flex-start" gap="md">

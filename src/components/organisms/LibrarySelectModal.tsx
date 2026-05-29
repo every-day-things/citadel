@@ -79,12 +79,33 @@ const SwitchLibraryPathModalPure = ({
 	return (
 		<Modal.Root opened={isOpen} onClose={onClose} size={"lg"}>
 			<Modal.Overlay blur={3} backgroundOpacity={0.35} />
-			<Modal.Content>
-				<Modal.Header>
+			<Modal.Content
+				style={{
+					background: "var(--ctd-drawer-gradient)",
+					border: "1px solid var(--ctd-border)",
+				}}
+			>
+				<Modal.Header
+					style={{
+						backgroundColor: "transparent",
+						borderBottom: "1px solid var(--ctd-border)",
+					}}
+				>
 					<Modal.Title>Switch library</Modal.Title>
-					<Modal.CloseButton />
+					<Modal.CloseButton
+						style={{
+							border: "1px solid var(--ctd-border)",
+							backgroundColor: "var(--ctd-control-bg)",
+						}}
+					/>
 				</Modal.Header>
-				<Modal.Body>{children}</Modal.Body>
+				<Modal.Body
+					style={{
+						paddingTop: "0.9rem",
+					}}
+				>
+					{children}
+				</Modal.Body>
 			</Modal.Content>
 		</Modal.Root>
 	);

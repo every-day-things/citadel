@@ -41,9 +41,30 @@ export const AddBookForm = ({
 			<Stack gap={"lg"}>
 				{!hideTitle && <Title>{title}</Title>}
 				<Text mb="sm">
-					Selected file: <Code>{fileName}</Code>{" "}
+					Selected file:{" "}
+					<Code
+						style={{
+							backgroundColor: "var(--ctd-control-bg)",
+							border: "1px solid var(--ctd-border)",
+						}}
+					>
+						{fileName}
+					</Code>{" "}
 				</Text>
-				<TextInput label="Title" {...form.getInputProps("title")} />
+				<TextInput
+					label="Title"
+					styles={{
+						label: {
+							color: "var(--ctd-ink-soft)",
+						},
+						input: {
+							backgroundColor: "var(--ctd-control-bg)",
+							borderColor: "var(--ctd-border)",
+							color: "var(--ctd-control-text)",
+						},
+					}}
+					{...form.getInputProps("title")}
+				/>
 				<MultiSelectCreatable
 					label="Authors"
 					placeholder="Search or add author"
@@ -51,7 +72,7 @@ export const AddBookForm = ({
 					onCreateSelectOption={(name) => void onCreateAuthor(name)}
 					{...form.getInputProps("authorList")}
 				/>
-				<Button mt="mg" variant="filled" fullWidth type="submit">
+				<Button mt="mg" variant="filled" color="sepia" fullWidth type="submit">
 					Add book
 				</Button>
 			</Stack>

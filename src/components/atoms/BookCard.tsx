@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import { LibraryBook } from "@/bindings";
+import type { LibraryBook } from "@/bindings";
 import { Center } from "@mantine/core";
 import { BookCover } from "./BookCover";
 
@@ -9,7 +9,7 @@ interface BookActions {
 	onViewBook: BookAction;
 }
 
-interface BookCard {
+interface BookCardProps {
 	book: LibraryBook;
 	actions: BookActions;
 }
@@ -17,7 +17,7 @@ interface BookCard {
 export const BookCard = React.memo(function BookCard({
 	book,
 	actions: { onViewBook },
-}: BookCard) {
+}: BookCardProps) {
 	const onCoverTouch = useCallback(() => {
 		onViewBook(book.id);
 	}, [onViewBook, book]);

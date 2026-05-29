@@ -15,7 +15,7 @@ import {
 import { Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 
-import { AuthorUpdate, LibraryAuthor, LibraryBook } from "@/bindings";
+import type { AuthorUpdate, LibraryAuthor, LibraryBook } from "@/bindings";
 
 import {
 	useAuthors,
@@ -118,6 +118,16 @@ export const Authors = () => {
 				opened={deleteModalOpened}
 				onClose={closeDeleteModal}
 				title="Delete author"
+				styles={{
+					content: {
+						background: "var(--ctd-drawer-gradient)",
+						border: "1px solid var(--ctd-border)",
+					},
+					header: {
+						backgroundColor: "transparent",
+						borderBottom: "1px solid var(--ctd-border)",
+					},
+				}}
 			>
 				{authorToDelete && (
 					<Stack>
@@ -228,17 +238,57 @@ const EditAuthorModal = ({
 	);
 
 	return (
-		<Modal opened={opened} onClose={onClose} title="Edit author">
+		<Modal
+			opened={opened}
+			onClose={onClose}
+			title="Edit author"
+			styles={{
+				content: {
+					background: "var(--ctd-drawer-gradient)",
+					border: "1px solid var(--ctd-border)",
+				},
+				header: {
+					backgroundColor: "transparent",
+					borderBottom: "1px solid var(--ctd-border)",
+				},
+			}}
+		>
 			<form onSubmit={form.onSubmit(onSubmit)}>
 				<Stack>
 					<TextInput
 						label="Full name"
 						description="How the author's name is displayed"
+						styles={{
+							label: {
+								color: "var(--ctd-ink-soft)",
+							},
+							description: {
+								color: "var(--ctd-ink-soft)",
+							},
+							input: {
+								backgroundColor: "var(--ctd-control-bg)",
+								borderColor: "var(--ctd-border)",
+								color: "var(--ctd-control-text)",
+							},
+						}}
 						{...form.getInputProps("displayName")}
 					/>
 					<TextInput
 						label="Sort name"
 						description="Authors are sorted alphabetically by this name"
+						styles={{
+							label: {
+								color: "var(--ctd-ink-soft)",
+							},
+							description: {
+								color: "var(--ctd-ink-soft)",
+							},
+							input: {
+								backgroundColor: "var(--ctd-control-bg)",
+								borderColor: "var(--ctd-border)",
+								color: "var(--ctd-control-text)",
+							},
+						}}
 						{...form.getInputProps("sortName")}
 					/>
 					<Group gap="lg" grow mt="md">
@@ -272,7 +322,16 @@ const AuthorCard = ({
 	).length;
 
 	return (
-		<Card w={"480"} key={author.id} shadow="sm" withBorder>
+		<Card
+			w={"480"}
+			key={author.id}
+			shadow="sm"
+			withBorder
+			style={{
+				backgroundColor: "var(--ctd-surface-soft)",
+				borderColor: "var(--ctd-border)",
+			}}
+		>
 			<Group justify="space-between" mb="xs">
 				<Group mb="sm">
 					<Stack gap="xs">
@@ -287,7 +346,20 @@ const AuthorCard = ({
 						<Badge color="red">No sort name</Badge>
 					)}
 				</Group>
-				<Menu withinPortal position="bottom-end" shadow="sm">
+				<Menu
+					withinPortal
+					position="bottom-end"
+					shadow="sm"
+					styles={{
+						dropdown: {
+							backgroundColor: "var(--ctd-surface-strong)",
+							borderColor: "var(--ctd-border)",
+						},
+						item: {
+							color: "var(--ctd-ink)",
+						},
+					}}
+				>
 					<Menu.Target>
 						<ActionIcon variant="subtle" color="gray">
 							<F7Ellipsis />

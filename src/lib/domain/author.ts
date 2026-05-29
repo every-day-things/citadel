@@ -1,4 +1,4 @@
-import { LibraryAuthor } from "@/bindings";
+import type { LibraryAuthor } from "@/bindings";
 
 export const sortAuthors = (a: LibraryAuthor, b: LibraryAuthor) => {
 	const nameA = a.sortable_name || a.name;

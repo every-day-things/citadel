@@ -1,7 +1,7 @@
 import { Flex, TextInput, Select, Switch } from "@mantine/core";
 import {
-	AuthorSortOrderValue,
-	UseAuthorFiltersReturn,
+	type AuthorSortOrderValue,
+	type UseAuthorFiltersReturn,
 	sortOrderOptions,
 } from "@/lib/hooks/use-author-filters";
 
@@ -31,6 +31,13 @@ export const AuthorFilterControls = ({
 			<TextInput
 				miw="32ch"
 				placeholder="Search authors"
+				styles={{
+					input: {
+						backgroundColor: "var(--ctd-control-bg)",
+						borderColor: "var(--ctd-border)",
+						color: "var(--ctd-control-text)",
+					},
+				}}
 				value={filters.searchTerm}
 				onChange={(event) => onSearchChange(event.currentTarget.value)}
 			/>
@@ -39,6 +46,17 @@ export const AuthorFilterControls = ({
 				placeholder="Sort Order"
 				allowDeselect={false}
 				w={150}
+				styles={{
+					input: {
+						backgroundColor: "var(--ctd-control-bg)",
+						borderColor: "var(--ctd-border)",
+						color: "var(--ctd-control-text)",
+					},
+					dropdown: {
+						backgroundColor: "var(--ctd-surface-strong)",
+						borderColor: "var(--ctd-border)",
+					},
+				}}
 				value={filters.sortOrder}
 				onChange={(value) => onSortOrderChange(value as AuthorSortOrderValue)}
 				data={sortOrderOptions}
@@ -46,6 +64,20 @@ export const AuthorFilterControls = ({
 
 			<Switch
 				label="No books"
+				color="sepia"
+				styles={{
+					label: {
+						fontWeight: 600,
+						color: "var(--ctd-ink-soft)",
+					},
+					track: {
+						borderColor: "var(--ctd-border-strong)",
+						backgroundColor: "var(--ctd-control-bg)",
+					},
+					thumb: {
+						borderColor: "var(--ctd-border-strong)",
+					},
+				}}
 				checked={filters.showOnlyAuthorsWithoutBooks}
 				onChange={(event) =>
 					onShowOnlyAuthorsWithoutBooksChange(event.currentTarget.checked)

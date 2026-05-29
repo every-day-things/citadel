@@ -1,5 +1,5 @@
-import { BookView } from "@/BookView";
-import { LibraryBook } from "@/bindings";
+import type { BookView } from "@/BookView";
+import type { LibraryBook } from "@/bindings";
 import { Box, LoadingOverlay, SimpleGrid } from "@mantine/core";
 import { createContext, useContext, useMemo } from "react";
 import { BookCard } from "../atoms/BookCard";
@@ -28,12 +28,20 @@ const BookGridPure = ({
 	const actions = useContext(bookActionsContext);
 
 	return (
-		<Box pos="relative">
+		<Box
+			pos="relative"
+			style={{
+				padding: "0.45rem",
+				borderRadius: "12px",
+				backgroundColor: "var(--ctd-surface-soft)",
+				border: "1px solid var(--ctd-border)",
+			}}
+		>
 			<LoadingOverlay visible={loading} />
 			<SimpleGrid
 				cols={{ base: 2, md: 4, lg: 5 }}
-				spacing={4}
-				verticalSpacing="md"
+				spacing="lg"
+				verticalSpacing="xl"
 				style={{ alignItems: "end" }}
 			>
 				{books.map((book) => (

@@ -24,6 +24,7 @@ const MOCK_BOOK: LibraryBook = {
 	id: "0000004JFGPMWM6WMEEFXRKXK8",
 	uuid: "01901f97-c2c5-7ce8-9546-36455c321691",
 	author_list: [Bugliacci],
+	tag_list: ["Classic", "Satire"],
 	description: "",
 	file_list: [
 		{
@@ -50,6 +51,11 @@ export const Primary: Story = {
 	args: {
 		book: MOCK_BOOK,
 		allAuthorList: [Bugliacci, Gregor_Samsa],
+		allTagList: ["Classic", "Satire", "Metafiction"],
+		onCreateAuthor: () => Promise.resolve(),
+		onDeleteIdentifier: () => Promise.resolve(),
+		onReloadBooks: () => Promise.resolve(),
+		onUpsertIdentifier: () => Promise.resolve(),
 		onSave: (update) =>
 			new Promise(() => window.alert(`Saved: ${JSON.stringify(update)}`)),
 	},

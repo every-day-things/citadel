@@ -46,6 +46,8 @@ export function MultiSelectCreatable({
 		onDropdownOpen: () => combobox.updateSelectedOptionIndex("active"),
 	});
 	const [search, setSearch] = useState("");
+	const resolvedPlaceholder =
+		_value.length === 0 && search.trim().length === 0 ? placeholder : undefined;
 
 	const exactOptionMatch = _data.some((item) => item === search);
 
@@ -80,7 +82,17 @@ export function MultiSelectCreatable({
 	};
 
 	const values = _value.map((item) => (
-		<Pill key={item} withRemoveButton onRemove={() => handleValueRemove(item)}>
+		<Pill
+			key={item}
+			withRemoveButton
+			onRemove={() => handleValueRemove(item)}
+			style={{
+				backgroundColor: "var(--ctd-surface-muted)",
+				border: "1px solid var(--ctd-border)",
+				color: "var(--ctd-control-text)",
+				fontWeight: 600,
+			}}
+		>
 			{item}
 		</Pill>
 	));
@@ -103,7 +115,21 @@ export function MultiSelectCreatable({
 			withinPortal={false}
 		>
 			<Combobox.DropdownTarget>
-				<PillsInput onClick={() => combobox.openDropdown()} label={label}>
+				<PillsInput
+					onClick={() => combobox.openDropdown()}
+					label={label}
+					styles={{
+						label: {
+							fontWeight: 600,
+							color: "var(--ctd-ink-soft)",
+						},
+						input: {
+							backgroundColor: "var(--ctd-control-bg)",
+							borderColor: "var(--ctd-border)",
+							color: "var(--ctd-control-text)",
+						},
+					}}
+				>
 					<Pill.Group>
 						{values}
 
@@ -112,7 +138,10 @@ export function MultiSelectCreatable({
 								onFocus={() => combobox.openDropdown()}
 								onBlur={() => combobox.closeDropdown()}
 								value={search}
-								placeholder={placeholder}
+								placeholder={resolvedPlaceholder}
+								style={{
+									color: "var(--ctd-control-text)",
+								}}
 								onChange={(event) => {
 									combobox.updateSelectedOptionIndex();
 									setSearch(event.currentTarget.value);
@@ -131,7 +160,12 @@ export function MultiSelectCreatable({
 				</PillsInput>
 			</Combobox.DropdownTarget>
 
-			<Combobox.Dropdown>
+			<Combobox.Dropdown
+				style={{
+					borderColor: "var(--ctd-border)",
+					backgroundColor: "var(--ctd-control-bg-strong)",
+				}}
+			>
 				<Combobox.Options
 					style={{
 						maxHeight: "10rem",

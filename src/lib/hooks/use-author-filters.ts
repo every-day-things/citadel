@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { LibraryAuthor, LibraryBook } from "@/bindings";
+import type { LibraryAuthor, LibraryBook } from "@/bindings";
 import { sortAuthors } from "@/lib/domain/author";
 
 export const AuthorSortOrder = {

@@ -1,5 +1,5 @@
 import { safeAsyncEventHandler } from "@/lib/async";
-import { type Option } from "@/lib/option";
+import type { Option } from "@/lib/option";
 import {
 	Button,
 	Code,
@@ -54,7 +54,15 @@ export const SwitchLibraryForm = ({
 		<Stack gap={"lg"}>
 			<Stack mb="sm" gap="xs">
 				<Text mb="0">Current library:</Text>{" "}
-				<Code mt="0">{currentLibraryPath}</Code>
+				<Code
+					mt="0"
+					style={{
+						backgroundColor: "var(--ctd-control-bg)",
+						border: "1px solid var(--ctd-border)",
+					}}
+				>
+					{currentLibraryPath}
+				</Code>
 			</Stack>
 			{libraries.length > 1 && (
 				<>
@@ -63,8 +71,18 @@ export const SwitchLibraryForm = ({
 						{libraries.map((library) => (
 							<Button
 								key={library.id}
-								variant="light"
-								color="blue"
+								variant="outline"
+								color="sepia"
+								styles={{
+									root: {
+										"&:disabled, &[data-disabled]": {
+											backgroundColor: "var(--ctd-control-disabled-bg)",
+											borderColor: "var(--ctd-control-disabled-border)",
+											color: "var(--ctd-control-disabled-text)",
+											opacity: 1,
+										},
+									},
+								}}
 								disabled={library.id === currentLibraryId}
 								onPointerUp={safeAsyncEventHandler(async () => {
 									if (library.id === currentLibraryId) return;
@@ -118,6 +136,19 @@ const AddNewLibraryPathForm = ({
 					label="Library path"
 					description="This folder contains your metadata.db"
 					placeholder=""
+					styles={{
+						label: {
+							color: "var(--ctd-ink-soft)",
+						},
+						description: {
+							color: "var(--ctd-ink-soft)",
+						},
+						input: {
+							backgroundColor: "var(--ctd-control-bg)",
+							borderColor: "var(--ctd-border)",
+							color: "var(--ctd-control-text)",
+						},
+					}}
 					value={form.values.libraryPath}
 					error={form.errors.libraryPath}
 					onChange={(event) => {
@@ -133,6 +164,17 @@ const AddNewLibraryPathForm = ({
 				<Button
 					mt="mg"
 					variant="filled"
+					color="sepia"
+					styles={{
+						root: {
+							"&:disabled, &[data-disabled]": {
+								backgroundColor: "var(--ctd-control-disabled-bg)",
+								borderColor: "var(--ctd-control-disabled-border)",
+								color: "var(--ctd-control-disabled-text)",
+								opacity: 1,
+							},
+						},
+					}}
 					fullWidth
 					type="submit"
 					disabled={!form.values.libraryPath}

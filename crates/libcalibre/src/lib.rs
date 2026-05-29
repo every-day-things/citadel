@@ -24,5 +24,5 @@ pub use types::{AuthorId, BookFileId, BookId};
 // Keep entity exports that are needed internally (for operations/queries)
 pub(crate) use entities::{
     author::Author, book_file::BookFile, book_row::BookRow, book_row::NewBook,
-    book_row::UpdateBookData,
+    book_row::UpdateBookData, tag::Tag,
 };

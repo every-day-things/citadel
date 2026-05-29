@@ -1,4 +1,4 @@
-import { LibraryAuthor } from "@/bindings";
+import type { LibraryAuthor } from "@/bindings";
 
 /**
  * Formats a list of authors as one string that can be displayed to a user.
