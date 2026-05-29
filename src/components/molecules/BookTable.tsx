@@ -1,4 +1,4 @@
-import { BookView } from "@/BookView";
+import type { BookView } from "@/BookView";
 import type { BookFile, LibraryBook, LocalFile } from "@/bindings";
 import { formatAuthorList } from "@/lib/authors";
 import { Badge, Box, Group, Text } from "@mantine/core";

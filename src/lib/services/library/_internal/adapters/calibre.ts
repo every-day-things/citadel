@@ -4,7 +4,7 @@ import {
 	type ImportableBookMetadata,
 	type LibraryBook,
 	type RemoteFile,
-	NewAuthor,
+	type NewAuthor,
 } from "@/bindings";
 import type {
 	Library,

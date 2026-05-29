@@ -1,4 +1,4 @@
-import { LibraryAuthor } from "@/bindings";
+import type { LibraryAuthor } from "@/bindings";
 import { theme } from "@/lib/theme";
 import { MantineProvider } from "@mantine/core";
 import type { Meta, StoryFn, StoryObj } from "@storybook/react";

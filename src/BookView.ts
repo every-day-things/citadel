@@ -1,4 +1,4 @@
-import { LibraryBook } from "./bindings";
+import type { LibraryBook } from "./bindings";
 
 export interface BookView {
 	loading: boolean;

@@ -1,6 +1,6 @@
 import { ThemeModalContext } from "@/lib/contexts/modal-theme/context";
 import { useDisclosure } from "@mantine/hooks";
-import { PropsWithChildren } from "react";
+import type { PropsWithChildren } from "react";
 
 export const ThemeModalProvider = ({ children }: PropsWithChildren) => {
 	const [isThemeModalOpen, { open, close, toggle }] = useDisclosure(false);

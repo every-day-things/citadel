@@ -1,4 +1,4 @@
-import { type ImportableBookMetadata, NewAuthor } from "@/bindings";
+import type { ImportableBookMetadata, NewAuthor } from "@/bindings";
 import { F7BookFill } from "@/components/icons/F7BookFill";
 import { F7Gear } from "@/components/icons/F7Gear";
 import { F7SunMaxFill } from "@/components/icons/F7SunMaxFill";

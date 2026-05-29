@@ -1,6 +1,6 @@
 import { HardcoverModalContext } from "@/lib/contexts/modal-hardcover/context";
 import { useDisclosure } from "@mantine/hooks";
-import { PropsWithChildren } from "react";
+import type { PropsWithChildren } from "react";
 
 export const HardcoverModalProvider = ({ children }: PropsWithChildren) => {
 	const [isHardcoverModalOpen, { open, close, toggle }] = useDisclosure(false);

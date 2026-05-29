@@ -1,7 +1,7 @@
 import { Flex, TextInput, Select, Switch } from "@mantine/core";
 import {
-	AuthorSortOrderValue,
-	UseAuthorFiltersReturn,
+	type AuthorSortOrderValue,
+	type UseAuthorFiltersReturn,
 	sortOrderOptions,
 } from "@/lib/hooks/use-author-filters";
 

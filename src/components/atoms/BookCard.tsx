@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import { LibraryBook } from "@/bindings";
+import type { LibraryBook } from "@/bindings";
 import { Center } from "@mantine/core";
 import { BookCover } from "./BookCover";
 

@@ -1,5 +1,5 @@
 import { safeAsyncEventHandler } from "@/lib/async";
-import { type Option } from "@/lib/option";
+import type { Option } from "@/lib/option";
 import {
 	Button,
 	Code,
