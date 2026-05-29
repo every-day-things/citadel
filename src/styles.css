@@ -159,7 +159,6 @@ body {
 }
 
 a:any-link {
-	text-decoration-line: none;
 	text-decoration: none;
 	color: inherit;
 }
