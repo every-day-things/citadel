@@ -23,7 +23,7 @@
     "build-storybook": "storybook build"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.5.3",
+    "@biomejs/biome": "2.4.16",
     "@chromatic-com/storybook": "^1.2.25",
     "@faker-js/faker": "^8.4.1",
     "@fontsource/fira-mono": "^4.5.10",

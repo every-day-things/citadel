@@ -1,18 +1,31 @@
 {
-	"$schema": "https://biomejs.dev/schemas/1.5.3/schema.json",
-	"organizeImports": {
-		"enabled": true
+	"$schema": "https://biomejs.dev/schemas/2.4.16/schema.json",
+	"assist": { "actions": { "source": { "organizeImports": "on" } } },
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab",
+		"lineWidth": 120
 	},
 	"linter": {
 		"enabled": true,
 		"rules": {
-			"recommended": true
+			"recommended": true,
+			"style": {
+				"useComponentExportOnlyModules": {
+					"level": "warn",
+					"options": { "allowConstantExport": true }
+				},
+				"useConsistentTypeDefinitions": "warn",
+				"noInferrableTypes": "warn",
+				"useShorthandFunctionType": "warn"
+			},
+			"correctness": {
+				"noUnusedImports": "error"
+			}
 		}
 	},
+	"plugins": ["./lint/biome/no-hardcoded-colors.grit"],
 	"files": {
-		"ignore": [
-			"src/bindings.ts",
-      "src/routeTree.gen.ts"
-		]
+		"includes": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.css"]
 	}
 }
