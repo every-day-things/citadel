@@ -32,6 +32,7 @@ pub struct Book {
     pub title: String,
     pub sortable_title: Option<String>,
     pub authors: Vec<Author>,
+    pub tags: Vec<String>,
     pub description: Option<String>,
     pub identifiers: Vec<BookIdentifier>,
     pub has_cover: bool,
@@ -187,6 +188,13 @@ impl Library {
 
         for author in &created_authors {
             author_queries::link_book(&mut self.conn, AuthorId(author.id), BookId(book_row.id))?;
+        }
+
+        if let Some(tags) = &book.tags {
+            for tag_name in unique_tag_names(tags) {
+                let tag = crate::queries::tags::create_if_not_exists(&mut self.conn, tag_name)?;
+                crate::queries::tags::link_book(&mut self.conn, tag.id, BookId(book_row.id))?;
+            }
         }
 
         // 4. Create directories
@@ -703,4 +711,19 @@ fn format_metadata_opf(
         now = chrono::Utc::now().to_string(),
         book_title_sortable = book.sort.as_deref().unwrap_or("")
     ))
+}
+
+fn unique_tag_names<'a>(tag_names: &'a [String]) -> Vec<&'a str> {
+    let mut unique = Vec::new();
+
+    for tag_name in tag_names {
+        if !unique
+            .iter()
+            .any(|existing: &&str| existing.eq_ignore_ascii_case(tag_name))
+        {
+            unique.push(tag_name.as_str());
+        }
+    }
+
+    unique
 }

@@ -40,6 +40,7 @@ pub struct LibraryBook {
     pub uuid: Option<String>,
     pub title: String,
     pub author_list: Vec<LibraryAuthor>,
+    pub tag_list: Vec<String>,
 
     pub sortable_title: Option<String>,
 
@@ -61,6 +62,7 @@ impl LibraryBook {
             uuid: Some(book.uuid.clone()),
             title: book.title.clone(),
             author_list: book.authors.iter().map(LibraryAuthor::from).collect(),
+            tag_list: book.tags.clone(),
             sortable_title: book.sortable_title.clone(),
             identifier_list: book.identifiers.iter().map(Identifier::from).collect(),
             description: book.description.clone(),

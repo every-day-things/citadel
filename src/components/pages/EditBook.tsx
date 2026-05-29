@@ -42,6 +42,7 @@ const richTextEditorClassNames = {
 
 interface BookPageProps {
 	allAuthorList: LibraryAuthor[];
+	allTagList: string[];
 	book: LibraryBook;
 	onCreateAuthor: (authorName: string) => Promise<void>;
 	onSave: (bookUpdate: BookUpdate) => Promise<void>;
@@ -57,6 +58,7 @@ interface BookPageProps {
 
 export const BookPage = ({
 	allAuthorList,
+	allTagList,
 	book,
 	onCreateAuthor,
 	onSave,
@@ -74,6 +76,7 @@ export const BookPage = ({
 			</Title>
 			<EditBookForm
 				allAuthorList={allAuthorList}
+				allTagList={allTagList}
 				onCreateAuthor={onCreateAuthor}
 				book={book}
 				onSave={onSave}
@@ -122,6 +125,7 @@ const formValuesFromBook = (book: LibraryBook) => ({
 	title: book.title,
 	sortTitle: book.sortable_title ?? "",
 	authorList: book.author_list.map((author) => author.name),
+	tagList: book.tag_list,
 	identifierList: book.identifier_list,
 	description: book.description ?? "",
 	isRead: book.is_read,
@@ -134,6 +138,7 @@ const LABEL_OFFSET_MARGIN = "22px";
 
 const EditBookForm = ({
 	allAuthorList,
+	allTagList,
 	book,
 	onCreateAuthor: createAuthor,
 	onSave,
@@ -142,6 +147,7 @@ const EditBookForm = ({
 	onReloadBooks,
 }: {
 	allAuthorList: LibraryAuthor[];
+	allTagList: string[];
 	book: LibraryBook;
 	onCreateAuthor: (name: string) => Promise<void>;
 	onSave: (update: BookUpdate) => Promise<void>;
@@ -176,6 +182,7 @@ const EditBookForm = ({
 		() => allAuthorList.map((author) => author.name),
 		[allAuthorList],
 	);
+	const tagOptions = useMemo(() => allTagList, [allTagList]);
 	const [newBookIdentifierLabel, setNewBookIdentifierLabel] = useState("");
 
 	const hc = useHardcoverBookActions({
@@ -242,6 +249,7 @@ const EditBookForm = ({
 				const bookUpdate: BookUpdate = {
 					title: form.values.title,
 					author_id_list: authorIdsFromName,
+					tag_list: form.values.tagList,
 					timestamp: null,
 					publication_date: null,
 					is_read: form.values.isRead,
@@ -333,9 +341,16 @@ const EditBookForm = ({
 					</Group>
 					<MultiSelectCreatable
 						label="Authors"
+						placeholder="Search or add author"
 						selectOptions={allAuthorNames}
 						onCreateSelectOption={(name) => void createAuthor(name)}
 						{...form.getInputProps("authorList")}
+					/>
+					<MultiSelectCreatable
+						label="Tags"
+						placeholder="Search or add tag"
+						selectOptions={tagOptions}
+						{...form.getInputProps("tagList")}
 					/>
 					<Group flex={1}>
 						{form.values.identifierList.length > 0 && (
@@ -431,7 +446,7 @@ const EditBookForm = ({
 													.catch(console.error);
 											}}
 											variant="outline"
-											color="blue"
+											color="sepia"
 											mt={LABEL_OFFSET_MARGIN}
 										>
 											Add identifier

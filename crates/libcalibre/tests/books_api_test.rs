@@ -2,6 +2,9 @@
 mod common;
 
 use common::setup_with_library;
+use diesel::prelude::*;
+use diesel::sql_query;
+use diesel::sql_types::BigInt;
 use libcalibre::{AuthorAdd, BookAdd, BookId, BookUpdate};
 use std::collections::HashMap;
 
@@ -332,6 +335,157 @@ fn test_add_book_with_authors() {
 
     assert_eq!(book.authors.len(), 2);
     assert_eq!(lib.authors().unwrap().len(), 2);
+}
+
+#[test]
+fn test_add_book_with_tags() {
+    let (_temp, mut lib) = setup_with_library();
+
+    let book = lib
+        .add_book(BookAdd {
+            title: "Tagged Book".to_string(),
+            author_names: vec![],
+            tags: Some(vec!["Fantasy".to_string(), "Epic".to_string()]),
+            series: None,
+            series_index: None,
+            publisher: None,
+            publication_date: None,
+            rating: None,
+            comments: None,
+            identifiers: HashMap::new(),
+            file_paths: vec![],
+        })
+        .unwrap();
+
+    assert_eq!(book.tags, ["Epic".to_string(), "Fantasy".to_string()]);
+}
+
+#[test]
+fn test_update_book_tags_replaces_existing_tags() {
+    let (_temp, mut lib) = setup_with_library();
+
+    let book = lib
+        .add_book(BookAdd {
+            title: "Tagged Book".to_string(),
+            author_names: vec![],
+            tags: Some(vec!["Fantasy".to_string(), "Adventure".to_string()]),
+            series: None,
+            series_index: None,
+            publisher: None,
+            publication_date: None,
+            rating: None,
+            comments: None,
+            identifiers: HashMap::new(),
+            file_paths: vec![],
+        })
+        .unwrap();
+
+    let updated = lib
+        .update_book(
+            book.id,
+            BookUpdate {
+                tags: Some(vec!["Science Fiction".to_string(), "Adventure".to_string()]),
+                ..empty_update()
+            },
+        )
+        .unwrap();
+
+    assert_eq!(
+        updated.tags,
+        ["Adventure".to_string(), "Science Fiction".to_string()]
+    );
+}
+
+#[test]
+fn test_update_book_tags_can_clear_all_tags() {
+    let (_temp, mut lib) = setup_with_library();
+
+    let book = lib
+        .add_book(BookAdd {
+            title: "Tagged Book".to_string(),
+            author_names: vec![],
+            tags: Some(vec!["Fantasy".to_string()]),
+            series: None,
+            series_index: None,
+            publisher: None,
+            publication_date: None,
+            rating: None,
+            comments: None,
+            identifiers: HashMap::new(),
+            file_paths: vec![],
+        })
+        .unwrap();
+
+    let updated = lib
+        .update_book(
+            book.id,
+            BookUpdate {
+                tags: Some(vec![]),
+                ..empty_update()
+            },
+        )
+        .unwrap();
+
+    assert!(updated.tags.is_empty());
+}
+
+#[test]
+fn test_tag_creation_reuses_case_insensitive_matches() {
+    let (temp, mut lib) = setup_with_library();
+
+    let first = lib
+        .add_book(BookAdd {
+            title: "First".to_string(),
+            author_names: vec![],
+            tags: Some(vec!["Sci-Fi".to_string()]),
+            series: None,
+            series_index: None,
+            publisher: None,
+            publication_date: None,
+            rating: None,
+            comments: None,
+            identifiers: HashMap::new(),
+            file_paths: vec![],
+        })
+        .unwrap();
+
+    let second = lib
+        .add_book(BookAdd {
+            title: "Second".to_string(),
+            author_names: vec![],
+            tags: Some(vec!["sci-fi".to_string()]),
+            series: None,
+            series_index: None,
+            publisher: None,
+            publication_date: None,
+            rating: None,
+            comments: None,
+            identifiers: HashMap::new(),
+            file_paths: vec![],
+        })
+        .unwrap();
+
+    assert_eq!(first.tags, ["Sci-Fi".to_string()]);
+    assert_eq!(second.tags, ["Sci-Fi".to_string()]);
+
+    let db_path = temp.path().join("metadata.db");
+    let mut conn =
+        libcalibre::persistence::establish_connection(db_path.to_str().unwrap()).unwrap();
+    let count = crate_tag_count(&mut conn);
+    assert_eq!(count, 1);
+}
+
+fn crate_tag_count(conn: &mut diesel::SqliteConnection) -> i64 {
+    #[derive(QueryableByName)]
+    struct TagCount {
+        #[diesel(sql_type = BigInt)]
+        count: i64,
+    }
+
+    sql_query("SELECT COUNT(*) AS count FROM tags")
+        .get_result::<TagCount>(conn)
+        .unwrap()
+        .count
 }
 
 #[test]
