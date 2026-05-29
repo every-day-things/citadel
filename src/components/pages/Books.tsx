@@ -292,20 +292,22 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 							</Text>
 						</Stack>
 						<Group justify="space-evenly" w={"100%"}>
-							<Button
-								variant="subtle"
-								onPointerDown={safeAsyncEventHandler(async () => {
-									const firstFile = book.file_list[0];
-									if (firstFile === undefined) return;
+							{platform.capabilities.canOpenLocalPaths && (
+								<Button
+									variant="subtle"
+									onPointerDown={safeAsyncEventHandler(async () => {
+										const firstFile = book.file_list[0];
+										if (firstFile === undefined) return;
 
-									const isLocal = "Local" in firstFile;
-									if (!isLocal) return;
+										const isLocal = "Local" in firstFile;
+										if (!isLocal) return;
 
-									await platform.fileOpener.openPath(firstFile.Local.path);
-								})}
-							>
-								Read
-							</Button>
+										await platform.fileOpener.openPath(firstFile.Local.path);
+									})}
+								>
+									Read
+								</Button>
+							)}
 							<Link to={`/books/${book.id}`}>
 								<Button leftSection={<F7Pencil />}>Edit</Button>
 							</Link>
@@ -336,19 +338,25 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 						<span>Formats</span>:{" "}
 						{book.file_list
 							.filter((item): item is { Local: LocalFile } => "Local" in item)
-							.map((f1) => (
-								<span
-									key={f1.Local.path}
-									style={{ textDecoration: "underline", marginRight: "1rem" }}
-									onPointerDown={safeAsyncEventHandler(async () => {
-										await platform.fileOpener.revealInFileManager(
-											f1.Local.path,
-										);
-									})}
-								>
-									{f1.Local.mime_type} ↗
-								</span>
-							))}
+							.map((f1) =>
+								platform.capabilities.canRevealInFileManager ? (
+									<span
+										key={f1.Local.path}
+										style={{ textDecoration: "underline", marginRight: "1rem" }}
+										onPointerDown={safeAsyncEventHandler(async () => {
+											await platform.fileOpener.revealInFileManager(
+												f1.Local.path,
+											);
+										})}
+									>
+										{f1.Local.mime_type} ↗
+									</span>
+								) : (
+									<span key={f1.Local.path} style={{ marginRight: "1rem" }}>
+										{f1.Local.mime_type}
+									</span>
+								),
+							)}
 					</p>
 				</Stack>
 			</Stack>
@@ -402,15 +410,17 @@ const BookIdentifiers = ({
 									<a href={url} target="_blank" rel={"noreferrer"}>
 										{value}
 									</a>
-									<ActionIcon
-										variant="subtle"
-										color="gray"
-										onPointerDown={safeAsyncEventHandler(async () => {
-											await platform.clipboard.writeText(value);
-										})}
-									>
-										<TablerCopy style={{ width: rem(12) }} />
-									</ActionIcon>
+									{platform.capabilities.canCopyToClipboard && (
+										<ActionIcon
+											variant="subtle"
+											color="gray"
+											onPointerDown={safeAsyncEventHandler(async () => {
+												await platform.clipboard.writeText(value);
+											})}
+										>
+											<TablerCopy style={{ width: rem(12) }} />
+										</ActionIcon>
+									)}
 								</Text>
 							</li>
 						);

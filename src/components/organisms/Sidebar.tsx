@@ -317,6 +317,7 @@ export const Sidebar = () => {
 				/>
 			)}
 			<SidebarPure
+				canAddBook={platform.capabilities.canPickLocalFiles}
 				addBookHandler={selectAndEditBookFile}
 				switchLibraryHandler={openLibrarySelectModalHandler}
 				shelves={shelves}
@@ -379,6 +380,7 @@ const AddBookModalPure = ({
 };
 
 interface SidebarPureProps {
+	canAddBook: boolean;
 	addBookHandler: () => void;
 	switchLibraryHandler: () => void;
 	shelves: {
@@ -397,6 +399,7 @@ interface SidebarPureProps {
 }
 
 const SidebarPure = ({
+	canAddBook,
 	addBookHandler,
 	switchLibraryHandler,
 	shelves,
@@ -413,9 +416,11 @@ const SidebarPure = ({
 		<Stack justify="space-between" h="100%">
 			<Stack>
 				<Title order={5}>My library</Title>
-				<Button variant="filled" onPointerDown={addBookHandler}>
-					⊕ Add book
-				</Button>
+				{canAddBook && (
+					<Button variant="filled" onPointerDown={addBookHandler}>
+						⊕ Add book
+					</Button>
+				)}
 				<NavLink
 					label="Authors"
 					component={Link}
