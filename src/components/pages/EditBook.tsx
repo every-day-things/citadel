@@ -441,13 +441,12 @@ const EditBookForm = ({
 							</Group>
 						)}
 					</Group>
-					{hc.hardcoverApiKey && (
-						<Text
-							size="sm"
-							c="dimmed"
-							style={{ cursor: "pointer" }}
-							td="underline"
-							onClick={() => {
+						{hc.hardcoverApiKey && (
+							<Text
+								size="sm"
+								c="dimmed"
+								td="underline"
+								onClick={() => {
 								const query = form.values.title || "";
 								hc.setSearchQuery(query);
 								hc.setIsSearchModalOpen(true);
@@ -595,13 +594,12 @@ const EditBookForm = ({
 								</Text>
 							) : (
 								hc.searchResults.map((result) => (
-									<Card
-										key={result.hardcover_id}
-										shadow="sm"
-										padding="lg"
-										style={{ cursor: "pointer" }}
-										onClick={() => void hc.selectSearchResult(result)}
-									>
+										<Card
+											key={result.hardcover_id}
+											shadow="sm"
+											padding="lg"
+											onClick={() => void hc.selectSearchResult(result)}
+										>
 										<Group align="flex-start" gap="md">
 											{result.image_url && (
 												<Image

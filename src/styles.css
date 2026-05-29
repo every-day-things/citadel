@@ -154,7 +154,17 @@ body {
 }
 
 * {
+	cursor: default;
 	box-sizing: border-box;
+}
+
+button,
+[role="button"],
+a:any-link,
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+	cursor: default;
 }
 
 a:any-link {

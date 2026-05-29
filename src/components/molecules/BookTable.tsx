@@ -41,14 +41,11 @@ const BookTablePure = ({
 					backgroundColor: "var(--ctd-surface-soft)",
 					borderColor: "var(--ctd-border)",
 				},
-				header: {
-					backgroundColor: "var(--ctd-surface-muted)",
-				},
-				row: {
-					cursor: "pointer",
-				},
-			}}
-			onRowClick={({ record }) => onBookOpen(record.id)}
+					header: {
+						backgroundColor: "var(--ctd-surface-muted)",
+					},
+				}}
+				onRowClick={({ record }) => onBookOpen(record.id)}
 			columns={[
 				{
 					accessor: "id",
