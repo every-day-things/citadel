@@ -1,7 +1,8 @@
 import { SwitchLibraryForm } from "../molecules/SwitchLibraryForm";
 import { useSettings } from "@/stores/settings/store";
 import { createLibrary, setActiveLibrary } from "@/stores/settings/actions";
-import { selectLibraryFolderDialog } from "@/lib/utils/library";
+import { usePlatform } from "@/lib/platform/context";
+import { none, some } from "@/lib/option";
 import { Modal } from "@mantine/core";
 import { useCallback } from "react";
 import { useLibrarySelectModal } from "@/lib/contexts/modal-library-select/hooks";
@@ -11,6 +12,7 @@ export const LibrarySelectModal = () => {
 	const { close, isOpen: isSwitchLibraryModalOpen } = useLibrarySelectModal();
 	const libraries = useSettings((state) => state.libraryPaths);
 	const activeLibraryId = useSettings((state) => state.activeLibraryId);
+	const platform = usePlatform();
 
 	const addNewLibraryByPath = useCallback(
 		async (form: SwitchLibraryForm) => {
@@ -52,7 +54,12 @@ export const LibrarySelectModal = () => {
 				libraries={libraries}
 				onSubmit={(form) => void addNewLibraryByPath(form)}
 				selectExistingLibrary={selectExistingLibrary}
-				selectNewLibrary={selectLibraryFolderDialog}
+				selectNewLibrary={async () => {
+					const path = await platform.dialogs.openDirectory({
+						title: "Select Calibre Library Folder",
+					});
+					return path !== null ? some(path) : none();
+				}}
 			/>
 		</SwitchLibraryPathModalPure>
 	);

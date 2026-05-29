@@ -3,7 +3,7 @@ import type {
 	SettingsManager,
 	SettingsSchema,
 	SettingsValue,
-} from "@/lib/settings-manager/types";
+} from "./types";
 
 const setSetting = <K extends SettingsKey>(
 	target: SettingsSchema,

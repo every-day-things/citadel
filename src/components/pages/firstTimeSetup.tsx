@@ -1,24 +1,25 @@
 import { commands } from "@/bindings";
 import { safeAsyncEventHandler } from "@/lib/async";
-import { selectLibraryFolderDialog } from "@/lib/utils/library";
+import { usePlatform } from "@/lib/platform/context";
 import { useLibraryStore } from "@/stores/library/store";
-import { unwrap } from "@/lib/option";
 import { createLibrary } from "@/stores/settings/actions";
 import { setActiveLibrary } from "@/stores/settings/actions";
 import { Button, Stack, Text, Title } from "@mantine/core";
 
 export const FirstTimeSetup = () => {
 	const actions = useLibraryStore((state) => state.actions);
+	const platform = usePlatform();
 
 	const openFilePicker = async (): Promise<
 		| { type: "existing library selected"; path: string }
 		| { type: "new library selected"; path: string }
 		| { type: "invalid library path selected" }
 	> => {
-		const pathOption = await selectLibraryFolderDialog();
-		if (!pathOption.isSome) return { type: "invalid library path selected" };
+		const path = await platform.dialogs.openDirectory({
+			title: "Select Calibre Library Folder",
+		});
+		if (path === null) return { type: "invalid library path selected" };
 
-		const path = unwrap(pathOption);
 		const selectedIsValid = await commands.clbQueryIsPathValidLibrary(path);
 
 		if (selectedIsValid) {

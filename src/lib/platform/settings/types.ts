@@ -16,6 +16,17 @@ export interface SettingsSchema {
 	lastNotifiedUpdateVersion: string | null;
 }
 
+export const defaultSettings: SettingsSchema = {
+	theme: "auto",
+	startFullscreen: false,
+	autoUpdateCheckingEnabled: true,
+	hasCompletedFirstLaunch: false,
+	activeLibraryId: "",
+	libraryPaths: [],
+	hardcoverApiKey: "",
+	lastNotifiedUpdateVersion: null,
+};
+
 export type SettingsKey = keyof SettingsSchema;
 export type SettingsValue<K extends SettingsKey> = SettingsSchema[K];
 

@@ -23,7 +23,7 @@ import {
 import { type UseFormReturnType, useForm } from "@mantine/form";
 import { useDisclosure } from "@mantine/hooks";
 import { Link } from "@tanstack/react-router";
-import { openPath, revealItemInDir } from "@tauri-apps/plugin-opener";
+import { usePlatform } from "@/lib/platform/context";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BookCover } from "../atoms/BookCover";
 import { F7ListBullet } from "../icons/F7ListBullet";
@@ -33,7 +33,6 @@ import { BookTable } from "../molecules/BookTable";
 import { TablerCopy } from "../icons/TablerCopy";
 import { F7Pencil } from "../icons/F7Pencil";
 import { useBooks, useBooksLoading } from "@/stores/library/store";
-import * as clipboard from "@tauri-apps/plugin-clipboard-manager";
 
 interface BookSearchOptions {
 	search_for_author?: string;
@@ -358,6 +357,7 @@ function Header({
 }
 
 const BookDetails = ({ book }: { book: LibraryBook }) => {
+	const platform = usePlatform();
 	return (
 		<Stack h={"100%"} gap="md">
 			<Group wrap={"nowrap"} align="flex-start">
@@ -380,20 +380,22 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 						</Text>
 					</Stack>
 					<Group justify="space-between" w={"100%"}>
-						<Button
-							variant="subtle"
-							onPointerDown={safeAsyncEventHandler(async () => {
-								const firstFile = book.file_list[0];
-								if (firstFile === undefined) return;
+						{platform.capabilities.canOpenLocalPaths && (
+							<Button
+								variant="subtle"
+								onPointerDown={safeAsyncEventHandler(async () => {
+									const firstFile = book.file_list[0];
+									if (firstFile === undefined) return;
 
-								const isLocal = "Local" in firstFile;
-								if (!isLocal) return;
+									const isLocal = "Local" in firstFile;
+									if (!isLocal) return;
 
-								await openPath(firstFile.Local.path);
-							})}
-						>
-							Read
-						</Button>
+									await platform.fileOpener.openPath(firstFile.Local.path);
+								})}
+							>
+								Read
+							</Button>
+						)}
 						<Link to={`/books/${book.id}`}>
 							<Button leftSection={<F7Pencil />}>Edit</Button>
 						</Link>
@@ -462,22 +464,37 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 				<p style={{ marginTop: 0 }}>
 					{book.file_list
 						.filter((item): item is { Local: LocalFile } => "Local" in item)
-						.map((f1) => (
-							<span
-								key={f1.Local.path}
-								style={{
-									display: "inline-flex",
-									textDecoration: "underline",
-									marginRight: "0.75rem",
-									fontSize: "0.9rem",
-								}}
-								onPointerDown={safeAsyncEventHandler(async () => {
-									await revealItemInDir(f1.Local.path);
-								})}
-							>
-								{f1.Local.mime_type} ↗
-							</span>
-						))}
+						.map((f1) =>
+							platform.capabilities.canRevealInFileManager ? (
+								<span
+									key={f1.Local.path}
+									style={{
+										display: "inline-flex",
+										textDecoration: "underline",
+										marginRight: "0.75rem",
+										fontSize: "0.9rem",
+									}}
+									onPointerDown={safeAsyncEventHandler(async () => {
+										await platform.fileOpener.revealInFileManager(
+											f1.Local.path,
+										);
+									})}
+								>
+									{f1.Local.mime_type} ↗
+								</span>
+							) : (
+								<span
+									key={f1.Local.path}
+									style={{
+										display: "inline-flex",
+										marginRight: "0.75rem",
+										fontSize: "0.9rem",
+									}}
+								>
+									{f1.Local.mime_type}
+								</span>
+							),
+						)}
 				</p>
 			</Stack>
 		</Stack>
@@ -506,6 +523,7 @@ const BookIdentifiers = ({
 }: {
 	identifier_list: Identifier[];
 }) => {
+	const platform = usePlatform();
 	return (
 		<Stack gap={"xs"}>
 			<Text
@@ -543,15 +561,17 @@ const BookIdentifiers = ({
 									>
 										{value}
 									</a>
-									<ActionIcon
-										variant="subtle"
-										color="gray"
-										onPointerDown={safeAsyncEventHandler(async () => {
-											await clipboard.writeText(value);
-										})}
-									>
-										<TablerCopy style={{ width: rem(12) }} />
-									</ActionIcon>
+									{platform.capabilities.canCopyToClipboard && (
+										<ActionIcon
+											variant="subtle"
+											color="gray"
+											onPointerDown={safeAsyncEventHandler(async () => {
+												await platform.clipboard.writeText(value);
+											})}
+										>
+											<TablerCopy style={{ width: rem(12) }} />
+										</ActionIcon>
+									)}
 								</Text>
 							</li>
 						);

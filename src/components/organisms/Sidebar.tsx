@@ -11,8 +11,8 @@ import {
 	installUpdateIfAvailable,
 } from "@/lib/services/app-updates";
 import { IS_DEV } from "@/lib/env";
+import { usePlatform } from "@/lib/platform/context";
 import { useSettings } from "@/stores/settings/store";
-import { isTauri } from "@tauri-apps/api/core";
 import {
 	LibraryState,
 	useAuthors,
@@ -48,6 +48,7 @@ export const Sidebar = () => {
 	const actions = useLibraryActions();
 	const authors = useAuthors();
 
+	const platform = usePlatform();
 	const [metadata, setMetadata] = useState<ImportableBookMetadata | null>();
 	const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
 	const [isCheckingForUpdates, setIsCheckingForUpdates] = useState(false);
@@ -88,18 +89,25 @@ export const Sidebar = () => {
 	const selectAndEditBookFile = useCallback(() => {
 		if (state !== LibraryState.ready) return;
 
-		actions
-			.promptToAddBook()
-			.then((importableMetadata) => {
+		void (async () => {
+			try {
+				const extensions = await actions.listValidFileTypes();
+				const filePath = await platform.dialogs.openFile({
+					filters: [{ name: "Importable files", extensions }],
+				});
+				if (!filePath) return;
+
+				const importableMetadata =
+					await actions.getImportableBookMetadata(filePath);
 				if (importableMetadata) {
 					setMetadata(importableMetadata);
 					openAddBookModal();
 				}
-			})
-			.catch((failure) => {
+			} catch (failure) {
 				console.error("failed to import new book: ", failure);
-			});
-	}, [actions, state, openAddBookModal]);
+			}
+		})();
+	}, [actions, state, openAddBookModal, platform]);
 
 	const addBookByMetadataWithEffects = async (form: AddBookForm) => {
 		if (!metadata || state !== LibraryState.ready) return;
@@ -118,7 +126,7 @@ export const Sidebar = () => {
 	};
 
 	const checkForUpdatesHandler = useCallback(async () => {
-		if (!isTauri()) return;
+		if (!platform.capabilities.supportsAutoUpdates) return;
 
 		setIsCheckingForUpdates(true);
 		notifications.show({
@@ -186,7 +194,7 @@ export const Sidebar = () => {
 		} finally {
 			setIsCheckingForUpdates(false);
 		}
-	}, []);
+	}, [platform]);
 
 	const installAvailableUpdateHandler = useCallback(async () => {
 		setIsInstallingUpdate(true);
@@ -309,6 +317,7 @@ export const Sidebar = () => {
 				/>
 			)}
 			<SidebarPure
+				canAddBook={platform.capabilities.canPickLocalFiles}
 				currentPathname={location.pathname}
 				addBookHandler={selectAndEditBookFile}
 				switchLibraryHandler={openLibrarySelectModalHandler}
@@ -387,6 +396,7 @@ const AddBookModalPure = ({
 };
 
 interface SidebarPureProps {
+	canAddBook: boolean;
 	currentPathname: string;
 	addBookHandler: () => void;
 	switchLibraryHandler: () => void;
@@ -406,6 +416,7 @@ interface SidebarPureProps {
 }
 
 const SidebarPure = ({
+	canAddBook,
 	currentPathname,
 	addBookHandler,
 	switchLibraryHandler,
@@ -448,9 +459,11 @@ const SidebarPure = ({
 				>
 					My library
 				</Title>
-				<Button variant="filled" onPointerDown={addBookHandler}>
-					⊕ Add book
-				</Button>
+				{canAddBook && (
+					<Button variant="filled" onPointerDown={addBookHandler}>
+						⊕ Add book
+					</Button>
+				)}
 				<NavLink
 					label="Authors"
 					component={Link}

@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { open as dialogOpen } from "@tauri-apps/plugin-dialog";
 
 import type {
 	AuthorUpdate,
@@ -30,7 +29,10 @@ interface LibraryActions {
 
 	// Library management
 	createLibrary: (libraryRoot: string) => Promise<void>;
-	promptToAddBook: () => Promise<ImportableBookMetadata | undefined>;
+	listValidFileTypes: () => Promise<string[]>;
+	getImportableBookMetadata: (
+		filePath: string,
+	) => Promise<ImportableBookMetadata | undefined>;
 	commitAddBook: (
 		metadata: ImportableBookMetadata,
 	) => Promise<string | undefined>;
@@ -161,31 +163,16 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => ({
 			}
 		},
 
-		promptToAddBook: async () => {
+		listValidFileTypes: async () => {
+			const { library } = get();
+			if (!library) return [];
+			const types = await library.listValidFileTypes();
+			return types.map((type) => type.extension);
+		},
+
+		getImportableBookMetadata: async (filePath: string) => {
 			const { library } = get();
 			if (!library) return;
-
-			const validExtensions = (await library.listValidFileTypes()).map(
-				(type) => type.extension,
-			);
-			const filePath = await dialogOpen({
-				multiple: false,
-				directory: false,
-				filters: [
-					{
-						name: "Importable files",
-						extensions: validExtensions,
-					},
-				],
-			});
-
-			if (!filePath) {
-				return;
-			}
-
-			if (Array.isArray(filePath)) {
-				throw new Error("Multiple file selection not supported");
-			}
 
 			const importableFile = await library.checkFileImportable(filePath);
 			if (!importableFile) {

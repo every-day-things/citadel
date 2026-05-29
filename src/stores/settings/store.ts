@@ -1,21 +1,21 @@
 import type { Option } from "@/lib/option";
 import { none, some } from "@/lib/option";
-import { createTauriSettingsManager } from "@/lib/settings-manager/tauri-settings";
-import type {
-	SettingsKey,
-	SettingsManager,
-	SettingsSchema,
-	SettingsValue,
-} from "@/lib/settings-manager/types";
-import { createWebSettingsManager } from "@/lib/settings-manager/web-settings";
-import { isTauri } from "@tauri-apps/api/core";
+import {
+	defaultSettings,
+	type LibraryPath,
+	type SettingsKey,
+	type SettingsManager,
+	type SettingsSchema,
+	type SettingsValue,
+} from "@/lib/platform/settings/types";
 import { create } from "zustand";
 
 interface SettingsStore extends SettingsSchema {
 	hydrated: boolean;
+	settingsManager: SettingsManager | null;
 
 	// Lifecycle
-	init: () => Promise<void>;
+	init: (settingsManager: SettingsManager) => Promise<void>;
 
 	// Domain-specific actions
 	setTheme: (theme: "dark" | "light" | "auto") => Promise<void>;
@@ -24,35 +24,10 @@ interface SettingsStore extends SettingsSchema {
 	setHasCompletedFirstLaunch: (enabled: boolean) => Promise<void>;
 	setActiveLibrary: (libraryId: string) => Promise<void>;
 	createLibrary: (absolutePath: string) => Promise<string>;
-	getActiveLibrary: () => Option<
-		import("@/lib/settings-manager/types").LibraryPath
-	>;
+	getActiveLibrary: () => Option<LibraryPath>;
 	setHardcoverApiKey: (apiKey: string) => Promise<void>;
 	setLastNotifiedUpdateVersion: (version: string | null) => Promise<void>;
 }
-
-const defaultSettings: SettingsSchema = {
-	theme: "auto",
-	startFullscreen: false,
-	autoUpdateCheckingEnabled: true,
-	hasCompletedFirstLaunch: false,
-	activeLibraryId: "",
-	libraryPaths: [],
-	hardcoverApiKey: "",
-	lastNotifiedUpdateVersion: null,
-};
-
-const createSettingsManager = (
-	defaultSettings: SettingsSchema,
-): SettingsManager => {
-	if (isTauri()) {
-		return createTauriSettingsManager(defaultSettings);
-	}
-
-	return createWebSettingsManager(defaultSettings);
-};
-
-const manager = createSettingsManager(defaultSettings);
 
 const setSetting = <K extends SettingsKey>(
 	target: SettingsSchema,
@@ -65,28 +40,36 @@ const setSetting = <K extends SettingsKey>(
 // Helper to update store and persist to disk
 const persistSetting = async <K extends SettingsKey>(
 	set: (partial: Partial<SettingsStore>) => void,
+	get: () => SettingsStore,
 	key: K,
 	value: SettingsValue<K>,
 ) => {
+	const { settingsManager } = get();
+	if (!settingsManager) {
+		throw new Error("Settings manager not initialized");
+	}
+
 	// Update store immediately for responsive UI
 	set({ [key]: value } as Partial<SettingsStore>);
 
 	// Persist to disk
-	await manager.set(key, value);
+	await settingsManager.set(key, value);
 };
 
 export const useSettings = create<SettingsStore>((set, get) => ({
 	...defaultSettings,
 	hydrated: false,
+	settingsManager: null,
 
-	init: async () => {
+	init: async (settingsManager: SettingsManager) => {
+		set({ settingsManager });
 		try {
-			await manager.initialize();
+			await settingsManager.initialize();
 
 			// Load all settings from manager
 			const initialSettings = {} as SettingsSchema;
 			for (const key of Object.keys(defaultSettings) as SettingsKey[]) {
-				const value = await manager.get(key);
+				const value = await settingsManager.get(key);
 				setSetting(initialSettings, key, value);
 			}
 
@@ -97,23 +80,23 @@ export const useSettings = create<SettingsStore>((set, get) => ({
 	},
 
 	setTheme: async (theme) => {
-		await persistSetting(set, "theme", theme);
+		await persistSetting(set, get, "theme", theme);
 	},
 
 	setStartFullscreen: async (enabled) => {
-		await persistSetting(set, "startFullscreen", enabled);
+		await persistSetting(set, get, "startFullscreen", enabled);
 	},
 
 	setAutoUpdateCheckingEnabled: async (enabled) => {
-		await persistSetting(set, "autoUpdateCheckingEnabled", enabled);
+		await persistSetting(set, get, "autoUpdateCheckingEnabled", enabled);
 	},
 
 	setHasCompletedFirstLaunch: async (enabled) => {
-		await persistSetting(set, "hasCompletedFirstLaunch", enabled);
+		await persistSetting(set, get, "hasCompletedFirstLaunch", enabled);
 	},
 
 	setActiveLibrary: async (libraryId) => {
-		await persistSetting(set, "activeLibraryId", libraryId);
+		await persistSetting(set, get, "activeLibraryId", libraryId);
 	},
 
 	createLibrary: async (absolutePath) => {
@@ -129,7 +112,7 @@ export const useSettings = create<SettingsStore>((set, get) => ({
 			return wouldBeDuplicate.id;
 		}
 
-		await persistSetting(set, "libraryPaths", [
+		await persistSetting(set, get, "libraryPaths", [
 			...libraryPaths,
 			{
 				id: libraryId,
@@ -153,11 +136,11 @@ export const useSettings = create<SettingsStore>((set, get) => ({
 	},
 
 	setHardcoverApiKey: async (apiKey) => {
-		await persistSetting(set, "hardcoverApiKey", apiKey);
+		await persistSetting(set, get, "hardcoverApiKey", apiKey);
 	},
 
 	setLastNotifiedUpdateVersion: async (version) => {
-		await persistSetting(set, "lastNotifiedUpdateVersion", version);
+		await persistSetting(set, get, "lastNotifiedUpdateVersion", version);
 	},
 }));
 

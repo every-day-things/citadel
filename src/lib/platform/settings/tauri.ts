@@ -3,7 +3,7 @@ import type {
 	SettingsManager,
 	SettingsSchema,
 	SettingsValue,
-} from "@/lib/settings-manager/types";
+} from "./types";
 import { load } from "@tauri-apps/plugin-store";
 
 export const createTauriSettingsManager = (
