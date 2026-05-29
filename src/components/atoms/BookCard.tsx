@@ -9,7 +9,7 @@ interface BookActions {
 	onViewBook: BookAction;
 }
 
-interface BookCard {
+interface BookCardProps {
 	book: LibraryBook;
 	actions: BookActions;
 }
@@ -17,7 +17,7 @@ interface BookCard {
 export const BookCard = React.memo(function BookCard({
 	book,
 	actions: { onViewBook },
-}: BookCard) {
+}: BookCardProps) {
 	const onCoverTouch = useCallback(() => {
 		onViewBook(book.id);
 	}, [onViewBook, book]);

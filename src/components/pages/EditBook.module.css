@@ -6,10 +6,6 @@
   letter-spacing: 0.01em;
 }
 
-.formLayout {
-  gap: 0.8rem 1.1rem !important;
-}
-
 .coverColumn {
   background: var(--ctd-surface-soft);
   border: 1px solid var(--ctd-border);
@@ -55,8 +51,7 @@
   background: var(--ctd-control-bg-strong);
 }
 
-/* Override Mantine RichTextEditor styles */
-.editorWrapper :global(.mantine-RichTextEditor-toolbar) {
+.editorToolbar {
   background-color: var(--ctd-surface-muted);
   border-bottom: 1px solid var(--ctd-border);
   padding: 8px;
@@ -65,29 +60,28 @@
   flex-wrap: wrap;
 }
 
-.editorWrapper :global(.mantine-RichTextEditor-content) {
+.editorContent {
   padding: 12px;
   min-height: 200px;
   font-family: inherit;
   background-color: var(--ctd-control-bg-strong);
 }
 
-.editorWrapper :global(.mantine-RichTextEditor-controlsGroup) {
+.editorControlsGroup {
   display: flex;
   margin: 0 4px;
   gap: 2px;
 }
 
-/* Fix the button width and styling issues */
-.editorWrapper :global(.mantine-RichTextEditor-control) {
-  width: 36px !important;
-  height: 36px !important;
-  min-width: 36px !important;
-  display: flex !important;
+.editorControl {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer !important;
-  padding: 0 !important;
+  cursor: pointer;
+  padding: 0;
   margin: 0 2px;
   background-color: var(--ctd-surface-strong);
   border-radius: 4px;
@@ -96,20 +90,20 @@
   font-size: 14px;
 }
 
-.editorWrapper :global(.mantine-RichTextEditor-control:hover) {
+.editorControl:hover {
   background-color: var(--ctd-surface-muted);
   border-color: var(--ctd-border-strong);
 }
 
-.editorWrapper :global(.mantine-RichTextEditor-control[data-active]) {
+.editorControl[data-active] {
   background-color: var(--ctd-surface-muted);
   color: var(--ctd-link);
   border-color: var(--ctd-link);
 }
 
-.editorWrapper :global(.mantine-RichTextEditor-control svg) {
-  width: 18px !important;
-  height: 18px !important;
+.editorControlIcon {
+  width: 18px;
+  height: 18px;
   display: block;
 }
 
@@ -119,7 +113,7 @@
   outline: none;
   padding: 10px;
   border: 2px solid transparent;
-  cursor: text !important;
+  cursor: text;
   border-radius: 4px;
 }
 
@@ -177,7 +171,6 @@
 .descriptionHtml a {
   color: var(--ctd-link);
   text-decoration: underline;
-  cursor: pointer !important;
 }
 
 .descriptionHtml ul,

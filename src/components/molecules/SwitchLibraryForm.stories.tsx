@@ -5,7 +5,7 @@ import { useArgs } from "@storybook/preview-api";
 import type { Meta, StoryFn, StoryObj } from "@storybook/react";
 import { SelectFirstLibrary, SwitchLibraryForm } from "./SwitchLibraryForm";
 
-const MantineForStorybook = (Story: StoryFn) => {
+export const MantineForStorybook = (Story: StoryFn) => {
 	return (
 		<MantineProvider theme={theme} forceColorScheme="dark">
 			<Story />

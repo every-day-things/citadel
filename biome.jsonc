@@ -10,13 +10,16 @@
 		"rules": {
 			"recommended": true,
 			"style": {
-				"useComponentExportOnlyModules": {
-					"level": "warn",
-					"options": { "allowConstantExport": true }
-				},
+				// Off for now: route files export TanStack `Route` objects and Storybook files export meta/decorators.
+				// Re-enable if we later split those modules into component-only files.
+				"useComponentExportOnlyModules": "off",
 				"useConsistentTypeDefinitions": "warn",
 				"noInferrableTypes": "warn",
 				"useShorthandFunctionType": "warn"
+			},
+			"complexity": {
+				// Off for now: Biome pushes on a few fragment wrappers that are structurally useful in AppShell layout code.
+				"noUselessFragments": "off"
 			},
 			"correctness": {
 				"noUnusedImports": "error"

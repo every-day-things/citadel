@@ -70,7 +70,7 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 				}
 
 				form.setValues(savedPreferences);
-			} catch (e) {
+			} catch (_e) {
 				console.error("Failed to parse stored value");
 			}
 		}
@@ -358,8 +358,7 @@ function Header({
 
 const BookDetails = ({ book }: { book: LibraryBook }) => {
 	return (
-		<>
-			<Stack h={"100%"} gap="md">
+		<Stack h={"100%"} gap="md">
 				<Group wrap={"nowrap"} align="flex-start">
 					<BookCover book={book} disableFade />
 					<Stack
@@ -464,7 +463,6 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 					</p>
 				</Stack>
 			</Stack>
-		</>
 	);
 };
 

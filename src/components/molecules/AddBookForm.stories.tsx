@@ -4,7 +4,7 @@ import { MantineProvider } from "@mantine/core";
 import type { Meta, StoryFn, StoryObj } from "@storybook/react";
 import { AddBookForm } from "./AddBookForm";
 
-const MantineForStorybook = (Story: StoryFn) => {
+export const MantineForStorybook = (Story: StoryFn) => {
 	return (
 		<MantineProvider theme={theme} forceColorScheme="dark">
 			<Story />

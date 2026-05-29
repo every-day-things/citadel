@@ -32,6 +32,14 @@ import { BookCover } from "../atoms/BookCover";
 import { MultiSelectCreatable } from "../atoms/Multiselect";
 import styles from "./EditBook.module.css";
 
+const richTextEditorClassNames = {
+	toolbar: styles.editorToolbar,
+	content: styles.editorContent,
+	controlsGroup: styles.editorControlsGroup,
+	control: styles.editorControl,
+	controlIcon: styles.editorControlIcon,
+} as const;
+
 interface BookPageProps {
 	allAuthorList: LibraryAuthor[];
 	book: LibraryBook;
@@ -259,7 +267,6 @@ const EditBookForm = ({
 				gap: "0.8rem 1rem",
 				height: "100%",
 			}}
-			className={styles.formLayout}
 		>
 			<div style={{ gridArea: "Cover" }} className={styles.coverColumn}>
 				<Stack>
@@ -491,10 +498,11 @@ const EditBookForm = ({
 								<Text className={styles.editorHint}>
 									Type your description here. Use the formatting tools above.
 								</Text>
-								<RichTextEditor
-									editor={editor}
-									className={styles.editorWrapper}
-								>
+									<RichTextEditor
+										editor={editor}
+										className={styles.editorWrapper}
+										classNames={richTextEditorClassNames}
+									>
 									<RichTextEditor.Toolbar sticky stickyOffset={60}>
 										<RichTextEditor.ControlsGroup>
 											<RichTextEditor.Bold />
