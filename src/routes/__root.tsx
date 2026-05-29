@@ -121,19 +121,17 @@ const Main = ({
 	toggleMobile,
 }: MainProps) => {
 	return (
-		<>
-			<ThemeModalProvider>
-				<LibrarySelectModalProvider>
-					<HardcoverModalProvider>
-						<MainPure
-							toggleDesktop={toggleDesktop}
-							isSidebarOpenMobile={isSidebarOpenMobile}
-							toggleMobile={toggleMobile}
-						/>
-					</HardcoverModalProvider>
-				</LibrarySelectModalProvider>
-			</ThemeModalProvider>
-		</>
+		<ThemeModalProvider>
+			<LibrarySelectModalProvider>
+				<HardcoverModalProvider>
+					<MainPure
+						toggleDesktop={toggleDesktop}
+						isSidebarOpenMobile={isSidebarOpenMobile}
+						toggleMobile={toggleMobile}
+					/>
+				</HardcoverModalProvider>
+			</LibrarySelectModalProvider>
+		</ThemeModalProvider>
 	);
 };
 

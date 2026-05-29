@@ -10,7 +10,6 @@ export function F7Gear(props: SVGProps<SVGSVGElement>) {
 			{...props}
 		>
 			<title>Gear</title>
-			{/* biome-ignore lint/style/useSelfClosingElements: it's an SVG */}
 			<path
 				fill="currentColor"
 				fillRule="evenodd"

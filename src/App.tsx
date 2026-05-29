@@ -101,7 +101,9 @@ export const App = () => {
  */
 const LibraryStoreInitializer = ({
 	children,
-}: { children: React.ReactNode }) => {
+}: {
+	children: React.ReactNode;
+}) => {
 	useInitializeLibraryStore();
 	return <>{children}</>;
 };

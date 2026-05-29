@@ -1,5 +1,5 @@
-import { BookView } from "@/BookView";
-import { LibraryBook } from "@/bindings";
+import type { BookView } from "@/BookView";
+import type { LibraryBook } from "@/bindings";
 import { Box, LoadingOverlay, SimpleGrid } from "@mantine/core";
 import { createContext, useContext, useMemo } from "react";
 import { BookCard } from "../atoms/BookCard";

@@ -1,4 +1,4 @@
-import { BookView } from "@/BookView";
+import type { BookView } from "@/BookView";
 import type { BookFile, LibraryBook, LocalFile } from "@/bindings";
 import { formatAuthorList } from "@/lib/authors";
 import { Badge, Box, Group, Text } from "@mantine/core";
@@ -43,9 +43,6 @@ const BookTablePure = ({
 				},
 				header: {
 					backgroundColor: "var(--ctd-surface-muted)",
-				},
-				row: {
-					cursor: "pointer",
 				},
 			}}
 			onRowClick={({ record }) => onBookOpen(record.id)}

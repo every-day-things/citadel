@@ -32,6 +32,14 @@ import { BookCover } from "../atoms/BookCover";
 import { MultiSelectCreatable } from "../atoms/Multiselect";
 import styles from "./EditBook.module.css";
 
+const richTextEditorClassNames = {
+	toolbar: styles.editorToolbar,
+	content: styles.editorContent,
+	controlsGroup: styles.editorControlsGroup,
+	control: styles.editorControl,
+	controlIcon: styles.editorControlIcon,
+} as const;
+
 interface BookPageProps {
 	allAuthorList: LibraryAuthor[];
 	book: LibraryBook;
@@ -259,7 +267,6 @@ const EditBookForm = ({
 				gap: "0.8rem 1rem",
 				height: "100%",
 			}}
-			className={styles.formLayout}
 		>
 			<div style={{ gridArea: "Cover" }} className={styles.coverColumn}>
 				<Stack>
@@ -438,7 +445,6 @@ const EditBookForm = ({
 						<Text
 							size="sm"
 							c="dimmed"
-							style={{ cursor: "pointer" }}
 							td="underline"
 							onClick={() => {
 								const query = form.values.title || "";
@@ -494,6 +500,7 @@ const EditBookForm = ({
 								<RichTextEditor
 									editor={editor}
 									className={styles.editorWrapper}
+									classNames={richTextEditorClassNames}
 								>
 									<RichTextEditor.Toolbar sticky stickyOffset={60}>
 										<RichTextEditor.ControlsGroup>
@@ -591,7 +598,6 @@ const EditBookForm = ({
 										key={result.hardcover_id}
 										shadow="sm"
 										padding="lg"
-										style={{ cursor: "pointer" }}
 										onClick={() => void hc.selectSearchResult(result)}
 									>
 										<Group align="flex-start" gap="md">

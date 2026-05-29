@@ -1,191 +1,184 @@
 .page {
-  gap: 10px;
+	gap: 10px;
 }
 
 .pageTitle {
-  letter-spacing: 0.01em;
-}
-
-.formLayout {
-  gap: 0.8rem 1.1rem !important;
+	letter-spacing: 0.01em;
 }
 
 .coverColumn {
-  background: var(--ctd-surface-soft);
-  border: 1px solid var(--ctd-border);
-  border-radius: 10px;
-  padding: 12px;
+	background: var(--ctd-surface-soft);
+	border: 1px solid var(--ctd-border);
+	border-radius: 10px;
+	padding: 12px;
 }
 
 .formatPanel {
-  background: var(--ctd-surface-soft);
-  border: 1px solid var(--ctd-border);
-  border-radius: 10px;
-  padding: 12px;
+	background: var(--ctd-surface-soft);
+	border: 1px solid var(--ctd-border);
+	border-radius: 10px;
+	padding: 12px;
 }
 
 .bookInfoPanel {
-  background: var(--ctd-surface-soft);
-  border: 1px solid var(--ctd-border);
-  border-radius: 10px;
-  padding: 12px;
+	background: var(--ctd-surface-soft);
+	border: 1px solid var(--ctd-border);
+	border-radius: 10px;
+	padding: 12px;
 }
 
 .sectionTitle {
-  font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
-  letter-spacing: 0.01em;
+	font-family:
+		"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+	letter-spacing: 0.01em;
 }
 
 .richTextEditorContainer {
-  margin-top: 20px;
-  position: relative;
+	margin-top: 20px;
+	position: relative;
 }
 
 .editorHint {
-  font-size: 13px;
-  color: var(--ctd-ink-soft);
-  margin-bottom: 10px;
-  font-style: normal;
+	font-size: 13px;
+	color: var(--ctd-ink-soft);
+	margin-bottom: 10px;
+	font-style: normal;
 }
 
 .editorWrapper {
-  border: 1px solid var(--ctd-border);
-  border-radius: 8px;
-  margin-top: 5px;
-  background: var(--ctd-control-bg-strong);
+	border: 1px solid var(--ctd-border);
+	border-radius: 8px;
+	margin-top: 5px;
+	background: var(--ctd-control-bg-strong);
 }
 
-/* Override Mantine RichTextEditor styles */
-.editorWrapper :global(.mantine-RichTextEditor-toolbar) {
-  background-color: var(--ctd-surface-muted);
-  border-bottom: 1px solid var(--ctd-border);
-  padding: 8px;
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+.editorToolbar {
+	background-color: var(--ctd-surface-muted);
+	border-bottom: 1px solid var(--ctd-border);
+	padding: 8px;
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
 }
 
-.editorWrapper :global(.mantine-RichTextEditor-content) {
-  padding: 12px;
-  min-height: 200px;
-  font-family: inherit;
-  background-color: var(--ctd-control-bg-strong);
+.editorContent {
+	padding: 12px;
+	min-height: 200px;
+	font-family: inherit;
+	background-color: var(--ctd-control-bg-strong);
 }
 
-.editorWrapper :global(.mantine-RichTextEditor-controlsGroup) {
-  display: flex;
-  margin: 0 4px;
-  gap: 2px;
+.editorControlsGroup {
+	display: flex;
+	margin: 0 4px;
+	gap: 2px;
 }
 
-/* Fix the button width and styling issues */
-.editorWrapper :global(.mantine-RichTextEditor-control) {
-  width: 36px !important;
-  height: 36px !important;
-  min-width: 36px !important;
-  display: flex !important;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer !important;
-  padding: 0 !important;
-  margin: 0 2px;
-  background-color: var(--ctd-surface-strong);
-  border-radius: 4px;
-  border: 1px solid var(--ctd-border);
-  color: var(--ctd-ink-soft);
-  font-size: 14px;
+.editorControl {
+	width: 36px;
+	height: 36px;
+	min-width: 36px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	margin: 0 2px;
+	background-color: var(--ctd-surface-strong);
+	border-radius: 4px;
+	border: 1px solid var(--ctd-border);
+	color: var(--ctd-ink-soft);
+	font-size: 14px;
 }
 
-.editorWrapper :global(.mantine-RichTextEditor-control:hover) {
-  background-color: var(--ctd-surface-muted);
-  border-color: var(--ctd-border-strong);
+.editorControl:hover {
+	background-color: var(--ctd-surface-muted);
+	border-color: var(--ctd-border-strong);
 }
 
-.editorWrapper :global(.mantine-RichTextEditor-control[data-active]) {
-  background-color: var(--ctd-surface-muted);
-  color: var(--ctd-link);
-  border-color: var(--ctd-link);
+.editorControl[data-active] {
+	background-color: var(--ctd-surface-muted);
+	color: var(--ctd-link);
+	border-color: var(--ctd-link);
 }
 
-.editorWrapper :global(.mantine-RichTextEditor-control svg) {
-  width: 18px !important;
-  height: 18px !important;
-  display: block;
+.editorControlIcon {
+	width: 18px;
+	height: 18px;
+	display: block;
 }
 
 /* ProseMirror specific styles */
 .editorWrapper :global(.ProseMirror) {
-  min-height: 180px;
-  outline: none;
-  padding: 10px;
-  border: 2px solid transparent;
-  cursor: text !important;
-  border-radius: 4px;
+	min-height: 180px;
+	outline: none;
+	padding: 10px;
+	border: 2px solid transparent;
+	cursor: text;
+	border-radius: 4px;
 }
 
 .editorWrapper :global(.ProseMirror:focus) {
-  border-color: var(--ctd-accent-strong);
-  background-color: var(--ctd-control-bg-strong);
+	border-color: var(--ctd-accent-strong);
+	background-color: var(--ctd-control-bg-strong);
 }
 
 .editorWrapper :global(.ProseMirror p) {
-  margin: 0.5em 0;
+	margin: 0.5em 0;
 }
 
 .editorWrapper :global(.ProseMirror h1),
 .editorWrapper :global(.ProseMirror h2),
 .editorWrapper :global(.ProseMirror h3) {
-  margin-top: 1em;
-  margin-bottom: 0.5em;
-  font-weight: 600;
+	margin-top: 1em;
+	margin-bottom: 0.5em;
+	font-weight: 600;
 }
 
 .editorWrapper :global(.ProseMirror ul),
 .editorWrapper :global(.ProseMirror ol) {
-  margin-left: 1.5em;
-  margin-bottom: 1em;
+	margin-left: 1.5em;
+	margin-bottom: 1em;
 }
 
 .editorWrapper :global(.ProseMirror li) {
-  margin-bottom: 0.25em;
+	margin-bottom: 0.25em;
 }
 
 /* Description HTML Display */
 .descriptionHtml {
-  padding: 10px;
-  line-height: 1.5;
-  max-width: 100%;
-  overflow-wrap: break-word;
-  min-height: 100px;
-  border: 1px solid var(--ctd-border);
-  border-radius: 8px;
-  background-color: var(--ctd-control-bg-strong);
+	padding: 10px;
+	line-height: 1.5;
+	max-width: 100%;
+	overflow-wrap: break-word;
+	min-height: 100px;
+	border: 1px solid var(--ctd-border);
+	border-radius: 8px;
+	background-color: var(--ctd-control-bg-strong);
 }
 
 .descriptionHtml h1,
 .descriptionHtml h2,
 .descriptionHtml h3 {
-  margin-top: 1em;
-  margin-bottom: 0.5em;
-  font-weight: 600;
+	margin-top: 1em;
+	margin-bottom: 0.5em;
+	font-weight: 600;
 }
 
 .descriptionHtml p {
-  margin-bottom: 1em;
+	margin-bottom: 1em;
 }
 
 .descriptionHtml a {
-  color: var(--ctd-link);
-  text-decoration: underline;
-  cursor: pointer !important;
+	color: var(--ctd-link);
+	text-decoration: underline;
 }
 
 .descriptionHtml ul,
 .descriptionHtml ol {
-  margin-left: 1.5em;
-  margin-bottom: 1em;
+	margin-left: 1.5em;
+	margin-bottom: 1em;
 }
 
 .descriptionHtml li {
-  margin-bottom: 0.25em;
+	margin-bottom: 0.25em;
 }

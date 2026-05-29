@@ -1,9 +1,17 @@
-import {
+import type {
 	SettingsKey,
 	SettingsManager,
 	SettingsSchema,
 	SettingsValue,
 } from "@/lib/settings-manager/types";
+
+const setSetting = <K extends SettingsKey>(
+	target: SettingsSchema,
+	key: K,
+	value: SettingsValue<K>,
+) => {
+	target[key] = value;
+};
 
 export const createWebSettingsManager = (
 	defaultSettings: SettingsSchema,
@@ -26,7 +34,7 @@ export const createWebSettingsManager = (
 					? (JSON.parse(item) as SettingsValue<typeof key>)
 					: defaultSettings[key];
 
-				(initialSettings as Record<string, unknown>)[key] = parsed;
+				setSetting(initialSettings, key, parsed);
 			}
 
 			return Promise.resolve(initialSettings);

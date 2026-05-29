@@ -15,7 +15,7 @@ import {
 import { Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 
-import { AuthorUpdate, LibraryAuthor, LibraryBook } from "@/bindings";
+import type { AuthorUpdate, LibraryAuthor, LibraryBook } from "@/bindings";
 
 import {
 	useAuthors,
