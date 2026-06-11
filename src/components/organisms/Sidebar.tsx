@@ -1,12 +1,19 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { isTauri } from "@tauri-apps/api/core";
 import clsx from "clsx";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { commands } from "@/bindings";
 import { F7Gear } from "@/components/icons/F7Gear";
-import { AlertDialog, IconButton } from "@/components/ui";
+import { F7Pencil } from "@/components/icons/F7Pencil";
+import { F7Trash } from "@/components/icons/F7Trash";
+import { AlertDialog, IconButton, TextInput } from "@/components/ui";
+import { safeAsyncEventHandler } from "@/lib/async";
 import { useAppUpdates } from "@/lib/hooks/use-app-updates";
+import type { SmartShelf } from "@/lib/platform/settings/types";
+import { useLibraryView } from "@/stores/library-view/store";
 import { LibraryState, useLibraryState } from "@/stores/library/store";
+import { deleteSmartShelf, renameSmartShelf } from "@/stores/settings/actions";
+import { useSettings } from "@/stores/settings/store";
 import styles from "./Sidebar.module.css";
 
 export const Sidebar = () => {
@@ -28,16 +35,6 @@ export const Sidebar = () => {
 	const isInstallingUpdate = useAppUpdates((s) => s.isInstallingUpdate);
 	const closeUpdatePrompt = useAppUpdates((s) => s.closeUpdatePrompt);
 	const installAvailableUpdate = useAppUpdates((s) => s.installAvailableUpdate);
-
-	const shelves = useMemo(() => {
-		return [
-			{
-				title: "All Books",
-				path: "/",
-				isActive: () => location.pathname === "/",
-			},
-		];
-	}, [location]);
 
 	if (state !== LibraryState.ready) {
 		return null;
@@ -66,7 +63,6 @@ export const Sidebar = () => {
 			/>
 			<SidebarPure
 				currentPathname={location.pathname}
-				shelves={shelves}
 				openSettings={openSettings}
 			/>
 		</>
@@ -75,40 +71,61 @@ export const Sidebar = () => {
 
 interface SidebarPureProps {
 	currentPathname: string;
-	shelves: {
-		title: string;
-		path: string;
-		isActive: () => boolean;
-	}[];
 	openSettings: () => void;
 }
 
-const SidebarPure = ({
-	currentPathname,
-	shelves,
-	openSettings,
-}: SidebarPureProps) => {
+const SidebarPure = ({ currentPathname, openSettings }: SidebarPureProps) => {
+	const smartShelves = useSettings((s) => s.smartShelves);
+	const hydrated = useSettings((s) => s.hydrated);
+	const activeShelfId = useLibraryView((s) => s.activeShelfId);
+	const resetToAllBooks = useLibraryView((s) => s.resetToAllBooks);
+	const clearMissingActiveShelf = useLibraryView(
+		(s) => s.clearMissingActiveShelf,
+	);
+
+	// activeShelfId comes from localStorage, shelves from settings.json; drop a
+	// shelf id that no longer exists once settings have hydrated.
+	useEffect(() => {
+		if (hydrated) {
+			clearMissingActiveShelf(smartShelves.map((shelf) => shelf.id));
+		}
+	}, [hydrated, smartShelves, clearMissingActiveShelf]);
+
+	const isAllBooksActive = currentPathname === "/" && activeShelfId === null;
+
 	return (
 		<div className={styles.root}>
-			<div className={styles.section}>
-				<h2 className={styles.sectionLabel}>Library</h2>
-				{shelves.map(({ title, path, isActive }) => (
+			<div className={styles.sections}>
+				<div className={styles.section}>
+					<h2 className={styles.sectionLabel}>Library</h2>
 					<Link
-						key={path}
-						to={path}
+						to="/"
 						className={clsx("ctd-nav-link", styles.navLink)}
-						data-active={isActive() || undefined}
+						data-active={isAllBooksActive || undefined}
+						onClick={() => resetToAllBooks()}
 					>
-						{title}
+						All Books
 					</Link>
-				))}
-				<Link
-					to="/authors"
-					className={clsx("ctd-nav-link", styles.navLink)}
-					data-active={currentPathname === "/authors" || undefined}
-				>
-					Authors
-				</Link>
+					<Link
+						to="/authors"
+						className={clsx("ctd-nav-link", styles.navLink)}
+						data-active={currentPathname === "/authors" || undefined}
+					>
+						Authors
+					</Link>
+				</div>
+				{smartShelves.length > 0 && (
+					<div className={styles.section}>
+						<h2 className={styles.sectionLabel}>Shelves</h2>
+						{smartShelves.map((shelf) => (
+							<ShelfRow
+								key={shelf.id}
+								shelf={shelf}
+								isActive={currentPathname === "/" && activeShelfId === shelf.id}
+							/>
+						))}
+					</div>
+				)}
 			</div>
 			<div className={styles.section}>
 				<IconButton
@@ -120,6 +137,98 @@ const SidebarPure = ({
 					<F7Gear width={18} height={18} />
 				</IconButton>
 			</div>
+		</div>
+	);
+};
+
+interface ShelfRowProps {
+	shelf: SmartShelf;
+	isActive: boolean;
+}
+
+const ShelfRow = ({ shelf, isActive }: ShelfRowProps) => {
+	const navigate = useNavigate();
+	const applyShelf = useLibraryView((s) => s.applyShelf);
+	const activeShelfId = useLibraryView((s) => s.activeShelfId);
+	const resetToAllBooks = useLibraryView((s) => s.resetToAllBooks);
+
+	const [isRenaming, setIsRenaming] = useState(false);
+	const [draftName, setDraftName] = useState(shelf.name);
+	const [renameError, setRenameError] = useState<string | null>(null);
+
+	// Finder-style inline rename: Enter and blur both commit, Escape cancels.
+	const commitRename = async () => {
+		try {
+			await renameSmartShelf(shelf.id, draftName);
+			setIsRenaming(false);
+		} catch (e) {
+			setRenameError(e instanceof Error ? e.message : String(e));
+		}
+	};
+
+	if (isRenaming) {
+		return (
+			<TextInput
+				value={draftName}
+				error={renameError}
+				aria-label={`Shelf name for ${shelf.name}`}
+				// biome-ignore lint/a11y/noAutofocus: inline rename replaces the row the user just clicked; focus must land in the input.
+				autoFocus
+				className={styles.renameInput}
+				onChange={(event) => {
+					setDraftName(event.currentTarget.value);
+					setRenameError(null);
+				}}
+				onKeyDown={(event) => {
+					if (event.key === "Enter") {
+						void commitRename();
+					} else if (event.key === "Escape") {
+						setIsRenaming(false);
+					}
+				}}
+				onBlur={() => void commitRename()}
+			/>
+		);
+	}
+
+	return (
+		<div className={styles.shelfRow}>
+			<button
+				type="button"
+				className={clsx("ctd-nav-link", styles.navLink, styles.shelfNavLink)}
+				data-active={isActive || undefined}
+				onClick={() => {
+					applyShelf(shelf);
+					void navigate({ to: "/" });
+				}}
+			>
+				<span className={styles.shelfName}>{shelf.name}</span>
+			</button>
+			<span className={styles.shelfControls}>
+				<IconButton
+					aria-label={`Rename shelf ${shelf.name}`}
+					className={styles.shelfControlButton}
+					onClick={() => {
+						setDraftName(shelf.name);
+						setRenameError(null);
+						setIsRenaming(true);
+					}}
+				>
+					<F7Pencil />
+				</IconButton>
+				<IconButton
+					aria-label={`Delete shelf ${shelf.name}`}
+					className={styles.shelfControlButton}
+					onClick={safeAsyncEventHandler(async () => {
+						await deleteSmartShelf(shelf.id);
+						if (activeShelfId === shelf.id) {
+							resetToAllBooks();
+						}
+					})}
+				>
+					<F7Trash />
+				</IconButton>
+			</span>
 		</div>
 	);
 };

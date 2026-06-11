@@ -8,6 +8,8 @@ import {
 	type SettingsManager,
 	type SettingsSchema,
 	type SettingsValue,
+	type SmartShelf,
+	type SmartShelfFilter,
 } from "@/lib/platform/settings/types";
 
 interface SettingsStore extends SettingsSchema {
@@ -27,7 +29,25 @@ interface SettingsStore extends SettingsSchema {
 	getActiveLibrary: () => Option<LibraryPath>;
 	setHardcoverApiKey: (apiKey: string) => Promise<void>;
 	setLastNotifiedUpdateVersion: (version: string | null) => Promise<void>;
+	createSmartShelf: (
+		name: string,
+		filter: SmartShelfFilter,
+	) => Promise<SmartShelf>;
+	renameSmartShelf: (id: string, name: string) => Promise<void>;
+	deleteSmartShelf: (id: string) => Promise<void>;
 }
+
+const validateShelfName = (name: string, otherShelves: SmartShelf[]) => {
+	const trimmed = name.trim();
+	if (trimmed.length === 0) {
+		throw new Error("Shelf name cannot be empty");
+	}
+	const lowered = trimmed.toLowerCase();
+	if (otherShelves.some((shelf) => shelf.name.toLowerCase() === lowered)) {
+		throw new Error(`A shelf named "${trimmed}" already exists`);
+	}
+	return trimmed;
+};
 
 const setSetting = <K extends SettingsKey>(
 	target: SettingsSchema,
@@ -149,6 +169,54 @@ export const useSettings = create<SettingsStore>((set, get) => ({
 
 	setLastNotifiedUpdateVersion: async (version) => {
 		await persistSetting(set, get, "lastNotifiedUpdateVersion", version);
+	},
+
+	createSmartShelf: async (name, filter) => {
+		const { smartShelves } = get();
+		const trimmed = validateShelfName(name, smartShelves);
+		const shelf: SmartShelf = {
+			id: uuidv4(),
+			name: trimmed,
+			filter: { ...filter },
+		};
+
+		await persistSetting(set, get, "smartShelves", [...smartShelves, shelf]);
+
+		return shelf;
+	},
+
+	renameSmartShelf: async (id, name) => {
+		const { smartShelves } = get();
+		const target = smartShelves.find((shelf) => shelf.id === id);
+		if (!target) {
+			throw new Error(`No shelf with id ${id}`);
+		}
+
+		const otherShelves = smartShelves.filter((shelf) => shelf.id !== id);
+		const trimmed = validateShelfName(name, otherShelves);
+
+		await persistSetting(
+			set,
+			get,
+			"smartShelves",
+			smartShelves.map((shelf) =>
+				shelf.id === id ? { ...shelf, name: trimmed } : shelf,
+			),
+		);
+	},
+
+	deleteSmartShelf: async (id) => {
+		const { smartShelves } = get();
+		if (!smartShelves.some((shelf) => shelf.id === id)) {
+			return;
+		}
+
+		await persistSetting(
+			set,
+			get,
+			"smartShelves",
+			smartShelves.filter((shelf) => shelf.id !== id),
+		);
 	},
 }));
 

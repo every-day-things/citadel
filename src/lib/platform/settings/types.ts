@@ -1,7 +1,27 @@
+// Owned here (not in the library-view store) so the platform settings layer
+// never depends on the stores layer; the store re-exports it.
+export type LibraryBookSortOrderKey =
+	| "nameAz"
+	| "nameZa"
+	| "authorAz"
+	| "authorZa";
+
 export interface LibraryPath {
 	id: string;
 	displayName: string;
 	absolutePath: string;
+}
+
+export interface SmartShelfFilter {
+	query: string;
+	sortOrder: LibraryBookSortOrderKey;
+	hideRead: boolean;
+}
+
+export interface SmartShelf {
+	id: string;
+	name: string;
+	filter: SmartShelfFilter;
 }
 
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
@@ -14,6 +34,7 @@ export interface SettingsSchema {
 	libraryPaths: LibraryPath[];
 	hardcoverApiKey: string;
 	lastNotifiedUpdateVersion: string | null;
+	smartShelves: SmartShelf[];
 }
 
 export const defaultSettings: SettingsSchema = {
@@ -25,6 +46,13 @@ export const defaultSettings: SettingsSchema = {
 	libraryPaths: [],
 	hardcoverApiKey: "",
 	lastNotifiedUpdateVersion: null,
+	smartShelves: [
+		{
+			id: "builtin-unread",
+			name: "Unread",
+			filter: { query: "", sortOrder: "authorAz", hideRead: true },
+		},
+	],
 };
 
 export type SettingsKey = keyof SettingsSchema;
