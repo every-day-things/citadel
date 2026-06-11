@@ -25,7 +25,13 @@ import { Link } from "@tiptap/extension-link";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import DOMPurify from "dompurify";
-import { type HTMLProps, useEffect, useMemo, useState } from "react";
+import {
+	type HTMLProps,
+	type ReactNode,
+	useEffect,
+	useMemo,
+	useState,
+} from "react";
 import { BookCover } from "../atoms/BookCover";
 import { MultiSelectCreatable } from "../atoms/Multiselect";
 import styles from "./EditBook.module.css";
@@ -38,24 +44,32 @@ const richTextEditorClassNames = {
 	controlIcon: styles.editorControlIcon,
 } as const;
 
-const quietInputStyles = {
-	label: {
-		fontWeight: 600,
-		color: "var(--ctd-ink-soft)",
-	},
-	input: {
-		backgroundColor: "var(--ctd-control-bg)",
-		borderColor: "var(--ctd-border)",
-		color: "var(--ctd-control-text)",
-	},
-} as const;
-
-const quietLabelStyles = {
-	label: {
-		fontWeight: 600,
-		color: "var(--ctd-ink-soft)",
-	},
-} as const;
+/**
+ * AppKit-style form row: right-aligned label in a fixed-width left gutter,
+ * control filling the remaining width (Finder Get Info / Xcode inspectors).
+ */
+const FormRow = ({
+	label,
+	htmlFor,
+	alignTop,
+	children,
+}: {
+	label: string;
+	htmlFor?: string;
+	alignTop?: boolean;
+	children: ReactNode;
+}) => (
+	<div
+		className={
+			alignTop ? `${styles.formRow} ${styles.formRowTop}` : styles.formRow
+		}
+	>
+		<label className={styles.rowLabel} htmlFor={htmlFor}>
+			{label}
+		</label>
+		<div className={styles.rowControl}>{children}</div>
+	</div>
+);
 
 interface BookPageProps {
 	allAuthorList: LibraryAuthor[];
@@ -325,30 +339,33 @@ const EditBookForm = ({
 					<Cover book={book} />
 					<Switch
 						label="Finished"
-						styles={quietLabelStyles}
+						labelPosition="left"
+						classNames={{
+							root: styles.finishedSwitch,
+							body: styles.finishedSwitchBody,
+							label: styles.finishedSwitchLabel,
+						}}
 						{...form.getInputProps("isRead", { type: "checkbox" })}
 					/>
 					<Formats book={book} className={styles.sideSection} />
 				</Stack>
 				<div className={styles.formColumn}>
 					<section className={styles.section}>
-						<Group gap="md" align="flex-start">
+						<FormRow label="Title" htmlFor="edit-book-title">
 							<TextInput
-								label="Title"
-								flex={2}
-								styles={quietInputStyles}
+								id="edit-book-title"
 								{...form.getInputProps("title")}
 							/>
+						</FormRow>
+						<FormRow label="Sort title" htmlFor="edit-book-sort-title">
 							<TextInput
-								label="Sort title"
-								flex={1}
-								styles={quietInputStyles}
+								id="edit-book-sort-title"
 								{...form.getInputProps("sortTitle")}
 							/>
-						</Group>
+						</FormRow>
 					</section>
 					<section className={styles.section}>
-						<Stack gap="sm">
+						<FormRow label="Authors" alignTop>
 							<MultiSelectCreatable
 								label="Authors"
 								placeholder="Search or add author"
@@ -356,104 +373,115 @@ const EditBookForm = ({
 								onCreateSelectOption={(name) => void createAuthor(name)}
 								{...form.getInputProps("authorList")}
 							/>
+						</FormRow>
+						<FormRow label="Tags" alignTop>
 							<MultiSelectCreatable
 								label="Tags"
 								placeholder="Search or add tag"
 								selectOptions={tagOptions}
 								{...form.getInputProps("tagList")}
 							/>
-						</Stack>
+						</FormRow>
 					</section>
 					<section className={styles.section}>
 						<Text className={styles.sectionLabel}>Identifiers</Text>
-						<Stack gap="xs" className={styles.sectionBody}>
+						<div className={styles.sectionBody}>
 							{form.values.identifierList.map(({ label, id }, index) => (
-								<Group key={id} gap="xs" align="flex-end" wrap="nowrap">
+								<FormRow
+									key={id}
+									label={label.toUpperCase()}
+									htmlFor={`edit-book-identifier-${id}`}
+								>
+									<Group gap={6} align="center" wrap="nowrap">
+										<TextInput
+											id={`edit-book-identifier-${id}`}
+											flex={1}
+											{...form.getInputProps(`identifierList.${index}.value`)}
+											onBlur={(event) => {
+												onUpsertIdentifier(
+													book.id,
+													id,
+													label,
+													event.target.value,
+												).catch(console.error);
+											}}
+										/>
+										{hc.hardcoverApiKey && label.toLowerCase() === "isbn" && (
+											<Tooltip label="Look up metadata">
+												<ActionIcon
+													variant="subtle"
+													color="gray"
+													size="input-sm"
+													onClick={() => void hc.fetchFromHardcover()}
+													loading={hc.isFetchingFromHardcover}
+												>
+													↓
+												</ActionIcon>
+											</Tooltip>
+										)}
+										{label.toLowerCase() === "hardcover" && (
+											<Tooltip label="View on Hardcover">
+												<ActionIcon
+													variant="subtle"
+													color="gray"
+													size="input-sm"
+													onClick={() => void hc.openInHardcover()}
+												>
+													↗
+												</ActionIcon>
+											</Tooltip>
+										)}
+										<Tooltip label="Remove identifier">
+											<ActionIcon
+												variant="subtle"
+												color="red"
+												size="input-sm"
+												onClick={() => {
+													onDeleteIdentifier(book.id, id).catch(console.error);
+												}}
+											>
+												×
+											</ActionIcon>
+										</Tooltip>
+									</Group>
+								</FormRow>
+							))}
+							<FormRow
+								label="New identifier"
+								htmlFor="edit-book-new-identifier"
+							>
+								<Group gap={6} align="center" wrap="nowrap">
 									<TextInput
-										label={label.toUpperCase()}
+										id="edit-book-new-identifier"
+										placeholder="ISBN"
 										flex={1}
-										styles={quietInputStyles}
-										{...form.getInputProps(`identifierList.${index}.value`)}
-										onBlur={(event) => {
+										value={newBookIdentifierLabel}
+										onChange={(event) =>
+											setNewBookIdentifierLabel(event.target.value)
+										}
+									/>
+									<Button
+										variant="default"
+										onClick={() => {
 											onUpsertIdentifier(
 												book.id,
-												id,
-												label,
-												event.target.value,
-											).catch(console.error);
+												null,
+												newBookIdentifierLabel,
+												"",
+											)
+												.then(() => setNewBookIdentifierLabel(""))
+												.catch(console.error);
 										}}
-									/>
-									{hc.hardcoverApiKey && label.toLowerCase() === "isbn" && (
-										<Tooltip label="Look up metadata">
-											<ActionIcon
-												variant="subtle"
-												color="gray"
-												size="input-sm"
-												onClick={() => void hc.fetchFromHardcover()}
-												loading={hc.isFetchingFromHardcover}
-											>
-												↓
-											</ActionIcon>
-										</Tooltip>
-									)}
-									{label.toLowerCase() === "hardcover" && (
-										<Tooltip label="View on Hardcover">
-											<ActionIcon
-												variant="subtle"
-												color="gray"
-												size="input-sm"
-												onClick={() => void hc.openInHardcover()}
-											>
-												↗
-											</ActionIcon>
-										</Tooltip>
-									)}
-									<Tooltip label="Remove identifier">
-										<ActionIcon
-											variant="subtle"
-											color="red"
-											size="input-sm"
-											onClick={() => {
-												onDeleteIdentifier(book.id, id).catch(console.error);
-											}}
-										>
-											×
-										</ActionIcon>
-									</Tooltip>
+									>
+										Add
+									</Button>
 								</Group>
-							))}
-							<Group gap="xs" align="flex-end" wrap="nowrap">
-								<TextInput
-									label="New identifier"
-									placeholder="ISBN"
-									styles={quietInputStyles}
-									value={newBookIdentifierLabel}
-									onChange={(event) =>
-										setNewBookIdentifierLabel(event.target.value)
-									}
-								/>
-								<Button
-									variant="default"
-									onClick={() => {
-										onUpsertIdentifier(
-											book.id,
-											null,
-											newBookIdentifierLabel,
-											"",
-										)
-											.then(() => setNewBookIdentifierLabel(""))
-											.catch(console.error);
-									}}
-								>
-									Add
-								</Button>
-							</Group>
-						</Stack>
+							</FormRow>
+						</div>
 					</section>
 					{hc.hardcoverApiKey && (
 						<section className={styles.section}>
-							<Text className={styles.sectionLabel}>Hardcover</Text>
-							<Group className={styles.sectionBody}>
+							<FormRow label="Hardcover">
 								<Button
 									variant="default"
 									onClick={() => {
@@ -467,7 +495,7 @@ const EditBookForm = ({
 								>
 									Find on Hardcover…
 								</Button>
-							</Group>
+							</FormRow>
 						</section>
 					)}
 					<section className={styles.section}>
@@ -555,7 +583,6 @@ const EditBookForm = ({
 					<Group gap="xs">
 						<TextInput
 							placeholder="Search by title or author…"
-							styles={quietInputStyles}
 							value={hc.searchQuery}
 							onChange={(event) => hc.setSearchQuery(event.target.value)}
 							onKeyDown={(event) => {

@@ -1,4 +1,6 @@
-import { Button, createTheme } from "@mantine/core";
+import { Button, Select, createTheme } from "@mantine/core";
+import { createElement } from "react";
+import { MacPopUpChevrons } from "@/components/icons/MacPopUpChevrons";
 import classes from "./theme.module.css";
 
 export const theme = createTheme({
@@ -33,6 +35,16 @@ export const theme = createTheme({
 	components: {
 		Button: Button.extend({
 			classNames: classes,
+		}),
+		Select: Select.extend({
+			defaultProps: {
+				// AppKit pop-up buttons show a stacked-chevron square, not a
+				// lone dropdown caret.
+				rightSection: createElement(MacPopUpChevrons),
+				rightSectionWidth: 24,
+				rightSectionPointerEvents: "none",
+				checkIconPosition: "left",
+			},
 		}),
 	},
 });

@@ -63,6 +63,10 @@
 		0 2px 6px oklch(0% 0 0 / 0.08), 0 14px 28px oklch(0% 0 0 / 0.1);
 	--ctd-content-bg: oklch(98% 0.002 80);
 	--ctd-radius-panel: 10px;
+	--ctd-focus-ring: oklch(58% 0.17 255 / 0.28);
+	--ctd-scrollbar-thumb: oklch(40% 0.004 80 / 0.4);
+	--ctd-control-shadow: 0 0.5px 1.5px oklch(0% 0 0 / 0.12);
+	--ctd-field-inner-shadow: inset 0 0.5px 1px oklch(0% 0 0 / 0.05);
 
 	font-family:
 		-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto,
@@ -142,6 +146,10 @@
 	--ctd-shadow-lift:
 		0 2px 6px oklch(0% 0 0 / 0.45), 0 16px 32px oklch(0% 0 0 / 0.5);
 	--ctd-content-bg: oklch(23.5% 0.004 260);
+	--ctd-focus-ring: oklch(66% 0.15 255 / 0.35);
+	--ctd-scrollbar-thumb: oklch(90% 0.003 260 / 0.35);
+	--ctd-control-shadow: 0 0.5px 1.5px oklch(0% 0 0 / 0.4);
+	--ctd-field-inner-shadow: inset 0 0.5px 1px oklch(0% 0 0 / 0.2);
 }
 
 /*
@@ -208,6 +216,100 @@ a:any-link {
 		/* biome-ignore lint/complexity/noImportantStyles: see above */
 		transition-duration: 0.01ms !important;
 	}
+}
+
+/*
+ * macOS overlay scrollbars: the thumb floats inset from the container edge
+ * (transparent border + padding-box clip), instead of a web scrollbar
+ * touching the panel's rounded corner.
+ */
+::-webkit-scrollbar {
+	width: 14px;
+	height: 14px;
+	background: transparent;
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+	background-color: var(--ctd-scrollbar-thumb);
+	background-clip: padding-box;
+	border: 4px solid transparent;
+	border-radius: 8px;
+	min-height: 40px;
+}
+
+::-webkit-scrollbar-corner {
+	background: transparent;
+}
+
+/*
+ * macOS control chrome. AppKit controls use 13px text, 5-6px radii, hairline
+ * borders with a whisper of inner shadow, and a soft accent halo on focus.
+ * Applied via Mantine's stable class names so every surface inherits it.
+ */
+.mantine-Input-input {
+	font-size: 13px;
+	border-radius: 6px;
+	background-color: var(--ctd-control-bg);
+	border-color: var(--ctd-border);
+	color: var(--ctd-control-text);
+	box-shadow: var(--ctd-field-inner-shadow);
+	transition:
+		box-shadow 140ms ease-out,
+		border-color 140ms ease-out;
+}
+
+.mantine-Input-input:focus,
+.mantine-Input-input:focus-within {
+	border-color: var(--ctd-accent);
+	box-shadow: 0 0 0 3px var(--ctd-focus-ring);
+}
+
+.mantine-InputWrapper-label {
+	font-size: 13px;
+	color: var(--ctd-ink-soft);
+}
+
+.mantine-Button-root {
+	font-size: 13px;
+	font-weight: 500;
+}
+
+.mantine-Button-root[data-variant="default"] {
+	background-color: var(--ctd-control-bg-strong);
+	border: 1px solid var(--ctd-border);
+	box-shadow: var(--ctd-control-shadow);
+}
+
+.mantine-Button-root[data-variant="default"]:hover {
+	background-color: var(--ctd-control-bg);
+}
+
+.mantine-Button-root[data-variant="primary"],
+.mantine-Button-root[data-variant="filled"] {
+	box-shadow: var(--ctd-control-shadow);
+}
+
+.mantine-Button-root:focus-visible,
+.mantine-ActionIcon-root:focus-visible,
+.mantine-SegmentedControl-control:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--ctd-focus-ring);
+}
+
+.mantine-SegmentedControl-root {
+	padding: 2px;
+}
+
+.mantine-SegmentedControl-indicator {
+	box-shadow: 0 0.5px 2px oklch(0% 0 0 / 0.22);
+}
+
+.mantine-Tooltip-tooltip {
+	font-size: 12px;
 }
 
 .mantine-Button-root:disabled,

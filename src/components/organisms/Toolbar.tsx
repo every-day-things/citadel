@@ -150,12 +150,43 @@ export const LibraryToolbarControls = () => {
 			<TextInput
 				size="xs"
 				w={210}
-				radius="sm"
-				placeholder="Search titles and authors"
+				radius="xl"
+				placeholder="Search"
 				aria-label="Search book titles and authors"
 				value={query}
 				onChange={(event) => setQuery(event.currentTarget.value)}
-				styles={controlStyles}
+				leftSection={
+					<svg
+						width="12"
+						height="12"
+						viewBox="0 0 15 15"
+						fill="none"
+						aria-hidden="true"
+					>
+						<circle
+							cx="6.5"
+							cy="6.5"
+							r="4.5"
+							stroke="currentColor"
+							strokeWidth="1.4"
+						/>
+						<path
+							d="M10 10l3.5 3.5"
+							stroke="currentColor"
+							strokeWidth="1.4"
+							strokeLinecap="round"
+						/>
+					</svg>
+				}
+				styles={{
+					input: {
+						...controlStyles.input,
+						// Toolbar search fields are capsules in macOS; keep the
+						// global 6px radius for in-content fields only.
+						borderRadius: 13,
+					},
+					section: { color: "var(--ctd-ink-soft)" },
+				}}
 			/>
 		</Group>
 	);

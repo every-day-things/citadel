@@ -11,7 +11,12 @@ import {
 	TextInput,
 } from "@mantine/core";
 import { Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import {
+	type CSSProperties,
+	useCallback,
+	useEffect,
+	useState,
+} from "react";
 
 import type { AuthorUpdate, LibraryAuthor, LibraryBook } from "@/bindings";
 
@@ -29,6 +34,17 @@ import { useDisclosure } from "@mantine/hooks";
 import { useForm } from "@mantine/form";
 import { AuthorFilterControls } from "@/components/organisms/AuthorFilterControls";
 import { useAuthorFilters } from "@/lib/hooks/use-author-filters";
+
+/**
+ * Shared column template so the header row and every author row align:
+ * name (flexible) | sort name (fixed, hidden narrow) | count | actions.
+ */
+const AUTHOR_GRID: CSSProperties = {
+	display: "grid",
+	gridTemplateColumns: "minmax(160px, 1fr) minmax(0, 260px) 72px 56px",
+	alignItems: "center",
+	columnGap: 16,
+};
 
 export const Authors = () => {
 	const authors = useAuthors();
@@ -159,6 +175,29 @@ export const Authors = () => {
 					onShowOnlyAuthorsWithoutBooksChange={setShowOnlyAuthorsWithoutBooks}
 				/>
 			</Group>
+
+			<div
+				style={{
+					...AUTHOR_GRID,
+					position: "sticky",
+					top: 0,
+					zIndex: 2,
+					backgroundColor: "var(--ctd-content-bg)",
+					borderBottom: "1px solid var(--ctd-border)",
+					padding: "6px 24px",
+				}}
+			>
+				<Text size="xs" fw={600} tt="uppercase" c="dimmed">
+					Name
+				</Text>
+				<Text size="xs" fw={600} tt="uppercase" c="dimmed" visibleFrom="md">
+					Sort name
+				</Text>
+				<Text size="xs" fw={600} tt="uppercase" c="dimmed" ta="right">
+					Books
+				</Text>
+				<span />
+			</div>
 
 			<Stack gap={0} style={{ flex: 1 }}>
 				{filteredAuthors?.map((author) => (
@@ -307,8 +346,6 @@ const EditAuthorModal = ({
 	);
 };
 
-const pluralize = (single: string, multiple: string, count: number): string =>
-	count === 1 ? single : multiple;
 
 const AuthorRow = ({
 	author,
@@ -326,44 +363,44 @@ const AuthorRow = ({
 	).length;
 
 	return (
-		<Group
-			px={24}
-			py={8}
-			gap="md"
-			wrap="nowrap"
-			justify="space-between"
-			style={{ borderBottom: "1px solid var(--ctd-border)" }}
+		<div
+			style={{
+				...AUTHOR_GRID,
+				padding: "6px 24px",
+				minHeight: 32,
+				borderBottom: "1px solid var(--ctd-border)",
+			}}
 		>
-			<Stack gap={2} style={{ minWidth: 0 }}>
-				<Group gap="xs" wrap="nowrap">
-					<Text fw={500} size="sm" truncate>
-						{author.name}
-					</Text>
-					{author.sortable_name === "" && (
-						<Badge size="xs" variant="light" color="red">
-							No sort name
-						</Badge>
-					)}
-				</Group>
-				{author.sortable_name !== "" && (
-					<Text size="xs" c="dimmed" truncate>
-						{author.sortable_name}
-					</Text>
-				)}
-			</Stack>
+			<Text size="sm" truncate>
+				{author.name}
+			</Text>
 
-			<Group gap={4} wrap="nowrap" style={{ flexShrink: 0 }}>
-				<Anchor
-					to={"/"}
-					search={{
-						search_for_author: author.name,
-					}}
-					component={Link}
-				>
-					<Text size="sm" w={70} ta="right" style={{ color: "var(--ctd-link)" }}>
-						{numBooksByAuthor} {pluralize("book", "books", numBooksByAuthor)}
-					</Text>
-				</Anchor>
+			{author.sortable_name !== "" ? (
+				<Text size="sm" c="dimmed" truncate visibleFrom="md">
+					{author.sortable_name}
+				</Text>
+			) : (
+				<div>
+					<Badge size="xs" variant="light" color="red" visibleFrom="md">
+						No sort name
+					</Badge>
+				</div>
+			)}
+
+			<Anchor
+				to={"/"}
+				search={{
+					search_for_author: author.name,
+				}}
+				component={Link}
+				style={{ justifySelf: "end" }}
+			>
+				<Text size="sm" style={{ color: "var(--ctd-link)" }}>
+					{numBooksByAuthor}
+				</Text>
+			</Anchor>
+
+			<Group gap={2} wrap="nowrap" justify="flex-end">
 				<ActionIcon
 					variant="subtle"
 					color="gray"
@@ -373,7 +410,8 @@ const AuthorRow = ({
 				>
 					<F7Pencil />
 				</ActionIcon>
-				{numBooksByAuthor === 0 && (
+				{/* Slot stays reserved so pencils align across rows. */}
+				{numBooksByAuthor === 0 ? (
 					<ActionIcon
 						variant="subtle"
 						color="red"
@@ -383,8 +421,10 @@ const AuthorRow = ({
 					>
 						<F7Trash />
 					</ActionIcon>
+				) : (
+					<span style={{ width: 22 }} />
 				)}
 			</Group>
-		</Group>
+		</div>
 	);
 };

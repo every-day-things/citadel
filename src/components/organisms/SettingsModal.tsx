@@ -20,9 +20,7 @@ import {
 	Group,
 	Modal,
 	SegmentedControl,
-	Stack,
 	Switch,
-	Text,
 	TextInput,
 	UnstyledButton,
 	useMantineColorScheme,
@@ -60,13 +58,7 @@ export const SettingsModal = () => {
 	return (
 		<Modal.Root opened={isOpen} onClose={close} size={640} centered>
 			<Modal.Overlay backgroundOpacity={0.35} blur={3} />
-			<Modal.Content
-				style={{
-					background: "var(--ctd-drawer-gradient)",
-					border: "1px solid var(--ctd-border)",
-					overflow: "hidden",
-				}}
-			>
+			<Modal.Content className={classes.modalContent}>
 				<div className={classes.pane}>
 					<nav className={classes.nav} aria-label="Settings sections">
 						<h2 className={classes.navHeading}>Settings</h2>
@@ -84,14 +76,9 @@ export const SettingsModal = () => {
 					</nav>
 					<div className={classes.content}>
 						<header className={classes.contentHeader}>
-							<Text
-								size="sm"
-								fw={600}
-								component="h3"
-								style={{ margin: 0, color: "var(--ctd-ink)" }}
-							>
+							<h3 className={classes.contentTitle}>
 								{TAB_META[activeTab].label}
-							</Text>
+							</h3>
 							<CloseButton
 								size="sm"
 								aria-label="Close settings"
@@ -120,13 +107,9 @@ const SettingsRow = ({ label, description, control }: SettingsRowProps) => {
 	return (
 		<div className={classes.row}>
 			<div className={classes.rowLabels}>
-				<Text size="sm" style={{ color: "var(--ctd-ink)" }}>
-					{label}
-				</Text>
+				<span className={classes.rowLabel}>{label}</span>
 				{description && (
-					<Text size="xs" style={{ color: "var(--ctd-ink-soft)" }}>
-						{description}
-					</Text>
+					<span className={classes.rowDescription}>{description}</span>
 				)}
 			</div>
 			{control}
@@ -163,7 +146,7 @@ const GeneralTab = () => {
 	);
 
 	return (
-		<Stack gap="md">
+		<div className={classes.groups}>
 			<div className={classes.group}>
 				<SettingsRow
 					label="Appearance"
@@ -178,17 +161,10 @@ const GeneralTab = () => {
 								{ value: "light", label: "Light" },
 								{ value: "dark", label: "Dark" },
 							]}
-							styles={{
-								root: {
-									backgroundColor: "var(--ctd-segmented-root-bg)",
-									border: "1px solid var(--ctd-border)",
-								},
-								indicator: {
-									backgroundColor: "var(--ctd-segmented-indicator-bg)",
-								},
-								label: {
-									color: "var(--ctd-segmented-label)",
-								},
+							classNames={{
+								root: classes.segmentedRoot,
+								indicator: classes.segmentedIndicator,
+								label: classes.segmentedLabel,
 							}}
 						/>
 					}
@@ -210,7 +186,7 @@ const GeneralTab = () => {
 					}
 				/>
 				<SettingsRow
-					label="Updates"
+					label="Software update"
 					description={
 						supportsAutoUpdates
 							? undefined
@@ -229,7 +205,7 @@ const GeneralTab = () => {
 					}
 				/>
 			</div>
-		</Stack>
+		</div>
 	);
 };
 
@@ -270,25 +246,29 @@ const LibraryTab = ({ closeSettings }: LibraryTabProps) => {
 
 	if (!activeLibraryId) {
 		return (
-			<Text size="sm" style={{ color: "var(--ctd-ink-soft)" }}>
+			<p className={classes.paneNote}>
 				Something went wrong loading your libraries.
-			</Text>
+			</p>
 		);
 	}
 
 	return (
-		<SwitchLibraryForm
-			currentLibraryId={activeLibraryId}
-			libraries={libraries}
-			onSubmit={(form) => void addNewLibraryByPath(form)}
-			selectExistingLibrary={selectExistingLibrary}
-			selectNewLibrary={async () => {
-				const path = await platform.dialogs.openDirectory({
-					title: "Select Calibre Library Folder",
-				});
-				return path !== null ? some(path) : none();
-			}}
-		/>
+		<div className={classes.groups}>
+			<div className={classes.formGroup}>
+				<SwitchLibraryForm
+					currentLibraryId={activeLibraryId}
+					libraries={libraries}
+					onSubmit={(form) => void addNewLibraryByPath(form)}
+					selectExistingLibrary={selectExistingLibrary}
+					selectNewLibrary={async () => {
+						const path = await platform.dialogs.openDirectory({
+							title: "Select Calibre Library Folder",
+						});
+						return path !== null ? some(path) : none();
+					}}
+				/>
+			</div>
+		</div>
 	);
 };
 
@@ -341,58 +321,53 @@ const IntegrationsTab = () => {
 	}, [setHardcoverApiKey]);
 
 	return (
-		<Stack gap="md">
-			<div className={classes.group}>
-				<SettingsRow
-					label="Hardcover API key"
-					description="Found in your Hardcover account settings."
-					control={
-						<TextInput
-							size="xs"
-							w={220}
-							type="password"
-							placeholder="API key"
-							aria-label="Hardcover API key"
-							value={apiKeyInput}
-							onChange={(event) => setApiKeyInput(event.currentTarget.value)}
-							styles={{
-								input: {
-									backgroundColor: "var(--ctd-control-bg)",
-									borderColor: "var(--ctd-border)",
-									color: "var(--ctd-control-text)",
-								},
-							}}
-						/>
-					}
-				/>
-				<div className={classes.row}>
-					<Button
-						size="xs"
-						variant="subtle"
-						color="red"
-						disabled={!apiKeyInput}
-						onClick={() => void handleClear()}
-					>
-						Clear
-					</Button>
-					<Group gap="xs">
-						<Button
-							size="xs"
-							variant="default"
-							loading={isTesting}
-							disabled={!apiKeyInput}
-							onClick={() => void handleTest()}
-						>
-							Test Connection
-						</Button>
-						<Button
-							size="xs"
-							disabled={!apiKeyInput}
-							onClick={() => void handleSave()}
-						>
-							Save
-						</Button>
-					</Group>
+		<div className={classes.groups}>
+			<div>
+				<h4 className={classes.groupTitle}>Hardcover</h4>
+				<div className={classes.group}>
+					<SettingsRow
+						label="API key"
+						description="Found in your Hardcover account settings."
+						control={
+							<TextInput
+								size="xs"
+								w={220}
+								type="password"
+								placeholder="API key"
+								aria-label="Hardcover API key"
+								value={apiKeyInput}
+								onChange={(event) => setApiKeyInput(event.currentTarget.value)}
+							/>
+						}
+					/>
+					<div className={classes.row}>
+						<Group gap="xs" ml="auto">
+							<Button
+								size="xs"
+								variant="default"
+								disabled={!apiKeyInput}
+								onClick={() => void handleClear()}
+							>
+								Clear
+							</Button>
+							<Button
+								size="xs"
+								variant="default"
+								loading={isTesting}
+								disabled={!apiKeyInput}
+								onClick={() => void handleTest()}
+							>
+								Test Connection
+							</Button>
+							<Button
+								size="xs"
+								disabled={!apiKeyInput}
+								onClick={() => void handleSave()}
+							>
+								Save
+							</Button>
+						</Group>
+					</div>
 				</div>
 			</div>
 			{testResult && (
@@ -403,6 +378,6 @@ const IntegrationsTab = () => {
 					{testResult.message}
 				</Alert>
 			)}
-		</Stack>
+		</div>
 	);
 };
