@@ -1,6 +1,5 @@
 ---
-source: libcalibre/tests/add_book_test.rs
-assertion_line: 22
+source: crates/libcalibre/tests/add_book_test.rs
 expression: snapshot
 ---
 schema:
@@ -366,10 +365,10 @@ schema:
         primary_key: true
       - name: book
         type_name: INTEGER
-        nullable: false
+        nullable: true
         primary_key: false
       - name: value
-        type_name: INTEGER
+        type_name: BOOL
         nullable: false
         primary_key: false
   - name: custom_columns

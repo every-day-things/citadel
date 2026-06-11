@@ -1,5 +1,6 @@
 mod assets;
 mod cover_image;
+mod custom_columns;
 mod entities;
 pub mod error;
 pub mod library;
@@ -14,6 +15,7 @@ pub mod types;
 pub mod util;
 
 // Re-export the main API types
+pub use custom_columns::{CustomColumn, CustomColumnKind, CustomColumnSpec, CustomValue};
 pub use error::CalibreError;
 pub use library::{
     Author as LibraryAuthor, AuthorAdd, AuthorUpdate, Book as LibraryBook, BookAdd, BookFileInfo,
