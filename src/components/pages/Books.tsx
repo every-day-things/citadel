@@ -2,9 +2,7 @@ import type { Identifier, LibraryBook, LocalFile } from "@/bindings";
 import { safeAsyncEventHandler } from "@/lib/async";
 import DOMPurify from "dompurify";
 import {
-	ActionIcon,
 	Badge,
-	Button,
 	Center,
 	Divider,
 	Drawer,
@@ -13,6 +11,7 @@ import {
 	Text,
 	rem,
 } from "@mantine/core";
+import { Button, IconButton } from "@/components/ui";
 import { useDisclosure } from "@mantine/hooks";
 import { Link } from "@tanstack/react-router";
 import { usePlatform } from "@/lib/platform/context";
@@ -190,7 +189,10 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 							</Button>
 						)}
 						<Link to={`/books/${book.id}`}>
-							<Button leftSection={<F7Pencil />}>Edit</Button>
+							<Button variant="primary">
+								<F7Pencil />
+								Edit
+							</Button>
 						</Link>
 					</Group>
 				</Stack>
@@ -329,15 +331,14 @@ const BookIdentifiers = ({
 										{value}
 									</a>
 									{platform.capabilities.canCopyToClipboard && (
-										<ActionIcon
-											variant="subtle"
-											color="gray"
+										<IconButton
+											aria-label="Copy identifier"
 											onPointerDown={safeAsyncEventHandler(async () => {
 												await platform.clipboard.writeText(value);
 											})}
 										>
 											<TablerCopy style={{ width: rem(12) }} />
-										</ActionIcon>
+										</IconButton>
 									)}
 								</Text>
 							</li>

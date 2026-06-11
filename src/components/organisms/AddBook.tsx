@@ -10,7 +10,7 @@ import {
 	useLibraryActions,
 	useLibraryState,
 } from "@/stores/library/store";
-import { ActionIcon, Modal, Tooltip } from "@mantine/core";
+import { IconButton, Sheet, Tooltip } from "@/components/ui";
 import { useDisclosure } from "@mantine/hooks";
 import { useCallback, useMemo, useState } from "react";
 
@@ -89,51 +89,31 @@ export const AddBookButton = () => {
 	return (
 		<>
 			{metadata && (
-				<Modal.Root opened={isModalOpen} onClose={closeModal} size={"lg"}>
-					<Modal.Overlay blur={3} backgroundOpacity={0.35} />
-					<Modal.Content
-						style={{
-							background: "var(--ctd-drawer-gradient)",
-							border: "1px solid var(--ctd-border)",
+				<Sheet
+					open={isModalOpen}
+					onOpenChange={(open) => {
+						if (!open) closeModal();
+					}}
+					title={addBookFormTitle}
+					width={560}
+				>
+					<AddBookForm
+						initial={{
+							authorList: metadata?.author_names ?? [],
+							title: metadata?.title ?? "",
 						}}
-					>
-						<Modal.Header
-							style={{
-								backgroundColor: "transparent",
-								borderBottom: "1px solid var(--ctd-border)",
-							}}
-						>
-							<Modal.Title>{addBookFormTitle}</Modal.Title>
-							<Modal.CloseButton
-								style={{
-									border: "1px solid var(--ctd-border)",
-									backgroundColor: "var(--ctd-control-bg)",
-								}}
-							/>
-						</Modal.Header>
-						<Modal.Body style={{ paddingTop: "0.9rem" }}>
-							<AddBookForm
-								initial={{
-									authorList: metadata?.author_names ?? [],
-									title: metadata?.title ?? "",
-								}}
-								authorList={authorList}
-								fileName={metadata?.path ?? ""}
-								hideTitle={true}
-								onCreateAuthor={onCreateAuthor}
-								onSubmit={addBookByMetadataWithEffects}
-							/>
-						</Modal.Body>
-					</Modal.Content>
-				</Modal.Root>
+						authorList={authorList}
+						fileName={metadata?.path ?? ""}
+						hideTitle={true}
+						onCreateAuthor={onCreateAuthor}
+						onSubmit={addBookByMetadataWithEffects}
+					/>
+				</Sheet>
 			)}
 			<Tooltip label="Add Book…" openDelay={500}>
-				<ActionIcon
-					variant="subtle"
-					color="gray"
+				<IconButton
 					aria-label="Add Book"
 					onPointerDown={selectAndEditBookFile}
-					style={{ color: "var(--ctd-ink-soft)" }}
 				>
 					<svg
 						width="15"
@@ -149,7 +129,7 @@ export const AddBookButton = () => {
 							strokeLinecap="round"
 						/>
 					</svg>
-				</ActionIcon>
+				</IconButton>
 			</Tooltip>
 		</>
 	);

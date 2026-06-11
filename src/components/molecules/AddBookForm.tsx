@@ -1,6 +1,7 @@
 import { MultiSelectCreatable } from "@/components/atoms/Multiselect";
 import { safeAsyncEventHandler } from "@/lib/async";
-import { Button, Code, Stack, Text, TextInput, Title } from "@mantine/core";
+import { Button, TextInput } from "@/components/ui";
+import { Code, Stack, Text, Title } from "@mantine/core";
 import { Form, useForm } from "@mantine/form";
 
 export interface AddBookForm {
@@ -52,20 +53,7 @@ export const AddBookForm = ({
 						{fileName}
 					</Code>{" "}
 				</Text>
-				<TextInput
-					label="Title"
-					styles={{
-						label: {
-							color: "var(--ctd-ink-soft)",
-						},
-						input: {
-							backgroundColor: "var(--ctd-control-bg)",
-							borderColor: "var(--ctd-border)",
-							color: "var(--ctd-control-text)",
-						},
-					}}
-					{...form.getInputProps("title")}
-				/>
+				<TextInput label="Title" {...form.getInputProps("title")} />
 				<MultiSelectCreatable
 					label="Authors"
 					placeholder="Search or add author"
@@ -75,7 +63,7 @@ export const AddBookForm = ({
 					}
 					{...form.getInputProps("authorList")}
 				/>
-				<Button mt="mg" variant="filled" color="accent" fullWidth type="submit">
+				<Button variant="primary" fullWidth type="submit">
 					Add book
 				</Button>
 			</Stack>
