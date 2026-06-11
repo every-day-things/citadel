@@ -31,7 +31,7 @@ const BookGridPure = ({
 		<Box
 			pos="relative"
 			style={{
-				padding: "1rem",
+				padding: "20px 24px 24px",
 			}}
 		>
 			<LoadingOverlay visible={loading} />

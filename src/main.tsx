@@ -13,6 +13,13 @@ import { useSettings } from "@/stores/settings/store";
 
 const platform = isTauri() ? createTauriPlatform() : createWebPlatform();
 
+// The macOS window paints an NSVisualEffectView behind a transparent webview;
+// only there may the page background go transparent (elsewhere it would show
+// through to nothing).
+if (isTauri() && navigator.userAgent.includes("Mac")) {
+	document.documentElement.dataset.vibrancy = "true";
+}
+
 void useSettings.getState().init(platform.settings);
 
 // biome-ignore lint/style/noNonNullAssertion: If this fails, we'll notice.

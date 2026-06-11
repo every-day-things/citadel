@@ -73,6 +73,23 @@ fn run_tauri_backend() -> std::io::Result<()> {
             // Get the main window that was created from config and center it
             if let Some(main_window) = app.get_webview_window("main") {
                 main_window.center().unwrap();
+
+                // Native material behind the transparent webview: the sidebar
+                // reads as real glass (desktop tint shows through), matching
+                // macOS source-list apps. Webview transparency itself comes
+                // from `windows[].transparent` + `macOSPrivateApi` in config.
+                #[cfg(target_os = "macos")]
+                {
+                    use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
+                    if let Err(err) = apply_vibrancy(
+                        &main_window,
+                        NSVisualEffectMaterial::Sidebar,
+                        None,
+                        None,
+                    ) {
+                        eprintln!("vibrancy unavailable: {err}");
+                    }
+                }
             }
 
             Ok(())

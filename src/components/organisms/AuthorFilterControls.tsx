@@ -20,16 +20,17 @@ export const AuthorFilterControls = ({
 }: AuthorFilterControlsProps) => {
 	return (
 		<Flex
-			mih={50}
 			gap="sm"
 			miw={100}
+			w="100%"
 			justify="space-between"
 			align="center"
 			direction="row"
 			wrap="wrap"
 		>
 			<TextInput
-				miw="32ch"
+				size="xs"
+				miw="28ch"
 				placeholder="Search authors"
 				styles={{
 					input: {
@@ -43,6 +44,7 @@ export const AuthorFilterControls = ({
 			/>
 
 			<Select
+				size="xs"
 				placeholder="Sort Order"
 				allowDeselect={false}
 				w={150}
@@ -63,7 +65,8 @@ export const AuthorFilterControls = ({
 			/>
 
 			<Switch
-				label="No books"
+				size="xs"
+				label="Without books"
 				color="accent"
 				styles={{
 					label: {

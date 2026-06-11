@@ -32,11 +32,33 @@ Books. Anti-reference: Calibre's cluttered chrome, generic web-app SaaS.
   600, uppercase, 0.05em tracking, `--ctd-ink-soft`.
 - Page titles are modest (`Title order={3}`), toolbar-scale, not hero-scale.
 
+## Materials (Liquid Glass)
+
+- On macOS the webview is transparent over an `NSVisualEffectView` (sidebar
+  material, `window-vibrancy` crate, applied in `src-tauri/src/main.rs`). The
+  toolbar + sidebar L-region is real glass: desktop color shows through.
+- `:root[data-vibrancy]` (set in `src/main.tsx` on macOS only) swaps
+  `--ctd-nav-bg`/`--ctd-header-bg` to faint tints (alpha 0.2–0.3) and the
+  page background to transparent. Elsewhere the opaque fallbacks apply —
+  never assume transparency exists.
+- The native window appearance is kept in sync with the Mantine scheme via
+  `setTheme` (`useNativeThemeSync` in `src/routes/__root.tsx`), so forced
+  dark Citadel gets dark glass on a light desktop. Requires the
+  `core:window:allow-set-theme` capability.
+- Content floats: pages render inside one opaque panel
+  (`--ctd-content-bg`, `--ctd-radius-panel`, hairline border, soft shadow)
+  mounted in `__root.tsx`. The panel is the scroll container; sticky
+  status bars pin to its bottom edge.
+- Glass is structural, not decorative: exactly one vibrancy region (the
+  chrome), exactly one floating panel. No additional blurred/translucent
+  layers inside content.
+
 ## Layout
 
-- Flush panels, not cards: sidebar and content separated by 1px
-  `--ctd-border` rules. No rounded inset containers around primary content
-  (the book grid and page headers sit directly on the window).
+- Inside the content panel: chrome-free lists and grids separated by 1px
+  `--ctd-border` hairlines; 20–24px insets at panel edges (the cover grid
+  uses `20px 24px 24px`). Page headers are compact control rows, not hero
+  titles.
 - Buttons: filled accent only for the primary action of a form/dialog;
   `variant="default"` (neutral bordered) for everything else. Buttons that
   open a dialog end with an ellipsis ("Add Book…").

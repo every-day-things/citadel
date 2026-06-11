@@ -27,104 +27,122 @@ const BookTablePure = ({
 	onBookOpen: (bookId: LibraryBook["id"]) => void;
 }) => {
 	return (
-		<DataTable
-			withTableBorder
-			borderRadius="sm"
-			withColumnBorders
-			striped
-			highlightOnHover
-			minHeight={560}
-			fetching={loading}
-			records={books}
-			styles={{
-				table: {
-					backgroundColor: "var(--ctd-surface-soft)",
-					borderColor: "var(--ctd-border)",
-				},
-				header: {
-					backgroundColor: "var(--ctd-surface-muted)",
-				},
-			}}
-			rowStyle={() => ({
-				cursor: "pointer",
-			})}
-			onRowClick={({ record }) => onBookOpen(record.id)}
-			columns={[
-				{
-					accessor: "id",
-					title: "Cover",
-					width: 72,
-					render: ({ cover_image, title }) => {
-						return (
-							<Box
-								style={{
-									backgroundImage: `url(${cover_image?.url})`,
-									backgroundSize: "cover",
-									backgroundPosition: "center",
-									backgroundRepeat: "no-repeat",
-									width: "44px",
-									height: "64px",
-									borderRadius: "4px",
-									boxShadow: "var(--ctd-shadow-soft)",
-									backgroundColor: "var(--ctd-surface-muted)",
-									boxSizing: "border-box",
-									padding: "0",
-									margin: "0",
-								}}
-								aria-label={`Cover for ${title}`}
-							/>
-						);
+		// Same insets as BookGrid so toggling covers/list doesn't jump content to the panel edge.
+		<Box style={{ padding: "20px 24px 24px" }}>
+			<DataTable
+				withTableBorder
+				borderRadius="sm"
+				withColumnBorders
+				striped
+				highlightOnHover
+				minHeight={560}
+				fetching={loading}
+				records={books}
+				styles={{
+					table: {
+						backgroundColor: "var(--ctd-surface-soft)",
+						borderColor: "var(--ctd-border)",
 					},
-				},
-				{
-					accessor: "title",
-					title: "Title",
-					render: ({ title }) => (
-						<Text fw={600} style={{}}>
-							{title}
-						</Text>
-					),
-				},
-				{
-					accessor: "author_list",
-					title: "Authors",
-					render: ({ author_list }) => (
-						<Text c="dimmed" lineClamp={2}>
-							{formatAuthorList(author_list)}
-						</Text>
-					),
-				},
-				{
-					accessor: "is_read",
-					title: "Status",
-					width: 110,
-					render: ({ is_read }) => (
-						<Badge
-							color={is_read ? "gray" : "accent"}
-							variant={is_read ? "light" : "filled"}
-						>
-							{is_read ? "Read" : "Unread"}
-						</Badge>
-					),
-				},
-				{
-					accessor: "file_list",
-					title: "Formats",
-					width: 130,
-					render: ({ file_list }) => (
-						<Group gap={4}>
-							{file_list
-								.filter(isLocalFile)
-								.slice(0, 3)
-								.map((file) => (
-									<Badge key={file.Local.mime_type} variant="outline" size="xs">
-										{file.Local.mime_type}
-									</Badge>
-								))}
-						</Group>
-					),
-				},
-			]}
-		/>
+					header: {
+						backgroundColor: "var(--ctd-surface-muted)",
+					},
+				}}
+				rowStyle={() => ({
+					cursor: "pointer",
+				})}
+				onRowClick={({ record }) => onBookOpen(record.id)}
+				columns={[
+					{
+						accessor: "id",
+						title: "Cover",
+						width: 72,
+						render: ({ cover_image, title }) => {
+							return (
+								<Box
+									style={{
+										backgroundImage: `url(${cover_image?.url})`,
+										backgroundSize: "cover",
+										backgroundPosition: "center",
+										backgroundRepeat: "no-repeat",
+										width: "44px",
+										height: "64px",
+										borderRadius: "4px",
+										boxShadow: "var(--ctd-shadow-soft)",
+										backgroundColor: "var(--ctd-surface-muted)",
+										boxSizing: "border-box",
+										padding: "0",
+										margin: "0",
+									}}
+									aria-label={`Cover for ${title}`}
+								/>
+							);
+						},
+					},
+					{
+						accessor: "title",
+						title: "Title",
+						render: ({ title }) => (
+							<Text fw={600} style={{}}>
+								{title}
+							</Text>
+						),
+					},
+					{
+						accessor: "author_list",
+						title: "Authors",
+						render: ({ author_list }) => (
+							<Text c="dimmed" lineClamp={2}>
+								{formatAuthorList(author_list)}
+							</Text>
+						),
+					},
+					{
+						accessor: "is_read",
+						title: "Status",
+						width: 110,
+						render: ({ is_read }) => (
+							<Group gap={6} wrap="nowrap">
+								<span
+									style={{
+										width: 6,
+										height: 6,
+										borderRadius: 3,
+										flexShrink: 0,
+										display: "inline-block",
+										backgroundColor: is_read
+											? "transparent"
+											: "var(--ctd-accent)",
+									}}
+								/>
+								<Text size="sm" c="dimmed">
+									{is_read ? "Read" : "Unread"}
+								</Text>
+							</Group>
+						),
+					},
+					{
+						accessor: "file_list",
+						title: "Formats",
+						width: 130,
+						render: ({ file_list }) => (
+							<Group gap={4}>
+								{file_list
+									.filter(isLocalFile)
+									.slice(0, 3)
+									.map((file) => (
+										<Badge
+											key={file.Local.mime_type}
+											variant="outline"
+											size="xs"
+										>
+											{file.Local.mime_type}
+										</Badge>
+									))}
+							</Group>
+						),
+					},
+				]}
+			/>
+		</Box>
 	);
 };

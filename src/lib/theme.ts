@@ -11,7 +11,7 @@ export const theme = createTheme({
 			'-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
 		fontWeight: "600",
 	},
-	defaultRadius: "sm",
+	defaultRadius: "md",
 	colors: {
 		accent: [
 			"#e8f2ff",

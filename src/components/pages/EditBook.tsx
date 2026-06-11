@@ -494,7 +494,8 @@ const EditBookForm = ({
 									className={styles.editorWrapper}
 									classNames={richTextEditorClassNames}
 								>
-									<RichTextEditor.Toolbar sticky stickyOffset={44}>
+									{/* Offset clears the sticky page header (12px + 36px button row + 12px + 1px rule) inside the scrolling panel. */}
+									<RichTextEditor.Toolbar sticky stickyOffset={61}>
 										<RichTextEditor.ControlsGroup>
 											<RichTextEditor.Bold />
 											<RichTextEditor.Italic />

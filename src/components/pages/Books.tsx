@@ -111,11 +111,12 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 				)}
 			</div>
 			<Center
-				py={5}
+				py={6}
 				style={{
 					position: "sticky",
 					bottom: 0,
-					backgroundColor: "var(--ctd-bg)",
+					zIndex: 2,
+					backgroundColor: "var(--ctd-content-bg)",
 					borderTop: "1px solid var(--ctd-border)",
 				}}
 			>

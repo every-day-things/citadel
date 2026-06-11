@@ -4,18 +4,46 @@ import { LibraryToolbarControls } from "@/components/organisms/Toolbar";
 import { SettingsModal } from "@/components/organisms/SettingsModal";
 import { Sidebar } from "@/components/organisms/Sidebar";
 import { SettingsModalProvider } from "@/lib/contexts/modal-settings/Provider";
-import { ActionIcon, AppShell, Burger, Group } from "@mantine/core";
+import {
+	ActionIcon,
+	AppShell,
+	Burger,
+	Group,
+	useComputedColorScheme,
+} from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
+import { isTauri } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { useEffect } from "react";
+
+/**
+ * Keeps the native window appearance (and with it the vibrancy material
+ * behind the transparent webview) in step with the in-app theme choice, so
+ * forcing dark Citadel on a light desktop doesn't produce light glass behind
+ * dark text.
+ */
+const useNativeThemeSync = () => {
+	const scheme = useComputedColorScheme("light");
+	useEffect(() => {
+		if (!isTauri()) return;
+		getCurrentWindow()
+			.setTheme(scheme === "dark" ? "dark" : "light")
+			.catch(() => {
+				// Pre-2.x runtimes without setTheme: vibrancy follows the system.
+			});
+	}, [scheme]);
+};
 
 const Root = () => {
 	const [mobileOpened, { toggle: toggleMobile }] = useDisclosure(false);
 	const [desktopOpened, { toggle: toggleDesktop }] = useDisclosure(true);
+	useNativeThemeSync();
 
 	return (
 		<AppShell
-			padding="md"
-			header={{ height: 44 }}
+			padding={10}
+			header={{ height: 46 }}
 			navbar={{
 				width: 248,
 				breakpoint: "sm",
@@ -23,7 +51,7 @@ const Root = () => {
 			}}
 			h={"100vh"}
 			style={{
-				overflowY: "scroll",
+				overflow: "hidden",
 				background: "var(--ctd-shell-gradient)",
 			}}
 		>
@@ -49,19 +77,18 @@ const MainPure = ({
 }: MainPureProps) => {
 	return (
 		<>
-			<AppShell.Header data-tauri-drag-region>
+			<AppShell.Header
+				data-tauri-drag-region
+				withBorder={false}
+				style={{ backgroundColor: "var(--ctd-header-bg)" }}
+			>
 				<Group
 					h="100%"
 					px="md"
-					pl={"75px"}
+					pl={"84px"}
 					justify="space-between"
 					wrap="nowrap"
 					data-tauri-drag-region
-					style={{
-						backgroundColor: "var(--ctd-header-bg)",
-						backdropFilter: "blur(3px)",
-						borderBottom: "1px solid var(--ctd-border)",
-					}}
 				>
 					<Group gap="xs" wrap="nowrap" data-tauri-drag-region>
 						<Burger
@@ -88,11 +115,9 @@ const MainPure = ({
 			<SettingsModal />
 
 			<AppShell.Navbar
-				p="md"
-				style={{
-					backgroundColor: "var(--ctd-nav-bg)",
-					borderRight: "1px solid var(--ctd-border)",
-				}}
+				p="sm"
+				withBorder={false}
+				style={{ backgroundColor: "var(--ctd-nav-bg)" }}
 			>
 				<Sidebar />
 			</AppShell.Navbar>
@@ -101,10 +126,22 @@ const MainPure = ({
 				style={{
 					display: "grid",
 					gridTemplateRows: "1fr",
+					height: "100vh",
 					background: "var(--ctd-main-gradient)",
 				}}
 			>
-				<Outlet />
+				<div
+					style={{
+						minHeight: 0,
+						overflowY: "auto",
+						background: "var(--ctd-content-bg)",
+						border: "1px solid var(--ctd-border)",
+						borderRadius: "var(--ctd-radius-panel)",
+						boxShadow: "var(--ctd-shadow-soft)",
+					}}
+				>
+					<Outlet />
+				</div>
 			</AppShell.Main>
 		</>
 	);

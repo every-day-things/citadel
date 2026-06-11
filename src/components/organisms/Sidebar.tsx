@@ -108,14 +108,18 @@ const SidebarPure = ({
 				paddingTop: "1rem",
 			}}
 		>
-			<Stack gap="xs">
+			<Stack gap={2}>
 				<Text
 					component="h2"
 					size="xs"
 					fw={600}
 					tt="uppercase"
 					style={{
-						margin: 0,
+						/* Aligns with NavLink label text (0.65rem item inset); the extra
+						   bottom margin separates the header from its rows without making
+						   the row rhythm itself any looser. */
+						margin: "0 0 4px",
+						paddingInline: "0.65rem",
 						letterSpacing: "0.05em",
 						color: "var(--ctd-ink-soft)",
 					}}
@@ -133,7 +137,7 @@ const SidebarPure = ({
 						styles={{
 							root: {
 								borderRadius: "0.375rem",
-								padding: "0.35rem 0.65rem",
+								padding: "0.4rem 0.65rem",
 								transition: "background-color 140ms ease, color 140ms ease",
 								backgroundColor: isActive() ? activeBackground : "transparent",
 								color: isActive() ? activeTextColor : baseTextColor,
@@ -160,7 +164,7 @@ const SidebarPure = ({
 					styles={{
 						root: {
 							borderRadius: "0.375rem",
-							padding: "0.45rem 0.65rem",
+							padding: "0.4rem 0.65rem",
 							transition: "background-color 140ms ease, color 140ms ease",
 							backgroundColor:
 								currentPathname === "/authors"

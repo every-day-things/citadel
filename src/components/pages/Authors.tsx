@@ -3,14 +3,12 @@ import {
 	Anchor,
 	Badge,
 	Button,
-	Card,
+	Center,
 	Group,
-	Menu,
 	Modal,
 	Stack,
 	Text,
 	TextInput,
-	Title,
 } from "@mantine/core";
 import { Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
@@ -25,7 +23,6 @@ import {
 	useLibraryActions,
 } from "@/stores/library/store";
 
-import { F7Ellipsis } from "../icons/F7Ellipsis";
 import { F7Pencil } from "../icons/F7Pencil";
 import { F7Trash } from "../icons/F7Trash";
 import { useDisclosure } from "@mantine/hooks";
@@ -147,42 +144,49 @@ export const Authors = () => {
 				)}
 			</Modal>
 
-			<Stack gap="xs" style={{ flexShrink: 0 }} p="md" pb="sm">
-				<Title order={1} mb={0}>
-					Authors
-				</Title>
-
+			<Group
+				px={24}
+				py={10}
+				style={{
+					flexShrink: 0,
+					borderBottom: "1px solid var(--ctd-border)",
+				}}
+			>
 				<AuthorFilterControls
 					filters={filters}
 					onSearchChange={setSearchTerm}
 					onSortOrderChange={setSortOrder}
 					onShowOnlyAuthorsWithoutBooksChange={setShowOnlyAuthorsWithoutBooks}
 				/>
+			</Group>
 
-				<Text size="sm" c="dimmed">
-					Showing {filteredAuthors.length} authors
-				</Text>
+			<Stack gap={0} style={{ flex: 1 }}>
+				{filteredAuthors?.map((author) => (
+					<AuthorRow
+						author={author}
+						books={books}
+						key={author.id}
+						onEditAuthor={onOpenEditAuthorModal}
+						onDeleteAuthor={onOpenDeleteAuthorModal}
+					/>
+				))}
 			</Stack>
 
-			<Stack
-				style={{ flex: 1, overflow: "auto" }}
-				align="center"
-				justify="flex-start"
-				p="md"
-				pt={0}
+			<Center
+				py={6}
+				style={{
+					position: "sticky",
+					bottom: 0,
+					backgroundColor: "var(--ctd-content-bg)",
+					borderTop: "1px solid var(--ctd-border)",
+				}}
 			>
-				<Stack maw="480" w="100%" gap="md" align="stretch">
-					{filteredAuthors?.map((author) => (
-						<AuthorCard
-							author={author}
-							books={books}
-							key={author.id}
-							onEditAuthor={onOpenEditAuthorModal}
-							onDeleteAuthor={onOpenDeleteAuthorModal}
-						/>
-					))}
-				</Stack>
-			</Stack>
+				<Text size="xs" c="dimmed">
+					{filteredAuthors.length === authors.length
+						? `${authors.length} authors`
+						: `${filteredAuthors.length} of ${authors.length} authors`}
+				</Text>
+			</Center>
 		</Stack>
 	);
 };
@@ -306,7 +310,7 @@ const EditAuthorModal = ({
 const pluralize = (single: string, multiple: string, count: number): string =>
 	count === 1 ? single : multiple;
 
-const AuthorCard = ({
+const AuthorRow = ({
 	author,
 	books,
 	onEditAuthor,
@@ -322,81 +326,65 @@ const AuthorCard = ({
 	).length;
 
 	return (
-		<Card
-			w={"480"}
-			key={author.id}
-			shadow="sm"
-			withBorder
-			style={{
-				backgroundColor: "var(--ctd-surface-soft)",
-				borderColor: "var(--ctd-border)",
-			}}
+		<Group
+			px={24}
+			py={8}
+			gap="md"
+			wrap="nowrap"
+			justify="space-between"
+			style={{ borderBottom: "1px solid var(--ctd-border)" }}
 		>
-			<Group justify="space-between" mb="xs">
-				<Group mb="sm">
-					<Stack gap="xs">
-						<Text fw={500}>{author.name}</Text>
-						{author.sortable_name !== "" && (
-							<Text size="xs" fs="italic" mt="0" c="dimmed">
-								{author.sortable_name}
-							</Text>
-						)}
-					</Stack>
+			<Stack gap={2} style={{ minWidth: 0 }}>
+				<Group gap="xs" wrap="nowrap">
+					<Text fw={500} size="sm" truncate>
+						{author.name}
+					</Text>
 					{author.sortable_name === "" && (
-						<Badge color="red">No sort name</Badge>
+						<Badge size="xs" variant="light" color="red">
+							No sort name
+						</Badge>
 					)}
 				</Group>
-				<Menu
-					withinPortal
-					position="bottom-end"
-					shadow="sm"
-					styles={{
-						dropdown: {
-							backgroundColor: "var(--ctd-surface-strong)",
-							borderColor: "var(--ctd-border)",
-						},
-						item: {
-							color: "var(--ctd-ink)",
-						},
+				{author.sortable_name !== "" && (
+					<Text size="xs" c="dimmed" truncate>
+						{author.sortable_name}
+					</Text>
+				)}
+			</Stack>
+
+			<Group gap={4} wrap="nowrap" style={{ flexShrink: 0 }}>
+				<Anchor
+					to={"/"}
+					search={{
+						search_for_author: author.name,
 					}}
+					component={Link}
 				>
-					<Menu.Target>
-						<ActionIcon variant="subtle" color="gray">
-							<F7Ellipsis />
-						</ActionIcon>
-					</Menu.Target>
-
-					<Menu.Dropdown>
-						<Menu.Item
-							leftSection={<F7Pencil />}
-							onPointerDown={() => onEditAuthor(author.id)}
-						>
-							Edit
-						</Menu.Item>
-						{numBooksByAuthor === 0 && (
-							<Menu.Item
-								leftSection={<F7Trash />}
-								onPointerDown={() => onDeleteAuthor(author.id)}
-								color="red"
-							>
-								Delete
-							</Menu.Item>
-						)}
-					</Menu.Dropdown>
-				</Menu>
+					<Text size="sm" w={70} ta="right" style={{ color: "var(--ctd-link)" }}>
+						{numBooksByAuthor} {pluralize("book", "books", numBooksByAuthor)}
+					</Text>
+				</Anchor>
+				<ActionIcon
+					variant="subtle"
+					color="gray"
+					size="sm"
+					aria-label={`Edit ${author.name}`}
+					onClick={() => onEditAuthor(author.id)}
+				>
+					<F7Pencil />
+				</ActionIcon>
+				{numBooksByAuthor === 0 && (
+					<ActionIcon
+						variant="subtle"
+						color="red"
+						size="sm"
+						aria-label={`Delete ${author.name}`}
+						onClick={() => onDeleteAuthor(author.id)}
+					>
+						<F7Trash />
+					</ActionIcon>
+				)}
 			</Group>
-
-			<Anchor
-				to={"/"}
-				search={{
-					search_for_author: author.name,
-				}}
-				component={Link}
-			>
-				<Text size="sm">
-					{numBooksByAuthor} {pluralize("book", "books", numBooksByAuthor)}
-				</Text>
-			</Anchor>
-		</Card>
+		</Group>
 	);
 };

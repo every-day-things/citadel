@@ -61,6 +61,8 @@
 		0 1px 2px oklch(0% 0 0 / 0.06), 0 4px 12px oklch(0% 0 0 / 0.05);
 	--ctd-shadow-lift:
 		0 2px 6px oklch(0% 0 0 / 0.08), 0 14px 28px oklch(0% 0 0 / 0.1);
+	--ctd-content-bg: oklch(98% 0.002 80);
+	--ctd-radius-panel: 10px;
 
 	font-family:
 		-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto,
@@ -139,6 +141,25 @@
 		0 1px 2px oklch(0% 0 0 / 0.4), 0 6px 16px oklch(0% 0 0 / 0.35);
 	--ctd-shadow-lift:
 		0 2px 6px oklch(0% 0 0 / 0.45), 0 16px 32px oklch(0% 0 0 / 0.5);
+	--ctd-content-bg: oklch(23.5% 0.004 260);
+}
+
+/*
+ * Liquid glass: on macOS the webview is transparent over an
+ * NSVisualEffectView (sidebar material), so the chrome regions need only a
+ * faint tint — the real blur and desktop tint come from the window itself.
+ * Everywhere else these tokens keep their opaque fallbacks above.
+ */
+:root[data-vibrancy] {
+	--ctd-shell-gradient: transparent;
+	--ctd-main-gradient: transparent;
+	--ctd-header-bg: oklch(97% 0.003 80 / 0.22);
+	--ctd-nav-bg: oklch(97% 0.003 80 / 0.22);
+}
+
+:root[data-vibrancy][data-mantine-color-scheme="dark"] {
+	--ctd-header-bg: oklch(23% 0.004 260 / 0.3);
+	--ctd-nav-bg: oklch(23% 0.004 260 / 0.3);
 }
 
 body {
@@ -147,6 +168,10 @@ body {
 	overflow: hidden;
 	background: var(--ctd-bg);
 	color: var(--ctd-ink);
+}
+
+:root[data-vibrancy] body {
+	background: transparent;
 }
 
 #root {

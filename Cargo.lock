@@ -670,6 +670,7 @@ dependencies = [
  "tauri-specta",
  "urlencoding",
  "uuid",
+ "window-vibrancy",
  "zip 0.6.6",
 ]
 
