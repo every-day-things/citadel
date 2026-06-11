@@ -7,6 +7,7 @@ import {
 	useLibraryActions,
 	useLibraryState,
 } from "@/stores/library/store";
+import { Center, Loader, Text } from "@mantine/core";
 import { createFileRoute, useParams } from "@tanstack/react-router";
 import { useCallback, useMemo } from "react";
 
@@ -85,10 +86,20 @@ const EditBookRoute = () => {
 	}, [actions]);
 
 	if (state !== LibraryState.ready) {
-		return <div>Loading...</div>;
+		return (
+			<Center h="100%">
+				<Loader size="sm" />
+			</Center>
+		);
 	}
 	if (!book) {
-		return <div>Book not found</div>;
+		return (
+			<Center h="100%">
+				<Text size="sm" c="dimmed">
+					Book not found.
+				</Text>
+			</Center>
+		);
 	}
 
 	return (

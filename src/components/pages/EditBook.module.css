@@ -1,107 +1,159 @@
 .page {
-	gap: 10px;
+	display: flex;
+	flex-direction: column;
+	min-height: 100%;
+}
+
+.pageHeader {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	padding-bottom: 10px;
+	border-bottom: 1px solid var(--ctd-border);
+}
+
+.headerLead {
+	min-width: 0;
+	flex: 1;
+}
+
+.backLink {
+	display: inline-flex;
+	color: var(--ctd-ink-soft);
 }
 
 .pageTitle {
+	font-size: 16px;
+	font-weight: 600;
 	letter-spacing: 0.01em;
+	min-width: 0;
 }
 
-.coverColumn {
-	background: var(--ctd-surface-soft);
-	border: 1px solid var(--ctd-border);
-	border-radius: 10px;
-	padding: 12px;
+.notice {
+	margin-top: 12px;
 }
 
-.formatPanel {
-	background: var(--ctd-surface-soft);
-	border: 1px solid var(--ctd-border);
-	border-radius: 10px;
-	padding: 12px;
+.layout {
+	display: grid;
+	grid-template-columns: 180px minmax(0, 1fr);
+	column-gap: 32px;
+	align-items: start;
+	padding-top: 16px;
+	flex: 1;
 }
 
-.bookInfoPanel {
-	background: var(--ctd-surface-soft);
-	border: 1px solid var(--ctd-border);
-	border-radius: 10px;
-	padding: 12px;
+@media (max-width: 640px) {
+	.layout {
+		grid-template-columns: minmax(0, 1fr);
+	}
 }
 
-.sectionTitle {
-	letter-spacing: 0.01em;
+.sideColumn {
+	min-width: 0;
 }
 
-.richTextEditorContainer {
-	margin-top: 20px;
-	position: relative;
+.sideSection {
+	border-top: 1px solid var(--ctd-border);
+	padding-top: 10px;
 }
 
-.editorHint {
-	font-size: 13px;
+.formatList {
+	list-style: none;
+	margin: 6px 0 0;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.formColumn {
+	min-width: 0;
+}
+
+.section {
+	padding: 16px 0;
+}
+
+.formColumn > .section:first-child {
+	padding-top: 0;
+}
+
+.section + .section {
+	border-top: 1px solid var(--ctd-border);
+}
+
+.sectionLabel {
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
 	color: var(--ctd-ink-soft);
-	margin-bottom: 10px;
-	font-style: normal;
 }
 
+.sectionBody {
+	margin-top: 10px;
+}
+
+/* Rich text editor */
 .editorWrapper {
 	border: 1px solid var(--ctd-border);
-	border-radius: 8px;
-	margin-top: 5px;
-	background: var(--ctd-control-bg-strong);
+	border-radius: var(--mantine-radius-sm);
+	background: var(--ctd-control-bg);
+	overflow: hidden;
+}
+
+.editorWrapper:focus-within {
+	border-color: var(--ctd-accent);
 }
 
 .editorToolbar {
-	background-color: var(--ctd-surface-muted);
+	background-color: var(--ctd-surface-soft);
 	border-bottom: 1px solid var(--ctd-border);
-	padding: 8px;
+	padding: 4px 6px;
 	display: flex;
 	gap: 8px;
 	flex-wrap: wrap;
 }
 
 .editorContent {
-	padding: 12px;
-	min-height: 200px;
+	background-color: transparent;
 	font-family: inherit;
-	background-color: var(--ctd-control-bg-strong);
 }
 
 .editorControlsGroup {
 	display: flex;
-	margin: 0 4px;
 	gap: 2px;
 }
 
 .editorControl {
-	width: 36px;
-	height: 36px;
-	min-width: 36px;
+	width: 26px;
+	height: 26px;
+	min-width: 26px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	padding: 0;
-	margin: 0 2px;
-	background-color: var(--ctd-surface-strong);
+	background-color: transparent;
+	border: none;
 	border-radius: 4px;
-	border: 1px solid var(--ctd-border);
 	color: var(--ctd-ink-soft);
-	font-size: 14px;
+	font-size: 13px;
 }
 
 .editorControl:hover {
-	background-color: var(--ctd-surface-muted);
-	border-color: var(--ctd-border-strong);
+	background-color: var(--ctd-nav-hover-bg);
+	color: var(--ctd-ink);
 }
 
 .editorControl[data-active] {
-	background-color: var(--ctd-surface-muted);
-	color: var(--ctd-link);
-	border-color: var(--ctd-link);
+	background-color: var(--ctd-nav-active-bg);
+	color: var(--ctd-nav-active-text);
 }
 
 .editorControlIcon {
-	width: 18px;
-	height: 18px;
+	width: 16px;
+	height: 16px;
 	display: block;
 }
 
@@ -109,15 +161,9 @@
 .editorWrapper :global(.ProseMirror) {
 	min-height: 180px;
 	outline: none;
-	padding: 10px;
-	border: 2px solid transparent;
+	padding: 10px 12px;
 	cursor: text;
-	border-radius: 4px;
-}
-
-.editorWrapper :global(.ProseMirror:focus) {
-	border-color: var(--ctd-accent-strong);
-	background-color: var(--ctd-control-bg-strong);
+	color: var(--ctd-control-text);
 }
 
 .editorWrapper :global(.ProseMirror p) {
@@ -142,16 +188,11 @@
 	margin-bottom: 0.25em;
 }
 
-/* Description HTML Display */
+/* Description HTML display */
 .descriptionHtml {
-	padding: 10px;
 	line-height: 1.5;
-	max-width: 100%;
+	max-width: 65ch;
 	overflow-wrap: break-word;
-	min-height: 100px;
-	border: 1px solid var(--ctd-border);
-	border-radius: 8px;
-	background-color: var(--ctd-control-bg-strong);
 }
 
 .descriptionHtml h1,
@@ -179,4 +220,20 @@
 
 .descriptionHtml li {
 	margin-bottom: 0.25em;
+}
+
+/* Hardcover search results */
+.searchResult {
+	display: block;
+	width: 100%;
+	padding: 10px 8px;
+}
+
+.searchResult:hover,
+.searchResult:focus-visible {
+	background-color: var(--ctd-nav-hover-bg);
+}
+
+.searchResult + .searchResult {
+	border-top: 1px solid var(--ctd-border);
 }

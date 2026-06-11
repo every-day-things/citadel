@@ -1,11 +1,9 @@
 import { F7SidebarLeft } from "@/components/icons/F7SidebarLeft";
-import { HardcoverSettingsModal } from "@/components/organisms/HardcoverSettingsModal";
-import { LibrarySelectModal } from "@/components/organisms/LibrarySelectModal";
+import { AddBookButton } from "@/components/organisms/AddBook";
+import { LibraryToolbarControls } from "@/components/organisms/Toolbar";
+import { SettingsModal } from "@/components/organisms/SettingsModal";
 import { Sidebar } from "@/components/organisms/Sidebar";
-import { ThemeModal } from "@/components/organisms/ThemeModal";
-import { HardcoverModalProvider } from "@/lib/contexts/modal-hardcover/Provider";
-import { LibrarySelectModalProvider } from "@/lib/contexts/modal-library-select/Provider";
-import { ThemeModalProvider } from "@/lib/contexts/modal-theme/Provider";
+import { SettingsModalProvider } from "@/lib/contexts/modal-settings/Provider";
 import { ActionIcon, AppShell, Burger, Group } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
@@ -57,6 +55,7 @@ const MainPure = ({
 					px="md"
 					pl={"75px"}
 					justify="space-between"
+					wrap="nowrap"
 					data-tauri-drag-region
 					style={{
 						backgroundColor: "var(--ctd-header-bg)",
@@ -64,27 +63,29 @@ const MainPure = ({
 						borderBottom: "1px solid var(--ctd-border)",
 					}}
 				>
-					<Burger
-						opened={isSidebarOpenMobile}
-						onClick={toggleMobile}
-						hiddenFrom="sm"
-						size="xs"
-					/>
-					<ActionIcon
-						onClick={toggleDesktop}
-						color={"text"}
-						variant="transparent"
-						visibleFrom="sm"
-						size={"xs"}
-					>
-						<F7SidebarLeft title="Toggle sidebar" />
-					</ActionIcon>
+					<Group gap="xs" wrap="nowrap" data-tauri-drag-region>
+						<Burger
+							opened={isSidebarOpenMobile}
+							onClick={toggleMobile}
+							hiddenFrom="sm"
+							size="xs"
+						/>
+						<ActionIcon
+							onClick={toggleDesktop}
+							color={"text"}
+							variant="transparent"
+							visibleFrom="sm"
+							size={"xs"}
+						>
+							<F7SidebarLeft title="Toggle sidebar" />
+						</ActionIcon>
+						<AddBookButton />
+					</Group>
+					<LibraryToolbarControls />
 				</Group>
 			</AppShell.Header>
 
-			<ThemeModal />
-			<LibrarySelectModal />
-			<HardcoverSettingsModal />
+			<SettingsModal />
 
 			<AppShell.Navbar
 				p="md"
@@ -121,17 +122,13 @@ const Main = ({
 	toggleMobile,
 }: MainProps) => {
 	return (
-		<ThemeModalProvider>
-			<LibrarySelectModalProvider>
-				<HardcoverModalProvider>
-					<MainPure
-						toggleDesktop={toggleDesktop}
-						isSidebarOpenMobile={isSidebarOpenMobile}
-						toggleMobile={toggleMobile}
-					/>
-				</HardcoverModalProvider>
-			</LibrarySelectModalProvider>
-		</ThemeModalProvider>
+		<SettingsModalProvider>
+			<MainPure
+				toggleDesktop={toggleDesktop}
+				isSidebarOpenMobile={isSidebarOpenMobile}
+				toggleMobile={toggleMobile}
+			/>
+		</SettingsModalProvider>
 	);
 };
 

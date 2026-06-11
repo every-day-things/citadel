@@ -1,6 +1,5 @@
 import type { Identifier, LibraryBook, LocalFile } from "@/bindings";
 import { safeAsyncEventHandler } from "@/lib/async";
-import { useBreakpoint } from "@/lib/hooks/use-breakpoint";
 import DOMPurify from "dompurify";
 import {
 	ActionIcon,
@@ -9,80 +8,47 @@ import {
 	Center,
 	Divider,
 	Drawer,
-	Flex,
 	Group,
-	SegmentedControl,
-	Select,
 	Stack,
-	Switch,
 	Text,
-	TextInput,
-	Title,
 	rem,
 } from "@mantine/core";
-import { type UseFormReturnType, useForm } from "@mantine/form";
 import { useDisclosure } from "@mantine/hooks";
 import { Link } from "@tanstack/react-router";
 import { usePlatform } from "@/lib/platform/context";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BookCover } from "../atoms/BookCover";
-import { F7ListBullet } from "../icons/F7ListBullet";
-import { F7SquareGrid2x2 } from "../icons/F7SquareGrid2x2";
 import { BookGrid } from "../molecules/BookGrid";
 import { BookTable } from "../molecules/BookTable";
 import { TablerCopy } from "../icons/TablerCopy";
 import { F7Pencil } from "../icons/F7Pencil";
 import { useBooks, useBooksLoading } from "@/stores/library/store";
+import { useLibraryView } from "@/stores/library-view/store";
 
 interface BookSearchOptions {
 	search_for_author?: string;
 }
 
 export const Books = ({ search_for_author }: BookSearchOptions) => {
-	const form = useForm<{
-		query: string;
-		sortOrder: keyof typeof LibraryBookSortOrder;
-		view: "covers" | "list";
-		hideRead: boolean;
-	}>({
-		initialValues: {
-			query: search_for_author ?? "",
-			sortOrder: "authorAz",
-			view: "covers",
-			hideRead: false,
-		},
-		onValuesChange: (values) => {
-			window.localStorage.setItem(BOOK_FORM_PREFS_KEY, JSON.stringify(values));
-		},
-	});
+	const query = useLibraryView((s) => s.query);
+	const sortOrder = useLibraryView((s) => s.sortOrder);
+	const view = useLibraryView((s) => s.view);
+	const hideRead = useLibraryView((s) => s.hideRead);
+	const setQuery = useLibraryView((s) => s.setQuery);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: This must run EXACTLY once: on mount.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: author deep-links override the saved query exactly once, on mount.
 	useEffect(() => {
-		const storedValue = window.localStorage.getItem(BOOK_FORM_PREFS_KEY);
-		if (storedValue) {
-			try {
-				// TODO: Actually validate that the stored config is valid
-				const savedPreferences: typeof form.values = JSON.parse(
-					storedValue,
-				) as unknown as typeof form.values;
-				if (search_for_author) {
-					savedPreferences.query = search_for_author;
-				}
-
-				form.setValues(savedPreferences);
-			} catch (_e) {
-				console.error("Failed to parse stored value");
-			}
+		if (search_for_author) {
+			setQuery(search_for_author);
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	const books = useBooks();
 	const loading = useBooksLoading();
 
 	const filteredBooks = useMemo(
-		() => filterBooksByQuery(books, form.values),
-		[books, form.values],
+		() => filterBooksByQuery(books, { query, hideRead }),
+		[books, query, hideRead],
 	);
 
 	const sortedBooks = useMemo(() => {
@@ -90,7 +56,7 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 			const authorA = a.author_list[0]?.sortable_name ?? "";
 			const authorB = b.author_list[0]?.sortable_name ?? "";
 
-			switch (form.values.sortOrder) {
+			switch (sortOrder) {
 				case "authorAz":
 					return authorA.localeCompare(authorB);
 				case "authorZa":
@@ -108,7 +74,7 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 			}
 		};
 		return [...filteredBooks].sort(compare);
-	}, [filteredBooks, form.values.sortOrder]);
+	}, [filteredBooks, sortOrder]);
 
 	const [
 		isBookSidebarOpen,
@@ -128,25 +94,37 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 	);
 
 	return (
-		<Stack>
-			<Header
-				form={form}
-				viewBookCount={sortedBooks.length}
-				totalBookCount={books.length}
-			/>
-			{form.values.view === "covers" ? (
-				<BookGrid
-					bookList={sortedBooks}
-					loading={loading}
-					onBookOpen={onBookOpen}
-				/>
-			) : (
-				<BookTable
-					bookList={sortedBooks}
-					loading={loading}
-					onBookOpen={onBookOpen}
-				/>
-			)}
+		<Stack gap={0} mih="100%">
+			<div style={{ flex: 1 }}>
+				{view === "covers" ? (
+					<BookGrid
+						bookList={sortedBooks}
+						loading={loading}
+						onBookOpen={onBookOpen}
+					/>
+				) : (
+					<BookTable
+						bookList={sortedBooks}
+						loading={loading}
+						onBookOpen={onBookOpen}
+					/>
+				)}
+			</div>
+			<Center
+				py={5}
+				style={{
+					position: "sticky",
+					bottom: 0,
+					backgroundColor: "var(--ctd-bg)",
+					borderTop: "1px solid var(--ctd-border)",
+				}}
+			>
+				<Text size="xs" c="dimmed">
+					{sortedBooks.length === books.length
+						? `${books.length} books`
+						: `${sortedBooks.length} of ${books.length} books`}
+				</Text>
+			</Center>
 			<Drawer
 				offset={8}
 				size={"md"}
@@ -177,183 +155,6 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 		</Stack>
 	);
 };
-
-const BOOK_FORM_PREFS_KEY = "book-form-prefs";
-
-const LibraryBookSortOrder = {
-	nameAz: "name-asc",
-	nameZa: "name-desc",
-	authorAz: "author-asc",
-	authorZa: "author-desc",
-} as const;
-
-type BookViewForm = UseFormReturnType<{
-	query: string;
-	sortOrder: keyof typeof LibraryBookSortOrder;
-	view: "covers" | "list";
-	hideRead: boolean;
-}>;
-
-function FilterControls({ form }: { form: BookViewForm }) {
-	const LibraryBookSortOrderStrings: Record<
-		keyof typeof LibraryBookSortOrder,
-		string
-	> = {
-		nameAz: "Name (A-Z)",
-		nameZa: "Name (Z-A)",
-		authorAz: "Author (A-Z)",
-		authorZa: "Author (Z-A)",
-	} as const;
-	const LBSOSEntries: [keyof typeof LibraryBookSortOrder, string][] =
-		Object.entries(LibraryBookSortOrder) as [
-			keyof typeof LibraryBookSortOrder,
-			string,
-		][];
-
-	const mdBreakpoint = useBreakpoint("md");
-	const viewControls = [
-		{
-			value: "covers",
-			label: (
-				<Center style={{ gap: 4 }}>
-					<F7SquareGrid2x2 />
-					{mdBreakpoint && <span>Covers</span>}
-				</Center>
-			),
-		},
-		{
-			value: "list",
-			label: (
-				<Center style={{ gap: 4 }}>
-					<F7ListBullet />
-					{mdBreakpoint && <span>List</span>}
-				</Center>
-			),
-		},
-	];
-
-	return (
-		<Flex
-			mih={50}
-			gap="md"
-			miw={100}
-			justify="flex-start"
-			align="center"
-			direction="row"
-			wrap="wrap"
-		>
-			<TextInput
-				miw="32ch"
-				placeholder="Search book titles and authors"
-				radius="md"
-				size="md"
-				styles={{
-					input: {
-						backgroundColor: "var(--ctd-control-bg)",
-						borderColor: "var(--ctd-border)",
-						color: "var(--ctd-control-text)",
-					},
-				}}
-				{...form.getInputProps("query")}
-			/>
-			<Select
-				placeholder="Sort Order"
-				allowDeselect={false}
-				w={180}
-				radius="md"
-				size="md"
-				styles={{
-					input: {
-						backgroundColor: "var(--ctd-control-bg)",
-						borderColor: "var(--ctd-border)",
-						color: "var(--ctd-control-text)",
-					},
-					dropdown: {
-						backgroundColor: "var(--ctd-surface-strong)",
-						borderColor: "var(--ctd-border)",
-					},
-				}}
-				data={LBSOSEntries.map(([key]) => ({
-					value: key,
-					label: LibraryBookSortOrderStrings[key],
-				}))}
-				{...form.getInputProps("sortOrder")}
-			/>
-
-			<SegmentedControl
-				radius="md"
-				size="md"
-				data={viewControls}
-				styles={{
-					root: {
-						backgroundColor: "var(--ctd-segmented-root-bg)",
-						border: "1px solid var(--ctd-border)",
-					},
-					indicator: {
-						background: "var(--ctd-segmented-indicator-bg)",
-						boxShadow: "var(--ctd-shadow-soft)",
-					},
-					label: {
-						color: "var(--ctd-segmented-label)",
-						fontWeight: 600,
-					},
-					control: {
-						transition: "background-color 120ms ease",
-					},
-				}}
-				{...form.getInputProps("view")}
-			/>
-
-			<Switch
-				label="Hide read"
-				color="accent"
-				styles={{
-					label: {
-						fontWeight: 600,
-						color: "var(--ctd-ink-soft)",
-					},
-					track: {
-						borderColor: "var(--ctd-border-strong)",
-						backgroundColor: "var(--ctd-control-bg)",
-					},
-					thumb: {
-						borderColor: "var(--ctd-border-strong)",
-					},
-				}}
-				{...form.getInputProps("hideRead")}
-			/>
-		</Flex>
-	);
-}
-
-function Header({
-	form,
-	viewBookCount,
-	totalBookCount,
-}: {
-	form: BookViewForm;
-	viewBookCount: number;
-	totalBookCount: number;
-}) {
-	return (
-		<Stack
-			gap="xs"
-			p="md"
-			pb="sm"
-			style={{
-				borderBottom: "1px solid var(--ctd-border)",
-			}}
-		>
-			<Title order={3} mb={2}>
-				Your Library
-			</Title>
-			<FilterControls form={form} />
-			<Text c="dimmed" fw={500}>
-				Showing {viewBookCount} of {totalBookCount} books
-			</Text>
-		</Stack>
-	);
-}
 
 const BookDetails = ({ book }: { book: LibraryBook }) => {
 	const platform = usePlatform();
@@ -564,14 +365,14 @@ export interface BookViewOptions {
 
 const filterBooksByQuery = (
 	books: LibraryBook[],
-	formValues: BookViewForm["values"],
+	{ query, hideRead }: { query: string; hideRead: boolean },
 ) => {
-	const lowerQuery = formValues.query.toLowerCase();
+	const lowerQuery = query.toLowerCase();
 	return books
 		.filter(
 			({ title, author_list }) =>
 				title.toLowerCase().includes(lowerQuery) ||
 				author_list.some(({ name }) => name.toLowerCase().includes(lowerQuery)),
 		)
-		.filter((book) => (formValues.hideRead ? !book.is_read : true));
+		.filter((book) => (hideRead ? !book.is_read : true));
 };

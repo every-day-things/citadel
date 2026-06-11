@@ -4,15 +4,11 @@ import { useHardcoverBookActions } from "@/lib/hooks/use-hardcover-book-actions"
 import {
 	ActionIcon,
 	Alert,
-	Badge,
-	Box,
 	Button,
-	Card,
 	Group,
 	Image,
 	Loader,
 	Modal,
-	Paper,
 	ScrollArea,
 	Stack,
 	Switch,
@@ -20,9 +16,11 @@ import {
 	TextInput,
 	Title,
 	Tooltip,
+	UnstyledButton,
 } from "@mantine/core";
 import { Form, useForm } from "@mantine/form";
 import { RichTextEditor } from "@mantine/tiptap";
+import { Link as RouterLink } from "@tanstack/react-router";
 import { Link } from "@tiptap/extension-link";
 import { useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -38,6 +36,25 @@ const richTextEditorClassNames = {
 	controlsGroup: styles.editorControlsGroup,
 	control: styles.editorControl,
 	controlIcon: styles.editorControlIcon,
+} as const;
+
+const quietInputStyles = {
+	label: {
+		fontWeight: 600,
+		color: "var(--ctd-ink-soft)",
+	},
+	input: {
+		backgroundColor: "var(--ctd-control-bg)",
+		borderColor: "var(--ctd-border)",
+		color: "var(--ctd-control-text)",
+	},
+} as const;
+
+const quietLabelStyles = {
+	label: {
+		fontWeight: 600,
+		color: "var(--ctd-ink-soft)",
+	},
 } as const;
 
 interface BookPageProps {
@@ -67,26 +84,34 @@ export const BookPage = ({
 	onReloadBooks,
 }: BookPageProps) => {
 	return (
-		<Stack h={"100%"} className={styles.page}>
-			<Title size="md" className={styles.pageTitle}>
-				<Text fw={900} component="span">
-					Editing book info
-				</Text>{" "}
-				– {book.title}
-			</Title>
-			<EditBookForm
-				allAuthorList={allAuthorList}
-				allTagList={allTagList}
-				onCreateAuthor={onCreateAuthor}
-				book={book}
-				onSave={onSave}
-				onDeleteIdentifier={onDeleteIdentifier}
-				onReloadBooks={onReloadBooks}
-				onUpsertIdentifier={onUpsertIdentifier}
-			/>
-		</Stack>
+		<EditBookForm
+			allAuthorList={allAuthorList}
+			allTagList={allTagList}
+			onCreateAuthor={onCreateAuthor}
+			book={book}
+			onSave={onSave}
+			onDeleteIdentifier={onDeleteIdentifier}
+			onReloadBooks={onReloadBooks}
+			onUpsertIdentifier={onUpsertIdentifier}
+		/>
 	);
 };
+
+const BackChevron = () => (
+	<svg
+		width="14"
+		height="14"
+		viewBox="0 0 24 24"
+		fill="none"
+		stroke="currentColor"
+		strokeWidth="2.5"
+		strokeLinecap="round"
+		strokeLinejoin="round"
+		aria-hidden="true"
+	>
+		<path d="M15 18l-6-6 6-6" />
+	</svg>
+);
 
 const Formats = ({
 	book,
@@ -95,20 +120,20 @@ const Formats = ({
 }: { book: LibraryBook } & HTMLProps<HTMLDivElement>) => {
 	return (
 		<div style={style} {...props}>
-			<Text size="xl">Formats</Text>
-			<ul>
+			<Text className={styles.sectionLabel}>Formats</Text>
+			<ul className={styles.formatList}>
 				{book.file_list.map((file) => {
 					if ("Local" in file) {
 						return (
 							<li key={file.Local.mime_type}>
-								<Text size="md">{file.Local.mime_type}</Text>
+								<Text size="sm">{file.Local.mime_type}</Text>
 							</li>
 						);
 					}
 
 					return (
 						<li key={file.Remote.url}>
-							<Text size="md">{file.Remote.url}</Text>
+							<Text size="sm">{file.Remote.url}</Text>
 						</li>
 					);
 				})}
@@ -131,10 +156,6 @@ const formValuesFromBook = (book: LibraryBook) => ({
 	isRead: book.is_read,
 	isEditingDescription: false,
 });
-
-// How much an element has to be offset vertically to account for the lack of a
-// text label.
-const LABEL_OFFSET_MARGIN = "22px";
 
 const EditBookForm = ({
 	allAuthorList,
@@ -160,18 +181,6 @@ const EditBookForm = ({
 		value: string,
 	) => Promise<void>;
 }) => {
-	const warmInputStyles = {
-		label: {
-			fontWeight: 600,
-			color: "var(--ctd-ink-soft)",
-		},
-		input: {
-			backgroundColor: "var(--ctd-control-bg)",
-			borderColor: "var(--ctd-border)",
-			color: "var(--ctd-control-text)",
-		},
-	};
-
 	const initialValues = useMemo(() => {
 		return formValuesFromBook(book);
 	}, [book]);
@@ -236,9 +245,12 @@ const EditBookForm = ({
 		}
 	}, [editor, form.values.description, form.values.isEditingDescription]);
 
+	const hasChanges = form.isDirty() && form.isTouched();
+
 	return (
 		<Form
 			form={form}
+			className={styles.page}
 			onSubmit={safeAsyncEventHandler(async () => {
 				const authorIdsFromName = form.values.authorList.map(
 					(authorName) =>
@@ -264,238 +276,206 @@ const EditBookForm = ({
 				form.resetDirty();
 				form.resetTouched();
 			})}
-			style={{
-				// Additional `flex: 1` on the form prevents the element from
-				// overflowing when a second+ author is selected
-				display: "grid",
-				gridTemplateColumns: "0.3fr 1.8fr",
-				gridTemplateRows: "1.4fr 1.4fr",
-				gridTemplateAreas: `"Cover BookInfo"
-				 "Format BookInfo"`,
-				gap: "0.8rem 1rem",
-				height: "100%",
-			}}
 		>
-			<div style={{ gridArea: "Cover" }} className={styles.coverColumn}>
-				<Stack>
+			<header className={styles.pageHeader}>
+				<Group gap={4} wrap="nowrap" className={styles.headerLead}>
+					<Tooltip label="Back to library">
+						<RouterLink
+							to="/"
+							aria-label="Back to library"
+							className={styles.backLink}
+						>
+							<ActionIcon
+								component="span"
+								variant="subtle"
+								color="gray"
+								size="sm"
+							>
+								<BackChevron />
+							</ActionIcon>
+						</RouterLink>
+					</Tooltip>
+					<Title order={3} lineClamp={1} className={styles.pageTitle}>
+						{book.title}
+					</Title>
+				</Group>
+				<Group gap="xs" wrap="nowrap">
+					{hasChanges && (
+						<Button variant="subtle" onClick={() => form.reset()}>
+							Revert
+						</Button>
+					)}
+					<Button type="submit" disabled={!hasChanges}>
+						Save
+					</Button>
+				</Group>
+			</header>
+			{hc.hardcoverMessage && (
+				<Alert
+					className={styles.notice}
+					color={hc.hardcoverMessage.type === "success" ? "green" : "red"}
+					onClose={() => hc.setHardcoverMessage(null)}
+					withCloseButton
+				>
+					{hc.hardcoverMessage.text}
+				</Alert>
+			)}
+			<div className={styles.layout}>
+				<Stack gap="sm" className={styles.sideColumn}>
 					<Cover book={book} />
 					<Switch
 						label="Finished"
-						styles={{
-							label: {
-								fontWeight: 600,
-								color: "var(--ctd-ink-soft)",
-							},
-						}}
+						styles={quietLabelStyles}
 						{...form.getInputProps("isRead", { type: "checkbox" })}
 					/>
+					<Formats book={book} className={styles.sideSection} />
 				</Stack>
-			</div>
-			<Formats
-				book={book}
-				style={{ gridArea: "Format" }}
-				className={styles.formatPanel}
-			/>
-			<Group
-				align="flex-start"
-				preventGrowOverflow
-				style={{ gridArea: "BookInfo" }}
-				className={styles.bookInfoPanel}
-			>
-				<Stack flex={1}>
-					<Group flex={1} justify="space-between">
-						<Text size="xl" p="1" h="36" className={styles.sectionTitle}>
-							Book info
-						</Text>
-						{form.isDirty() && form.isTouched() && (
-							<Group justify="space-between">
+				<div className={styles.formColumn}>
+					<section className={styles.section}>
+						<Group gap="md" align="flex-start">
+							<TextInput
+								label="Title"
+								flex={2}
+								styles={quietInputStyles}
+								{...form.getInputProps("title")}
+							/>
+							<TextInput
+								label="Sort title"
+								flex={1}
+								styles={quietInputStyles}
+								{...form.getInputProps("sortTitle")}
+							/>
+						</Group>
+					</section>
+					<section className={styles.section}>
+						<Stack gap="sm">
+							<MultiSelectCreatable
+								label="Authors"
+								placeholder="Search or add author"
+								selectOptions={allAuthorNames}
+								onCreateSelectOption={(name) => void createAuthor(name)}
+								{...form.getInputProps("authorList")}
+							/>
+							<MultiSelectCreatable
+								label="Tags"
+								placeholder="Search or add tag"
+								selectOptions={tagOptions}
+								{...form.getInputProps("tagList")}
+							/>
+						</Stack>
+					</section>
+					<section className={styles.section}>
+						<Text className={styles.sectionLabel}>Identifiers</Text>
+						<Stack gap="xs" className={styles.sectionBody}>
+							{form.values.identifierList.map(({ label, id }, index) => (
+								<Group key={id} gap="xs" align="flex-end" wrap="nowrap">
+									<TextInput
+										label={label.toUpperCase()}
+										flex={1}
+										styles={quietInputStyles}
+										{...form.getInputProps(`identifierList.${index}.value`)}
+										onBlur={(event) => {
+											onUpsertIdentifier(
+												book.id,
+												id,
+												label,
+												event.target.value,
+											).catch(console.error);
+										}}
+									/>
+									{hc.hardcoverApiKey && label.toLowerCase() === "isbn" && (
+										<Tooltip label="Look up metadata">
+											<ActionIcon
+												variant="subtle"
+												color="gray"
+												size="input-sm"
+												onClick={() => void hc.fetchFromHardcover()}
+												loading={hc.isFetchingFromHardcover}
+											>
+												↓
+											</ActionIcon>
+										</Tooltip>
+									)}
+									{label.toLowerCase() === "hardcover" && (
+										<Tooltip label="View on Hardcover">
+											<ActionIcon
+												variant="subtle"
+												color="gray"
+												size="input-sm"
+												onClick={() => void hc.openInHardcover()}
+											>
+												↗
+											</ActionIcon>
+										</Tooltip>
+									)}
+									<Tooltip label="Remove identifier">
+										<ActionIcon
+											variant="subtle"
+											color="red"
+											size="input-sm"
+											onClick={() => {
+												onDeleteIdentifier(book.id, id).catch(console.error);
+											}}
+										>
+											×
+										</ActionIcon>
+									</Tooltip>
+								</Group>
+							))}
+							<Group gap="xs" align="flex-end" wrap="nowrap">
+								<TextInput
+									label="New identifier"
+									placeholder="ISBN"
+									styles={quietInputStyles}
+									value={newBookIdentifierLabel}
+									onChange={(event) =>
+										setNewBookIdentifierLabel(event.target.value)
+									}
+								/>
 								<Button
-									variant="subtle"
-									onClick={() => form.reset()}
-									color="red"
-								>
-									Clear
-								</Button>
-								<Button type="submit" component="button">
-									Save
-								</Button>
-							</Group>
-						)}
-					</Group>
-					<Group flex={1}>
-						<TextInput
-							label="Title"
-							flex={1}
-							styles={warmInputStyles}
-							{...form.getInputProps("title")}
-						/>
-						<ActionIcon variant="outline" mt={LABEL_OFFSET_MARGIN}>
-							→
-						</ActionIcon>
-						<TextInput
-							label="Sort title"
-							styles={warmInputStyles}
-							{...form.getInputProps("sortTitle")}
-							flex={1}
-						/>
-					</Group>
-					<MultiSelectCreatable
-						label="Authors"
-						placeholder="Search or add author"
-						selectOptions={allAuthorNames}
-						onCreateSelectOption={(name) => void createAuthor(name)}
-						{...form.getInputProps("authorList")}
-					/>
-					<MultiSelectCreatable
-						label="Tags"
-						placeholder="Search or add tag"
-						selectOptions={tagOptions}
-						{...form.getInputProps("tagList")}
-					/>
-					<Group flex={1}>
-						{form.values.identifierList.length > 0 && (
-							<Group flex={1}>
-								<Box
-									style={{
-										width: "100%",
-										border: "1px solid var(--ctd-border)",
-										borderRadius: "8px",
-										padding: "0.75rem",
-										backgroundColor: "var(--ctd-control-bg-strong)",
+									variant="default"
+									onClick={() => {
+										onUpsertIdentifier(
+											book.id,
+											null,
+											newBookIdentifierLabel,
+											"",
+										)
+											.then(() => setNewBookIdentifierLabel(""))
+											.catch(console.error);
 									}}
 								>
-									<Text
-										fw={700}
-										mb="xs"
-										className={styles.sectionTitle}
-										style={{ fontSize: "0.95rem" }}
-									>
-										Identifiers
-									</Text>
-									{form.values.identifierList.map(({ label, id }, index) => (
-										<Group key={id} flex={1} align="center">
-											<TextInput
-												flex={"15ch"}
-												label={label.toUpperCase()}
-												styles={warmInputStyles}
-												{...form.getInputProps(`identifierList.${index}.value`)}
-												onBlur={(event) => {
-													onUpsertIdentifier(
-														book.id,
-														id,
-														label,
-														event.target.value,
-													).catch(console.error);
-												}}
-											/>
-											{hc.hardcoverApiKey && label.toLowerCase() === "isbn" && (
-												<Tooltip label="Look up metadata">
-													<ActionIcon
-														variant="subtle"
-														onClick={() => void hc.fetchFromHardcover()}
-														loading={hc.isFetchingFromHardcover}
-														mt={LABEL_OFFSET_MARGIN}
-													>
-														↓
-													</ActionIcon>
-												</Tooltip>
-											)}
-											{label.toLowerCase() === "hardcover" && (
-												<Tooltip label="View on Hardcover">
-													<ActionIcon
-														variant="subtle"
-														onClick={() => void hc.openInHardcover()}
-														mt={LABEL_OFFSET_MARGIN}
-													>
-														↗
-													</ActionIcon>
-												</Tooltip>
-											)}
-											<ActionIcon
-												variant="outline"
-												color="red"
-												onClick={() => {
-													onDeleteIdentifier(book.id, id).catch(console.error);
-												}}
-												mt={LABEL_OFFSET_MARGIN}
-											>
-												×
-											</ActionIcon>
-										</Group>
-									))}
-									<hr style={{ borderColor: "var(--ctd-border)" }} />
-									<Group>
-										<TextInput
-											label="Identifier label"
-											placeholder="ISBN"
-											styles={warmInputStyles}
-											value={newBookIdentifierLabel}
-											onChange={(event) =>
-												setNewBookIdentifierLabel(event.target.value)
-											}
-										/>
-										<Button
-											onClick={() => {
-												onUpsertIdentifier(
-													book.id,
-													null,
-													newBookIdentifierLabel,
-													"",
-												)
-													.then(() => setNewBookIdentifierLabel(""))
-													.catch(console.error);
-											}}
-											variant="outline"
-											color="accent"
-											mt={LABEL_OFFSET_MARGIN}
-										>
-											Add identifier
-										</Button>
-									</Group>
-								</Box>
+									Add
+								</Button>
 							</Group>
-						)}
-					</Group>
+						</Stack>
+					</section>
 					{hc.hardcoverApiKey && (
-						<Text
-							size="sm"
-							c="dimmed"
-							td="underline"
-							onClick={() => {
-								const query = form.values.title || "";
-								hc.setSearchQuery(query);
-								hc.setIsSearchModalOpen(true);
-								if (query) {
-									void hc.searchHardcover(query);
-								}
-							}}
-						>
-							Find on Hardcover...
-						</Text>
+						<section className={styles.section}>
+							<Text className={styles.sectionLabel}>Hardcover</Text>
+							<Group className={styles.sectionBody}>
+								<Button
+									variant="default"
+									onClick={() => {
+										const query = form.values.title || "";
+										hc.setSearchQuery(query);
+										hc.setIsSearchModalOpen(true);
+										if (query) {
+											void hc.searchHardcover(query);
+										}
+									}}
+								>
+									Find on Hardcover…
+								</Button>
+							</Group>
+						</section>
 					)}
-					{hc.hardcoverMessage && (
-						<Alert
-							color={hc.hardcoverMessage.type === "success" ? "green" : "red"}
-							onClose={() => hc.setHardcoverMessage(null)}
-							withCloseButton
-						>
-							{hc.hardcoverMessage.text}
-						</Alert>
-					)}
-					<Paper
-						shadow="sm"
-						p="lg"
-						style={{
-							backgroundColor: "var(--ctd-surface-soft)",
-							border: "1px solid var(--ctd-border)",
-						}}
-					>
-						<Group justify="space-between">
-							<Text size="lg" className={styles.sectionTitle}>
-								Description
-							</Text>
+					<section className={styles.section}>
+						<Group justify="space-between" align="center">
+							<Text className={styles.sectionLabel}>Description</Text>
 							<Button
-								variant="subtle"
+								size="xs"
+								variant="default"
 								onClick={() =>
 									form.setFieldValue(
 										"isEditingDescription",
@@ -508,16 +488,13 @@ const EditBookForm = ({
 						</Group>
 
 						{form.values.isEditingDescription ? (
-							<Box mt="sm" className={styles.richTextEditorContainer}>
-								<Text className={styles.editorHint}>
-									Type your description here. Use the formatting tools above.
-								</Text>
+							<div className={styles.sectionBody}>
 								<RichTextEditor
 									editor={editor}
 									className={styles.editorWrapper}
 									classNames={richTextEditorClassNames}
 								>
-									<RichTextEditor.Toolbar sticky stickyOffset={60}>
+									<RichTextEditor.Toolbar sticky stickyOffset={44}>
 										<RichTextEditor.ControlsGroup>
 											<RichTextEditor.Bold />
 											<RichTextEditor.Italic />
@@ -544,9 +521,9 @@ const EditBookForm = ({
 
 									<RichTextEditor.Content />
 								</RichTextEditor>
-							</Box>
+							</div>
 						) : (
-							<Box mt="sm">
+							<div className={styles.sectionBody}>
 								{form.values.description ? (
 									<div
 										className={styles.descriptionHtml}
@@ -556,15 +533,15 @@ const EditBookForm = ({
 										}}
 									/>
 								) : (
-									<Text c="dimmed" fs="italic">
-										No description available. Click &quot;Edit&quot; to add one.
+									<Text size="sm" c="dimmed">
+										No description. Choose Edit to add one.
 									</Text>
 								)}
-							</Box>
+							</div>
 						)}
-					</Paper>
-				</Stack>
-			</Group>
+					</section>
+				</div>
+			</div>
 
 			{/* Hardcover Search Modal */}
 			<Modal
@@ -573,10 +550,11 @@ const EditBookForm = ({
 				title="Find on Hardcover"
 				size="xl"
 			>
-				<Stack gap="md">
-					<Group>
+				<Stack gap="sm">
+					<Group gap="xs">
 						<TextInput
-							placeholder="Search by title or author..."
+							placeholder="Search by title or author…"
+							styles={quietInputStyles}
 							value={hc.searchQuery}
 							onChange={(event) => hc.setSearchQuery(event.target.value)}
 							onKeyDown={(event) => {
@@ -587,8 +565,6 @@ const EditBookForm = ({
 							style={{ flex: 1 }}
 						/>
 						<Button
-							variant="light"
-							size="sm"
 							onClick={() => void hc.searchHardcover()}
 							loading={hc.isSearching}
 						>
@@ -596,9 +572,9 @@ const EditBookForm = ({
 						</Button>
 					</Group>
 					<ScrollArea style={{ height: "55vh" }}>
-						<Stack gap="md">
+						<Stack gap={0}>
 							{hc.searchResults.length === 0 ? (
-								<Text c="dimmed" ta="center">
+								<Text c="dimmed" ta="center" size="sm" py="md">
 									{hc.isSearching ? (
 										<Loader size="sm" />
 									) : hc.searchQuery ? (
@@ -609,52 +585,43 @@ const EditBookForm = ({
 								</Text>
 							) : (
 								hc.searchResults.map((result) => (
-									<Card
+									<UnstyledButton
 										key={result.hardcover_id}
-										shadow="sm"
-										padding="lg"
+										className={styles.searchResult}
 										onClick={() => void hc.selectSearchResult(result)}
 									>
-										<Group align="flex-start" gap="md">
+										<Group align="flex-start" gap="md" wrap="nowrap">
 											{result.image_url && (
 												<Image
 													src={result.image_url}
 													alt={result.title}
-													width={100}
-													height={150}
+													w={60}
+													h={90}
 													fit="contain"
 												/>
 											)}
-											<Stack flex={1} gap="xs">
-												<Text size="lg" fw={700}>
+											<Stack flex={1} gap={4}>
+												<Text size="sm" fw={600}>
 													{result.title}
 												</Text>
 												{result.authors && result.authors.length > 0 && (
-													<Group gap="xs">
-														{result.authors.map((author) => (
-															<Badge key={author} variant="light">
-																{author}
-															</Badge>
-														))}
-													</Group>
+													<Text size="xs" c="dimmed">
+														{result.authors.join(", ")}
+													</Text>
 												)}
 												{result.release_year && (
-													<Text size="sm" c="dimmed">
-														Published: {result.release_year}
+													<Text size="xs" c="dimmed">
+														Published {result.release_year}
 													</Text>
 												)}
 												{result.description && (
-													<Text
-														size="sm"
-														lineClamp={3}
-														style={{ whiteSpace: "pre-wrap" }}
-													>
+													<Text size="xs" c="dimmed" lineClamp={2}>
 														{result.description.replace(/<[^>]*>/g, "")}
 													</Text>
 												)}
 											</Stack>
 										</Group>
-									</Card>
+									</UnstyledButton>
 								))
 							)}
 						</Stack>
