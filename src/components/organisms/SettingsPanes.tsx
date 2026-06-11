@@ -5,22 +5,14 @@ import { F7Gear } from "@/components/icons/F7Gear";
 import { FluentLibraryFilled } from "@/components/icons/FluentLibraryFilled";
 import { SwitchLibraryForm } from "@/components/molecules/SwitchLibraryForm";
 import classes from "@/components/organisms/SettingsPanes.module.css";
+import { Button, SegmentedControl, Switch, TextInput } from "@/components/ui";
 import { useAppUpdates } from "@/lib/hooks/use-app-updates";
 import { none, some } from "@/lib/option";
 import { usePlatform } from "@/lib/platform/context";
 import { createLibrary, setActiveLibrary } from "@/stores/settings/actions";
 import { useSettings } from "@/stores/settings/store";
-import {
-	Alert,
-	Button,
-	Group,
-	SegmentedControl,
-	Switch,
-	TextInput,
-	UnstyledButton,
-	useMantineColorScheme,
-} from "@mantine/core";
-import { useCallback, useState } from "react";
+import { useMantineColorScheme } from "@mantine/core";
+import { useCallback, useId, useState } from "react";
 
 const SETTINGS_TABS = ["general", "library", "integrations"] as const;
 type SettingsTab = (typeof SETTINGS_TABS)[number];
@@ -46,14 +38,15 @@ const TAB_META: Record<
 interface SettingsPanesProps {
 	/**
 	 * Called when a pane wants to dismiss settings, e.g. after switching
-	 * libraries. In the settings window this closes the window.
+	 * libraries. In the settings window this hides the window.
 	 */
 	onRequestClose?: () => void;
 }
 
 /**
  * The System Settings style rail + content layout, rendered full-window by
- * the `/settings` route.
+ * the `/settings` route. The window's native title bar already says
+ * "Settings", so the pane renders no title bar of its own.
  */
 export const SettingsPanes = ({ onRequestClose }: SettingsPanesProps) => {
 	const [activeTab, setActiveTab] = useState<SettingsTab>("general");
@@ -65,17 +58,17 @@ export const SettingsPanes = ({ onRequestClose }: SettingsPanesProps) => {
 	return (
 		<div className={classes.pane}>
 			<nav className={classes.nav} aria-label="Settings sections">
-				<h2 className={classes.navHeading}>Settings</h2>
 				{SETTINGS_TABS.map((tab) => (
-					<UnstyledButton
+					<button
 						key={tab}
+						type="button"
 						className={classes.navItem}
 						aria-current={tab === activeTab ? "true" : undefined}
 						onClick={() => setActiveTab(tab)}
 					>
 						{TAB_META[tab].icon(classes.navItemIcon)}
 						{TAB_META[tab].label}
-					</UnstyledButton>
+					</button>
 				))}
 			</nav>
 			<div className={classes.content}>
@@ -96,13 +89,26 @@ interface SettingsRowProps {
 	label: string;
 	description?: string;
 	control: ReactNode;
+	/** When set, the row label becomes a <label> for that control id. */
+	htmlFor?: string;
 }
 
-const SettingsRow = ({ label, description, control }: SettingsRowProps) => {
+const SettingsRow = ({
+	label,
+	description,
+	control,
+	htmlFor,
+}: SettingsRowProps) => {
 	return (
 		<div className={classes.row}>
 			<div className={classes.rowLabels}>
-				<span className={classes.rowLabel}>{label}</span>
+				{htmlFor ? (
+					<label className={classes.rowLabel} htmlFor={htmlFor}>
+						{label}
+					</label>
+				) : (
+					<span className={classes.rowLabel}>{label}</span>
+				)}
 				{description && (
 					<span className={classes.rowDescription}>{description}</span>
 				)}
@@ -122,6 +128,7 @@ const GeneralTab = () => {
 	const setAutoUpdateCheckingEnabled = useSettings(
 		(state) => state.setAutoUpdateCheckingEnabled,
 	);
+	const autoUpdateSwitchId = useId();
 
 	const platform = usePlatform();
 	const supportsAutoUpdates = platform.capabilities.supportsAutoUpdates;
@@ -147,20 +154,14 @@ const GeneralTab = () => {
 					label="Appearance"
 					control={
 						<SegmentedControl
-							size="xs"
-							radius="sm"
+							aria-label="Appearance"
 							value={theme}
 							onChange={applyTheme}
-							data={[
+							items={[
 								{ value: "auto", label: "Auto" },
 								{ value: "light", label: "Light" },
 								{ value: "dark", label: "Dark" },
 							]}
-							classNames={{
-								root: classes.segmentedRoot,
-								indicator: classes.segmentedIndicator,
-								label: classes.segmentedLabel,
-							}}
 						/>
 					}
 				/>
@@ -168,14 +169,14 @@ const GeneralTab = () => {
 			<div className={classes.group}>
 				<SettingsRow
 					label="Check for updates automatically"
+					htmlFor={autoUpdateSwitchId}
 					control={
 						<Switch
-							size="sm"
+							id={autoUpdateSwitchId}
 							checked={autoUpdateCheckingEnabled}
 							disabled={!supportsAutoUpdates}
-							aria-label="Check for updates automatically"
-							onChange={(event) =>
-								void setAutoUpdateCheckingEnabled(event.currentTarget.checked)
+							onCheckedChange={(checked) =>
+								void setAutoUpdateCheckingEnabled(checked)
 							}
 						/>
 					}
@@ -189,13 +190,12 @@ const GeneralTab = () => {
 					}
 					control={
 						<Button
-							size="xs"
+							size="sm"
 							variant="default"
-							loading={isCheckingForUpdates}
-							disabled={!supportsAutoUpdates}
+							disabled={!supportsAutoUpdates || isCheckingForUpdates}
 							onClick={() => void checkForUpdatesNow(supportsAutoUpdates)}
 						>
-							Check for Updates…
+							{isCheckingForUpdates ? "Checking…" : "Check for Updates…"}
 						</Button>
 					}
 				/>
@@ -325,8 +325,7 @@ const IntegrationsTab = () => {
 						description="Found in your Hardcover account settings."
 						control={
 							<TextInput
-								size="xs"
-								w={220}
+								className={classes.keyInput}
 								type="password"
 								placeholder="API key"
 								aria-label="Hardcover API key"
@@ -336,43 +335,44 @@ const IntegrationsTab = () => {
 						}
 					/>
 					<div className={classes.row}>
-						<Group gap="xs" ml="auto">
+						<div className={classes.rowActions}>
 							<Button
-								size="xs"
+								size="sm"
 								variant="default"
-								disabled={!apiKeyInput}
+								disabled={!apiKeyInput || isTesting}
 								onClick={() => void handleClear()}
 							>
 								Clear
 							</Button>
 							<Button
-								size="xs"
+								size="sm"
 								variant="default"
-								loading={isTesting}
-								disabled={!apiKeyInput}
+								disabled={!apiKeyInput || isTesting}
 								onClick={() => void handleTest()}
 							>
-								Test Connection
+								{isTesting ? "Testing…" : "Test Connection"}
 							</Button>
 							<Button
-								size="xs"
-								disabled={!apiKeyInput}
+								size="sm"
+								variant="primary"
+								disabled={!apiKeyInput || isTesting}
 								onClick={() => void handleSave()}
 							>
 								Save
 							</Button>
-						</Group>
+						</div>
 					</div>
 				</div>
+				{testResult && (
+					<p
+						className={classes.inlineNote}
+						data-tone={testResult.success ? "ok" : "error"}
+						role="status"
+					>
+						{testResult.message}
+					</p>
+				)}
 			</div>
-			{testResult && (
-				<Alert
-					color={testResult.success ? "green" : "red"}
-					title={testResult.success ? "Success" : "Error"}
-				>
-					{testResult.message}
-				</Alert>
-			)}
 		</div>
 	);
 };

@@ -96,8 +96,11 @@ fn run_tauri_backend() -> std::io::Result<()> {
                         utils::config::WindowEffectsConfig,
                         window::{Effect, EffectState},
                     };
+                    // Popover is noticeably clearer than Sidebar (which
+                    // smears backdrop color into a uniform gray); the user
+                    // wants desktop color to actually read through.
                     if let Err(err) = main_window.set_effects(WindowEffectsConfig {
-                        effects: vec![Effect::Sidebar],
+                        effects: vec![Effect::Popover],
                         state: Some(EffectState::FollowsWindowActiveState),
                         radius: None,
                         color: None,

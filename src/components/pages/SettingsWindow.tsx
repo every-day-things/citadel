@@ -27,16 +27,40 @@ export const SettingsWindow = () => {
 
 	// The window is created hidden (menu.rs); the main window's reveal path
 	// (showMainWindow after library init) never runs on this route, so this
-	// window must show itself once React has painted.
+	// window must show itself. Two rAF ticks push the reveal past the first
+	// real paint so no white or unstyled frame is ever visible.
 	useEffect(() => {
-		if (isTauri()) {
-			void getCurrentWindow().show();
-		}
+		if (!isTauri()) return;
+		let cancelled = false;
+		const outer = requestAnimationFrame(() => {
+			requestAnimationFrame(() => {
+				if (cancelled) return;
+				const window = getCurrentWindow();
+				void window.show().then(() => window.setFocus());
+			});
+		});
+		return () => {
+			cancelled = true;
+			cancelAnimationFrame(outer);
+		};
+	}, []);
+
+	// Hide on close instead of destroying the webview, so reopening from the
+	// menu is instant (menu.rs shows + focuses the existing window).
+	useEffect(() => {
+		if (!isTauri()) return;
+		const unlisten = getCurrentWindow().onCloseRequested((event) => {
+			event.preventDefault();
+			void getCurrentWindow().hide();
+		});
+		return () => {
+			void unlisten.then((fn) => fn());
+		};
 	}, []);
 
 	const requestClose = useCallback(() => {
 		if (isTauri()) {
-			void getCurrentWindow().close();
+			void getCurrentWindow().hide();
 		} else {
 			router.history.back();
 		}

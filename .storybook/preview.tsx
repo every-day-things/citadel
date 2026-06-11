@@ -11,7 +11,6 @@ import { theme } from "../src/lib/theme";
 
 import "../src/styles.css";
 import "@mantine/core/styles.layer.css";
-import "mantine-datatable/styles.css";
 
 const STORYBOOK_IFRAME_PADDING_OFFSET = "36px";
 const FULL_HEIGHT_MINUS_SB_PADDING = `calc(100svh - ${STORYBOOK_IFRAME_PADDING_OFFSET}`;

@@ -1,7 +1,7 @@
 import React, { useCallback } from "react";
 import type { LibraryBook } from "@/bindings";
-import { Center } from "@mantine/core";
 import { BookCover } from "./BookCover";
+import classes from "./BookCard.module.css";
 
 type BookAction = (bookId: LibraryBook["id"]) => void;
 
@@ -23,8 +23,8 @@ export const BookCard = React.memo(function BookCard({
 	}, [onViewBook, book]);
 
 	return (
-		<Center>
-			<BookCover book={book} onPointerDown={onCoverTouch} />
-		</Center>
+		<div className={classes.cell}>
+			<BookCover book={book} fluid onPointerDown={onCoverTouch} />
+		</div>
 	);
 });

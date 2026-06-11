@@ -19,19 +19,33 @@ const spineBackground = `
   var(--ctd-cover-spine-bg)
 `;
 
+/**
+ * Cap on a fluid cover's height (the grid's "shelf" height). Real covers keep
+ * their aspect ratio inside a box of `100% of the cell × FLUID_MAX_HEIGHT`.
+ */
+const FLUID_MAX_HEIGHT_PX = 230;
+// Placeholder art keeps the classic 133:200 book proportions.
+const PLACEHOLDER_RATIO = 133 / 200;
+
 const BookCoverUsingImage = ({
 	book,
 	disableFade,
+	fluid,
 	...props
 }: {
 	book: LibraryBookWithCoverImage;
 	disableFade: boolean;
+	fluid: boolean;
 } & HTMLAttributes<HTMLDivElement>) => {
 	const [isHovering, setIsHovering] = useState(false);
 	return (
 		<div
 			style={{
-				width: "133px",
+				// In fluid mode the wrapper shrink-wraps the constrained image
+				// so the radius/shadow/spine hug the cover exactly.
+				...(fluid
+					? { display: "inline-block", maxWidth: "100%" }
+					: { width: "133px" }),
 				position: "relative",
 				borderRadius: "4px",
 				overflow: "hidden",
@@ -51,8 +65,17 @@ const BookCoverUsingImage = ({
 				src={book.cover_image.url}
 				alt={book.title}
 				style={{
-					width: "133px",
-					height: "auto",
+					...(fluid
+						? {
+								// Fit inside the cell width and the shelf-height cap,
+								// preserving the real cover's aspect ratio (no crop,
+								// no stretch).
+								maxWidth: "100%",
+								maxHeight: `${FLUID_MAX_HEIGHT_PX}px`,
+								width: "auto",
+								height: "auto",
+							}
+						: { width: "133px", height: "auto" }),
 					display: "block",
 				}}
 			/>
@@ -86,10 +109,12 @@ const BookCoverUsingImage = ({
 const BookCoverWithPlaceholder = ({
 	book,
 	disableFade,
+	fluid,
 	...props
 }: {
 	book: LibraryBook;
 	disableFade: boolean;
+	fluid: boolean;
 } & HTMLAttributes<HTMLDivElement>) => {
 	const [isHovering, setIsHovering] = useState(false);
 
@@ -100,9 +125,14 @@ const BookCoverWithPlaceholder = ({
 
 	return (
 		<AspectRatio
-			ratio={9 / 6}
-			h={200}
-			w={133}
+			ratio={fluid ? PLACEHOLDER_RATIO : 9 / 6}
+			h={fluid ? undefined : 200}
+			w={fluid ? "100%" : 133}
+			// Same box as real covers: the 133:200 ratio turns the height cap
+			// into a width cap.
+			maw={
+				fluid ? `${FLUID_MAX_HEIGHT_PX * PLACEHOLDER_RATIO}px` : undefined
+			}
 			onPointerOver={() => {
 				setIsHovering(true);
 			}}
@@ -113,8 +143,8 @@ const BookCoverWithPlaceholder = ({
 			<div
 				{...props}
 				style={{
-					width: "133px",
-					height: "200px",
+					width: fluid ? "100%" : "133px",
+					height: fluid ? "100%" : "200px",
 					display: "grid",
 					gridTemplateAreas: "overlap",
 					borderRadius: "4px",
@@ -189,8 +219,8 @@ const BookCoverWithPlaceholder = ({
 				<div
 					style={{
 						gridArea: "overlap",
-						width: "133px",
-						height: "200px",
+						width: fluid ? "100%" : "133px",
+						height: fluid ? "100%" : "200px",
 						background: spineBackground,
 						pointerEvents: "none",
 						zIndex: 2,
@@ -204,15 +234,26 @@ const BookCoverWithPlaceholder = ({
 export const BookCover = ({
 	book,
 	disableFade = false,
+	fluid = false,
 	...props
 }: {
 	book: LibraryBook;
 	disableFade?: boolean;
+	/**
+	 * Size to the parent (width ≤ 100%, height ≤ ~230px, aspect ratio kept)
+	 * instead of the fixed 133px column used in the details drawer.
+	 */
+	fluid?: boolean;
 } & HTMLAttributes<HTMLDivElement>) => {
 	if (book.cover_image?.url !== undefined) {
 		return (
-			// @ts-expect-error `cover_image` obviously exists
-			<BookCoverUsingImage book={book} disableFade={disableFade} {...props} />
+			<BookCoverUsingImage
+				// @ts-expect-error `cover_image` obviously exists
+				book={book}
+				disableFade={disableFade}
+				fluid={fluid}
+				{...props}
+			/>
 		);
 	}
 
@@ -220,6 +261,7 @@ export const BookCover = ({
 		<BookCoverWithPlaceholder
 			book={book}
 			disableFade={disableFade}
+			fluid={fluid}
 			{...props}
 		/>
 	);

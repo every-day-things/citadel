@@ -1,4 +1,4 @@
-use tauri::{AppHandle, Manager, Runtime, WebviewUrl, WebviewWindowBuilder};
+use tauri::{window::Color, AppHandle, Manager, Runtime, Theme, WebviewUrl, WebviewWindowBuilder};
 
 #[cfg(target_os = "macos")]
 use tauri::{
@@ -124,7 +124,11 @@ pub fn handle_menu_event<R: Runtime>(app: &AppHandle<R>, event: MenuEvent) {
 /// Window options live here (not in tauri.conf.json) so the menu can open the
 /// window even before any frontend has loaded.
 pub fn open_settings_window<R: Runtime>(app: &AppHandle<R>) {
+    // The settings window hides on close instead of destroying itself
+    // (SettingsWindow.tsx intercepts close-requested), so after the first
+    // open this branch makes every reopen instant: show + focus.
     if let Some(window) = app.get_webview_window("settings") {
+        let _ = window.show();
         let _ = window.set_focus();
         return;
     }
@@ -140,11 +144,22 @@ pub fn open_settings_window<R: Runtime>(app: &AppHandle<R>) {
         None => WebviewUrl::App("/settings".into()),
     };
 
+    // Match the webview backing to the app theme (`--ctd-bg` in styles.css)
+    // so nothing white can flash before the frontend's first paint.
+    let background = match app.get_webview_window("main").and_then(|w| w.theme().ok()) {
+        Some(Theme::Dark) => Color(25, 27, 28, 255),
+        _ => Color(244, 243, 241, 255),
+    };
+
+    // Created hidden; the frontend reveals it after its first paint
+    // (SettingsWindow.tsx), so the user never sees an unstyled frame.
     let builder = WebviewWindowBuilder::new(app, "settings", url)
         .title("Settings")
         .inner_size(680.0, 480.0)
         .resizable(false)
         .minimizable(false)
+        .visible(false)
+        .background_color(background)
         .center();
 
     // NOTE: overlay title bar + transparent + sidebar effects left off for

@@ -363,14 +363,28 @@ const AuthorRow = ({
 	).length;
 
 	return (
+		// The whole row links to the library filtered by this author. The hover
+		// background, 40px min-height, and the overlay-link positioning live in
+		// styles.css (.ctd-author-row / .ctd-author-row-link).
 		<div
+			className="ctd-author-row"
 			style={{
 				...AUTHOR_GRID,
 				padding: "6px 24px",
-				minHeight: 32,
 				borderBottom: "1px solid var(--ctd-border)",
 			}}
 		>
+			{/* Real anchor overlaying the row so middle-click / cmd-click /
+			    keyboard all work. The count link and the action icons sit above
+			    it (position: relative + zIndex), so they keep working on their
+			    own without stopPropagation. */}
+			<Link
+				to="/"
+				search={{ search_for_author: author.name }}
+				className="ctd-author-row-link"
+				aria-label={`Show books by ${author.name}`}
+			/>
+
 			<Text size="sm" truncate>
 				{author.name}
 			</Text>
@@ -393,18 +407,24 @@ const AuthorRow = ({
 					search_for_author: author.name,
 				}}
 				component={Link}
-				style={{ justifySelf: "end" }}
+				style={{ justifySelf: "end", position: "relative", zIndex: 1 }}
 			>
 				<Text size="sm" style={{ color: "var(--ctd-link)" }}>
 					{numBooksByAuthor}
 				</Text>
 			</Anchor>
 
-			<Group gap={2} wrap="nowrap" justify="flex-end">
+			<Group
+				gap={2}
+				wrap="nowrap"
+				justify="flex-end"
+				style={{ position: "relative", zIndex: 1 }}
+			>
+				{/* size 24 keeps the edit/delete hit areas comfortably clickable. */}
 				<ActionIcon
 					variant="subtle"
 					color="gray"
-					size="sm"
+					size={24}
 					aria-label={`Edit ${author.name}`}
 					onClick={() => onEditAuthor(author.id)}
 				>
@@ -415,14 +435,14 @@ const AuthorRow = ({
 					<ActionIcon
 						variant="subtle"
 						color="red"
-						size="sm"
+						size={24}
 						aria-label={`Delete ${author.name}`}
 						onClick={() => onDeleteAuthor(author.id)}
 					>
 						<F7Trash />
 					</ActionIcon>
 				) : (
-					<span style={{ width: 22 }} />
+					<span style={{ width: 24 }} />
 				)}
 			</Group>
 		</div>

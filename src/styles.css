@@ -324,3 +324,80 @@ a:any-link {
 	background-color: var(--ctd-surface-strong);
 	border: 1px solid var(--ctd-border);
 }
+
+/* ==========================================================================
+ * Interactivity polish (additive block; keep at the end of this file).
+ * Everything below signals what is clickable: pointer cursors, hover
+ * backgrounds, and larger touch targets. Token blocks above are off limits.
+ * ========================================================================== */
+
+/*
+ * Cursor policy: a deliberate departure from strict AppKit (which keeps the
+ * arrow cursor on controls). The user wants interactivity signaled, so real
+ * interactive elements get the pointer and text fields keep the text beam.
+ * These rules must stay AFTER the `* { cursor: default }` reset earlier in
+ * this file so they win on source order / specificity.
+ */
+a:any-link,
+button:not(:disabled),
+[role="button"],
+label[for],
+select {
+	cursor: pointer;
+}
+
+input[type="text"],
+input[type="search"],
+textarea {
+	cursor: text;
+}
+
+/*
+ * Sidebar nav rows (Sidebar.tsx). Mantine's NavLink hover rule is scheme
+ * gray; we want the chrome hover token instead. The :not([data-active])
+ * guard keeps active rows on --ctd-nav-active-bg (set inline in Sidebar.tsx),
+ * and the extra pseudo-classes outrank Mantine's own :hover rule, which is
+ * loaded after this file.
+ */
+.ctd-nav-link:not([data-active]):hover,
+.ctd-nav-link:not([data-active]):focus-visible {
+	background-color: var(--ctd-nav-hover-bg);
+}
+
+/*
+ * Sidebar settings (gear) button: same hover token as the nav rows. The
+ * class is doubled so this beats Mantine's subtle-variant hover rule
+ * (equal-specificity, later in the cascade) without resorting to !important.
+ */
+.ctd-settings-button.ctd-settings-button:hover {
+	background-color: var(--ctd-nav-hover-bg);
+}
+
+/*
+ * Author rows (Authors.tsx): the whole row is a link to the library filtered
+ * by that author. The row itself only paints hover/focus state; the actual
+ * anchor is an absolutely-positioned overlay (.ctd-author-row-link) so
+ * middle-click and keyboard navigation work, while the count link and the
+ * edit/delete icons sit above it with position: relative + z-index.
+ */
+.ctd-author-row {
+	position: relative;
+	min-height: 40px;
+	transition: background-color 140ms ease-out;
+}
+
+.ctd-author-row:hover,
+.ctd-author-row:focus-within {
+	background-color: var(--ctd-nav-hover-bg);
+}
+
+.ctd-author-row-link {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+}
+
+.ctd-author-row-link:focus-visible {
+	outline: none;
+	box-shadow: inset 0 0 0 3px var(--ctd-focus-ring);
+}

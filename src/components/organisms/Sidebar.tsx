@@ -13,7 +13,7 @@ import {
 } from "@mantine/core";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { isTauri } from "@tauri-apps/api/core";
-import { useCallback, useMemo } from "react";
+import { type CSSProperties, useCallback, useMemo } from "react";
 
 export const Sidebar = () => {
 	const state = useLibraryState();
@@ -106,9 +106,21 @@ const SidebarPure = ({
 	openSettings,
 }: SidebarPureProps) => {
 	const baseTextColor = "var(--ctd-ink-soft)";
-	const hoverBackground = "var(--ctd-nav-hover-bg)";
 	const activeBackground = "var(--ctd-nav-active-bg)";
 	const activeTextColor = "var(--ctd-nav-active-text)";
+
+	// Hover backgrounds live in styles.css (.ctd-nav-link / .ctd-settings-button):
+	// pseudo-class selectors in the Mantine `styles` prop are inert inline styles,
+	// so hover state must come from a real stylesheet. Inactive rows leave
+	// backgroundColor unset so the CSS :hover rule can apply.
+	const navLinkRootStyle = (active: boolean): CSSProperties => ({
+		borderRadius: "0.375rem",
+		padding: "0.4rem 0.65rem",
+		minHeight: 34,
+		transition: "background-color 140ms ease, color 140ms ease",
+		backgroundColor: active ? activeBackground : undefined,
+		color: active ? activeTextColor : baseTextColor,
+	});
 
 	return (
 		<Stack
@@ -145,25 +157,8 @@ const SidebarPure = ({
 						to={path}
 						active={isActive()}
 						variant="subtle"
-						styles={{
-							root: {
-								borderRadius: "0.375rem",
-								padding: "0.4rem 0.65rem",
-								transition: "background-color 140ms ease, color 140ms ease",
-								backgroundColor: isActive() ? activeBackground : "transparent",
-								color: isActive() ? activeTextColor : baseTextColor,
-								"&:hover": {
-									backgroundColor: hoverBackground,
-								},
-								"&[data-active]": {
-									backgroundColor: activeBackground,
-									color: activeTextColor,
-								},
-								"&[data-active]:hover": {
-									backgroundColor: activeBackground,
-								},
-							},
-						}}
+						className="ctd-nav-link"
+						styles={{ root: navLinkRootStyle(isActive()) }}
 					/>
 				))}
 				<NavLink
@@ -172,41 +167,30 @@ const SidebarPure = ({
 					to="/authors"
 					active={currentPathname === "/authors"}
 					variant="subtle"
+					className="ctd-nav-link"
 					styles={{
-						root: {
-							borderRadius: "0.375rem",
-							padding: "0.4rem 0.65rem",
-							transition: "background-color 140ms ease, color 140ms ease",
-							backgroundColor:
-								currentPathname === "/authors"
-									? activeBackground
-									: "transparent",
-							color:
-								currentPathname === "/authors"
-									? activeTextColor
-									: baseTextColor,
-							"&:hover": {
-								backgroundColor: hoverBackground,
-							},
-							"&[data-active]": {
-								backgroundColor: activeBackground,
-								color: activeTextColor,
-							},
-							"&[data-active]:hover": {
-								backgroundColor: activeBackground,
-							},
-						},
+						root: navLinkRootStyle(currentPathname === "/authors"),
 					}}
 				/>
 			</Stack>
 			<Stack>
+				{/* size 28 keeps the gear's hit area comfortably clickable; hover
+				    background comes from .ctd-settings-button in styles.css. */}
 				<ActionIcon
-					color={"text"}
+					variant="subtle"
+					color="gray"
 					aria-label="Settings"
-					size={"sm"}
+					size={28}
+					className="ctd-settings-button"
 					onClick={openSettings}
 				>
-					<F7Gear style={{ color: "var(--mantine-color-text)" }} />
+					{/* F7Gear hardcodes width/height 56; size it to fit the button
+					    (ActionIcon clips overflow). */}
+					<F7Gear
+						width={18}
+						height={18}
+						style={{ color: "var(--mantine-color-text)" }}
+					/>
 				</ActionIcon>
 			</Stack>
 		</Stack>

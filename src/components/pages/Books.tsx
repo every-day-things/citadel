@@ -21,7 +21,6 @@ import { usePlatform } from "@/lib/platform/context";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BookCover } from "../atoms/BookCover";
 import { BookGrid } from "../molecules/BookGrid";
-import { BookTable } from "../molecules/BookTable";
 import { TablerCopy } from "../icons/TablerCopy";
 import { F7Pencil } from "../icons/F7Pencil";
 import { useBooks, useBooksLoading } from "@/stores/library/store";
@@ -45,7 +44,6 @@ const SORT_LABELS: Record<LibraryBookSortOrderKey, string> = {
 export const Books = ({ search_for_author }: BookSearchOptions) => {
 	const query = useLibraryView((s) => s.query);
 	const sortOrder = useLibraryView((s) => s.sortOrder);
-	const view = useLibraryView((s) => s.view);
 	const hideRead = useLibraryView((s) => s.hideRead);
 	const setQuery = useLibraryView((s) => s.setQuery);
 	const setSortOrder = useLibraryView((s) => s.setSortOrder);
@@ -193,19 +191,11 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 				/>
 			</Group>
 			<div style={{ flex: 1 }}>
-				{view === "covers" ? (
-					<BookGrid
-						bookList={sortedBooks}
-						loading={loading}
-						onBookOpen={onBookOpen}
-					/>
-				) : (
-					<BookTable
-						bookList={sortedBooks}
-						loading={loading}
-						onBookOpen={onBookOpen}
-					/>
-				)}
+				<BookGrid
+					bookList={sortedBooks}
+					loading={loading}
+					onBookOpen={onBookOpen}
+				/>
 			</div>
 			<Center
 				py={6}

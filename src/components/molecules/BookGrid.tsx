@@ -1,6 +1,6 @@
 import type { BookView } from "@/BookView";
 import type { LibraryBook } from "@/bindings";
-import { Box, LoadingOverlay, SimpleGrid } from "@mantine/core";
+import { Box, LoadingOverlay } from "@mantine/core";
 import { createContext, useContext, useMemo } from "react";
 import { BookCard } from "../atoms/BookCard";
 
@@ -35,16 +35,23 @@ const BookGridPure = ({
 			}}
 		>
 			<LoadingOverlay visible={loading} />
-			<SimpleGrid
-				cols={{ base: 2, md: 4, lg: 5 }}
-				spacing="lg"
-				verticalSpacing="xl"
-				style={{ alignItems: "end" }}
+			{/*
+			 * Apple Books shelf: uniform flexible columns; each row is as tall
+			 * as its tallest cover and every cell bottom-aligns its book
+			 * (see BookCard.module.css) so the bases sit on one line.
+			 */}
+			<div
+				style={{
+					display: "grid",
+					gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
+					columnGap: 24,
+					rowGap: 32,
+				}}
 			>
 				{books.map((book) => (
 					<BookCard key={book.id} book={book} actions={actions} />
 				))}
-			</SimpleGrid>
+			</div>
 		</Box>
 	);
 };

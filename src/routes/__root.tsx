@@ -1,6 +1,5 @@
 import { F7SidebarLeft } from "@/components/icons/F7SidebarLeft";
 import { AddBookButton } from "@/components/organisms/AddBook";
-import { LibraryToolbarControls } from "@/components/organisms/Toolbar";
 import { Sidebar } from "@/components/organisms/Sidebar";
 import { useNativeThemeSync } from "@/lib/hooks/use-native-theme-sync";
 import { ActionIcon, AppShell, Burger, Group } from "@mantine/core";
@@ -65,7 +64,7 @@ const MainPure = ({
 				<Group
 					h="100%"
 					px="md"
-					pl={"92px"}
+					pl={"110px"}
 					justify="space-between"
 					wrap="nowrap"
 					data-tauri-drag-region
@@ -88,7 +87,6 @@ const MainPure = ({
 						</ActionIcon>
 						<AddBookButton />
 					</Group>
-					<LibraryToolbarControls />
 				</Group>
 			</AppShell.Header>
 

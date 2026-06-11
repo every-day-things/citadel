@@ -14,29 +14,28 @@ export type LibraryBookSortOrderKey = keyof typeof LibraryBookSortOrder;
 export interface LibraryViewState {
 	query: string;
 	sortOrder: LibraryBookSortOrderKey;
-	view: "covers" | "list";
 	hideRead: boolean;
 
 	setQuery: (query: string) => void;
 	setSortOrder: (sortOrder: LibraryBookSortOrderKey) => void;
-	setView: (view: "covers" | "list") => void;
 	setHideRead: (hideRead: boolean) => void;
 }
 
 const loadInitial = (): Pick<
 	LibraryViewState,
-	"query" | "sortOrder" | "view" | "hideRead"
+	"query" | "sortOrder" | "hideRead"
 > => {
 	const defaults = {
 		query: "",
 		sortOrder: "authorAz" as LibraryBookSortOrderKey,
-		view: "covers" as const,
 		hideRead: false,
 	};
 
 	try {
 		const stored = window.localStorage.getItem(PREFS_KEY);
 		if (!stored) return defaults;
+		// Older builds also persisted a `view` ("covers" | "list") key here;
+		// unknown keys are ignored and dropped on the next persist().
 		const parsed = JSON.parse(stored) as Partial<typeof defaults>;
 		return {
 			query: typeof parsed.query === "string" ? parsed.query : defaults.query,
@@ -44,10 +43,6 @@ const loadInitial = (): Pick<
 				parsed.sortOrder && parsed.sortOrder in LibraryBookSortOrder
 					? parsed.sortOrder
 					: defaults.sortOrder,
-			view:
-				parsed.view === "covers" || parsed.view === "list"
-					? parsed.view
-					: defaults.view,
 			hideRead:
 				typeof parsed.hideRead === "boolean"
 					? parsed.hideRead
@@ -64,7 +59,6 @@ const persist = (state: LibraryViewState) => {
 		JSON.stringify({
 			query: state.query,
 			sortOrder: state.sortOrder,
-			view: state.view,
 			hideRead: state.hideRead,
 		}),
 	);
@@ -79,10 +73,6 @@ export const useLibraryView = create<LibraryViewState>((set, get) => ({
 	},
 	setSortOrder: (sortOrder) => {
 		set({ sortOrder });
-		persist(get());
-	},
-	setView: (view) => {
-		set({ view });
 		persist(get());
 	},
 	setHideRead: (hideRead) => {

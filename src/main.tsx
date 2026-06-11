@@ -5,7 +5,6 @@ import "./styles.css";
 import "@mantine/core/styles.css";
 import "@mantine/core/styles.layer.css";
 import "@mantine/notifications/styles.css";
-import "mantine-datatable/styles.css";
 import { isTauri } from "@tauri-apps/api/core";
 import { createTauriPlatform, createWebPlatform } from "@/lib/platform/create";
 import { PlatformProvider } from "@/lib/platform/context";
