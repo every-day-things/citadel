@@ -7,7 +7,7 @@ use crate::{
     library::{Book, BookFileInfo, BookIdentifier, BookUpdate},
     queries::{authors, book_descriptions, book_files, book_identifiers, books, series, tags},
     types::{AuthorId, BookId},
-    CalibreError, UpdateBookData,
+    BookRow, CalibreError, UpdateBookData,
 };
 
 pub fn update_book(
@@ -222,6 +222,29 @@ pub fn get_book(conn: &mut SqliteConnection, book_id: BookId) -> Result<Book, Ca
 
 pub fn all(conn: &mut SqliteConnection) -> Result<Vec<Book>, CalibreError> {
     let book_rows = books::all(conn)?;
+    hydrate(conn, book_rows)
+}
+
+pub fn get_many(
+    conn: &mut SqliteConnection,
+    book_ids: Vec<BookId>,
+) -> Result<Vec<Book>, CalibreError> {
+    let mut book_rows = books::get_by_ids(conn, book_ids.clone())?;
+
+    let positions: HashMap<i32, usize> = book_ids
+        .iter()
+        .enumerate()
+        .map(|(position, id)| (id.as_i32(), position))
+        .collect();
+    book_rows.sort_by_key(|row| positions.get(&row.id).copied().unwrap_or(usize::MAX));
+
+    hydrate(conn, book_rows)
+}
+
+fn hydrate(
+    conn: &mut SqliteConnection,
+    book_rows: Vec<BookRow>,
+) -> Result<Vec<Book>, CalibreError> {
     let book_ids: Vec<BookId> = book_rows.iter().map(|b| BookId(b.id)).collect();
 
     let author_ids_by_book = authors::find_author_ids_by_book_ids(conn, book_ids.clone())?;
