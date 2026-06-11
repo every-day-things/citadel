@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { HardcoverSearchResult, LibraryBook } from "@/bindings";
 import { commands } from "@/bindings";
+import { normalizeIsbn } from "@/lib/isbn";
 import { usePlatform } from "@/lib/platform/context";
 import { useSettings } from "@/stores/settings/store";
 
@@ -56,20 +57,6 @@ export interface UseHardcoverBookActionsReturn {
 	searchHardcover: (queryOverride?: string) => Promise<void>;
 	selectSearchResult: (result: HardcoverSearchResult) => Promise<void>;
 }
-
-const normalizeIsbn = (raw: string): string | undefined => {
-	const trimmed = raw.trim();
-	if (!trimmed) return undefined;
-
-	const withoutPrefix = trimmed.toLowerCase().startsWith("isbn:")
-		? trimmed.slice("isbn:".length).trim()
-		: trimmed;
-
-	const compact = withoutPrefix.replace(/[^0-9xX]/g, "").toUpperCase();
-	if (/^\d{13}$/.test(compact)) return compact;
-	if (/^\d{9}[\dX]$/.test(compact)) return compact;
-	return undefined;
-};
 
 export const useHardcoverBookActions = ({
 	book,

@@ -28,6 +28,7 @@ interface SettingsStore extends SettingsSchema {
 	createLibrary: (absolutePath: string) => Promise<string>;
 	getActiveLibrary: () => Option<LibraryPath>;
 	setHardcoverApiKey: (apiKey: string) => Promise<void>;
+	setHardcoverAutoLookup: (enabled: boolean) => Promise<void>;
 	setLastNotifiedUpdateVersion: (version: string | null) => Promise<void>;
 	createSmartShelf: (
 		name: string,
@@ -165,6 +166,10 @@ export const useSettings = create<SettingsStore>((set, get) => ({
 
 	setHardcoverApiKey: async (apiKey) => {
 		await persistSetting(set, get, "hardcoverApiKey", apiKey);
+	},
+
+	setHardcoverAutoLookup: async (enabled) => {
+		await persistSetting(set, get, "hardcoverAutoLookup", enabled);
 	},
 
 	setLastNotifiedUpdateVersion: async (version) => {

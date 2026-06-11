@@ -33,6 +33,7 @@ export interface SettingsSchema {
 	activeLibraryId: string;
 	libraryPaths: LibraryPath[];
 	hardcoverApiKey: string;
+	hardcoverAutoLookup: boolean;
 	lastNotifiedUpdateVersion: string | null;
 	smartShelves: SmartShelf[];
 }
@@ -45,6 +46,7 @@ export const defaultSettings: SettingsSchema = {
 	activeLibraryId: "",
 	libraryPaths: [],
 	hardcoverApiKey: "",
+	hardcoverAutoLookup: false,
 	lastNotifiedUpdateVersion: null,
 	smartShelves: [
 		{
