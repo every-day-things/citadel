@@ -5,6 +5,7 @@ use crate::book::LibraryAuthor;
 use crate::calibre::author::NewAuthor;
 use crate::state::CitadelState;
 
+use super::custom_columns::CustomValueDto;
 use super::AuthorUpdate;
 use super::BookUpdate;
 
@@ -23,6 +24,22 @@ pub fn clb_cmd_update_book(
         )
         .map(|entry| entry.id.as_i32())
         .map_err(|e| e.to_string())
+    })?
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn clb_cmd_set_custom_value(
+    state: tauri::State<CitadelState>,
+    book_id: String,
+    column_id: i32,
+    value: Option<CustomValueDto>,
+) -> Result<(), String> {
+    state.with_library(|lib| {
+        let book_id_int = book_id.parse::<i32>().map_err(|e| e.to_string())?;
+        let value = value.map(libcalibre::CustomValue::try_from).transpose()?;
+        lib.set_custom_value(libcalibre::BookId::from(book_id_int), column_id, value)
+            .map_err(|e| e.to_string())
     })?
 }
 

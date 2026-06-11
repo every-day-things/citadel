@@ -10,6 +10,7 @@ mod author;
 mod book;
 
 pub mod command;
+pub mod custom_columns;
 pub mod query;
 
 #[derive(Serialize, Deserialize, specta::Type, Debug)]

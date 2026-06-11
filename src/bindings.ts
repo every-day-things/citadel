@@ -81,6 +81,30 @@ async clbCmdSetBookCoverFromUrl(bookId: string, imageUrl: string) : Promise<Resu
     else return { status: "error", error: e  as any };
 }
 },
+async clbQueryListCustomColumns() : Promise<Result<CustomColumnDef[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clb_query_list_custom_columns") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async clbQueryGetCustomValuesForBook(bookId: string) : Promise<Result<BookCustomValue[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clb_query_get_custom_values_for_book", { bookId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async clbCmdSetCustomValue(bookId: string, columnId: number, value: CustomValueDto | null) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clb_cmd_set_custom_value", { bookId, columnId, value }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async clbQueryListAllAuthors() : Promise<Result<LibraryAuthor[], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("clb_query_list_all_authors") };
@@ -177,6 +201,10 @@ async clbCmdOpenSettings() : Promise<void> {
 /** user-defined types **/
 
 export type AuthorUpdate = { full_name: string | null; sortable_name: string | null; external_url: string | null }
+/**
+ * One book's value for one custom column.
+ */
+export type BookCustomValue = { column_id: number; value: CustomValueDto }
 export type BookFile = { Local: LocalFile } | { Remote: RemoteFile }
 export type BookUpdate = { author_id_list: string[] | null; tag_list: string[] | null; title: string | null; timestamp: string | null; publication_date: string | null; is_read: boolean | null; description: string | null; 
 /**
@@ -185,6 +213,42 @@ export type BookUpdate = { author_id_list: string[] | null; tag_list: string[] |
  */
 series: string | null; series_index: number | null }
 export type CalibreClientConfig = { library_path: string }
+/**
+ * A custom column definition, as exposed to the frontend.
+ */
+export type CustomColumnDef = { column_id: number;
+/**
+ * Lookup name, e.g. `read` (Calibre exposes it as `#read`).
+ */
+label: string;
+/**
+ * Human-readable heading, e.g. `Read`.
+ */
+name: string;
+/**
+ * Raw Calibre datatype string, e.g. `bool`, `text`, `enumeration`.
+ */
+datatype: string; is_multiple: boolean; editable: boolean;
+/**
+ * Whether reading and writing values of this column is supported.
+ */
+supported: boolean;
+/**
+ * Allowed values for enumeration columns. Empty for other datatypes.
+ */
+enum_values: string[] }
+/**
+ * A custom-column value crossing the Tauri boundary.
+ *
+ * Mirrors `libcalibre::CustomValue`, except datetimes travel as RFC3339
+ * strings and integers as `i32` (specta cannot export `i64` without bigint
+ * support).
+ */
+export type CustomValueDto = { Bool: boolean } | { Int: number } | { Float: number } | { Text: string } | { TextMultiple: string[] } |
+/**
+ * RFC3339 datetime string, e.g. `2024-01-15T10:30:00+00:00`.
+ */
+{ Datetime: string } | { Enumeration: string }
 export type HardcoverApiStatus = { is_valid: boolean; message: string }
 export type HardcoverBookMetadata = { title: string; description: string | null; image_url: string | null; isbn: string | null; release_year: number | null; hardcover_id: number | null; slug: string | null }
 export type HardcoverSearchResult = { title: string; description: string | null; image_url: string | null; isbn: string | null; release_year: number | null; hardcover_id: number; slug: string | null; authors: string[] }

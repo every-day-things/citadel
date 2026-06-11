@@ -9,18 +9,33 @@ import {
 	useMemo,
 	useState,
 } from "react";
-import type { BookUpdate, LibraryAuthor, LibraryBook } from "@/bindings";
+import {
+	type BookUpdate,
+	type CustomColumnDef,
+	type LibraryAuthor,
+	type LibraryBook,
+	commands,
+} from "@/bindings";
 import { HardcoverLogo } from "@/components/icons/HardcoverLogo";
 import {
 	Button,
 	IconButton,
+	Select,
 	Spinner,
 	Switch,
 	TagsInput,
+	Textarea,
 	TextInput,
 	Tooltip,
 } from "@/components/ui";
 import { safeAsyncEventHandler } from "@/lib/async";
+import {
+	type CustomFieldValue,
+	buildCustomFieldValues,
+	diffCustomValues,
+	editableCustomColumns,
+	emptyFieldValue,
+} from "@/lib/custom-columns";
 import { useHardcoverBookActions } from "@/lib/hooks/use-hardcover-book-actions";
 import { formatSeriesIndex } from "@/lib/series";
 import { BookCover } from "../atoms/BookCover";
@@ -158,6 +173,111 @@ interface EditBookFormValues {
 	isRead: boolean;
 }
 
+/** Sentinel for "no value" in pop-up buttons; Radix items cannot be "". */
+const UNSET_OPTION = "__unset__";
+
+const CustomColumnInput = ({
+	id,
+	column,
+	value,
+	onChange,
+}: {
+	id: string;
+	column: CustomColumnDef;
+	value: CustomFieldValue;
+	onChange: (value: CustomFieldValue) => void;
+}) => {
+	switch (column.datatype) {
+		case "bool":
+			return (
+				<Select
+					id={id}
+					aria-label={column.name}
+					options={[
+						{ value: UNSET_OPTION, label: "Unset" },
+						{ value: "yes", label: "Yes" },
+						{ value: "no", label: "No" },
+					]}
+					value={value === "yes" || value === "no" ? value : UNSET_OPTION}
+					onChange={(next) => onChange(next === UNSET_OPTION ? null : next)}
+				/>
+			);
+		case "int":
+		case "float":
+			return (
+				<TextInput
+					id={id}
+					inputMode={column.datatype === "int" ? "numeric" : "decimal"}
+					value={
+						typeof value === "number"
+							? String(value)
+							: typeof value === "string"
+								? value
+								: ""
+					}
+					onChange={(event) => onChange(event.target.value)}
+				/>
+			);
+		case "text":
+			if (column.is_multiple) {
+				return (
+					<TagsInput
+						id={id}
+						aria-label={column.name}
+						placeholder="Search or add value"
+						value={Array.isArray(value) ? value : []}
+						onChange={onChange}
+					/>
+				);
+			}
+			return (
+				<TextInput
+					id={id}
+					value={typeof value === "string" ? value : ""}
+					onChange={(event) => onChange(event.target.value)}
+				/>
+			);
+		case "comments":
+			return (
+				<Textarea
+					id={id}
+					rows={3}
+					value={typeof value === "string" ? value : ""}
+					onChange={(event) => onChange(event.target.value)}
+				/>
+			);
+		case "datetime":
+			return (
+				<TextInput
+					id={id}
+					placeholder="YYYY-MM-DD"
+					value={typeof value === "string" ? value : ""}
+					onChange={(event) => onChange(event.target.value)}
+				/>
+			);
+		case "enumeration":
+			return (
+				<Select
+					id={id}
+					aria-label={column.name}
+					options={[
+						{ value: UNSET_OPTION, label: "Unset" },
+						...column.enum_values.map((option) => ({
+							value: option,
+							label: option,
+						})),
+					]}
+					value={
+						typeof value === "string" && value !== "" ? value : UNSET_OPTION
+					}
+					onChange={(next) => onChange(next === UNSET_OPTION ? null : next)}
+				/>
+			);
+		default:
+			return null;
+	}
+};
+
 const formValuesFromBook = (book: LibraryBook): EditBookFormValues => ({
 	title: book.title,
 	sortTitle: book.sortable_title ?? "",
@@ -224,6 +344,102 @@ const EditBookForm = ({
 		[allAuthorList],
 	);
 
+	const [customColumns, setCustomColumns] = useState<CustomColumnDef[]>([]);
+	const [customSnapshot, setCustomSnapshot] = useState<
+		Record<string, CustomFieldValue>
+	>({});
+	const [customValues, setCustomValues] = useState<
+		Record<string, CustomFieldValue>
+	>({});
+	const [customColumnError, setCustomColumnError] = useState<string | null>(
+		null,
+	);
+
+	const loadCustomColumns = useCallback(async () => {
+		const columnsResult = await commands.clbQueryListCustomColumns();
+		if (columnsResult.status === "error") {
+			throw new Error(columnsResult.error);
+		}
+
+		const editable = editableCustomColumns(columnsResult.data);
+		if (editable.length === 0) {
+			setCustomColumns([]);
+			setCustomSnapshot({});
+			setCustomValues({});
+			return;
+		}
+
+		const valuesResult = await commands.clbQueryGetCustomValuesForBook(
+			book.id,
+		);
+		if (valuesResult.status === "error") {
+			throw new Error(valuesResult.error);
+		}
+
+		const fieldValues = buildCustomFieldValues(editable, valuesResult.data);
+		setCustomColumns(editable);
+		setCustomSnapshot(fieldValues);
+		setCustomValues(fieldValues);
+	}, [book.id]);
+
+	useEffect(() => {
+		loadCustomColumns().catch((error: unknown) => {
+			console.error(error);
+			setCustomColumnError(
+				error instanceof Error ? error.message : String(error),
+			);
+		});
+	}, [loadCustomColumns]);
+
+	const customChanges = useMemo(
+		() => diffCustomValues(customColumns, customSnapshot, customValues),
+		[customColumns, customSnapshot, customValues],
+	);
+
+	const saveCustomChanges = useCallback(async () => {
+		if (customChanges.length === 0) {
+			return;
+		}
+
+		const attemptedValues = { ...customValues };
+		const failures: { columnId: number; message: string }[] = [];
+		for (const change of customChanges) {
+			const result = await commands.clbCmdSetCustomValue(
+				book.id,
+				change.columnId,
+				change.value,
+			);
+			if (result.status === "error") {
+				const columnName =
+					customColumns.find((column) => column.column_id === change.columnId)
+						?.name ?? `column ${change.columnId}`;
+				failures.push({
+					columnId: change.columnId,
+					message: `${columnName}: ${result.error}`,
+				});
+			}
+		}
+
+		await loadCustomColumns();
+
+		if (failures.length > 0) {
+			// Keep the rejected inputs around so they can be fixed and re-saved.
+			setCustomValues((refreshed) => {
+				const next = { ...refreshed };
+				for (const failure of failures) {
+					const key = String(failure.columnId);
+					next[key] = attemptedValues[key] ?? next[key] ?? null;
+				}
+				return next;
+			});
+			setCustomColumnError(
+				failures.map((failure) => failure.message).join(" — "),
+			);
+		} else {
+			setCustomColumnError(null);
+		}
+	}, [book.id, customChanges, customColumns, customValues, loadCustomColumns]);
+
 	const hc = useHardcoverBookActions({
 		book,
 		allAuthorNames,
@@ -234,8 +450,10 @@ const EditBookForm = ({
 	});
 
 	const hasChanges = useMemo(
-		() => JSON.stringify(values) !== JSON.stringify(baseline),
-		[values, baseline],
+		() =>
+			JSON.stringify(values) !== JSON.stringify(baseline) ||
+			customChanges.length > 0,
+		[values, baseline, customChanges],
 	);
 
 	const handleAuthorsChange = (next: string[]) => {
@@ -252,6 +470,7 @@ const EditBookForm = ({
 	const revert = () => {
 		setValues(baseline);
 		setIsEditingDescription(false);
+		setCustomValues(customSnapshot);
 	};
 
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -280,6 +499,7 @@ const EditBookForm = ({
 			};
 
 			await onSave(bookUpdate);
+			await saveCustomChanges();
 
 			setBaseline(values);
 		})();
@@ -517,6 +737,57 @@ const EditBookForm = ({
 							</FormRow>
 						</div>
 					</section>
+					{(customColumns.length > 0 || customColumnError) && (
+						<section className={styles.section}>
+							<div className={styles.sectionLabel}>Custom columns</div>
+							<div className={styles.sectionBody}>
+								{customColumnError && (
+									<div
+										role="alert"
+										className={`${styles.notice} ${styles.noticeError}`}
+									>
+										<span className={styles.noticeText}>
+											{customColumnError}
+										</span>
+										<IconButton
+											aria-label="Dismiss"
+											className={styles.noticeClose}
+											onClick={() => setCustomColumnError(null)}
+										>
+											×
+										</IconButton>
+									</div>
+								)}
+								{customColumns.map((column) => {
+									const key = String(column.column_id);
+									const inputId = `edit-book-custom-${key}`;
+									return (
+										<FormRow
+											key={key}
+											label={column.name}
+											htmlFor={inputId}
+											alignTop={
+												column.datatype === "comments" ||
+												(column.datatype === "text" && column.is_multiple)
+											}
+										>
+											<CustomColumnInput
+												id={inputId}
+												column={column}
+												value={customValues[key] ?? emptyFieldValue(column)}
+												onChange={(value) =>
+													setCustomValues((previous) => ({
+														...previous,
+														[key]: value,
+													}))
+												}
+											/>
+										</FormRow>
+									);
+								})}
+							</div>
+						</section>
+					)}
 					{hc.hardcoverApiKey && (
 						<section className={styles.section}>
 							<FormRow label="Hardcover">

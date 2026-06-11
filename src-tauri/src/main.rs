@@ -35,6 +35,10 @@ fn run_tauri_backend() -> std::io::Result<()> {
         calibre::command::clb_cmd_upsert_book_identifier,
         calibre::command::clb_cmd_delete_book_identifier,
         calibre::command::clb_cmd_set_book_cover_from_url,
+        // Custom column commands
+        calibre::query::clb_query_list_custom_columns,
+        calibre::query::clb_query_get_custom_values_for_book,
+        calibre::command::clb_cmd_set_custom_value,
         // Author query and manipulation commands
         calibre::query::clb_query_list_all_authors,
         calibre::command::clb_cmd_create_authors,

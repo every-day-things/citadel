@@ -7,6 +7,7 @@ use crate::calibre::book;
 use crate::libs::file_formats;
 use crate::{book::LibraryBook, state::CitadelState};
 
+use super::custom_columns::{BookCustomValue, CustomColumnDef, CustomValueDto};
 use super::ImportableFile;
 
 #[tauri::command]
@@ -59,6 +60,41 @@ pub fn clb_query_list_all_filetypes() -> Vec<(String, String)> {
                 .map(|mimetype| (mimetype.as_str().to_string(), extension.to_string()))
         })
         .collect()
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn clb_query_list_custom_columns(
+    state: tauri::State<CitadelState>,
+) -> Result<Vec<CustomColumnDef>, String> {
+    state.with_library(|lib| {
+        lib.custom_columns()
+            .map(|columns| columns.iter().map(CustomColumnDef::from).collect())
+            .map_err(|e| e.to_string())
+    })?
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn clb_query_get_custom_values_for_book(
+    state: tauri::State<CitadelState>,
+    book_id: String,
+) -> Result<Vec<BookCustomValue>, String> {
+    state.with_library(|lib| {
+        let book_id_int = book_id.parse::<i32>().map_err(|e| e.to_string())?;
+        let values = lib
+            .get_custom_values_for_book(libcalibre::BookId::from(book_id_int))
+            .map_err(|e| e.to_string())?;
+
+        let mut book_values = values
+            .into_iter()
+            .map(|(column_id, value)| {
+                CustomValueDto::try_from(value).map(|value| BookCustomValue { column_id, value })
+            })
+            .collect::<Result<Vec<_>, String>>()?;
+        book_values.sort_by_key(|book_value| book_value.column_id);
+        Ok(book_values)
+    })?
 }
 
 #[tauri::command]
