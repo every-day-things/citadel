@@ -92,7 +92,21 @@ curl -s -X POST http://127.0.0.1:$P/script/execute -H 'Content-Type: application
 ```
 
 Clear a field by passing `""`. Always verify the effect afterward (e.g. the
-"Showing N of M books" text), not just the field value.
+status-bar book count), not just the field value.
+
+### More gotchas (verified 2026-06-11)
+
+- **Plugin crash**: navigating (`/navigate/url`) while a `script/execute`
+  callback is pending can panic the plugin ("no pending script with that id" →
+  poisoned lock); every later request then fails (curl exit 52). Recover by
+  touching `src-tauri/src/main.rs` so the watcher rebuilds and relaunches the
+  app (~40s), then re-read the new port from the dev output.
+- **Mantine Menus/popovers do not open from synthetic events** (webdriver
+  clicks, AX presses, dispatched PointerEvents all fail). Plain buttons,
+  links, inputs, SegmentedControls, and modals work fine. Drive around menus.
+- Recording demos: `screencapture -v -l<windowId> -x out.mov` works (window id
+  from `orca computer list-windows`); it starts ~7s late, so pad the start and
+  use a fresh filename each take (it refuses to overwrite).
 
 ### tauri-wd CLI (for WebDriverIO/Selenium suites)
 
