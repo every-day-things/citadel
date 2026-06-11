@@ -107,6 +107,15 @@ status-bar book count), not just the field value.
 - Recording demos: `screencapture -v -l<windowId> -x out.mov` works (window id
   from `orca computer list-windows`); it starts ~7s late, so pad the start and
   use a fresh filename each take (it refuses to overwrite).
+- **Config gotchas**: `tauri.dev.conf.json` is merged at *tauri CLI startup*
+  only — watcher rebuilds reuse the cached merge, so after editing either conf
+  file, kill and restart `bun run dev`. The dev conf's `windows` array replaces
+  the base array wholesale (window flags like `titleBarStyle`/`transparent`
+  must be duplicated there). Cargo features must match conf allowlists
+  (e.g. `macos-private-api` ↔ `app.macOSPrivateApi`) or the build script fails.
+- Vibrancy/translucency never shows in WebDriver `/screenshot` *or* when the
+  window appearance mismatches: core-plugin calls like `setTheme` need their
+  capability (`core:window:allow-set-theme` in capabilities/minimal.json).
 
 ### tauri-wd CLI (for WebDriverIO/Selenium suites)
 
