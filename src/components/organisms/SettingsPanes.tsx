@@ -331,6 +331,11 @@ const LibraryTab = ({ closeSettings }: LibraryTabProps) => {
 const IntegrationsTab = () => {
 	const hardcoverApiKey = useSettings((state) => state.hardcoverApiKey);
 	const setHardcoverApiKey = useSettings((state) => state.setHardcoverApiKey);
+	const hardcoverAutoLookup = useSettings((state) => state.hardcoverAutoLookup);
+	const setHardcoverAutoLookup = useSettings(
+		(state) => state.setHardcoverAutoLookup,
+	);
+	const autoLookupSwitchId = useId();
 
 	const [apiKeyInput, setApiKeyInput] = useState(hardcoverApiKey);
 	const [isTesting, setIsTesting] = useState(false);
@@ -423,6 +428,25 @@ const IntegrationsTab = () => {
 							</Button>
 						</div>
 					</div>
+					<SettingsRow
+						label="Look up metadata when importing"
+						htmlFor={autoLookupSwitchId}
+						description={
+							hardcoverApiKey
+								? "When an imported file has an ISBN, search Hardcover automatically."
+								: "When an imported file has an ISBN, search Hardcover automatically. Requires a saved Hardcover API key."
+						}
+						control={
+							<Switch
+								id={autoLookupSwitchId}
+								checked={hardcoverAutoLookup}
+								disabled={!hardcoverApiKey}
+								onCheckedChange={(checked) =>
+									void setHardcoverAutoLookup(checked)
+								}
+							/>
+						}
+					/>
 				</div>
 				{testResult && (
 					<p

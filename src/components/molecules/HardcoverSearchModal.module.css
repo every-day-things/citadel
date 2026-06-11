@@ -1,0 +1,104 @@
+/* Hardcover search sheet (shared by Edit Book and Add Book). */
+.searchStack {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.inlineControls {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-wrap: nowrap;
+}
+
+.flexGrow {
+	flex: 1;
+	min-width: 0;
+}
+
+.errorNote {
+	margin: 0;
+	font-size: 13px;
+	line-height: 1.4;
+	color: var(--ctd-danger-text);
+}
+
+.searchResults {
+	height: 55vh;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+}
+
+.searchEmpty {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 16px 0;
+	font-size: 13px;
+	color: var(--ctd-ink-soft);
+	text-align: center;
+}
+
+.searchResult {
+	display: flex;
+	align-items: flex-start;
+	gap: 16px;
+	width: 100%;
+	padding: 10px 8px;
+	background: none;
+	border: none;
+	border-radius: 6px;
+	font: inherit;
+	color: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+
+.searchResult:hover,
+.searchResult:focus-visible {
+	background-color: var(--ctd-nav-hover-bg);
+}
+
+.searchResult:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--ctd-focus-ring);
+}
+
+.searchResult + .searchResult {
+	border-top: 1px solid var(--ctd-border);
+}
+
+.searchResultCover {
+	width: 60px;
+	height: 90px;
+	object-fit: contain;
+	flex-shrink: 0;
+}
+
+.searchResultMeta {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	flex: 1;
+	min-width: 0;
+}
+
+.searchResultTitle {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--ctd-ink);
+}
+
+.searchResultDetail {
+	font-size: 12px;
+	color: var(--ctd-ink-soft);
+}
+
+.searchResultClamp {
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}

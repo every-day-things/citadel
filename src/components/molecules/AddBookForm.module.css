@@ -82,3 +82,35 @@
 	gap: 10px;
 	margin-top: 18px;
 }
+
+/* Hardcover lookup: buttons plus status/match notes under the form fields. */
+.hardcoverStack {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.hardcoverButtons {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.hardcoverNote {
+	display: flex;
+	align-items: flex-start;
+	gap: 6px;
+	font-size: 12px;
+	line-height: 1.45;
+	color: var(--ctd-ink-soft);
+}
+
+.hardcoverNote[data-tone="error"] {
+	color: var(--ctd-danger-text);
+}
+
+.hardcoverNoteText {
+	flex: 1;
+	min-width: 0;
+}

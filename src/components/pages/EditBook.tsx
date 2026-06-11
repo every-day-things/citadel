@@ -13,7 +13,6 @@ import type { BookUpdate, LibraryAuthor, LibraryBook } from "@/bindings";
 import {
 	Button,
 	IconButton,
-	Sheet,
 	Spinner,
 	Switch,
 	TagsInput,
@@ -23,6 +22,7 @@ import {
 import { safeAsyncEventHandler } from "@/lib/async";
 import { useHardcoverBookActions } from "@/lib/hooks/use-hardcover-book-actions";
 import { BookCover } from "../atoms/BookCover";
+import { HardcoverSearchModal } from "../molecules/HardcoverSearchModal";
 import { RichTextEditor } from "../molecules/RichTextEditor";
 import styles from "./EditBook.module.css";
 
@@ -540,88 +540,21 @@ const EditBookForm = ({
 			</div>
 
 			{/* Hardcover search sheet */}
-			<Sheet
+			<HardcoverSearchModal
 				open={hc.isSearchModalOpen}
 				onOpenChange={hc.setIsSearchModalOpen}
-				title="Find on Hardcover"
-				width={780}
-			>
-				<div className={styles.searchStack}>
-					<div className={styles.inlineControls}>
-						<TextInput
-							placeholder="Search by title or author…"
-							className={styles.flexGrow}
-							value={hc.searchQuery}
-							onChange={(event) => hc.setSearchQuery(event.target.value)}
-							onKeyDown={(event) => {
-								if (event.key === "Enter") {
-									event.preventDefault();
-									void hc.searchHardcover();
-								}
-							}}
-						/>
-						<Button
-							variant="primary"
-							disabled={hc.isSearching}
-							onClick={() => void hc.searchHardcover()}
-						>
-							Search
-						</Button>
-					</div>
-					<div className={styles.searchResults}>
-						{hc.searchResults.length === 0 ? (
-							<div className={styles.searchEmpty}>
-								{hc.isSearching ? (
-									<Spinner />
-								) : hc.searchQuery ? (
-									"No results found. Try a different search query."
-								) : (
-									"Enter a title or author name to search."
-								)}
-							</div>
-						) : (
-							hc.searchResults.map((result) => (
-								<button
-									type="button"
-									key={result.hardcover_id}
-									className={styles.searchResult}
-									onClick={() => void hc.selectSearchResult(result)}
-								>
-									{result.image_url && (
-										<img
-											src={result.image_url}
-											alt={result.title}
-											className={styles.searchResultCover}
-										/>
-									)}
-									<div className={styles.searchResultMeta}>
-										<span className={styles.searchResultTitle}>
-											{result.title}
-										</span>
-										{result.authors && result.authors.length > 0 && (
-											<span className={styles.searchResultDetail}>
-												{result.authors.join(", ")}
-											</span>
-										)}
-										{result.release_year && (
-											<span className={styles.searchResultDetail}>
-												Published {result.release_year}
-											</span>
-										)}
-										{result.description && (
-											<span
-												className={`${styles.searchResultDetail} ${styles.searchResultClamp}`}
-											>
-												{result.description.replace(/<[^>]*>/g, "")}
-											</span>
-										)}
-									</div>
-								</button>
-							))
-						)}
-					</div>
-				</div>
-			</Sheet>
+				query={hc.searchQuery}
+				onQueryChange={hc.setSearchQuery}
+				onSearch={() => void hc.searchHardcover()}
+				isSearching={hc.isSearching}
+				results={hc.searchResults}
+				onSelect={(result) => void hc.selectSearchResult(result)}
+				error={
+					hc.hardcoverMessage?.type === "error"
+						? hc.hardcoverMessage.text
+						: null
+				}
+			/>
 		</form>
 	);
 };
