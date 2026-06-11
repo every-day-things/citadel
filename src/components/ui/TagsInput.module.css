@@ -1,0 +1,156 @@
+.wrapper {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.label {
+	font-size: 13px;
+	color: var(--ctd-ink-soft);
+}
+
+/* Anchor for the completion list. */
+.control {
+	position: relative;
+}
+
+.field {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px;
+	min-height: 24px;
+	padding: 2px 8px;
+	border-radius: 6px;
+	background-color: var(--ctd-control-bg);
+	border: 1px solid var(--ctd-border);
+	box-shadow: var(--ctd-field-inner-shadow);
+	transition:
+		box-shadow 140ms ease-out,
+		border-color 140ms ease-out;
+	cursor: text;
+}
+
+/* Same halo as TextInput, driven by the inner input's focus. */
+.field:focus-within {
+	border-color: var(--ctd-accent);
+	box-shadow: 0 0 0 3px var(--ctd-focus-ring);
+}
+
+.fieldError {
+	border-color: var(--ctd-danger-border);
+}
+
+.fieldDisabled {
+	background-color: var(--ctd-control-disabled-bg);
+	border-color: var(--ctd-control-disabled-border);
+	box-shadow: none;
+	cursor: default;
+}
+
+.token {
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+	max-width: 100%;
+	height: 17px;
+	padding: 0 4px 0 7px;
+	border-radius: 9px;
+	background-color: var(--ctd-control-bg-strong);
+	border: 1px solid var(--ctd-border);
+	font-size: 12px;
+	color: var(--ctd-control-text);
+	cursor: default;
+}
+
+.fieldDisabled .token {
+	color: var(--ctd-control-disabled-text);
+}
+
+.tokenText {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.tokenRemove {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: 12px;
+	height: 12px;
+	padding: 0;
+	border: none;
+	border-radius: 50%;
+	background-color: transparent;
+	color: var(--ctd-ink-soft);
+}
+
+.tokenRemove:hover {
+	background-color: var(--ctd-nav-hover-bg);
+	color: var(--ctd-ink);
+}
+
+.tokenRemove:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 2px var(--ctd-focus-ring);
+}
+
+.input {
+	flex: 1;
+	min-width: 60px;
+	height: 18px;
+	padding: 0;
+	border: none;
+	background: transparent;
+	font-family: inherit;
+	font-size: 13px;
+	color: var(--ctd-control-text);
+	cursor: text;
+}
+
+.input::placeholder {
+	color: var(--ctd-ink-soft);
+}
+
+.input:focus {
+	outline: none;
+}
+
+.input:disabled {
+	color: var(--ctd-control-disabled-text);
+	cursor: default;
+}
+
+.listbox {
+	position: absolute;
+	top: calc(100% + 4px);
+	left: 0;
+	right: 0;
+	max-height: 180px;
+	overflow-y: auto;
+	padding: 4px;
+	background-color: var(--ctd-surface-strong);
+	border: 1px solid var(--ctd-border);
+	border-radius: 6px;
+	box-shadow: var(--ctd-shadow-lift);
+	z-index: 120;
+}
+
+.option {
+	padding: 3px 8px;
+	border-radius: 4px;
+	font-size: 13px;
+	color: var(--ctd-control-text);
+}
+
+.optionHighlighted {
+	background-color: var(--ctd-accent);
+	color: oklch(99% 0.002 255);
+}
+
+.error {
+	font-size: 12px;
+	color: var(--ctd-danger-bg);
+}

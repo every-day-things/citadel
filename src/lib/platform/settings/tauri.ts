@@ -1,10 +1,10 @@
+import { load } from "@tauri-apps/plugin-store";
 import type {
 	SettingsKey,
 	SettingsManager,
 	SettingsSchema,
 	SettingsValue,
 } from "./types";
-import { load } from "@tauri-apps/plugin-store";
 
 export const createTauriSettingsManager = (
 	defaultSettings: SettingsSchema,

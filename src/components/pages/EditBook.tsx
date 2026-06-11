@@ -1,48 +1,30 @@
-import type { BookUpdate, LibraryAuthor, LibraryBook } from "@/bindings";
-import { safeAsyncEventHandler } from "@/lib/async";
-import { useHardcoverBookActions } from "@/lib/hooks/use-hardcover-book-actions";
-import {
-	ActionIcon,
-	Alert,
-	Button,
-	Group,
-	Image,
-	Loader,
-	Modal,
-	ScrollArea,
-	Stack,
-	Switch,
-	Text,
-	TextInput,
-	Title,
-	Tooltip,
-	UnstyledButton,
-} from "@mantine/core";
-import { Form, useForm } from "@mantine/form";
-import { RichTextEditor } from "@mantine/tiptap";
 import { Link as RouterLink } from "@tanstack/react-router";
-import { Link } from "@tiptap/extension-link";
-import { useEditor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
 import DOMPurify from "dompurify";
 import {
+	type FormEvent,
 	type HTMLProps,
 	type ReactNode,
+	useCallback,
 	useEffect,
 	useMemo,
 	useState,
 } from "react";
+import type { BookUpdate, LibraryAuthor, LibraryBook } from "@/bindings";
+import {
+	Button,
+	IconButton,
+	Sheet,
+	Spinner,
+	Switch,
+	TagsInput,
+	TextInput,
+	Tooltip,
+} from "@/components/ui";
+import { safeAsyncEventHandler } from "@/lib/async";
+import { useHardcoverBookActions } from "@/lib/hooks/use-hardcover-book-actions";
 import { BookCover } from "../atoms/BookCover";
-import { MultiSelectCreatable } from "../atoms/Multiselect";
+import { RichTextEditor } from "../molecules/RichTextEditor";
 import styles from "./EditBook.module.css";
-
-const richTextEditorClassNames = {
-	toolbar: styles.editorToolbar,
-	content: styles.editorContent,
-	controlsGroup: styles.editorControlsGroup,
-	control: styles.editorControl,
-	controlIcon: styles.editorControlIcon,
-} as const;
 
 /**
  * AppKit-style form row: right-aligned label in a fixed-width left gutter,
@@ -134,20 +116,20 @@ const Formats = ({
 }: { book: LibraryBook } & HTMLProps<HTMLDivElement>) => {
 	return (
 		<div style={style} {...props}>
-			<Text className={styles.sectionLabel}>Formats</Text>
+			<div className={styles.sectionLabel}>Formats</div>
 			<ul className={styles.formatList}>
 				{book.file_list.map((file) => {
 					if ("Local" in file) {
 						return (
-							<li key={file.Local.mime_type}>
-								<Text size="sm">{file.Local.mime_type}</Text>
+							<li key={file.Local.mime_type} className={styles.formatItem}>
+								{file.Local.mime_type}
 							</li>
 						);
 					}
 
 					return (
-						<li key={file.Remote.url}>
-							<Text size="sm">{file.Remote.url}</Text>
+						<li key={file.Remote.url} className={styles.formatItem}>
+							{file.Remote.url}
 						</li>
 					);
 				})}
@@ -160,7 +142,17 @@ const Cover = ({ book }: { book: LibraryBook } & HTMLProps<HTMLDivElement>) => {
 	return <BookCover book={book} disableFade />;
 };
 
-const formValuesFromBook = (book: LibraryBook) => ({
+interface EditBookFormValues {
+	title: string;
+	sortTitle: string;
+	authorList: string[];
+	tagList: string[];
+	identifierList: LibraryBook["identifier_list"];
+	description: string;
+	isRead: boolean;
+}
+
+const formValuesFromBook = (book: LibraryBook): EditBookFormValues => ({
 	title: book.title,
 	sortTitle: book.sortable_title ?? "",
 	authorList: book.author_list.map((author) => author.name),
@@ -168,7 +160,6 @@ const formValuesFromBook = (book: LibraryBook) => ({
 	identifierList: book.identifier_list,
 	description: book.description ?? "",
 	isRead: book.is_read,
-	isEditingDescription: false,
 });
 
 const EditBookForm = ({
@@ -195,18 +186,34 @@ const EditBookForm = ({
 		value: string,
 	) => Promise<void>;
 }) => {
-	const initialValues = useMemo(() => {
-		return formValuesFromBook(book);
+	const [values, setValues] = useState<EditBookFormValues>(() =>
+		formValuesFromBook(book),
+	);
+	// Dirty tracking: the last saved (or loaded) snapshot of the form.
+	const [baseline, setBaseline] = useState<EditBookFormValues>(() =>
+		formValuesFromBook(book),
+	);
+	const [isEditingDescription, setIsEditingDescription] = useState(false);
+	const [newBookIdentifierLabel, setNewBookIdentifierLabel] = useState("");
+
+	// Reset the form whenever the book reloads (e.g. after identifier upserts).
+	useEffect(() => {
+		const next = formValuesFromBook(book);
+		setValues(next);
+		setBaseline(next);
 	}, [book]);
-	const form = useForm({
-		initialValues,
-	});
+
+	const setFieldValue = useCallback((field: string, value: unknown) => {
+		setValues((current) => ({ ...current, [field]: value }));
+	}, []);
+
+	// Minimal FormSetter facade for the hardcover hook.
+	const form = useMemo(() => ({ setFieldValue }), [setFieldValue]);
+
 	const allAuthorNames = useMemo(
 		() => allAuthorList.map((author) => author.name),
 		[allAuthorList],
 	);
-	const tagOptions = useMemo(() => allTagList, [allTagList]);
-	const [newBookIdentifierLabel, setNewBookIdentifierLabel] = useState("");
 
 	const hc = useHardcoverBookActions({
 		book,
@@ -217,186 +224,179 @@ const EditBookForm = ({
 		onReloadBooks,
 	});
 
-	const editor = useEditor({
-		extensions: [
-			StarterKit,
-			Link.configure({
-				openOnClick: false,
-				HTMLAttributes: {
-					target: "_blank",
-					rel: "noopener noreferrer nofollow",
-				},
-			}),
-		],
-		content: form.values.description || "<p></p>",
-		onUpdate: ({ editor }) => {
-			const html = editor.getHTML();
-			// Only update if content has actual text content, not just empty tags
-			if (html && (html !== "<p></p>" || form.values.description !== "")) {
-				form.setFieldValue("description", html);
+	const hasChanges = useMemo(
+		() => JSON.stringify(values) !== JSON.stringify(baseline),
+		[values, baseline],
+	);
+
+	const handleAuthorsChange = (next: string[]) => {
+		// Authors typed in free-form that the library does not know yet get
+		// created, mirroring the old MultiSelectCreatable behavior.
+		for (const name of next) {
+			if (!values.authorList.includes(name) && !allAuthorNames.includes(name)) {
+				void createAuthor(name);
 			}
-		},
-	});
-
-	// biome-ignore lint/correctness/useExhaustiveDependencies: Re-rendering when Form is updated causes infinite loops.
-	useEffect(() => {
-		form.setValues(formValuesFromBook(book));
-		// Re-rendering when `form` is updated causes infinite loops
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [book]);
-
-	useEffect(() => {
-		if (editor && form.values.isEditingDescription) {
-			const currentHTML = editor.getHTML();
-			const formDesc = form.values.description || "<p></p>";
-
-			if (currentHTML !== formDesc) {
-				editor.commands.setContent(formDesc);
-			}
-
-			// Focus the editor when switching to edit mode
-			setTimeout(() => editor.commands.focus(), 1);
 		}
-	}, [editor, form.values.description, form.values.isEditingDescription]);
+		setFieldValue("authorList", next);
+	};
 
-	const hasChanges = form.isDirty() && form.isTouched();
+	const revert = () => {
+		setValues(baseline);
+		setIsEditingDescription(false);
+	};
+
+	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+		safeAsyncEventHandler(async () => {
+			const authorIdsFromName = values.authorList.map(
+				(authorName) =>
+					allAuthorList.find((author) => author.name === authorName)?.id ??
+					"-1",
+			);
+
+			const bookUpdate: BookUpdate = {
+				title: values.title,
+				author_id_list: authorIdsFromName,
+				tag_list: values.tagList,
+				timestamp: null,
+				publication_date: null,
+				is_read: values.isRead,
+				description: values.description === "<p></p>" ? "" : values.description,
+			};
+
+			await onSave(bookUpdate);
+
+			setBaseline(values);
+		})();
+	};
 
 	return (
-		<Form
-			form={form}
-			className={styles.page}
-			onSubmit={safeAsyncEventHandler(async () => {
-				const authorIdsFromName = form.values.authorList.map(
-					(authorName) =>
-						allAuthorList.find((author) => author.name === authorName)?.id ??
-						"-1",
-				);
-
-				const bookUpdate: BookUpdate = {
-					title: form.values.title,
-					author_id_list: authorIdsFromName,
-					tag_list: form.values.tagList,
-					timestamp: null,
-					publication_date: null,
-					is_read: form.values.isRead,
-					description:
-						form.values.description === "<p></p>"
-							? ""
-							: form.values.description,
-				};
-
-				await onSave(bookUpdate);
-
-				form.resetDirty();
-				form.resetTouched();
-			})}
-		>
+		<form className={styles.page} onSubmit={handleSubmit}>
 			<header className={styles.pageHeader}>
-				<Group gap={4} wrap="nowrap" className={styles.headerLead}>
+				<div className={styles.headerLead}>
 					<Tooltip label="Back to library">
 						<RouterLink
 							to="/"
 							aria-label="Back to library"
 							className={styles.backLink}
 						>
-							<ActionIcon
-								component="span"
-								variant="subtle"
-								color="gray"
-								size="sm"
-							>
-								<BackChevron />
-							</ActionIcon>
+							<BackChevron />
 						</RouterLink>
 					</Tooltip>
-					<Title order={3} lineClamp={1} className={styles.pageTitle}>
-						{book.title}
-					</Title>
-				</Group>
-				<Group gap="xs" wrap="nowrap">
+					<h3 className={styles.pageTitle}>{book.title}</h3>
+				</div>
+				<div className={styles.headerActions}>
 					{hasChanges && (
-						<Button variant="subtle" onClick={() => form.reset()}>
+						<Button variant="subtle" onClick={revert}>
 							Revert
 						</Button>
 					)}
-					<Button type="submit" disabled={!hasChanges}>
+					<Button variant="primary" type="submit" disabled={!hasChanges}>
 						Save
 					</Button>
-				</Group>
+				</div>
 			</header>
 			{hc.hardcoverMessage && (
-				<Alert
-					className={styles.notice}
-					color={hc.hardcoverMessage.type === "success" ? "green" : "red"}
-					onClose={() => hc.setHardcoverMessage(null)}
-					withCloseButton
+				<div
+					role="alert"
+					className={`${styles.notice} ${
+						hc.hardcoverMessage.type === "success"
+							? styles.noticeSuccess
+							: styles.noticeError
+					}`}
 				>
-					{hc.hardcoverMessage.text}
-				</Alert>
+					<span className={styles.noticeText}>{hc.hardcoverMessage.text}</span>
+					<IconButton
+						aria-label="Dismiss"
+						className={styles.noticeClose}
+						onClick={() => hc.setHardcoverMessage(null)}
+					>
+						×
+					</IconButton>
+				</div>
 			)}
 			<div className={styles.layout}>
-				<Stack gap="sm" className={styles.sideColumn}>
+				<div className={styles.sideColumn}>
 					<Cover book={book} />
-					<Switch
-						label="Finished"
-						labelPosition="left"
-						classNames={{
-							root: styles.finishedSwitch,
-							body: styles.finishedSwitchBody,
-							label: styles.finishedSwitchLabel,
-						}}
-						{...form.getInputProps("isRead", { type: "checkbox" })}
-					/>
+					<div className={styles.finishedRow}>
+						<label
+							className={styles.finishedLabel}
+							htmlFor="edit-book-finished"
+						>
+							Finished
+						</label>
+						<Switch
+							id="edit-book-finished"
+							checked={values.isRead}
+							onCheckedChange={(checked) => setFieldValue("isRead", checked)}
+						/>
+					</div>
 					<Formats book={book} className={styles.sideSection} />
-				</Stack>
+				</div>
 				<div className={styles.formColumn}>
 					<section className={styles.section}>
 						<FormRow label="Title" htmlFor="edit-book-title">
 							<TextInput
 								id="edit-book-title"
-								{...form.getInputProps("title")}
+								value={values.title}
+								onChange={(event) => setFieldValue("title", event.target.value)}
 							/>
 						</FormRow>
 						<FormRow label="Sort title" htmlFor="edit-book-sort-title">
 							<TextInput
 								id="edit-book-sort-title"
-								{...form.getInputProps("sortTitle")}
+								value={values.sortTitle}
+								onChange={(event) =>
+									setFieldValue("sortTitle", event.target.value)
+								}
 							/>
 						</FormRow>
 					</section>
 					<section className={styles.section}>
-						<FormRow label="Authors" alignTop>
-							<MultiSelectCreatable
-								label="Authors"
+						<FormRow label="Authors" alignTop htmlFor="edit-book-authors">
+							<TagsInput
+								id="edit-book-authors"
+								aria-label="Authors"
 								placeholder="Search or add author"
-								selectOptions={allAuthorNames}
-								onCreateSelectOption={(name) => void createAuthor(name)}
-								{...form.getInputProps("authorList")}
+								suggestions={allAuthorNames}
+								value={values.authorList}
+								onChange={handleAuthorsChange}
 							/>
 						</FormRow>
-						<FormRow label="Tags" alignTop>
-							<MultiSelectCreatable
-								label="Tags"
+						<FormRow label="Tags" alignTop htmlFor="edit-book-tags">
+							<TagsInput
+								id="edit-book-tags"
+								aria-label="Tags"
 								placeholder="Search or add tag"
-								selectOptions={tagOptions}
-								{...form.getInputProps("tagList")}
+								suggestions={allTagList}
+								value={values.tagList}
+								onChange={(next) => setFieldValue("tagList", next)}
 							/>
 						</FormRow>
 					</section>
 					<section className={styles.section}>
-						<Text className={styles.sectionLabel}>Identifiers</Text>
+						<div className={styles.sectionLabel}>Identifiers</div>
 						<div className={styles.sectionBody}>
-							{form.values.identifierList.map(({ label, id }, index) => (
+							{values.identifierList.map(({ label, id, value }, index) => (
 								<FormRow
 									key={id}
 									label={label.toUpperCase()}
 									htmlFor={`edit-book-identifier-${id}`}
 								>
-									<Group gap={6} align="center" wrap="nowrap">
+									<div className={styles.inlineControls}>
 										<TextInput
 											id={`edit-book-identifier-${id}`}
-											flex={1}
-											{...form.getInputProps(`identifierList.${index}.value`)}
+											className={styles.flexGrow}
+											value={value}
+											onChange={(event) => {
+												const nextList = values.identifierList.map(
+													(identifier, candidateIndex) =>
+														candidateIndex === index
+															? { ...identifier, value: event.target.value }
+															: identifier,
+												);
+												setFieldValue("identifierList", nextList);
+											}}
 											onBlur={(event) => {
 												onUpsertIdentifier(
 													book.id,
@@ -408,53 +408,52 @@ const EditBookForm = ({
 										/>
 										{hc.hardcoverApiKey && label.toLowerCase() === "isbn" && (
 											<Tooltip label="Look up metadata">
-												<ActionIcon
-													variant="subtle"
-													color="gray"
-													size="input-sm"
+												<IconButton
+													aria-label="Look up metadata"
+													disabled={hc.isFetchingFromHardcover}
 													onClick={() => void hc.fetchFromHardcover()}
-													loading={hc.isFetchingFromHardcover}
 												>
-													↓
-												</ActionIcon>
+													{hc.isFetchingFromHardcover ? (
+														<Spinner size={12} />
+													) : (
+														"↓"
+													)}
+												</IconButton>
 											</Tooltip>
 										)}
 										{label.toLowerCase() === "hardcover" && (
 											<Tooltip label="View on Hardcover">
-												<ActionIcon
-													variant="subtle"
-													color="gray"
-													size="input-sm"
+												<IconButton
+													aria-label="View on Hardcover"
 													onClick={() => void hc.openInHardcover()}
 												>
 													↗
-												</ActionIcon>
+												</IconButton>
 											</Tooltip>
 										)}
 										<Tooltip label="Remove identifier">
-											<ActionIcon
-												variant="subtle"
-												color="red"
-												size="input-sm"
+											<IconButton
+												aria-label="Remove identifier"
+												className={styles.dangerIcon}
 												onClick={() => {
 													onDeleteIdentifier(book.id, id).catch(console.error);
 												}}
 											>
 												×
-											</ActionIcon>
+											</IconButton>
 										</Tooltip>
-									</Group>
+									</div>
 								</FormRow>
 							))}
 							<FormRow
 								label="New identifier"
 								htmlFor="edit-book-new-identifier"
 							>
-								<Group gap={6} align="center" wrap="nowrap">
+								<div className={styles.inlineControls}>
 									<TextInput
 										id="edit-book-new-identifier"
 										placeholder="ISBN"
-										flex={1}
+										className={styles.flexGrow}
 										value={newBookIdentifierLabel}
 										onChange={(event) =>
 											setNewBookIdentifierLabel(event.target.value)
@@ -475,7 +474,7 @@ const EditBookForm = ({
 									>
 										Add
 									</Button>
-								</Group>
+								</div>
 							</FormRow>
 						</div>
 					</section>
@@ -485,7 +484,7 @@ const EditBookForm = ({
 								<Button
 									variant="default"
 									onClick={() => {
-										const query = form.values.title || "";
+										const query = values.title || "";
 										hc.setSearchQuery(query);
 										hc.setIsSearchModalOpen(true);
 										if (query) {
@@ -499,72 +498,40 @@ const EditBookForm = ({
 						</section>
 					)}
 					<section className={styles.section}>
-						<Group justify="space-between" align="center">
-							<Text className={styles.sectionLabel}>Description</Text>
+						<div className={styles.sectionHeader}>
+							<div className={styles.sectionLabel}>Description</div>
 							<Button
-								size="xs"
+								size="sm"
 								variant="default"
-								onClick={() =>
-									form.setFieldValue(
-										"isEditingDescription",
-										!form.values.isEditingDescription,
-									)
-								}
+								onClick={() => setIsEditingDescription(!isEditingDescription)}
 							>
-								{form.values.isEditingDescription ? "Preview" : "Edit"}
+								{isEditingDescription ? "Preview" : "Edit"}
 							</Button>
-						</Group>
+						</div>
 
-						{form.values.isEditingDescription ? (
+						{isEditingDescription ? (
 							<div className={styles.sectionBody}>
 								<RichTextEditor
-									editor={editor}
-									className={styles.editorWrapper}
-									classNames={richTextEditorClassNames}
-								>
-									{/* Offset clears the sticky page header (12px + 36px button row + 12px + 1px rule) inside the scrolling panel. */}
-									<RichTextEditor.Toolbar sticky stickyOffset={61}>
-										<RichTextEditor.ControlsGroup>
-											<RichTextEditor.Bold />
-											<RichTextEditor.Italic />
-											<RichTextEditor.Underline />
-											<RichTextEditor.Link />
-										</RichTextEditor.ControlsGroup>
-
-										<RichTextEditor.ControlsGroup>
-											<RichTextEditor.BulletList />
-											<RichTextEditor.OrderedList />
-										</RichTextEditor.ControlsGroup>
-
-										<RichTextEditor.ControlsGroup>
-											<RichTextEditor.H1 />
-											<RichTextEditor.H2 />
-											<RichTextEditor.H3 />
-										</RichTextEditor.ControlsGroup>
-
-										<RichTextEditor.ControlsGroup>
-											<RichTextEditor.Undo />
-											<RichTextEditor.Redo />
-										</RichTextEditor.ControlsGroup>
-									</RichTextEditor.Toolbar>
-
-									<RichTextEditor.Content />
-								</RichTextEditor>
+									aria-label="Description"
+									autoFocus
+									value={values.description}
+									onChange={(html) => setFieldValue("description", html)}
+								/>
 							</div>
 						) : (
 							<div className={styles.sectionBody}>
-								{form.values.description ? (
+								{values.description ? (
 									<div
 										className={styles.descriptionHtml}
 										// biome-ignore lint/security/noDangerouslySetInnerHtml: We sanitize with DOMPurify
 										dangerouslySetInnerHTML={{
-											__html: DOMPurify.sanitize(form.values.description),
+											__html: DOMPurify.sanitize(values.description),
 										}}
 									/>
 								) : (
-									<Text size="sm" c="dimmed">
+									<p className={styles.emptyText}>
 										No description. Choose Edit to add one.
-									</Text>
+									</p>
 								)}
 							</div>
 						)}
@@ -572,90 +539,89 @@ const EditBookForm = ({
 				</div>
 			</div>
 
-			{/* Hardcover Search Modal */}
-			<Modal
-				opened={hc.isSearchModalOpen}
-				onClose={() => hc.setIsSearchModalOpen(false)}
+			{/* Hardcover search sheet */}
+			<Sheet
+				open={hc.isSearchModalOpen}
+				onOpenChange={hc.setIsSearchModalOpen}
 				title="Find on Hardcover"
-				size="xl"
+				width={780}
 			>
-				<Stack gap="sm">
-					<Group gap="xs">
+				<div className={styles.searchStack}>
+					<div className={styles.inlineControls}>
 						<TextInput
 							placeholder="Search by title or author…"
+							className={styles.flexGrow}
 							value={hc.searchQuery}
 							onChange={(event) => hc.setSearchQuery(event.target.value)}
 							onKeyDown={(event) => {
 								if (event.key === "Enter") {
+									event.preventDefault();
 									void hc.searchHardcover();
 								}
 							}}
-							style={{ flex: 1 }}
 						/>
 						<Button
+							variant="primary"
+							disabled={hc.isSearching}
 							onClick={() => void hc.searchHardcover()}
-							loading={hc.isSearching}
 						>
 							Search
 						</Button>
-					</Group>
-					<ScrollArea style={{ height: "55vh" }}>
-						<Stack gap={0}>
-							{hc.searchResults.length === 0 ? (
-								<Text c="dimmed" ta="center" size="sm" py="md">
-									{hc.isSearching ? (
-										<Loader size="sm" />
-									) : hc.searchQuery ? (
-										"No results found. Try a different search query."
-									) : (
-										"Enter a title or author name to search."
+					</div>
+					<div className={styles.searchResults}>
+						{hc.searchResults.length === 0 ? (
+							<div className={styles.searchEmpty}>
+								{hc.isSearching ? (
+									<Spinner />
+								) : hc.searchQuery ? (
+									"No results found. Try a different search query."
+								) : (
+									"Enter a title or author name to search."
+								)}
+							</div>
+						) : (
+							hc.searchResults.map((result) => (
+								<button
+									type="button"
+									key={result.hardcover_id}
+									className={styles.searchResult}
+									onClick={() => void hc.selectSearchResult(result)}
+								>
+									{result.image_url && (
+										<img
+											src={result.image_url}
+											alt={result.title}
+											className={styles.searchResultCover}
+										/>
 									)}
-								</Text>
-							) : (
-								hc.searchResults.map((result) => (
-									<UnstyledButton
-										key={result.hardcover_id}
-										className={styles.searchResult}
-										onClick={() => void hc.selectSearchResult(result)}
-									>
-										<Group align="flex-start" gap="md" wrap="nowrap">
-											{result.image_url && (
-												<Image
-													src={result.image_url}
-													alt={result.title}
-													w={60}
-													h={90}
-													fit="contain"
-												/>
-											)}
-											<Stack flex={1} gap={4}>
-												<Text size="sm" fw={600}>
-													{result.title}
-												</Text>
-												{result.authors && result.authors.length > 0 && (
-													<Text size="xs" c="dimmed">
-														{result.authors.join(", ")}
-													</Text>
-												)}
-												{result.release_year && (
-													<Text size="xs" c="dimmed">
-														Published {result.release_year}
-													</Text>
-												)}
-												{result.description && (
-													<Text size="xs" c="dimmed" lineClamp={2}>
-														{result.description.replace(/<[^>]*>/g, "")}
-													</Text>
-												)}
-											</Stack>
-										</Group>
-									</UnstyledButton>
-								))
-							)}
-						</Stack>
-					</ScrollArea>
-				</Stack>
-			</Modal>
-		</Form>
+									<div className={styles.searchResultMeta}>
+										<span className={styles.searchResultTitle}>
+											{result.title}
+										</span>
+										{result.authors && result.authors.length > 0 && (
+											<span className={styles.searchResultDetail}>
+												{result.authors.join(", ")}
+											</span>
+										)}
+										{result.release_year && (
+											<span className={styles.searchResultDetail}>
+												Published {result.release_year}
+											</span>
+										)}
+										{result.description && (
+											<span
+												className={`${styles.searchResultDetail} ${styles.searchResultClamp}`}
+											>
+												{result.description.replace(/<[^>]*>/g, "")}
+											</span>
+										)}
+									</div>
+								</button>
+							))
+						)}
+					</div>
+				</div>
+			</Sheet>
+		</form>
 	);
 };

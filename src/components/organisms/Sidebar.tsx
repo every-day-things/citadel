@@ -1,19 +1,13 @@
-import { commands } from "@/bindings";
-import { F7Gear } from "@/components/icons/F7Gear";
-import { useAppUpdates } from "@/lib/hooks/use-app-updates";
-import { LibraryState, useLibraryState } from "@/stores/library/store";
-import {
-	ActionIcon,
-	Button,
-	Group,
-	Modal,
-	NavLink,
-	Stack,
-	Text,
-} from "@mantine/core";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { isTauri } from "@tauri-apps/api/core";
-import { type CSSProperties, useCallback, useMemo } from "react";
+import clsx from "clsx";
+import { useCallback, useMemo } from "react";
+import { commands } from "@/bindings";
+import { F7Gear } from "@/components/icons/F7Gear";
+import { AlertDialog, IconButton } from "@/components/ui";
+import { useAppUpdates } from "@/lib/hooks/use-app-updates";
+import { LibraryState, useLibraryState } from "@/stores/library/store";
+import styles from "./Sidebar.module.css";
 
 export const Sidebar = () => {
 	const state = useLibraryState();
@@ -51,36 +45,25 @@ export const Sidebar = () => {
 
 	return (
 		<>
-			<Modal
-				opened={isUpdatePromptOpen}
-				onClose={closeUpdatePrompt}
+			<AlertDialog
+				open={isUpdatePromptOpen}
+				onOpenChange={(open) => {
+					// The old modal disabled escape/outside-click closes while the
+					// update was installing; keep the prompt open in that state.
+					// Read the flag from the store so the Action click (which sets
+					// it synchronously before Radix requests the close) is seen.
+					if (!open && !useAppUpdates.getState().isInstallingUpdate) {
+						closeUpdatePrompt();
+					}
+				}}
 				title="Update available"
-				centered
-				closeOnClickOutside={!isInstallingUpdate}
-				closeOnEscape={!isInstallingUpdate}
-				withCloseButton={!isInstallingUpdate}
-			>
-				<Stack gap="md">
-					<Text size="sm">
-						A new Citadel release is available. Install now?
-					</Text>
-					<Group justify="flex-end">
-						<Button
-							variant="default"
-							onClick={closeUpdatePrompt}
-							disabled={isInstallingUpdate}
-						>
-							Later
-						</Button>
-						<Button
-							onClick={() => void installAvailableUpdate()}
-							loading={isInstallingUpdate}
-						>
-							Install and restart
-						</Button>
-					</Group>
-				</Stack>
-			</Modal>
+				description="A new Citadel release is available. Install now?"
+				confirmLabel={
+					isInstallingUpdate ? "Installing…" : "Install and restart"
+				}
+				cancelLabel="Later"
+				onConfirm={() => void installAvailableUpdate()}
+			/>
 			<SidebarPure
 				currentPathname={location.pathname}
 				shelves={shelves}
@@ -105,94 +88,38 @@ const SidebarPure = ({
 	shelves,
 	openSettings,
 }: SidebarPureProps) => {
-	const baseTextColor = "var(--ctd-ink-soft)";
-	const activeBackground = "var(--ctd-nav-active-bg)";
-	const activeTextColor = "var(--ctd-nav-active-text)";
-
-	// Hover backgrounds live in styles.css (.ctd-nav-link / .ctd-settings-button):
-	// pseudo-class selectors in the Mantine `styles` prop are inert inline styles,
-	// so hover state must come from a real stylesheet. Inactive rows leave
-	// backgroundColor unset so the CSS :hover rule can apply.
-	const navLinkRootStyle = (active: boolean): CSSProperties => ({
-		borderRadius: "0.375rem",
-		padding: "0.4rem 0.65rem",
-		minHeight: 34,
-		transition: "background-color 140ms ease, color 140ms ease",
-		backgroundColor: active ? activeBackground : undefined,
-		color: active ? activeTextColor : baseTextColor,
-	});
-
 	return (
-		<Stack
-			justify="space-between"
-			h="100%"
-			p="md"
-			style={{
-				paddingTop: "1rem",
-			}}
-		>
-			<Stack gap={2}>
-				<Text
-					component="h2"
-					size="xs"
-					fw={600}
-					tt="uppercase"
-					style={{
-						/* Aligns with NavLink label text (0.65rem item inset); the extra
-						   bottom margin separates the header from its rows without making
-						   the row rhythm itself any looser. */
-						margin: "0 0 4px",
-						paddingInline: "0.65rem",
-						letterSpacing: "0.05em",
-						color: "var(--ctd-ink-soft)",
-					}}
-				>
-					Library
-				</Text>
+		<div className={styles.root}>
+			<div className={styles.section}>
+				<h2 className={styles.sectionLabel}>Library</h2>
 				{shelves.map(({ title, path, isActive }) => (
-					<NavLink
+					<Link
 						key={path}
-						label={title}
-						component={Link}
 						to={path}
-						active={isActive()}
-						variant="subtle"
-						className="ctd-nav-link"
-						styles={{ root: navLinkRootStyle(isActive()) }}
-					/>
+						className={clsx("ctd-nav-link", styles.navLink)}
+						data-active={isActive() || undefined}
+					>
+						{title}
+					</Link>
 				))}
-				<NavLink
-					label="Authors"
-					component={Link}
+				<Link
 					to="/authors"
-					active={currentPathname === "/authors"}
-					variant="subtle"
-					className="ctd-nav-link"
-					styles={{
-						root: navLinkRootStyle(currentPathname === "/authors"),
-					}}
-				/>
-			</Stack>
-			<Stack>
-				{/* size 28 keeps the gear's hit area comfortably clickable; hover
-				    background comes from .ctd-settings-button in styles.css. */}
-				<ActionIcon
-					variant="subtle"
-					color="gray"
+					className={clsx("ctd-nav-link", styles.navLink)}
+					data-active={currentPathname === "/authors" || undefined}
+				>
+					Authors
+				</Link>
+			</div>
+			<div className={styles.section}>
+				<IconButton
 					aria-label="Settings"
-					size={28}
-					className="ctd-settings-button"
+					className={clsx("ctd-settings-button", styles.settingsButton)}
 					onClick={openSettings}
 				>
-					{/* F7Gear hardcodes width/height 56; size it to fit the button
-					    (ActionIcon clips overflow). */}
-					<F7Gear
-						width={18}
-						height={18}
-						style={{ color: "var(--mantine-color-text)" }}
-					/>
-				</ActionIcon>
-			</Stack>
-		</Stack>
+					{/* F7Gear hardcodes width/height 56; size it to fit the button. */}
+					<F7Gear width={18} height={18} />
+				</IconButton>
+			</div>
+		</div>
 	);
 };

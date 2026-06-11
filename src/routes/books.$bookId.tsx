@@ -1,15 +1,22 @@
+import { createFileRoute, useParams } from "@tanstack/react-router";
+import { type CSSProperties, useCallback, useMemo } from "react";
 import type { BookUpdate, NewAuthor } from "@/bindings";
 import { BookPage } from "@/components/pages/EditBook";
+import { Spinner } from "@/components/ui";
 import {
 	LibraryState,
-	useBooks,
 	useAuthors,
+	useBooks,
 	useLibraryActions,
 	useLibraryState,
 } from "@/stores/library/store";
-import { Center, Loader, Text } from "@mantine/core";
-import { createFileRoute, useParams } from "@tanstack/react-router";
-import { useCallback, useMemo } from "react";
+
+const centeredFill: CSSProperties = {
+	display: "flex",
+	alignItems: "center",
+	justifyContent: "center",
+	height: "100%",
+};
 
 const EditBookRoute = () => {
 	const { bookId } = useParams({ from: "/books/$bookId" });
@@ -87,18 +94,18 @@ const EditBookRoute = () => {
 
 	if (state !== LibraryState.ready) {
 		return (
-			<Center h="100%">
-				<Loader size="sm" />
-			</Center>
+			<div style={centeredFill}>
+				<Spinner size={18} />
+			</div>
 		);
 	}
 	if (!book) {
 		return (
-			<Center h="100%">
-				<Text size="sm" c="dimmed">
+			<div style={centeredFill}>
+				<span style={{ fontSize: 13, color: "var(--ctd-ink-soft)" }}>
 					Book not found.
-				</Text>
-			</Center>
+				</span>
+			</div>
 		);
 	}
 

@@ -1,10 +1,10 @@
 import { commands } from "@/bindings";
+import { Button } from "@/components/ui";
 import { safeAsyncEventHandler } from "@/lib/async";
 import { usePlatform } from "@/lib/platform/context";
 import { useLibraryStore } from "@/stores/library/store";
-import { createLibrary } from "@/stores/settings/actions";
-import { setActiveLibrary } from "@/stores/settings/actions";
-import { Button, Stack, Text, Title } from "@mantine/core";
+import { createLibrary, setActiveLibrary } from "@/stores/settings/actions";
+import styles from "./firstTimeSetup.module.css";
 
 export const FirstTimeSetup = () => {
 	const actions = useLibraryStore((state) => state.actions);
@@ -28,15 +28,16 @@ export const FirstTimeSetup = () => {
 		return { type: "new library selected", path };
 	};
 	return (
-		<Stack align="center" justify="flex-start" h={"100vh"} p="sm">
-			<Title>Welcome to Citadel!</Title>
+		<div className={styles.page}>
+			<h1 className={styles.title}>Welcome to Citadel!</h1>
 
-			<Text>
+			<p className={styles.text}>
 				Select an existing Calibre library, or choose where to create a new
 				library.
-			</Text>
+			</p>
 			<Button
-				onPointerDown={safeAsyncEventHandler(async () => {
+				variant="primary"
+				onClick={safeAsyncEventHandler(async () => {
 					const returnStatus = await openFilePicker();
 					if (returnStatus.type === "invalid library path selected") {
 						return;
@@ -51,6 +52,6 @@ export const FirstTimeSetup = () => {
 			>
 				Choose Calibre library folder
 			</Button>
-		</Stack>
+		</div>
 	);
 };

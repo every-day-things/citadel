@@ -1,34 +1,28 @@
-import type { Identifier, LibraryBook, LocalFile } from "@/bindings";
-import { safeAsyncEventHandler } from "@/lib/async";
-import DOMPurify from "dompurify";
-import {
-	Badge,
-	Center,
-	Checkbox,
-	Divider,
-	Drawer,
-	Group,
-	Select,
-	Stack,
-	Text,
-	TextInput,
-	rem,
-} from "@mantine/core";
-import { Button, IconButton } from "@/components/ui";
-import { useDisclosure } from "@mantine/hooks";
 import { Link } from "@tanstack/react-router";
-import { usePlatform } from "@/lib/platform/context";
+import DOMPurify from "dompurify";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BookCover } from "../atoms/BookCover";
-import { BookGrid } from "../molecules/BookGrid";
-import { TablerCopy } from "../icons/TablerCopy";
-import { F7Pencil } from "../icons/F7Pencil";
+import type { Identifier, LibraryBook, LocalFile } from "@/bindings";
+import {
+	Button,
+	Checkbox,
+	Drawer,
+	IconButton,
+	SearchField,
+	Select,
+} from "@/components/ui";
+import { safeAsyncEventHandler } from "@/lib/async";
+import { usePlatform } from "@/lib/platform/context";
 import { useBooks, useBooksLoading } from "@/stores/library/store";
 import {
 	LibraryBookSortOrder,
 	type LibraryBookSortOrderKey,
 	useLibraryView,
 } from "@/stores/library-view/store";
+import { BookCover } from "../atoms/BookCover";
+import { F7Pencil } from "../icons/F7Pencil";
+import { TablerCopy } from "../icons/TablerCopy";
+import { BookGrid } from "../molecules/BookGrid";
+import styles from "./Books.module.css";
 
 interface BookSearchOptions {
 	search_for_author?: string;
@@ -89,10 +83,7 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 		return [...filteredBooks].sort(compare);
 	}, [filteredBooks, sortOrder]);
 
-	const [
-		isBookSidebarOpen,
-		{ open: openBookSidebar, close: closeBookSidebar },
-	] = useDisclosure(false);
+	const [isBookSidebarOpen, setIsBookSidebarOpen] = useState(false);
 
 	const [selectedSidebarBook, setSelectedSidebarBook] =
 		useState<LibraryBook | null>(null);
@@ -101,165 +92,86 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 			const book = books.filter((book) => book.id === bookId).at(0);
 			if (!book) return;
 			setSelectedSidebarBook(book);
-			openBookSidebar();
+			setIsBookSidebarOpen(true);
 		},
-		[books, openBookSidebar],
+		[books],
 	);
 
 	return (
-		<Stack gap={0} mih="100%">
+		<div className={styles.page}>
 			{/*
 			 * Finder-style scope bar: pinned to the top of the scroll container
 			 * (the panel div wrapping <Outlet/> in __root), above the content.
 			 */}
-			<Group
-				gap="sm"
-				wrap="nowrap"
-				style={{
-					position: "sticky",
-					top: 0,
-					zIndex: 3,
-					padding: "8px 24px",
-					backgroundColor: "var(--ctd-content-bg)",
-					borderBottom: "1px solid var(--ctd-border)",
-				}}
-			>
-				<TextInput
-					size="xs"
-					placeholder="Search"
-					aria-label="Search book titles and authors"
-					value={query}
-					onChange={(event) => setQuery(event.currentTarget.value)}
-					style={{ flexGrow: 1, maxWidth: 320 }}
-					leftSection={
-						<svg
-							width="12"
-							height="12"
-							viewBox="0 0 15 15"
-							fill="none"
-							aria-hidden="true"
-						>
-							<circle
-								cx="6.5"
-								cy="6.5"
-								r="4.5"
-								stroke="currentColor"
-								strokeWidth="1.4"
-							/>
-							<path
-								d="M10 10l3.5 3.5"
-								stroke="currentColor"
-								strokeWidth="1.4"
-								strokeLinecap="round"
-							/>
-						</svg>
-					}
-					styles={{
-						section: { color: "var(--ctd-ink-soft)" },
-					}}
-				/>
+			<div className={styles.scopeBar}>
+				<span className={styles.searchWrap}>
+					<SearchField
+						placeholder="Search"
+						aria-label="Search book titles and authors"
+						value={query}
+						onChange={(event) => setQuery(event.currentTarget.value)}
+						className={styles.searchInput}
+					/>
+				</span>
 				<Select
-					size="xs"
-					w={150}
-					allowDeselect={false}
+					width={150}
 					aria-label="Sort order"
-					data={(
+					options={(
 						Object.keys(LibraryBookSortOrder) as LibraryBookSortOrderKey[]
 					).map((key) => ({
 						value: key,
 						label: SORT_LABELS[key],
 					}))}
 					value={sortOrder}
-					onChange={(value) =>
-						value && setSortOrder(value as LibraryBookSortOrderKey)
-					}
-					styles={{
-						dropdown: {
-							backgroundColor: "var(--ctd-surface-strong)",
-							borderColor: "var(--ctd-border)",
-						},
-					}}
+					onChange={(value) => setSortOrder(value as LibraryBookSortOrderKey)}
 				/>
 				<Checkbox
-					size="xs"
 					label="Unread only"
 					checked={hideRead}
-					onChange={(event) => setHideRead(event.currentTarget.checked)}
-					styles={{
-						label: { fontSize: 13, color: "var(--ctd-ink)" },
-					}}
+					onCheckedChange={setHideRead}
 				/>
-			</Group>
-			<div style={{ flex: 1 }}>
+			</div>
+			<div className={styles.gridArea}>
 				<BookGrid
 					bookList={sortedBooks}
 					loading={loading}
 					onBookOpen={onBookOpen}
 				/>
 			</div>
-			<Center
-				py={6}
-				style={{
-					position: "sticky",
-					bottom: 0,
-					zIndex: 2,
-					backgroundColor: "var(--ctd-content-bg)",
-					borderTop: "1px solid var(--ctd-border)",
-				}}
-			>
-				<Text size="xs" c="dimmed">
+			<div className={styles.footer}>
+				<span className={styles.footerText}>
 					{sortedBooks.length === books.length
 						? `${books.length} books`
 						: `${sortedBooks.length} of ${books.length} books`}
-				</Text>
-			</Center>
+				</span>
+			</div>
 			<Drawer
-				offset={8}
-				size={"md"}
-				radius="md"
-				opened={isBookSidebarOpen}
-				position="right"
-				onClose={closeBookSidebar}
-				title={null}
-				withCloseButton={false}
-				overlayProps={{ blur: 3, backgroundOpacity: 0.35 }}
-				styles={{
-					content: {
-						background: "var(--ctd-drawer-gradient)",
-						border: "1px solid var(--ctd-border)",
-					},
-					header: {
-						background: "transparent",
-						padding: 0,
-						minHeight: 0,
-					},
-					body: {
-						paddingTop: "0.4rem",
-					},
+				open={isBookSidebarOpen}
+				onOpenChange={(open) => {
+					if (!open) setIsBookSidebarOpen(false);
 				}}
+				width={440}
 			>
 				{selectedSidebarBook && <BookDetails book={selectedSidebarBook} />}
 			</Drawer>
-		</Stack>
+		</div>
 	);
 };
 
 const BookDetails = ({ book }: { book: LibraryBook }) => {
 	const platform = usePlatform();
 	return (
-		<Stack h={"100%"} gap="md">
-			<Group wrap={"nowrap"} align="flex-start">
+		<div className={styles.details}>
+			<div className={styles.detailsTop}>
 				<BookCover book={book} disableFade />
-				<Stack justify="space-between" mih={"200px"} maw="calc(400px - 133px)">
-					<Stack ml={"sm"} align="flex-start" justify="flex-start" gap={4}>
-						<Text size="xl" fw={"700"} style={{ lineHeight: 1.15 }}>
-							{book.title}
-						</Text>
-						<Text size="md" c="dimmed">
+				<div className={styles.detailsInfo}>
+					<div className={styles.detailsHeading}>
+						<span className={styles.detailsTitle}>{book.title}</span>
+						<span className={styles.detailsAuthors}>
 							{book.author_list.map((author) => author.name).join(", ")}
-						</Text>
-					</Stack>
-					<Group justify="space-between" w={"100%"}>
+						</span>
+					</div>
+					<div className={styles.detailsActions}>
 						{platform.capabilities.canOpenLocalPaths && (
 							<Button
 								variant="subtle"
@@ -282,16 +194,14 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 								Edit
 							</Button>
 						</Link>
-					</Group>
-				</Stack>
-			</Group>
+					</div>
+				</div>
+			</div>
 			{book.description !== null && book.description.length > 0 && (
 				<>
-					<Divider />
-					<Stack>
-						<Text fw={700} style={{}}>
-							Description
-						</Text>
+					<hr className={styles.divider} />
+					<div className={styles.detailsBlock}>
+						<span className={styles.blockTitle}>Description</span>
 						{/* We're using DOMPurify to sanitize the HTML before rendering */}
 						<div
 							className="description-html"
@@ -300,44 +210,35 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 								__html: DOMPurify.sanitize(book.description),
 							}}
 						/>
-					</Stack>
+					</div>
 				</>
 			)}
-			<Divider />
-			<Stack gap={6}>
+			<hr className={styles.divider} />
+			<div className={styles.metaStack}>
 				{book.tag_list.length > 0 && (
-					<Stack gap="xs">
-						<Text size="sm" fw={700} style={{}}>
-							Tags
-						</Text>
-						<Group gap="xs">
+					<div className={styles.metaBlock}>
+						<span className={styles.blockTitleSm}>Tags</span>
+						<div className={styles.tagRow}>
 							{book.tag_list.map((tag) => (
-								<Badge key={tag} variant="light" color="accent">
+								<span key={tag} className={styles.tagBadge}>
 									{tag}
-								</Badge>
+								</span>
 							))}
-						</Group>
-					</Stack>
+						</div>
+					</div>
 				)}
 				{book.identifier_list.length > 0 && (
 					<BookIdentifiers identifier_list={book.identifier_list} />
 				)}
-				<Text fw={700} style={{}}>
-					Formats
-				</Text>
-				<p style={{ marginTop: 0 }}>
+				<span className={styles.blockTitle}>Formats</span>
+				<p className={styles.formatRow}>
 					{book.file_list
 						.filter((item): item is { Local: LocalFile } => "Local" in item)
 						.map((f1) =>
 							platform.capabilities.canRevealInFileManager ? (
 								<span
 									key={f1.Local.path}
-									style={{
-										display: "inline-flex",
-										textDecoration: "underline",
-										marginRight: "0.75rem",
-										fontSize: "0.9rem",
-									}}
+									className={`${styles.formatChip} ${styles.formatChipLink}`}
 									onPointerDown={safeAsyncEventHandler(async () => {
 										await platform.fileOpener.revealInFileManager(
 											f1.Local.path,
@@ -347,21 +248,14 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 									{f1.Local.mime_type} ↗
 								</span>
 							) : (
-								<span
-									key={f1.Local.path}
-									style={{
-										display: "inline-flex",
-										marginRight: "0.75rem",
-										fontSize: "0.9rem",
-									}}
-								>
+								<span key={f1.Local.path} className={styles.formatChip}>
 									{f1.Local.mime_type}
 								</span>
 							),
 						)}
 				</p>
-			</Stack>
-		</Stack>
+			</div>
+		</div>
 	);
 };
 
@@ -389,11 +283,9 @@ const BookIdentifiers = ({
 }) => {
 	const platform = usePlatform();
 	return (
-		<Stack gap={"xs"}>
-			<Text size="sm" fw={700} style={{}}>
-				Identifiers
-			</Text>
-			<ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+		<div className={styles.metaBlock}>
+			<span className={styles.blockTitleSm}>Identifiers</span>
+			<ul className={styles.identifierList}>
 				{identifier_list.map(({ label, value }) => {
 					if (isKnownLabel(label)) {
 						const transformValueToUrl = KNOWN_LABELS_TO_SEARCH_URLS[label];
@@ -401,20 +293,16 @@ const BookIdentifiers = ({
 
 						return (
 							<li key={label}>
-								<Text
-									size="sm"
-									component="span"
-									style={{ marginRight: "1rem" }}
-								>
-									<Text size="sm" component="span" fw="bold">
+								<span className={styles.identifierEntry}>
+									<span className={styles.identifierLabel}>
 										{label.toUpperCase()}
-									</Text>
+									</span>
 									:{" "}
 									<a
 										href={url}
 										target="_blank"
 										rel={"noreferrer"}
-										style={{ color: "var(--ctd-link)" }}
+										className={styles.identifierLink}
 									>
 										{value}
 									</a>
@@ -425,26 +313,26 @@ const BookIdentifiers = ({
 												await platform.clipboard.writeText(value);
 											})}
 										>
-											<TablerCopy style={{ width: rem(12) }} />
+											<TablerCopy style={{ width: "12px" }} />
 										</IconButton>
 									)}
-								</Text>
+								</span>
 							</li>
 						);
 					}
 					return (
 						<li key={label}>
-							<Text component="span" style={{ marginRight: "1rem" }}>
-								<Text component="span" fw="bold">
+							<span className={styles.identifierEntry}>
+								<span className={styles.identifierLabel}>
 									{label.toUpperCase()}
-								</Text>
+								</span>
 								: {value}
-							</Text>
+							</span>
 						</li>
 					);
 				})}
 			</ul>
-		</Stack>
+		</div>
 	);
 };
 

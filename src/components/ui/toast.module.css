@@ -1,0 +1,103 @@
+/* Above sheets, drawers, and alerts: notifications outrank everything. */
+.stack {
+	position: fixed;
+	top: 12px;
+	right: 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	width: 300px;
+	z-index: 130;
+}
+
+.banner {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	padding: 10px 12px;
+	background-color: var(--ctd-surface-strong);
+	border: 1px solid var(--ctd-border);
+	border-radius: var(--ctd-radius-panel);
+	box-shadow: var(--ctd-shadow-lift);
+	animation: toast-in 200ms ease-out;
+}
+
+.bannerExiting {
+	animation: toast-out 160ms ease-in forwards;
+	pointer-events: none;
+}
+
+.spinner {
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	/* Optically center against the 13px title line. */
+	padding-top: 2px;
+}
+
+.text {
+	flex: 1;
+	min-width: 0;
+}
+
+.title {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--ctd-ink);
+	overflow-wrap: break-word;
+}
+
+.message {
+	margin-top: 1px;
+	font-size: 12px;
+	line-height: 1.4;
+	color: var(--ctd-ink-soft);
+	overflow-wrap: break-word;
+}
+
+.dismiss {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: 16px;
+	height: 16px;
+	margin-top: 1px;
+	padding: 0;
+	border: none;
+	border-radius: 50%;
+	background-color: transparent;
+	color: var(--ctd-ink-soft);
+}
+
+.dismiss:hover {
+	background-color: var(--ctd-nav-hover-bg);
+	color: var(--ctd-ink);
+}
+
+.dismiss:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 2px var(--ctd-focus-ring);
+}
+
+@keyframes toast-in {
+	from {
+		transform: translateX(16px);
+		opacity: 0;
+	}
+	to {
+		transform: translateX(0);
+		opacity: 1;
+	}
+}
+
+@keyframes toast-out {
+	from {
+		transform: translateX(0);
+		opacity: 1;
+	}
+	to {
+		transform: translateX(16px);
+		opacity: 0;
+	}
+}

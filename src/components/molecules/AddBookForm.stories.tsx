@@ -1,20 +1,9 @@
+import type { Meta, StoryObj } from "@storybook/react";
 import type { LibraryAuthor } from "@/bindings";
-import { theme } from "@/lib/theme";
-import { MantineProvider } from "@mantine/core";
-import type { Meta, StoryFn, StoryObj } from "@storybook/react";
 import { AddBookForm } from "./AddBookForm";
-
-export const MantineForStorybook = (Story: StoryFn) => {
-	return (
-		<MantineProvider theme={theme} forceColorScheme="dark">
-			<Story />
-		</MantineProvider>
-	);
-};
 
 const meta: Meta<typeof AddBookForm> = {
 	component: AddBookForm,
-	decorators: [MantineForStorybook],
 	argTypes: {
 		fileName: {
 			control: { type: "text" },

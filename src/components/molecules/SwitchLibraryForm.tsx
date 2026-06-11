@@ -1,15 +1,8 @@
+import { useState } from "react";
+import { Button, FormField, TextInput } from "@/components/ui";
 import { safeAsyncEventHandler } from "@/lib/async";
 import type { Option } from "@/lib/option";
-import {
-	Button,
-	Code,
-	SimpleGrid,
-	Stack,
-	Text,
-	TextInput,
-	Title,
-} from "@mantine/core";
-import { Form, useForm } from "@mantine/form";
+import styles from "./SwitchLibraryForm.module.css";
 
 export interface SwitchLibraryForm {
 	libraryPath: string;
@@ -19,14 +12,14 @@ export type SelectFirstLibraryProps = AddNewLibraryPathFomProps;
 
 export const SelectFirstLibrary = (props: SelectFirstLibraryProps) => {
 	return (
-		<Stack gap={"lg"}>
-			<Text>
+		<div className={styles.stack}>
+			<p className={styles.text}>
 				Select the folder where your Calibre library is. This is a folder that
 				contains a metadata.db file as well as folders for each author in your
 				library.
-			</Text>
+			</p>
 			<AddNewLibraryPathForm {...props} />
-		</Stack>
+		</div>
 	);
 };
 
@@ -51,40 +44,23 @@ export const SwitchLibraryForm = ({
 	)?.absolutePath;
 
 	return (
-		<Stack gap={"lg"}>
-			<Stack mb="sm" gap="xs">
-				<Text mb="0">Current library:</Text>{" "}
-				<Code
-					mt="0"
-					style={{
-						backgroundColor: "var(--ctd-control-bg)",
-						border: "1px solid var(--ctd-border)",
-					}}
-				>
-					{currentLibraryPath}
-				</Code>
-			</Stack>
+		<div className={styles.stack}>
+			<div className={styles.currentLibrary}>
+				<p className={styles.text}>Current library:</p>
+				<code className={styles.code}>{currentLibraryPath}</code>
+			</div>
 			{libraries.length > 1 && (
 				<>
-					<Title size={"sm"}>Select an existing library to switch to</Title>
-					<SimpleGrid cols={3}>
+					<h3 className={styles.heading}>
+						Select an existing library to switch to
+					</h3>
+					<div className={styles.libraryGrid}>
 						{libraries.map((library) => (
 							<Button
 								key={library.id}
-								variant="outline"
-								color="accent"
-								styles={{
-									root: {
-										"&:disabled, &[data-disabled]": {
-											backgroundColor: "var(--ctd-control-disabled-bg)",
-											borderColor: "var(--ctd-control-disabled-border)",
-											color: "var(--ctd-control-disabled-text)",
-											opacity: 1,
-										},
-									},
-								}}
+								variant="default"
 								disabled={library.id === currentLibraryId}
-								onPointerUp={safeAsyncEventHandler(async () => {
+								onClick={safeAsyncEventHandler(async () => {
 									if (library.id === currentLibraryId) return;
 									await selectExistingLibrary(library.id);
 								})}
@@ -92,11 +68,11 @@ export const SwitchLibraryForm = ({
 								{library.displayName}
 							</Button>
 						))}
-					</SimpleGrid>
+					</div>
 				</>
 			)}
 			<AddNewLibraryPathForm {...props} />
-		</Stack>
+		</div>
 	);
 };
 
@@ -109,79 +85,44 @@ const AddNewLibraryPathForm = ({
 	onSubmit,
 	selectNewLibrary: addNewLibraryByPath,
 }: AddNewLibraryPathFomProps) => {
-	const form = useForm<SwitchLibraryForm>({
-		initialValues: {
-			libraryPath: "",
-		},
-		validate: {
-			libraryPath: (value) => {
-				if (value === "") {
-					return "Library path is required";
-				}
-			},
-		},
-	});
+	const [libraryPath, setLibraryPath] = useState("");
+	const [error, setError] = useState<string | undefined>(undefined);
 
 	return (
-		<Form
-			form={form}
-			onSubmit={() => {
-				if (onSubmit && form.isTouched() && form.isValid()) {
-					onSubmit(form.values);
+		<form
+			className={styles.stack}
+			onSubmit={(event) => {
+				event.preventDefault();
+				if (libraryPath === "") {
+					setError("Library path is required");
+					return;
 				}
+				onSubmit({ libraryPath });
 			}}
 		>
-			<Stack gap={"lg"}>
+			<FormField
+				label="Library path"
+				description="This folder contains your metadata.db"
+				error={error}
+			>
+				{/* The path comes from the native directory picker, never from
+				    typing, so the field is read-only and a pointer-down opens
+				    the picker (same interaction as before). */}
 				<TextInput
-					label="Library path"
-					description="This folder contains your metadata.db"
-					placeholder=""
-					styles={{
-						label: {
-							color: "var(--ctd-ink-soft)",
-						},
-						description: {
-							color: "var(--ctd-ink-soft)",
-						},
-						input: {
-							backgroundColor: "var(--ctd-control-bg)",
-							borderColor: "var(--ctd-border)",
-							color: "var(--ctd-control-text)",
-						},
-					}}
-					value={form.values.libraryPath}
-					error={form.errors.libraryPath}
-					onChange={(event) => {
-						event.preventDefault();
-					}}
+					value={libraryPath}
+					readOnly
 					onPointerDown={safeAsyncEventHandler(async () => {
 						const libPathOption = await addNewLibraryByPath();
 						if (!libPathOption.isSome) return;
 
-						form.setFieldValue("libraryPath", libPathOption.value);
+						setLibraryPath(libPathOption.value);
+						setError(undefined);
 					})}
 				/>
-				<Button
-					mt="mg"
-					variant="filled"
-					color="accent"
-					styles={{
-						root: {
-							"&:disabled, &[data-disabled]": {
-								backgroundColor: "var(--ctd-control-disabled-bg)",
-								borderColor: "var(--ctd-control-disabled-border)",
-								color: "var(--ctd-control-disabled-text)",
-								opacity: 1,
-							},
-						},
-					}}
-					fullWidth
-					type="submit"
-					disabled={!form.values.libraryPath}
-				>
-					Add library
-				</Button>
-			</Stack>
-		</Form>
+			</FormField>
+			<Button variant="primary" fullWidth type="submit" disabled={!libraryPath}>
+				Add library
+			</Button>
+		</form>
 	);
 };

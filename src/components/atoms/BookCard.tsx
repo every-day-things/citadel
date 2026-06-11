@@ -1,7 +1,7 @@
 import React, { useCallback } from "react";
 import type { LibraryBook } from "@/bindings";
-import { BookCover } from "./BookCover";
 import classes from "./BookCard.module.css";
+import { BookCover } from "./BookCover";
 
 type BookAction = (bookId: LibraryBook["id"]) => void;
 

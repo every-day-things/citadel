@@ -1,0 +1,61 @@
+/*
+ * Sidebar chrome. Hover backgrounds for nav rows and the settings gear live
+ * in styles.css (.ctd-nav-link / .ctd-settings-button); active rows are
+ * marked with a data-active attribute, the same contract those global rules
+ * already key on.
+ */
+.root {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	height: 100%;
+	gap: 16px;
+	padding: 1rem;
+}
+
+.section {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.sectionLabel {
+	/* Aligns with nav-row label text (0.65rem item inset); the extra bottom
+	   margin separates the header from its rows without making the row rhythm
+	   itself any looser. */
+	margin: 0 0 4px;
+	padding-inline: 0.65rem;
+	font-size: 12px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--ctd-ink-soft);
+}
+
+.navLink {
+	display: flex;
+	align-items: center;
+	min-height: 34px;
+	padding: 0.4rem 0.65rem;
+	border-radius: 0.375rem;
+	font-size: 14px;
+	line-height: 1.2;
+	color: var(--ctd-ink-soft);
+	text-decoration: none;
+	transition:
+		background-color 140ms ease,
+		color 140ms ease;
+}
+
+.navLink[data-active] {
+	background-color: var(--ctd-nav-active-bg);
+	color: var(--ctd-nav-active-text);
+}
+
+/* size 28 keeps the gear's hit area comfortably clickable; hover background
+   comes from .ctd-settings-button in styles.css. */
+.settingsButton {
+	width: 28px;
+	height: 28px;
+	color: var(--ctd-ink);
+}

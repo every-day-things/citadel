@@ -1,5 +1,5 @@
-import type { LibraryAuthor, LibraryBook } from "@/bindings";
 import type { Meta, StoryObj } from "@storybook/react";
+import type { LibraryAuthor, LibraryBook } from "@/bindings";
 import { BookPage } from "./EditBook";
 
 const meta: Meta<typeof BookPage> = {

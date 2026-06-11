@@ -1,7 +1,8 @@
-import { useComputedColorScheme } from "@mantine/core";
 import { isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect } from "react";
+import { useResolvedColorScheme } from "@/lib/theme-manager";
+import { useSettings } from "@/stores/settings/store";
 
 /**
  * Keeps the native window appearance (and with it the vibrancy material
@@ -10,13 +11,18 @@ import { useEffect } from "react";
  * dark text.
  */
 export const useNativeThemeSync = () => {
-	const scheme = useComputedColorScheme("light");
+	const theme = useSettings((state) => state.theme);
+	const scheme = useResolvedColorScheme(theme);
 	useEffect(() => {
 		if (!isTauri()) return;
+		// Forcing a window theme also forces the webview's prefers-color-scheme,
+		// which is exactly what "auto" resolves from. setTheme(null) clears the
+		// override so "auto" reads the real OS appearance again (matchMedia fires
+		// a change event and the theme manager follows it).
 		getCurrentWindow()
-			.setTheme(scheme === "dark" ? "dark" : "light")
+			.setTheme(theme === "auto" ? null : scheme === "dark" ? "dark" : "light")
 			.catch(() => {
 				// Pre-2.x runtimes without setTheme: vibrancy follows the system.
 			});
-	}, [scheme]);
+	}, [theme, scheme]);
 };

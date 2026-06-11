@@ -1,0 +1,20 @@
+.overlay {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	/* Token-tinted scrim: the bg color at ~70% lets content ghost through. */
+	background-color: oklch(from var(--ctd-bg) l c h / 0.7);
+	z-index: 10;
+	animation: overlay-fade-in 150ms ease-out;
+}
+
+@keyframes overlay-fade-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}

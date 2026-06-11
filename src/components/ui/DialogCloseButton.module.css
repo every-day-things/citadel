@@ -1,0 +1,21 @@
+.close {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 20px;
+	height: 20px;
+	padding: 0;
+	border-radius: 50%;
+	background-color: var(--ctd-control-bg);
+	border: 1px solid var(--ctd-border);
+	color: var(--ctd-ink-soft);
+}
+
+.close:hover {
+	background-color: var(--ctd-control-bg-strong);
+}
+
+.close:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--ctd-focus-ring);
+}

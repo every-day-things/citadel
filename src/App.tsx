@@ -1,17 +1,15 @@
-import { safeAsyncEventHandler } from "$lib/async";
-import { IS_DEV } from "@/lib/env";
-import { checkForUpdates } from "@/lib/services/app-updates";
-import { usePlatform } from "@/lib/platform/context";
-import { theme } from "$lib/theme";
-import { ColorSchemeScript, MantineProvider } from "@mantine/core";
-import { notifications, Notifications } from "@mantine/notifications";
-import { RouterProvider, createRouter } from "@tanstack/react-router";
+import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { Toaster, TooltipProvider, toast } from "@/components/ui";
+import { IS_DEV } from "@/lib/env";
+import { useInitializeLibraryStore } from "@/lib/hooks/use-initialize-library-store";
+import { usePlatform } from "@/lib/platform/context";
+import { checkForUpdates } from "@/lib/services/app-updates";
+import { useApplyColorScheme } from "@/lib/theme-manager";
+import { safeAsyncEventHandler } from "$lib/async";
 import { FirstTimeSetup } from "./components/pages/firstTimeSetup";
 import { routeTree } from "./routeTree.gen";
 import { useActiveLibraryPath, useSettings } from "./stores/settings/store";
-import { useInitializeLibraryStore } from "@/lib/hooks/use-initialize-library-store";
-import { TooltipProvider } from "@/components/ui";
 
 const router = createRouter({
 	routeTree,
@@ -25,8 +23,10 @@ declare module "@tanstack/react-router" {
 
 export const App = () => {
 	const hydrated = useSettings((state) => state.hydrated);
+	const theme = useSettings((state) => state.theme);
 	const libraryPath = useActiveLibraryPath();
 	const platform = usePlatform();
+	useApplyColorScheme(theme);
 
 	useEffect(() => {
 		if (hydrated) {
@@ -61,12 +61,11 @@ export const App = () => {
 				updateCheckResult.version !== lastNotifiedUpdateVersion
 			) {
 				await setLastNotifiedUpdateVersion(updateCheckResult.version);
-				notifications.show({
+				toast.show({
 					id: "auto-update-available",
 					title: "Update available",
 					message: `Version ${updateCheckResult.version} is available. Open ⚙ to install.`,
-					color: "blue",
-					autoClose: 7000,
+					duration: 7000,
 				});
 			}
 		})();
@@ -79,25 +78,20 @@ export const App = () => {
 
 	if (!libraryPath.isSome) {
 		return (
-			<MantineProvider theme={theme} defaultColorScheme="auto">
-				<Notifications />
+			<TooltipProvider>
+				<Toaster />
 				<FirstTimeSetup />
-			</MantineProvider>
+			</TooltipProvider>
 		);
 	}
 
 	return (
-		<>
-			<ColorSchemeScript defaultColorScheme="auto" />
-			<MantineProvider theme={theme} defaultColorScheme="auto">
-				<TooltipProvider>
-					<Notifications />
-					<LibraryStoreInitializer>
-						<RouterProvider router={router} />
-					</LibraryStoreInitializer>
-				</TooltipProvider>
-			</MantineProvider>
-		</>
+		<TooltipProvider>
+			<Toaster />
+			<LibraryStoreInitializer>
+				<RouterProvider router={router} />
+			</LibraryStoreInitializer>
+		</TooltipProvider>
 	);
 };
 

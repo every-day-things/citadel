@@ -1,5 +1,6 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import type { ReactNode } from "react";
+import { DialogCloseButton } from "./DialogCloseButton";
 import styles from "./Sheet.module.css";
 
 export interface SheetProps {
@@ -16,7 +17,7 @@ export interface SheetProps {
 	onCloseAutoFocus?: (event: Event) => void;
 }
 
-/** A macOS document sheet that slides out from under the toolbar. */
+/** A macOS document sheet: detached below the toolbar, dimming the window. */
 export const Sheet = ({
 	open,
 	onOpenChange,
@@ -38,22 +39,7 @@ export const Sheet = ({
 				<div className={styles.header}>
 					<Dialog.Title className={styles.title}>{title}</Dialog.Title>
 					<Dialog.Close asChild>
-						<button type="button" aria-label="Close" className={styles.close}>
-							<svg
-								width="9"
-								height="9"
-								viewBox="0 0 9 9"
-								fill="none"
-								aria-hidden="true"
-							>
-								<path
-									d="M1.5 1.5l6 6M7.5 1.5l-6 6"
-									stroke="currentColor"
-									strokeWidth="1.4"
-									strokeLinecap="round"
-								/>
-							</svg>
-						</button>
+						<DialogCloseButton />
 					</Dialog.Close>
 				</div>
 				<div className={styles.body}>{children}</div>

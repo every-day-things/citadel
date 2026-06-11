@@ -82,7 +82,7 @@
 	-webkit-text-size-adjust: 100%;
 }
 
-:root[data-mantine-color-scheme="dark"] {
+:root[data-theme="dark"] {
 	--ctd-bg: oklch(22% 0.004 260);
 	--ctd-bg-deep: oklch(19.5% 0.004 260);
 	--ctd-surface: oklch(25% 0.004 260);
@@ -165,7 +165,7 @@
 	--ctd-nav-bg: transparent;
 }
 
-:root[data-vibrancy][data-mantine-color-scheme="dark"] {
+:root[data-vibrancy][data-theme="dark"] {
 	--ctd-header-bg: oklch(23% 0.004 260 / 0.12);
 	--ctd-nav-bg: transparent;
 }
@@ -245,86 +245,6 @@ a:any-link {
 	background: transparent;
 }
 
-/*
- * macOS control chrome. AppKit controls use 13px text, 5-6px radii, hairline
- * borders with a whisper of inner shadow, and a soft accent halo on focus.
- * Applied via Mantine's stable class names so every surface inherits it.
- */
-.mantine-Input-input {
-	font-size: 13px;
-	border-radius: 6px;
-	background-color: var(--ctd-control-bg);
-	border-color: var(--ctd-border);
-	color: var(--ctd-control-text);
-	box-shadow: var(--ctd-field-inner-shadow);
-	transition:
-		box-shadow 140ms ease-out,
-		border-color 140ms ease-out;
-}
-
-.mantine-Input-input:focus,
-.mantine-Input-input:focus-within {
-	border-color: var(--ctd-accent);
-	box-shadow: 0 0 0 3px var(--ctd-focus-ring);
-}
-
-.mantine-InputWrapper-label {
-	font-size: 13px;
-	color: var(--ctd-ink-soft);
-}
-
-.mantine-Button-root {
-	font-size: 13px;
-	font-weight: 500;
-}
-
-.mantine-Button-root[data-variant="default"] {
-	background-color: var(--ctd-control-bg-strong);
-	border: 1px solid var(--ctd-border);
-	box-shadow: var(--ctd-control-shadow);
-}
-
-.mantine-Button-root[data-variant="default"]:hover {
-	background-color: var(--ctd-control-bg);
-}
-
-.mantine-Button-root[data-variant="primary"],
-.mantine-Button-root[data-variant="filled"] {
-	box-shadow: var(--ctd-control-shadow);
-}
-
-.mantine-Button-root:focus-visible,
-.mantine-ActionIcon-root:focus-visible,
-.mantine-SegmentedControl-control:focus-visible {
-	outline: none;
-	box-shadow: 0 0 0 3px var(--ctd-focus-ring);
-}
-
-.mantine-SegmentedControl-root {
-	padding: 2px;
-}
-
-.mantine-SegmentedControl-indicator {
-	box-shadow: 0 0.5px 2px oklch(0% 0 0 / 0.22);
-}
-
-.mantine-Tooltip-tooltip {
-	font-size: 12px;
-}
-
-.mantine-Button-root:disabled,
-.mantine-Button-root[data-disabled] {
-	background-color: var(--ctd-control-disabled-bg);
-	border-color: var(--ctd-control-disabled-border);
-	color: var(--ctd-control-disabled-text);
-	opacity: 1;
-}
-
-.mantine-Notification-root {
-	background-color: var(--ctd-surface-strong);
-	border: 1px solid var(--ctd-border);
-}
-
 /* ==========================================================================
  * Interactivity polish (additive block; keep at the end of this file).
  * Everything below signals what is clickable: pointer cursors, hover
@@ -353,23 +273,16 @@ textarea {
 }
 
 /*
- * Sidebar nav rows (Sidebar.tsx). Mantine's NavLink hover rule is scheme
- * gray; we want the chrome hover token instead. The :not([data-active])
- * guard keeps active rows on --ctd-nav-active-bg (set inline in Sidebar.tsx),
- * and the extra pseudo-classes outrank Mantine's own :hover rule, which is
- * loaded after this file.
+ * Sidebar nav rows (Sidebar.tsx). The :not([data-active]) guard keeps active
+ * rows on --ctd-nav-active-bg (set in Sidebar.tsx).
  */
 .ctd-nav-link:not([data-active]):hover,
 .ctd-nav-link:not([data-active]):focus-visible {
 	background-color: var(--ctd-nav-hover-bg);
 }
 
-/*
- * Sidebar settings (gear) button: same hover token as the nav rows. The
- * class is doubled so this beats Mantine's subtle-variant hover rule
- * (equal-specificity, later in the cascade) without resorting to !important.
- */
-.ctd-settings-button.ctd-settings-button:hover {
+/* Sidebar settings (gear) button: same hover token as the nav rows. */
+.ctd-settings-button:hover {
 	background-color: var(--ctd-nav-hover-bg);
 }
 

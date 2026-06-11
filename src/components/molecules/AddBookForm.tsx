@@ -1,8 +1,6 @@
-import { MultiSelectCreatable } from "@/components/atoms/Multiselect";
-import { Button, TextInput } from "@/components/ui";
+import { type ReactNode, useState } from "react";
+import { Button, TagsInput, TextInput } from "@/components/ui";
 import { safeAsyncEventHandler } from "@/lib/async";
-import { Form, useForm } from "@mantine/form";
-import type { ReactNode } from "react";
 import styles from "./AddBookForm.module.css";
 
 export interface AddBookForm {
@@ -77,15 +75,33 @@ export const AddBookForm = ({
 	onCreateAuthor,
 	hideTitle = false,
 }: AddBookFormProps) => {
-	const form = useForm({
-		initialValues: initial,
-	});
+	const [bookTitle, setBookTitle] = useState(initial.title);
+	const [bookAuthors, setBookAuthors] = useState<string[]>(initial.authorList);
+
+	const handleAuthorsChange = (next: string[]) => {
+		// Mirror the old creatable multiselect: committing a token that is not
+		// an existing library author creates that author on the spot.
+		for (const name of next) {
+			if (
+				!bookAuthors.includes(name) &&
+				!authorList.some(
+					(author) => author.toLowerCase() === name.toLowerCase(),
+				)
+			) {
+				safeAsyncEventHandler(async () => onCreateAuthor(name))();
+			}
+		}
+		setBookAuthors(next);
+	};
+
 	return (
-		<Form
-			form={form}
-			onSubmit={() => {
+		<form
+			onSubmit={(event) => {
+				event.preventDefault();
 				if (onSubmit) {
-					safeAsyncEventHandler(async () => onSubmit(form.values))();
+					safeAsyncEventHandler(async () =>
+						onSubmit({ title: bookTitle, authorList: bookAuthors }),
+					)();
 				}
 			}}
 		>
@@ -95,17 +111,19 @@ export const AddBookForm = ({
 					<SelectedFile path={fileName} />
 				</FormRow>
 				<FormRow label="Title" htmlFor="add-book-title">
-					<TextInput id="add-book-title" {...form.getInputProps("title")} />
+					<TextInput
+						id="add-book-title"
+						value={bookTitle}
+						onChange={(event) => setBookTitle(event.currentTarget.value)}
+					/>
 				</FormRow>
-				<FormRow label="Authors" alignTop>
-					<MultiSelectCreatable
-						label="Authors"
+				<FormRow label="Authors" htmlFor="add-book-authors" alignTop>
+					<TagsInput
+						id="add-book-authors"
 						placeholder="Search or add author"
-						selectOptions={authorList}
-						onCreateSelectOption={(name) =>
-							safeAsyncEventHandler(async () => onCreateAuthor(name))()
-						}
-						{...form.getInputProps("authorList")}
+						suggestions={authorList}
+						value={bookAuthors}
+						onChange={handleAuthorsChange}
 					/>
 				</FormRow>
 			</div>
@@ -119,6 +137,6 @@ export const AddBookForm = ({
 					Add Book
 				</Button>
 			</div>
-		</Form>
+		</form>
 	);
 };

@@ -1,25 +1,25 @@
-import {
-	ActionIcon,
-	Anchor,
-	Badge,
-	Button,
-	Center,
-	Group,
-	Modal,
-	Stack,
-	Text,
-	TextInput,
-} from "@mantine/core";
 import { Link } from "@tanstack/react-router";
+import clsx from "clsx";
 import {
 	type CSSProperties,
+	type FormEvent,
 	useCallback,
 	useEffect,
+	useRef,
 	useState,
 } from "react";
 
 import type { AuthorUpdate, LibraryAuthor, LibraryBook } from "@/bindings";
-
+import { AuthorFilterControls } from "@/components/organisms/AuthorFilterControls";
+import {
+	AlertDialog,
+	Button,
+	FormField,
+	IconButton,
+	Sheet,
+	TextInput,
+} from "@/components/ui";
+import { useAuthorFilters } from "@/lib/hooks/use-author-filters";
 import {
 	useAuthors,
 	useAuthorsLoading,
@@ -27,13 +27,9 @@ import {
 	useBooksLoading,
 	useLibraryActions,
 } from "@/stores/library/store";
-
 import { F7Pencil } from "../icons/F7Pencil";
 import { F7Trash } from "../icons/F7Trash";
-import { useDisclosure } from "@mantine/hooks";
-import { useForm } from "@mantine/form";
-import { AuthorFilterControls } from "@/components/organisms/AuthorFilterControls";
-import { useAuthorFilters } from "@/lib/hooks/use-author-filters";
+import styles from "./Authors.module.css";
 
 /**
  * Shared column template so the header row and every author row align:
@@ -61,18 +57,17 @@ export const Authors = () => {
 		filteredAuthors,
 	} = useAuthorFilters(authors, books);
 
-	const [editModalOpened, { open: openEditModal, close: closeEditModal }] =
-		useDisclosure(false);
-
-	const [
-		deleteModalOpened,
-		{ open: openDeleteModal, close: closeDeleteModal },
-	] = useDisclosure(false);
+	const [editSheetOpened, setEditSheetOpened] = useState(false);
+	const [deleteDialogOpened, setDeleteDialogOpened] = useState(false);
 
 	const [authorToEdit, setAuthorToEdit] = useState<LibraryAuthor | null>(null);
 	const [authorToDelete, setAuthorToDelete] = useState<LibraryAuthor | null>(
 		null,
 	);
+
+	// The sheet opens from a per-row pencil button, not a Dialog.Trigger, so
+	// Radix cannot restore focus on close; remember the opener ourselves.
+	const editOpenerRef = useRef<HTMLElement | null>(null);
 
 	const onSubmitEdit = useCallback(
 		async (
@@ -86,155 +81,118 @@ export const Authors = () => {
 		[actions],
 	);
 
-	const onOpenEditAuthorModal = useCallback(
+	const onOpenEditAuthorSheet = useCallback(
 		(authorId: string): void => {
+			editOpenerRef.current =
+				document.activeElement instanceof HTMLElement
+					? document.activeElement
+					: null;
 			setAuthorToEdit(
 				filteredAuthors.find(({ id }) => id === authorId) ?? null,
 			);
-			openEditModal();
+			setEditSheetOpened(true);
 		},
-		[openEditModal, filteredAuthors],
+		[filteredAuthors],
 	);
 
-	const onOpenDeleteAuthorModal = useCallback(
+	const onOpenDeleteAuthorDialog = useCallback(
 		(authorId: string): void => {
 			setAuthorToDelete(
 				filteredAuthors.find(({ id }) => id === authorId) ?? null,
 			);
-			openDeleteModal();
+			setDeleteDialogOpened(true);
 		},
-		[openDeleteModal, filteredAuthors],
+		[filteredAuthors],
 	);
 
 	const onConfirmDeleteAuthor = useCallback(async (): Promise<void> => {
 		if (authorToDelete && actions) {
 			await actions.deleteAuthor(authorToDelete.id);
-			closeDeleteModal();
+			setDeleteDialogOpened(false);
 		}
-	}, [actions, authorToDelete, closeDeleteModal]);
+	}, [actions, authorToDelete]);
 
 	if (loadingAuthors || loadingBooks) {
 		return null;
 	}
 
 	return (
-		<Stack h="100%" gap={0}>
+		<div className={styles.page}>
 			{authorToEdit && (
-				<EditAuthorModal
-					opened={editModalOpened}
-					onClose={closeEditModal}
+				<EditAuthorSheet
+					opened={editSheetOpened}
+					onClose={() => setEditSheetOpened(false)}
 					authorToEdit={authorToEdit}
 					onSubmitEdit={onSubmitEdit}
+					onCloseAutoFocus={(event) => {
+						event.preventDefault();
+						editOpenerRef.current?.focus();
+					}}
 				/>
 			)}
-			<Modal
-				opened={deleteModalOpened}
-				onClose={closeDeleteModal}
+			<AlertDialog
+				open={deleteDialogOpened}
+				onOpenChange={setDeleteDialogOpened}
 				title="Delete author"
-				styles={{
-					content: {
-						background: "var(--ctd-drawer-gradient)",
-						border: "1px solid var(--ctd-border)",
-					},
-					header: {
-						backgroundColor: "transparent",
-						borderBottom: "1px solid var(--ctd-border)",
-					},
-				}}
-			>
-				{authorToDelete && (
-					<Stack>
-						<Text>
-							Are you sure you want to delete the author &quot;
-							{authorToDelete.name}&quot;?
-						</Text>
-						<Group gap="lg" grow mt="md">
-							<Button color="red" onClick={() => void onConfirmDeleteAuthor()}>
-								Delete
-							</Button>
-							<Button onClick={closeDeleteModal} variant="outline">
-								Cancel
-							</Button>
-						</Group>
-					</Stack>
-				)}
-			</Modal>
+				description={
+					authorToDelete
+						? `Are you sure you want to delete "${authorToDelete.name}"? This cannot be undone.`
+						: undefined
+				}
+				confirmLabel="Delete"
+				destructive
+				onConfirm={() => void onConfirmDeleteAuthor()}
+			/>
 
-			<Group
-				px={24}
-				py={10}
-				style={{
-					flexShrink: 0,
-					borderBottom: "1px solid var(--ctd-border)",
-				}}
-			>
+			<div className={styles.filterBar}>
 				<AuthorFilterControls
 					filters={filters}
 					onSearchChange={setSearchTerm}
 					onSortOrderChange={setSortOrder}
 					onShowOnlyAuthorsWithoutBooksChange={setShowOnlyAuthorsWithoutBooks}
 				/>
-			</Group>
+			</div>
 
-			<div
-				style={{
-					...AUTHOR_GRID,
-					position: "sticky",
-					top: 0,
-					zIndex: 2,
-					backgroundColor: "var(--ctd-content-bg)",
-					borderBottom: "1px solid var(--ctd-border)",
-					padding: "6px 24px",
-				}}
-			>
-				<Text size="xs" fw={600} tt="uppercase" c="dimmed">
-					Name
-				</Text>
-				<Text size="xs" fw={600} tt="uppercase" c="dimmed" visibleFrom="md">
+			<div className={styles.headerRow} style={AUTHOR_GRID}>
+				<span className={styles.columnLabel}>Name</span>
+				<span className={clsx(styles.columnLabel, styles.visibleFromMd)}>
 					Sort name
-				</Text>
-				<Text size="xs" fw={600} tt="uppercase" c="dimmed" ta="right">
+				</span>
+				<span className={clsx(styles.columnLabel, styles.columnLabelRight)}>
 					Books
-				</Text>
+				</span>
 				<span />
 			</div>
 
-			<Stack gap={0} style={{ flex: 1 }}>
+			<div className={styles.rows}>
 				{filteredAuthors?.map((author) => (
 					<AuthorRow
 						author={author}
 						books={books}
 						key={author.id}
-						onEditAuthor={onOpenEditAuthorModal}
-						onDeleteAuthor={onOpenDeleteAuthorModal}
+						onEditAuthor={onOpenEditAuthorSheet}
+						onDeleteAuthor={onOpenDeleteAuthorDialog}
 					/>
 				))}
-			</Stack>
+			</div>
 
-			<Center
-				py={6}
-				style={{
-					position: "sticky",
-					bottom: 0,
-					backgroundColor: "var(--ctd-content-bg)",
-					borderTop: "1px solid var(--ctd-border)",
-				}}
-			>
-				<Text size="xs" c="dimmed">
+			<div className={styles.footer}>
+				<span className={styles.footerText}>
 					{filteredAuthors.length === authors.length
 						? `${authors.length} authors`
 						: `${filteredAuthors.length} of ${authors.length} authors`}
-				</Text>
-			</Center>
-		</Stack>
+				</span>
+			</div>
+		</div>
 	);
 };
 
-const EditAuthorModal = ({
+const EditAuthorSheet = ({
 	opened,
 	onClose,
 	authorToEdit,
 	onSubmitEdit,
+	onCloseAutoFocus,
 }: {
 	opened: boolean;
 	onClose: () => void;
@@ -243,109 +201,89 @@ const EditAuthorModal = ({
 		authorId: LibraryAuthor["id"],
 		authorUpdate: AuthorUpdate,
 	) => Promise<void>;
+	onCloseAutoFocus?: (event: Event) => void;
 }) => {
-	const form = useForm({
-		initialValues: {
-			displayName: authorToEdit.name ?? "",
-			sortName: authorToEdit.sortable_name ?? "",
-		},
-		validate: {
-			displayName: (value) =>
-				value.length > 0 ? undefined : "Name is required",
-			sortName: (value) =>
-				value.length > 0 ? undefined : "Sort name is required",
-		},
-	});
-	type FormValues = typeof form.values;
+	const [displayName, setDisplayName] = useState(authorToEdit.name ?? "");
+	const [sortName, setSortName] = useState(authorToEdit.sortable_name ?? "");
+	const [errors, setErrors] = useState<{
+		displayName?: string;
+		sortName?: string;
+	}>({});
 
+	// Values reset whenever a different author is opened.
 	useEffect(() => {
-		const nextValues = {
-			displayName: authorToEdit.name ?? "",
-			sortName: authorToEdit.sortable_name ?? "",
-		};
-		form.setValues(nextValues);
-		form.resetDirty(nextValues);
-		form.resetTouched();
-	}, [authorToEdit, form]);
+		setDisplayName(authorToEdit.name ?? "");
+		setSortName(authorToEdit.sortable_name ?? "");
+		setErrors({});
+	}, [authorToEdit]);
 
-	const onSubmit = useCallback(
-		(values: FormValues) => {
-			void onSubmitEdit(authorToEdit.id, {
-				full_name: values.displayName,
-				sortable_name: values.sortName,
-				external_url: null,
-			});
-			onClose();
-		},
-		[authorToEdit, onClose, onSubmitEdit],
-	);
+	const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+		const nextErrors = {
+			displayName: displayName.length > 0 ? undefined : "Name is required",
+			sortName: sortName.length > 0 ? undefined : "Sort name is required",
+		};
+		if (nextErrors.displayName || nextErrors.sortName) {
+			setErrors(nextErrors);
+			return;
+		}
+		void onSubmitEdit(authorToEdit.id, {
+			full_name: displayName,
+			sortable_name: sortName,
+			external_url: null,
+		});
+		onClose();
+	};
 
 	return (
-		<Modal
-			opened={opened}
-			onClose={onClose}
-			title="Edit author"
-			styles={{
-				content: {
-					background: "var(--ctd-drawer-gradient)",
-					border: "1px solid var(--ctd-border)",
-				},
-				header: {
-					backgroundColor: "transparent",
-					borderBottom: "1px solid var(--ctd-border)",
-				},
+		<Sheet
+			open={opened}
+			onOpenChange={(open) => {
+				if (!open) onClose();
 			}}
+			title="Edit author"
+			width={380}
+			onCloseAutoFocus={onCloseAutoFocus}
 		>
-			<form onSubmit={form.onSubmit(onSubmit)}>
-				<Stack>
-					<TextInput
+			<form onSubmit={onSubmit}>
+				<div className={styles.sheetFields}>
+					<FormField
 						label="Full name"
 						description="How the author's name is displayed"
-						styles={{
-							label: {
-								color: "var(--ctd-ink-soft)",
-							},
-							description: {
-								color: "var(--ctd-ink-soft)",
-							},
-							input: {
-								backgroundColor: "var(--ctd-control-bg)",
-								borderColor: "var(--ctd-border)",
-								color: "var(--ctd-control-text)",
-							},
-						}}
-						{...form.getInputProps("displayName")}
-					/>
-					<TextInput
+						error={errors.displayName}
+					>
+						<TextInput
+							value={displayName}
+							onChange={(event) => {
+								setDisplayName(event.currentTarget.value);
+								setErrors((prev) => ({ ...prev, displayName: undefined }));
+							}}
+						/>
+					</FormField>
+					<FormField
 						label="Sort name"
 						description="Authors are sorted alphabetically by this name"
-						styles={{
-							label: {
-								color: "var(--ctd-ink-soft)",
-							},
-							description: {
-								color: "var(--ctd-ink-soft)",
-							},
-							input: {
-								backgroundColor: "var(--ctd-control-bg)",
-								borderColor: "var(--ctd-border)",
-								color: "var(--ctd-control-text)",
-							},
-						}}
-						{...form.getInputProps("sortName")}
-					/>
-					<Group gap="lg" grow mt="md">
-						<Button type="submit">Save</Button>
-						<Button onClick={onClose} variant="outline">
-							Cancel
-						</Button>
-					</Group>
-				</Stack>
+						error={errors.sortName}
+					>
+						<TextInput
+							value={sortName}
+							onChange={(event) => {
+								setSortName(event.currentTarget.value);
+								setErrors((prev) => ({ ...prev, sortName: undefined }));
+							}}
+						/>
+					</FormField>
+				</div>
+				<div className={styles.sheetFooter}>
+					<Button onClick={onClose}>Cancel</Button>
+					<Button type="submit" variant="primary">
+						Save
+					</Button>
+				</div>
 			</form>
-		</Modal>
+		</Sheet>
 	);
 };
-
 
 const AuthorRow = ({
 	author,
@@ -366,14 +304,7 @@ const AuthorRow = ({
 		// The whole row links to the library filtered by this author. The hover
 		// background, 40px min-height, and the overlay-link positioning live in
 		// styles.css (.ctd-author-row / .ctd-author-row-link).
-		<div
-			className="ctd-author-row"
-			style={{
-				...AUTHOR_GRID,
-				padding: "6px 24px",
-				borderBottom: "1px solid var(--ctd-border)",
-			}}
-		>
+		<div className={clsx("ctd-author-row", styles.row)} style={AUTHOR_GRID}>
 			{/* Real anchor overlaying the row so middle-click / cmd-click /
 			    keyboard all work. The count link and the action icons sit above
 			    it (position: relative + zIndex), so they keep working on their
@@ -385,66 +316,50 @@ const AuthorRow = ({
 				aria-label={`Show books by ${author.name}`}
 			/>
 
-			<Text size="sm" truncate>
-				{author.name}
-			</Text>
+			<span className={styles.cellText}>{author.name}</span>
 
 			{author.sortable_name !== "" ? (
-				<Text size="sm" c="dimmed" truncate visibleFrom="md">
+				<span
+					className={clsx(styles.cellText, styles.dimmed, styles.visibleFromMd)}
+				>
 					{author.sortable_name}
-				</Text>
+				</span>
 			) : (
 				<div>
-					<Badge size="xs" variant="light" color="red" visibleFrom="md">
+					<span className={clsx(styles.badge, styles.visibleFromMd)}>
 						No sort name
-					</Badge>
+					</span>
 				</div>
 			)}
 
-			<Anchor
-				to={"/"}
-				search={{
-					search_for_author: author.name,
-				}}
-				component={Link}
-				style={{ justifySelf: "end", position: "relative", zIndex: 1 }}
+			<Link
+				to="/"
+				search={{ search_for_author: author.name }}
+				className={styles.countLink}
 			>
-				<Text size="sm" style={{ color: "var(--ctd-link)" }}>
-					{numBooksByAuthor}
-				</Text>
-			</Anchor>
+				{numBooksByAuthor}
+			</Link>
 
-			<Group
-				gap={2}
-				wrap="nowrap"
-				justify="flex-end"
-				style={{ position: "relative", zIndex: 1 }}
-			>
-				{/* size 24 keeps the edit/delete hit areas comfortably clickable. */}
-				<ActionIcon
-					variant="subtle"
-					color="gray"
-					size={24}
+			<div className={styles.actions}>
+				<IconButton
+					className={styles.actionIcon}
 					aria-label={`Edit ${author.name}`}
 					onClick={() => onEditAuthor(author.id)}
 				>
 					<F7Pencil />
-				</ActionIcon>
-				{/* Slot stays reserved so pencils align across rows. */}
+				</IconButton>
 				{numBooksByAuthor === 0 ? (
-					<ActionIcon
-						variant="subtle"
-						color="red"
-						size={24}
+					<IconButton
+						className={clsx(styles.actionIcon, styles.dangerIcon)}
 						aria-label={`Delete ${author.name}`}
 						onClick={() => onDeleteAuthor(author.id)}
 					>
 						<F7Trash />
-					</ActionIcon>
+					</IconButton>
 				) : (
-					<span style={{ width: 24 }} />
+					<span className={styles.actionSpacer} />
 				)}
-			</Group>
+			</div>
 		</div>
 	);
 };

@@ -1,7 +1,6 @@
 import { useEffect } from "react";
-
-import { useActiveLibraryPath } from "@/stores/settings/store";
 import { useLibraryStore } from "@/stores/library/store";
+import { useActiveLibraryPath } from "@/stores/settings/store";
 
 /**
  * Initializes the library store when the active library path changes.

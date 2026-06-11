@@ -1,0 +1,103 @@
+.root {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.label {
+	font-size: 13px;
+	color: var(--ctd-ink-soft);
+}
+
+/* Same field chrome as the kit Textarea: field bg, hairline border, inner
+ * shadow, focus halo. */
+.frame {
+	border-radius: 6px;
+	background-color: var(--ctd-control-bg);
+	border: 1px solid var(--ctd-border);
+	box-shadow: var(--ctd-field-inner-shadow);
+	overflow: hidden;
+	transition:
+		box-shadow 140ms ease-out,
+		border-color 140ms ease-out;
+}
+
+.frame:focus-within {
+	border-color: var(--ctd-accent);
+	box-shadow: 0 0 0 3px var(--ctd-focus-ring);
+}
+
+.toolbar {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+	padding: 4px 6px;
+	background-color: var(--ctd-surface-soft);
+	border-bottom: 1px solid var(--ctd-border);
+}
+
+.group {
+	display: flex;
+	gap: 2px;
+}
+
+.toolButton {
+	width: 26px;
+	height: 26px;
+}
+
+.glyph {
+	font-size: 13px;
+	line-height: 1;
+}
+
+.glyphBold {
+	font-weight: 700;
+}
+
+.glyphItalic {
+	font-style: italic;
+	font-family: Georgia, "Times New Roman", serif;
+}
+
+.glyphUnderline {
+	text-decoration: underline;
+}
+
+.content {
+	min-height: 120px;
+	max-height: 360px;
+	overflow-y: auto;
+	padding: 10px 12px;
+	font-size: 13px;
+	line-height: 1.45;
+	color: var(--ctd-control-text);
+	cursor: text;
+	outline: none;
+}
+
+.content p {
+	margin: 0.5em 0;
+}
+
+.content h1,
+.content h2,
+.content h3 {
+	margin-top: 1em;
+	margin-bottom: 0.5em;
+	font-weight: 600;
+}
+
+.content ul,
+.content ol {
+	margin-left: 1.5em;
+	margin-bottom: 1em;
+}
+
+.content li {
+	margin-bottom: 0.25em;
+}
+
+.content a {
+	color: var(--ctd-link);
+}

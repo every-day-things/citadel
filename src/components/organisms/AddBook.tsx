@@ -1,3 +1,6 @@
+import { isTauri } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ImportableBookMetadata, NewAuthor } from "@/bindings";
 import {
 	AddBookForm,
@@ -11,10 +14,6 @@ import {
 	useLibraryActions,
 	useLibraryState,
 } from "@/stores/library/store";
-import { useDisclosure } from "@mantine/hooks";
-import { isTauri } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export const AddBookButton = () => {
 	const state = useLibraryState();
@@ -24,8 +23,9 @@ export const AddBookButton = () => {
 
 	const [metadata, setMetadata] = useState<ImportableBookMetadata | null>();
 	const addBookButtonRef = useRef<HTMLButtonElement>(null);
-	const [isModalOpen, { close: closeModal, open: openModal }] =
-		useDisclosure(false);
+	const [isModalOpen, setIsModalOpen] = useState(false);
+	const openModal = useCallback(() => setIsModalOpen(true), []);
+	const closeModal = useCallback(() => setIsModalOpen(false), []);
 
 	const authorList = useMemo(
 		() => authors.map((author) => author.name),

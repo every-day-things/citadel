@@ -1,5 +1,5 @@
-import { LibraryAuthorFactory } from "@/test/factories/library-author";
 import { describe, expect, it } from "vitest";
+import { LibraryAuthorFactory } from "@/test/factories/library-author";
 import { formatAuthorList } from "./authors";
 
 describe("formatAuthorList", () => {

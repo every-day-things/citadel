@@ -1,9 +1,8 @@
-import { shortenToChars } from "$lib/domain/book";
-import type { LibraryBook } from "@/bindings";
-import { AspectRatio, Overlay, Text, Transition } from "@mantine/core";
 import { type HTMLAttributes, useState } from "react";
+import type { LibraryBook } from "@/bindings";
 import { formatAuthorList } from "@/lib/authors";
 import { selectByStringHash } from "@/lib/hash-string";
+import { shortenToChars } from "$lib/domain/book";
 
 import img1Url from "../../assets/1.jpg";
 import img2Url from "../../assets/2.jpg";
@@ -26,6 +25,26 @@ const spineBackground = `
 const FLUID_MAX_HEIGHT_PX = 230;
 // Placeholder art keeps the classic 133:200 book proportions.
 const PLACEHOLDER_RATIO = 133 / 200;
+
+/**
+ * Dimming scrim for finished books; fades in/out over 100ms like the old
+ * Mantine Transition + Overlay pair (80% alpha of the overlay token).
+ */
+const ReadOverlay = ({ visible }: { visible: boolean }) => (
+	<div
+		aria-hidden="true"
+		style={{
+			position: "absolute",
+			inset: 0,
+			zIndex: 2,
+			pointerEvents: "none",
+			backgroundColor:
+				"color-mix(in srgb, var(--ctd-cover-overlay) 80%, transparent)",
+			opacity: visible ? 1 : 0,
+			transition: "opacity 100ms ease",
+		}}
+	/>
+);
 
 const BookCoverUsingImage = ({
 	book,
@@ -88,20 +107,7 @@ const BookCoverUsingImage = ({
 					zIndex: 1,
 				}}
 			/>
-			<Transition
-				transition="fade"
-				duration={100}
-				mounted={book.is_read && !isHovering && !disableFade}
-			>
-				{(styles) => (
-					<Overlay
-						style={styles}
-						color="var(--ctd-cover-overlay)"
-						backgroundOpacity={0.8}
-						zIndex={2}
-					/>
-				)}
-			</Transition>
+			<ReadOverlay visible={book.is_read && !isHovering && !disableFade} />
 		</div>
 	);
 };
@@ -124,15 +130,19 @@ const BookCoverWithPlaceholder = ({
 	);
 
 	return (
-		<AspectRatio
-			ratio={fluid ? PLACEHOLDER_RATIO : 9 / 6}
-			h={fluid ? undefined : 200}
-			w={fluid ? "100%" : 133}
-			// Same box as real covers: the 133:200 ratio turns the height cap
-			// into a width cap.
-			maw={
-				fluid ? `${FLUID_MAX_HEIGHT_PX * PLACEHOLDER_RATIO}px` : undefined
-			}
+		<div
+			style={{
+				// Same box as real covers: the 133:200 ratio turns the height cap
+				// into a width cap. With explicit width and height (non-fluid)
+				// the aspect-ratio is simply ignored.
+				aspectRatio: String(fluid ? PLACEHOLDER_RATIO : 9 / 6),
+				height: fluid ? undefined : 200,
+				width: fluid ? "100%" : 133,
+				maxWidth: fluid
+					? `${FLUID_MAX_HEIGHT_PX * PLACEHOLDER_RATIO}px`
+					: undefined,
+				position: "relative",
+			}}
 			onPointerOver={() => {
 				setIsHovering(true);
 			}}
@@ -152,6 +162,7 @@ const BookCoverWithPlaceholder = ({
 					transition: "transform 180ms ease, box-shadow 180ms ease",
 					boxShadow: "var(--ctd-cover-shadow)",
 					transform: isHovering ? "translateY(-2px)" : "translateY(0px)",
+					position: "relative",
 				}}
 			>
 				<img
@@ -177,11 +188,11 @@ const BookCoverWithPlaceholder = ({
 						zIndex: 1,
 					}}
 				>
-					<Text
-						size="lg"
-						fw="bolder"
-						c="var(--ctd-cover-title)"
+					<div
 						style={{
+							fontSize: "1.125rem",
+							fontWeight: "bolder",
+							color: "var(--ctd-cover-title)",
 							fontFamily:
 								'"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif',
 							letterSpacing: "0.01em",
@@ -190,31 +201,17 @@ const BookCoverWithPlaceholder = ({
 						}}
 					>
 						{shortenToChars(book.title, 36)}
-					</Text>
-					<Text
-						size="sm"
-						c="var(--ctd-cover-author)"
+					</div>
+					<div
 						style={{
+							fontSize: "0.875rem",
+							color: "var(--ctd-cover-author)",
 							textShadow: "var(--ctd-cover-author-shadow)",
 							lineHeight: 1.2,
 						}}
 					>
 						{formatAuthorList(book.author_list)}
-					</Text>
-					<Transition
-						transition="fade"
-						duration={100}
-						mounted={book.is_read && !isHovering && !disableFade}
-					>
-						{(styles) => (
-							<Overlay
-								style={styles}
-								color="var(--ctd-cover-overlay)"
-								backgroundOpacity={0.8}
-								zIndex={2}
-							/>
-						)}
-					</Transition>
+					</div>
 				</div>
 				<div
 					style={{
@@ -226,8 +223,9 @@ const BookCoverWithPlaceholder = ({
 						zIndex: 2,
 					}}
 				/>
+				<ReadOverlay visible={book.is_read && !isHovering && !disableFade} />
 			</div>
-		</AspectRatio>
+		</div>
 	);
 };
 

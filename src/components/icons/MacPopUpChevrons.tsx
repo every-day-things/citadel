@@ -17,7 +17,13 @@ export const MacPopUpChevrons = () => (
 			flexShrink: 0,
 		}}
 	>
-		<svg width="8" height="10" viewBox="0 0 8 10" fill="none" aria-hidden="true">
+		<svg
+			width="8"
+			height="10"
+			viewBox="0 0 8 10"
+			fill="none"
+			aria-hidden="true"
+		>
 			<path
 				d="M1 3.5L4 1l3 2.5M1 6.5L4 9l3-2.5"
 				stroke="oklch(99% 0.002 255)"

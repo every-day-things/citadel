@@ -1,16 +1,9 @@
-import {
-	AppShell,
-	MantineProvider,
-	useMantineColorScheme,
-} from "@mantine/core";
 import { addons } from "@storybook/preview-api";
 import type { Preview } from "@storybook/react";
 import React, { type PropsWithChildren, useEffect, useCallback } from "react";
 import { DARK_MODE_EVENT_NAME } from "storybook-dark-mode";
-import { theme } from "../src/lib/theme";
 
 import "../src/styles.css";
-import "@mantine/core/styles.layer.css";
 
 const STORYBOOK_IFRAME_PADDING_OFFSET = "36px";
 const FULL_HEIGHT_MINUS_SB_PADDING = `calc(100svh - ${STORYBOOK_IFRAME_PADDING_OFFSET}`;
@@ -18,11 +11,13 @@ const FULL_HEIGHT_MINUS_SB_PADDING = `calc(100svh - ${STORYBOOK_IFRAME_PADDING_O
 const channel = addons.getChannel();
 
 function ColorSchemeWrapper({ children }: PropsWithChildren<unknown>) {
-	const { setColorScheme } = useMantineColorScheme();
-	const handleColorScheme = useCallback(
-		(value: boolean) => setColorScheme(value ? "dark" : "light"),
-		[setColorScheme],
-	);
+	const handleColorScheme = useCallback((value: boolean) => {
+		// Same attribute the app's theme manager sets (see src/lib/theme-manager.ts)
+		document.documentElement.setAttribute(
+			"data-theme",
+			value ? "dark" : "light",
+		);
+	}, []);
 
 	useEffect(() => {
 		channel.on(DARK_MODE_EVENT_NAME, handleColorScheme);
@@ -48,29 +43,19 @@ const preview: Preview = {
 			</ColorSchemeWrapper>
 		),
 		(Story) => (
-			<AppShell
-				header={{ height: 0 }}
-				footer={{ height: 0 }}
-				padding="md"
-				h={FULL_HEIGHT_MINUS_SB_PADDING}
-				style={{ overflowY: "scroll" }}
+			<div
+				style={{
+					display: "grid",
+					gridTemplateRows: "1fr",
+					height: FULL_HEIGHT_MINUS_SB_PADDING,
+					minHeight: FULL_HEIGHT_MINUS_SB_PADDING,
+					padding: 16,
+					overflowY: "scroll",
+					background: "var(--ctd-content-bg)",
+				}}
 			>
-				<AppShell.Main
-					style={{
-						display: "grid",
-						gridTemplateRows: "1fr",
-						height: FULL_HEIGHT_MINUS_SB_PADDING,
-						minHeight: FULL_HEIGHT_MINUS_SB_PADDING,
-					}}
-				>
-					<Story />
-				</AppShell.Main>
-			</AppShell>
-		),
-		(Story) => (
-			<MantineProvider theme={theme}>
 				<Story />
-			</MantineProvider>
+			</div>
 		),
 	],
 };

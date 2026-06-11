@@ -4,7 +4,7 @@ import styles from "./TextInput.module.css";
 
 export type TextInputProps = React.InputHTMLAttributes<HTMLInputElement> & {
 	label?: string;
-	/** Validation message, e.g. from @mantine/form getInputProps. */
+	/** Validation message rendered below the field. */
 	error?: React.ReactNode;
 };
 

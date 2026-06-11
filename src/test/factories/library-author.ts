@@ -1,5 +1,5 @@
-import type { LibraryAuthor } from "@/bindings";
 import { faker } from "@faker-js/faker";
+import type { LibraryAuthor } from "@/bindings";
 
 type LibraryAuthorCreationOptions = Partial<Omit<LibraryAuthor, "id">>;
 

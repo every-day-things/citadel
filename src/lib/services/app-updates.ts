@@ -1,4 +1,4 @@
-import { type UpdateCheckResult, commands } from "@/bindings";
+import { commands, type UpdateCheckResult } from "@/bindings";
 
 export const checkForUpdates = async (): Promise<UpdateCheckResult> => {
 	const result = await commands.clbCmdCheckForUpdates();

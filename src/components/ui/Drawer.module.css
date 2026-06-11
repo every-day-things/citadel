@@ -1,0 +1,116 @@
+/* Subtler scrim than Sheet: the drawer reveals detail, it does not block work. */
+.overlay {
+	position: fixed;
+	inset: 0;
+	background-color: oklch(0% 0 0 / 0.1);
+	z-index: 110;
+}
+
+.overlay[data-state="open"] {
+	animation: drawer-overlay-in 200ms ease-out;
+}
+
+.overlay[data-state="closed"] {
+	animation: drawer-overlay-out 150ms ease-in;
+}
+
+.content {
+	position: fixed;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	display: flex;
+	flex-direction: column;
+	background-color: var(--ctd-surface);
+	border-left: 1px solid var(--ctd-border);
+	box-shadow: var(--ctd-shadow-lift);
+	z-index: 111;
+}
+
+.content:focus {
+	outline: none;
+}
+
+.content[data-state="open"] {
+	animation: drawer-in 200ms ease-out;
+}
+
+.content[data-state="closed"] {
+	animation: drawer-out 150ms ease-in;
+}
+
+.header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	flex-shrink: 0;
+	padding: 10px 16px;
+	border-bottom: 1px solid var(--ctd-border);
+}
+
+.title {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--ctd-ink);
+	margin: 0;
+}
+
+/* Visually hidden but announced; keeps the close button right-aligned. */
+.hiddenTitle {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+/* When the title is hidden the close button is the only header child. */
+.header:has(.hiddenTitle) {
+	justify-content: flex-end;
+}
+
+.body {
+	flex: 1;
+	overflow-y: auto;
+	padding: 16px;
+}
+
+@keyframes drawer-overlay-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes drawer-overlay-out {
+	from {
+		opacity: 1;
+	}
+	to {
+		opacity: 0;
+	}
+}
+
+@keyframes drawer-in {
+	from {
+		transform: translateX(100%);
+	}
+	to {
+		transform: translateX(0);
+	}
+}
+
+@keyframes drawer-out {
+	from {
+		transform: translateX(0);
+	}
+	to {
+		transform: translateX(100%);
+	}
+}

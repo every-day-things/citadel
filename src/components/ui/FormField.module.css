@@ -1,0 +1,22 @@
+.field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.label {
+	font-size: 13px;
+	color: var(--ctd-ink-soft);
+}
+
+.description {
+	font-size: 11px;
+	line-height: 1.4;
+	color: var(--ctd-ink-soft);
+}
+
+.error {
+	font-size: 11px;
+	line-height: 1.4;
+	color: var(--ctd-danger-bg);
+}

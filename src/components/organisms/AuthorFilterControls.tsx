@@ -1,8 +1,8 @@
 import { SearchField, Select, Switch } from "@/components/ui";
 import {
 	type AuthorSortOrderValue,
-	type UseAuthorFiltersReturn,
 	sortOrderOptions,
+	type UseAuthorFiltersReturn,
 } from "@/lib/hooks/use-author-filters";
 
 interface AuthorFilterControlsProps {

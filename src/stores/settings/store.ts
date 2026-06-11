@@ -1,3 +1,4 @@
+import { create } from "zustand";
 import type { Option } from "@/lib/option";
 import { none, some } from "@/lib/option";
 import {
@@ -8,7 +9,6 @@ import {
 	type SettingsSchema,
 	type SettingsValue,
 } from "@/lib/platform/settings/types";
-import { create } from "zustand";
 
 interface SettingsStore extends SettingsSchema {
 	hydrated: boolean;

@@ -1,0 +1,103 @@
+/* Same stacking plane as Sheet: the scrim dims all app chrome. */
+.overlay {
+	position: fixed;
+	inset: 0;
+	background-color: oklch(0% 0 0 / 0.18);
+	z-index: 112;
+}
+
+.overlay[data-state="open"] {
+	animation: alert-overlay-in 160ms ease-out;
+}
+
+.overlay[data-state="closed"] {
+	animation: alert-overlay-out 120ms ease-in;
+}
+
+.content {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 270px;
+	max-width: calc(100vw - 32px);
+	padding: 16px;
+	background-color: var(--ctd-surface);
+	border: 1px solid var(--ctd-border);
+	border-radius: var(--ctd-radius-panel);
+	box-shadow: var(--ctd-shadow-lift);
+	text-align: center;
+	z-index: 113;
+}
+
+.content[data-state="open"] {
+	animation: alert-in 160ms ease-out;
+}
+
+.content[data-state="closed"] {
+	animation: alert-out 120ms ease-in;
+}
+
+.content:focus {
+	outline: none;
+}
+
+.title {
+	margin: 0;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--ctd-ink);
+}
+
+.description {
+	margin: 6px 0 0;
+	font-size: 11px;
+	line-height: 1.45;
+	color: var(--ctd-ink-soft);
+}
+
+.buttons {
+	display: flex;
+	gap: 8px;
+	margin-top: 16px;
+}
+
+@keyframes alert-overlay-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes alert-overlay-out {
+	from {
+		opacity: 1;
+	}
+	to {
+		opacity: 0;
+	}
+}
+
+@keyframes alert-in {
+	from {
+		transform: translate(-50%, -50%) scale(0.96);
+		opacity: 0;
+	}
+	to {
+		transform: translate(-50%, -50%) scale(1);
+		opacity: 1;
+	}
+}
+
+@keyframes alert-out {
+	from {
+		transform: translate(-50%, -50%) scale(1);
+		opacity: 1;
+	}
+	to {
+		transform: translate(-50%, -50%) scale(0.98);
+		opacity: 0;
+	}
+}

@@ -1,0 +1,57 @@
+.field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.label {
+	font-size: 13px;
+	color: var(--ctd-ink-soft);
+}
+
+.textarea {
+	min-height: 64px;
+	padding: 4px 8px;
+	resize: vertical;
+	font-family: inherit;
+	font-size: 13px;
+	line-height: 1.45;
+	border-radius: 6px;
+	background-color: var(--ctd-control-bg);
+	border: 1px solid var(--ctd-border);
+	color: var(--ctd-control-text);
+	box-shadow: var(--ctd-field-inner-shadow);
+	transition:
+		box-shadow 140ms ease-out,
+		border-color 140ms ease-out;
+	cursor: text;
+}
+
+.textarea::placeholder {
+	color: var(--ctd-ink-soft);
+}
+
+/* Plain :focus matches TextInput and the Mantine field treatment. */
+.textarea:focus {
+	outline: none;
+	border-color: var(--ctd-accent);
+	box-shadow: 0 0 0 3px var(--ctd-focus-ring);
+}
+
+.textarea:disabled {
+	background-color: var(--ctd-control-disabled-bg);
+	border-color: var(--ctd-control-disabled-border);
+	color: var(--ctd-control-disabled-text);
+	box-shadow: none;
+	resize: none;
+	cursor: default;
+}
+
+.textareaError {
+	border-color: var(--ctd-danger-border);
+}
+
+.error {
+	font-size: 12px;
+	color: var(--ctd-danger-bg);
+}

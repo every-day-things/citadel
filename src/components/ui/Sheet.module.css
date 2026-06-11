@@ -1,13 +1,13 @@
 /*
- * The AppShell header and navbar sit at z-index 100, so the sheet and its
- * scrim stay below them: the content genuinely slides out from under the
- * toolbar and the window chrome is never dimmed, matching a macOS sheet.
+ * Modern (Big Sur+) sheets are detached from the title bar and dim the whole
+ * window, chrome included, so the scrim sits above the AppShell header and
+ * navbar (z-index 100).
  */
 .overlay {
 	position: fixed;
 	inset: 0;
 	background-color: oklch(0% 0 0 / 0.18);
-	z-index: 90;
+	z-index: 110;
 }
 
 .overlay[data-state="open"] {
@@ -18,20 +18,19 @@
 	animation: sheet-overlay-out 120ms ease-in;
 }
 
-/* top matches the 46px AppShell header so the sheet slides out from under the toolbar */
+/* Detached below the toolbar, rounded on all four corners like a Big Sur+ sheet. */
 .content {
 	position: fixed;
-	top: 46px;
+	top: 64px;
 	left: 50%;
 	transform: translateX(-50%);
-	max-height: calc(100vh - 46px - 24px);
+	max-height: calc(100vh - 64px - 24px);
 	overflow-y: auto;
 	background-color: var(--ctd-surface);
 	border: 1px solid var(--ctd-border);
-	border-top: none;
-	border-radius: 0 0 10px 10px;
+	border-radius: 10px;
 	box-shadow: var(--ctd-shadow-lift);
-	z-index: 91;
+	z-index: 111;
 }
 
 .content[data-state="open"] {
@@ -95,28 +94,6 @@
 	font-weight: 600;
 	color: var(--ctd-ink);
 	margin: 0;
-}
-
-.close {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	width: 20px;
-	height: 20px;
-	padding: 0;
-	border-radius: 50%;
-	background-color: var(--ctd-control-bg);
-	border: 1px solid var(--ctd-border);
-	color: var(--ctd-ink-soft);
-}
-
-.close:hover {
-	background-color: var(--ctd-control-bg-strong);
-}
-
-.close:focus-visible {
-	outline: none;
-	box-shadow: 0 0 0 3px var(--ctd-focus-ring);
 }
 
 .body {

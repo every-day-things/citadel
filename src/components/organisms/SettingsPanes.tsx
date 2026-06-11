@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useCallback, useId, useState } from "react";
 import { commands } from "@/bindings";
 import { F7BookFill } from "@/components/icons/F7BookFill";
 import { F7Gear } from "@/components/icons/F7Gear";
@@ -9,10 +10,9 @@ import { Button, SegmentedControl, Switch, TextInput } from "@/components/ui";
 import { useAppUpdates } from "@/lib/hooks/use-app-updates";
 import { none, some } from "@/lib/option";
 import { usePlatform } from "@/lib/platform/context";
+import { applyColorScheme } from "@/lib/theme-manager";
 import { createLibrary, setActiveLibrary } from "@/stores/settings/actions";
 import { useSettings } from "@/stores/settings/store";
-import { useMantineColorScheme } from "@mantine/core";
-import { useCallback, useId, useState } from "react";
 
 const SETTINGS_TABS = ["general", "library", "integrations"] as const;
 type SettingsTab = (typeof SETTINGS_TABS)[number];
@@ -119,7 +119,6 @@ const SettingsRow = ({
 };
 
 const GeneralTab = () => {
-	const { setColorScheme } = useMantineColorScheme();
 	const theme = useSettings((state) => state.theme);
 	const setTheme = useSettings((state) => state.setTheme);
 	const autoUpdateCheckingEnabled = useSettings(
@@ -141,10 +140,10 @@ const GeneralTab = () => {
 		(value: string) => {
 			const scheme =
 				value === "light" || value === "dark" ? value : ("auto" as const);
-			setColorScheme(scheme);
+			applyColorScheme(scheme);
 			void setTheme(scheme);
 		},
-		[setColorScheme, setTheme],
+		[setTheme],
 	);
 
 	return (

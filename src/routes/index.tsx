@@ -1,5 +1,5 @@
-import { Books } from "@/components/pages/Books";
 import { createFileRoute, useSearch } from "@tanstack/react-router";
+import { Books } from "@/components/pages/Books";
 
 interface BookSearch {
 	search_for_author?: string;

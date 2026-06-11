@@ -1,21 +1,10 @@
-import { theme } from "@/lib/theme";
-import { some } from "@/lib/option";
-import { MantineProvider } from "@mantine/core";
 import { useArgs } from "@storybook/preview-api";
-import type { Meta, StoryFn, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react";
+import { some } from "@/lib/option";
 import { SelectFirstLibrary, SwitchLibraryForm } from "./SwitchLibraryForm";
-
-export const MantineForStorybook = (Story: StoryFn) => {
-	return (
-		<MantineProvider theme={theme} forceColorScheme="dark">
-			<Story />
-		</MantineProvider>
-	);
-};
 
 const meta: Meta<typeof SwitchLibraryForm> = {
 	component: SwitchLibraryForm,
-	decorators: [MantineForStorybook],
 	argTypes: {},
 };
 

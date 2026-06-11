@@ -9,9 +9,9 @@ import type {
 	NewAuthor,
 } from "@/bindings";
 import { commands } from "@/bindings";
+import { sortAuthors } from "@/lib/domain/author";
 import type { Library, Options } from "@/lib/services/library";
 import { initClient } from "@/lib/services/library";
-import { sortAuthors } from "@/lib/domain/author";
 
 export enum LibraryState {
 	uninitialized = "uninitialized",

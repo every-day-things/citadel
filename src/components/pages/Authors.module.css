@@ -1,0 +1,162 @@
+/*
+ * Authors page chrome. The shared column grid (AUTHOR_GRID) stays inline in
+ * Authors.tsx so the header row and body rows cannot drift apart; the
+ * whole-row hover/overlay behavior lives in styles.css
+ * (.ctd-author-row / .ctd-author-row-link).
+ */
+.page {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+
+.filterBar {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	flex-shrink: 0;
+	padding: 10px 24px;
+	border-bottom: 1px solid var(--ctd-border);
+}
+
+.headerRow {
+	position: sticky;
+	top: 0;
+	z-index: 2;
+	padding: 6px 24px;
+	background-color: var(--ctd-content-bg);
+	border-bottom: 1px solid var(--ctd-border);
+}
+
+.columnLabel {
+	font-size: 12px;
+	line-height: 1.4;
+	font-weight: 600;
+	text-transform: uppercase;
+	color: var(--ctd-ink-soft);
+	white-space: nowrap;
+}
+
+.columnLabelRight {
+	text-align: right;
+}
+
+.rows {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+}
+
+.row {
+	padding: 6px 24px;
+	border-bottom: 1px solid var(--ctd-border);
+}
+
+.cellText {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 14px;
+	line-height: 1.45;
+	color: var(--ctd-ink);
+}
+
+.dimmed {
+	color: var(--ctd-ink-soft);
+}
+
+/* Small danger-tinted capsule flagging authors without a sort name. */
+.badge {
+	display: inline-block;
+	height: 16px;
+	padding: 0 8px;
+	border-radius: 8px;
+	font-size: 9px;
+	line-height: 16px;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+	white-space: nowrap;
+	color: var(--ctd-danger-bg);
+	background-color: oklch(from var(--ctd-danger-bg) l c h / 0.15);
+}
+
+/* Sits above the whole-row overlay link so it stays independently clickable. */
+.countLink {
+	justify-self: end;
+	position: relative;
+	z-index: 1;
+	font-size: 14px;
+	line-height: 1.45;
+	color: var(--ctd-link);
+	text-decoration: none;
+}
+
+.countLink:hover,
+.countLink:focus-visible {
+	text-decoration: underline;
+}
+
+/* Sits above the whole-row overlay link, like the count link. */
+.actions {
+	display: flex;
+	flex-wrap: nowrap;
+	justify-content: flex-end;
+	gap: 2px;
+	position: relative;
+	z-index: 1;
+}
+
+/* size 24 keeps the edit/delete hit areas comfortably clickable. */
+.actionIcon {
+	width: 24px;
+	height: 24px;
+	font-size: 14px;
+}
+
+.dangerIcon {
+	color: var(--ctd-danger-bg);
+}
+
+/* Slot stays reserved so pencils align across rows. */
+.actionSpacer {
+	width: 24px;
+}
+
+.footer {
+	position: sticky;
+	bottom: 0;
+	display: flex;
+	justify-content: center;
+	padding: 6px 0;
+	background-color: var(--ctd-content-bg);
+	border-top: 1px solid var(--ctd-border);
+}
+
+.footerText {
+	font-size: 12px;
+	line-height: 1.4;
+	color: var(--ctd-ink-soft);
+}
+
+/* Edit-author sheet body. */
+.sheetFields {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.sheetFooter {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+	margin-top: 18px;
+}
+
+/* Mantine's visibleFrom="md" equivalent: hidden below the 62em breakpoint. */
+@media (max-width: 61.99em) {
+	.visibleFromMd {
+		display: none;
+	}
+}

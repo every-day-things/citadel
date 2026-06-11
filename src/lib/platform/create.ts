@@ -1,15 +1,15 @@
-import { createTauriDialogs } from "./dialogs/tauri";
-import { createWebDialogs } from "./dialogs/web";
 import { createTauriClipboard } from "./clipboard/tauri";
 import { createWebClipboard } from "./clipboard/web";
+import { createTauriDialogs } from "./dialogs/tauri";
+import { createWebDialogs } from "./dialogs/web";
 import { createTauriFileOpener } from "./file-opener/tauri";
 import { createWebFileOpener } from "./file-opener/web";
-import { createTauriWindow } from "./window/tauri";
-import { createWebWindow } from "./window/web";
 import { createTauriSettingsManager } from "./settings/tauri";
+import { defaultSettings } from "./settings/types";
 import { createWebSettingsManager } from "./settings/web";
 import type { PlatformAdapter } from "./types";
-import { defaultSettings } from "./settings/types";
+import { createTauriWindow } from "./window/tauri";
+import { createWebWindow } from "./window/web";
 
 export const createTauriPlatform = (): PlatformAdapter => ({
 	capabilities: {

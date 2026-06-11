@@ -1,12 +1,12 @@
-import { SettingsPanes } from "@/components/organisms/SettingsPanes";
-import classes from "@/components/pages/SettingsWindow.module.css";
-import { useNativeThemeSync } from "@/lib/hooks/use-native-theme-sync";
-import { useSettings } from "@/stores/settings/store";
-import { useMantineColorScheme } from "@mantine/core";
 import { useRouter } from "@tanstack/react-router";
 import { isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useCallback, useEffect } from "react";
+import { SettingsPanes } from "@/components/organisms/SettingsPanes";
+import classes from "@/components/pages/SettingsWindow.module.css";
+import { useNativeThemeSync } from "@/lib/hooks/use-native-theme-sync";
+import { useApplyColorScheme } from "@/lib/theme-manager";
+import { useSettings } from "@/stores/settings/store";
 
 /**
  * Full-window settings, opened as its own webview window (label `settings`)
@@ -14,16 +14,13 @@ import { useCallback, useEffect } from "react";
  * when not running under Tauri.
  */
 export const SettingsWindow = () => {
-	const { setColorScheme } = useMantineColorScheme();
 	const theme = useSettings((state) => state.theme);
 	const router = useRouter();
 	useNativeThemeSync();
 
-	// Keep Mantine's color scheme in sync with the persisted theme; this
+	// Keep the document color scheme in sync with the persisted theme; this
 	// window hydrates its own settings store (see src/main.tsx).
-	useEffect(() => {
-		setColorScheme(theme);
-	}, [theme, setColorScheme]);
+	useApplyColorScheme(theme);
 
 	// The window is created hidden (menu.rs); the main window's reveal path
 	// (showMainWindow after library init) never runs on this route, so this

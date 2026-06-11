@@ -1,0 +1,21 @@
+.spinner {
+	display: inline-flex;
+	flex-shrink: 0;
+	color: var(--ctd-ink-soft);
+}
+
+.spinner svg {
+	width: 100%;
+	height: 100%;
+	/* Stepped rotation reads as discrete spokes, like AppKit. */
+	animation: spinner-rotate 0.8s steps(8, end) infinite;
+}
+
+@keyframes spinner-rotate {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
+}

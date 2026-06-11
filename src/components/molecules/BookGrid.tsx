@@ -1,7 +1,7 @@
+import { createContext, useContext, useMemo } from "react";
 import type { BookView } from "@/BookView";
 import type { LibraryBook } from "@/bindings";
-import { Box, LoadingOverlay } from "@mantine/core";
-import { createContext, useContext, useMemo } from "react";
+import { LoadingOverlay } from "@/components/ui";
 import { BookCard } from "../atoms/BookCard";
 
 export const BookGrid = ({ loading, bookList, onBookOpen }: BookView) => {
@@ -28,9 +28,10 @@ const BookGridPure = ({
 	const actions = useContext(bookActionsContext);
 
 	return (
-		<Box
-			pos="relative"
+		<div
 			style={{
+				// LoadingOverlay covers the nearest position: relative ancestor.
+				position: "relative",
 				padding: "20px 24px 24px",
 			}}
 		>
@@ -52,7 +53,7 @@ const BookGridPure = ({
 					<BookCard key={book.id} book={book} actions={actions} />
 				))}
 			</div>
-		</Box>
+		</div>
 	);
 };
 

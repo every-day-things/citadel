@@ -1,8 +1,8 @@
+import { useMemo, useState } from "react";
 import type { HardcoverSearchResult, LibraryBook } from "@/bindings";
 import { commands } from "@/bindings";
 import { usePlatform } from "@/lib/platform/context";
 import { useSettings } from "@/stores/settings/store";
-import { useMemo, useState } from "react";
 
 export interface HardcoverMessage {
 	type: "success" | "error";

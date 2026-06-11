@@ -1,17 +1,17 @@
-export type {
-	PlatformAdapter,
-	PlatformCapabilities,
-	DialogAdapter,
-	ClipboardAdapter,
-	FileOpenerAdapter,
-	WindowAdapter,
-} from "./types";
 export { PlatformProvider, usePlatform } from "./context";
 export { createTauriPlatform, createWebPlatform } from "./create";
 export type {
+	LibraryPath,
+	SettingsKey,
 	SettingsManager,
 	SettingsSchema,
-	SettingsKey,
 	SettingsValue,
-	LibraryPath,
 } from "./settings/types";
+export type {
+	ClipboardAdapter,
+	DialogAdapter,
+	FileOpenerAdapter,
+	PlatformAdapter,
+	PlatformCapabilities,
+	WindowAdapter,
+} from "./types";
