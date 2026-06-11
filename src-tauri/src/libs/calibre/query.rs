@@ -25,6 +25,20 @@ pub fn clb_query_list_all_books(
 
 #[tauri::command]
 #[specta::specta]
+pub fn clb_query_search_books(
+    state: tauri::State<CitadelState>,
+    query: String,
+) -> Result<Vec<LibraryBook>, String> {
+    let library_root = state
+        .get_library_path()
+        .ok_or("No library loaded".to_string())?;
+
+    let books = state.with_library(|lib| book::search(library_root, lib, &query))?;
+    books.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn clb_query_list_all_authors(
     state: tauri::State<CitadelState>,
 ) -> Result<Vec<LibraryAuthor>, String> {

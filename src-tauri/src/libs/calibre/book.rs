@@ -33,6 +33,12 @@ fn book_cover_image(
     }
 }
 
+fn to_library_book(library_root: &str, book: &libcalibre::library::Book) -> LibraryBook {
+    let mut library_book = LibraryBook::from_library_book(book, library_root);
+    library_book.cover_image = book_cover_image(library_root, book);
+    library_book
+}
+
 pub fn list_all(
     library_root: String,
     lib: &mut Library,
@@ -41,10 +47,19 @@ pub fn list_all(
 
     Ok(results
         .iter()
-        .map(|book| {
-            let mut library_book = LibraryBook::from_library_book(book, &library_root);
-            library_book.cover_image = book_cover_image(&library_root, book);
-            library_book
-        })
+        .map(|book| to_library_book(&library_root, book))
+        .collect())
+}
+
+pub fn search(
+    library_root: String,
+    lib: &mut Library,
+    query: &str,
+) -> Result<Vec<LibraryBook>, libcalibre::CalibreError> {
+    let results = lib.search_books(query)?;
+
+    Ok(results
+        .iter()
+        .map(|book| to_library_book(&library_root, book))
         .collect())
 }
