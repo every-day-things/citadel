@@ -5,7 +5,10 @@ import { useCallback, useEffect } from "react";
 import { SettingsPanes } from "@/components/organisms/SettingsPanes";
 import classes from "@/components/pages/SettingsWindow.module.css";
 import { useNativeThemeSync } from "@/lib/hooks/use-native-theme-sync";
-import { useApplyColorScheme } from "@/lib/theme-manager";
+import {
+	useApplyColorScheme,
+	useResolvedColorScheme,
+} from "@/lib/theme-manager";
 import { useSettings } from "@/stores/settings/store";
 
 /**
@@ -21,6 +24,18 @@ export const SettingsWindow = () => {
 	// Keep the document color scheme in sync with the persisted theme; this
 	// window hydrates its own settings store (see src/main.tsx).
 	useApplyColorScheme(theme);
+
+	// macOS tints this window's real title bar from the window background
+	// color, which menu.rs sets once at creation. Without this it stays the
+	// creation-time color forever, e.g. a white bar on a dark window. The
+	// values mirror menu.rs.
+	const scheme = useResolvedColorScheme(theme);
+	useEffect(() => {
+		if (!isTauri()) return;
+		void getCurrentWindow().setBackgroundColor(
+			scheme === "dark" ? [25, 27, 28, 255] : [244, 243, 241, 255],
+		);
+	}, [scheme]);
 
 	// The window is created hidden (menu.rs); the main window's reveal path
 	// (showMainWindow after library init) never runs on this route, so this

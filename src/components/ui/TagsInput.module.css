@@ -123,12 +123,9 @@
 	cursor: default;
 }
 
+/* Rendered in a body portal; left/top/width/max-height come in via style. */
 .listbox {
-	position: absolute;
-	top: calc(100% + 4px);
-	left: 0;
-	right: 0;
-	max-height: 180px;
+	position: fixed;
 	overflow-y: auto;
 	padding: 4px;
 	background-color: var(--ctd-surface-strong);

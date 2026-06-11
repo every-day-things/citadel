@@ -1,5 +1,13 @@
 import clsx from "clsx";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import {
+	useEffect,
+	useId,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
+import { createPortal } from "react-dom";
 import styles from "./TagsInput.module.css";
 
 export interface TagsInputProps {
@@ -41,11 +49,18 @@ export const TagsInput = ({
 	const hasError = error !== undefined && error !== null && error !== false;
 
 	const inputRef = useRef<HTMLInputElement>(null);
+	const fieldRef = useRef<HTMLDivElement>(null);
 	const highlightedRef = useRef<HTMLDivElement>(null);
 
 	const [query, setQuery] = useState("");
 	const [open, setOpen] = useState(false);
 	const [highlight, setHighlight] = useState(0);
+	const [listRect, setListRect] = useState<{
+		left: number;
+		top: number;
+		width: number;
+		maxHeight: number;
+	} | null>(null);
 
 	const filtered = useMemo(() => {
 		const taken = new Set(value.map((v) => v.toLowerCase()));
@@ -59,6 +74,36 @@ export const TagsInput = ({
 
 	const listVisible = open && !disabled && filtered.length > 0;
 	const highlightIndex = Math.min(highlight, filtered.length - 1);
+
+	// The completion list renders in a body portal with fixed positioning, so
+	// it can escape scrolling/overflow ancestors (sheets, drawers) instead of
+	// being clipped by them or stretching them into scrolling. Re-measure on
+	// any scroll/resize and when typing rewraps the token field.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: query/value.length only trigger re-measures.
+	useLayoutEffect(() => {
+		if (!listVisible) {
+			setListRect(null);
+			return;
+		}
+		const update = () => {
+			const rect = fieldRef.current?.getBoundingClientRect();
+			if (!rect) return;
+			const top = rect.bottom + 4;
+			setListRect({
+				left: rect.left,
+				top,
+				width: rect.width,
+				maxHeight: Math.min(180, window.innerHeight - top - 8),
+			});
+		};
+		update();
+		window.addEventListener("resize", update);
+		window.addEventListener("scroll", update, true);
+		return () => {
+			window.removeEventListener("resize", update);
+			window.removeEventListener("scroll", update, true);
+		};
+	}, [listVisible, query, value.length]);
 
 	// Keep the highlighted option scrolled into view.
 	useEffect(() => {
@@ -148,6 +193,7 @@ export const TagsInput = ({
 			{/* biome-ignore lint/a11y/noStaticElementInteractions: click-anywhere-to-focus convenience; the inner input is the real interactive element. */}
 			{/* biome-ignore lint/a11y/useKeyWithClickEvents: see above */}
 			<div
+				ref={fieldRef}
 				className={clsx(
 					styles.field,
 					hasError && styles.fieldError,
@@ -224,36 +270,45 @@ export const TagsInput = ({
 				/>
 			</div>
 			{/* ARIA combobox pattern: focus stays on the input and aria-activedescendant tracks the option, so the listbox itself is not focusable. */}
-			<div
-				id={listboxId}
-				role="listbox"
-				aria-label={label ?? ariaLabel ?? "Suggestions"}
-				className={styles.listbox}
-				hidden={!listVisible}
-			>
-				{listVisible &&
-					filtered.map((suggestion, index) => (
-						// biome-ignore lint/a11y/useFocusableInteractive: see listbox note above.
-						// biome-ignore lint/a11y/useKeyWithClickEvents: keyboard selection happens on the combobox input.
-						<div
-							key={suggestion}
-							id={`${listboxId}-opt-${index}`}
-							role="option"
-							aria-selected={index === highlightIndex}
-							ref={index === highlightIndex ? highlightedRef : undefined}
-							className={clsx(
-								styles.option,
-								index === highlightIndex && styles.optionHighlighted,
-							)}
-							// preventDefault keeps focus on the input through the click.
-							onMouseDown={(event) => event.preventDefault()}
-							onClick={() => addToken(suggestion)}
-							onMouseMove={() => setHighlight(index)}
-						>
-							{suggestion}
-						</div>
-					))}
-			</div>
+			{listVisible &&
+				listRect &&
+				createPortal(
+					<div
+						id={listboxId}
+						role="listbox"
+						aria-label={label ?? ariaLabel ?? "Suggestions"}
+						className={styles.listbox}
+						style={{
+							left: listRect.left,
+							top: listRect.top,
+							width: listRect.width,
+							maxHeight: listRect.maxHeight,
+						}}
+					>
+						{filtered.map((suggestion, index) => (
+							// biome-ignore lint/a11y/useFocusableInteractive: see listbox note above.
+							// biome-ignore lint/a11y/useKeyWithClickEvents: keyboard selection happens on the combobox input.
+							<div
+								key={suggestion}
+								id={`${listboxId}-opt-${index}`}
+								role="option"
+								aria-selected={index === highlightIndex}
+								ref={index === highlightIndex ? highlightedRef : undefined}
+								className={clsx(
+									styles.option,
+									index === highlightIndex && styles.optionHighlighted,
+								)}
+								// preventDefault keeps focus on the input through the click.
+								onMouseDown={(event) => event.preventDefault()}
+								onClick={() => addToken(suggestion)}
+								onMouseMove={() => setHighlight(index)}
+							>
+								{suggestion}
+							</div>
+						))}
+					</div>,
+					document.body,
+				)}
 		</div>
 	);
 

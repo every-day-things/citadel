@@ -37,4 +37,11 @@ export interface SettingsManager {
 		value: SettingsValue<K>,
 	) => Promise<void>;
 	get: <K extends SettingsKey>(key: K) => Promise<SettingsValue<K>>;
+	/**
+	 * Fires for every persisted change, including ones made from other windows
+	 * sharing the same backing store. Returns an unsubscribe function.
+	 */
+	onChange?: (
+		callback: (key: SettingsKey, value: SettingsSchema[SettingsKey]) => void,
+	) => Promise<() => void>;
 }

@@ -7,11 +7,12 @@
 	--ctd-surface-muted: oklch(93.5% 0.004 80);
 	--ctd-ink: oklch(23% 0.005 80);
 	--ctd-ink-soft: oklch(46% 0.008 80);
-	--ctd-accent: oklch(58% 0.17 255);
-	--ctd-accent-strong: oklch(50% 0.17 255);
+	/* Library-lamp green: the brand accent. Far from danger red on purpose. */
+	--ctd-accent: oklch(47% 0.1 160);
+	--ctd-accent-strong: oklch(41% 0.1 160);
 	--ctd-border: oklch(40% 0.006 80 / 0.18);
 	--ctd-border-strong: oklch(40% 0.006 80 / 0.32);
-	--ctd-link: oklch(52% 0.16 255);
+	--ctd-link: oklch(44% 0.1 160);
 	--ctd-shell-gradient: oklch(96.5% 0.003 80 / 0.85);
 	--ctd-header-bg: oklch(98% 0.002 80 / 0.88);
 	--ctd-nav-bg: oklch(96% 0.003 80 / 0.85);
@@ -24,8 +25,8 @@
 	--ctd-segmented-indicator-bg: oklch(99.5% 0.001 80);
 	--ctd-segmented-label: oklch(28% 0.005 80);
 	--ctd-nav-hover-bg: oklch(50% 0.006 80 / 0.09);
-	--ctd-nav-active-bg: oklch(58% 0.17 255 / 0.14);
-	--ctd-nav-active-text: oklch(42% 0.15 255);
+	--ctd-nav-active-bg: oklch(47% 0.1 160 / 0.14);
+	--ctd-nav-active-text: oklch(36% 0.09 160);
 	--ctd-control-disabled-bg: oklch(94% 0.003 80 / 0.9);
 	--ctd-control-disabled-border: oklch(40% 0.006 80 / 0.12);
 	--ctd-control-disabled-text: oklch(55% 0.005 80 / 0.6);
@@ -33,8 +34,11 @@
 	--ctd-danger-bg-hover: oklch(48% 0.19 27);
 	--ctd-danger-text: oklch(98% 0.005 27);
 	--ctd-danger-border: oklch(48% 0.19 27);
+	/* The last layer is a tight contact shadow so covers sit on the shelf
+	   instead of floating above it. */
 	--ctd-cover-shadow:
-		0 1px 2px oklch(0% 0 0 / 0.16), 0 6px 14px oklch(0% 0 0 / 0.12);
+		0 1px 2px oklch(0% 0 0 / 0.16), 0 6px 14px oklch(0% 0 0 / 0.12),
+		0 10px 8px -8px oklch(0% 0 0 / 0.3);
 	--ctd-cover-overlay: #12161a;
 	--ctd-cover-title: oklch(99% 0.002 80);
 	--ctd-cover-author: oklch(88% 0.004 80);
@@ -63,10 +67,12 @@
 		0 2px 6px oklch(0% 0 0 / 0.08), 0 14px 28px oklch(0% 0 0 / 0.1);
 	--ctd-content-bg: oklch(98% 0.002 80);
 	--ctd-radius-panel: 10px;
-	--ctd-focus-ring: oklch(58% 0.17 255 / 0.28);
+	--ctd-focus-ring: oklch(47% 0.1 160 / 0.3);
 	--ctd-scrollbar-thumb: oklch(40% 0.004 80 / 0.4);
 	--ctd-control-shadow: 0 0.5px 1.5px oklch(0% 0 0 / 0.12);
 	--ctd-field-inner-shadow: inset 0 0.5px 1px oklch(0% 0 0 / 0.05);
+	/* Book titles get a literary voice; chrome and controls stay system. */
+	--ctd-font-serif: "New York", ui-serif, Georgia, "Times New Roman", serif;
 
 	font-family:
 		-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto,
@@ -82,46 +88,49 @@
 	-webkit-text-size-adjust: 100%;
 }
 
+/* Lamplit reading room: the same warm hue family as the light theme, never
+   the default blue-gray. */
 :root[data-theme="dark"] {
-	--ctd-bg: oklch(22% 0.004 260);
-	--ctd-bg-deep: oklch(19.5% 0.004 260);
-	--ctd-surface: oklch(25% 0.004 260);
-	--ctd-surface-soft: oklch(27% 0.004 260);
-	--ctd-surface-strong: oklch(30% 0.005 260);
-	--ctd-surface-muted: oklch(33% 0.005 260);
-	--ctd-ink: oklch(92.5% 0.003 260);
-	--ctd-ink-soft: oklch(71% 0.005 260);
-	--ctd-accent: oklch(66% 0.15 255);
-	--ctd-accent-strong: oklch(58% 0.17 255);
-	--ctd-border: oklch(95% 0.003 260 / 0.1);
-	--ctd-border-strong: oklch(95% 0.003 260 / 0.22);
-	--ctd-link: oklch(70% 0.13 255);
-	--ctd-shell-gradient: oklch(22% 0.004 260 / 0.85);
-	--ctd-header-bg: oklch(24% 0.004 260 / 0.9);
-	--ctd-nav-bg: oklch(23% 0.004 260 / 0.88);
-	--ctd-main-gradient: oklch(21% 0.004 260 / 0.8);
-	--ctd-drawer-gradient: oklch(26% 0.004 260 / 0.98);
-	--ctd-control-bg: oklch(29% 0.005 260 / 0.9);
-	--ctd-control-bg-strong: oklch(31% 0.005 260);
-	--ctd-control-text: oklch(93% 0.003 260);
-	--ctd-segmented-root-bg: oklch(18% 0.004 260 / 0.7);
-	--ctd-segmented-indicator-bg: oklch(38% 0.005 260);
-	--ctd-segmented-label: oklch(92% 0.003 260);
-	--ctd-nav-hover-bg: oklch(95% 0.003 260 / 0.07);
-	--ctd-nav-active-bg: oklch(66% 0.15 255 / 0.22);
-	--ctd-nav-active-text: oklch(94% 0.01 255);
-	--ctd-control-disabled-bg: oklch(27% 0.004 260 / 0.9);
-	--ctd-control-disabled-border: oklch(95% 0.003 260 / 0.08);
-	--ctd-control-disabled-text: oklch(75% 0.004 260 / 0.4);
+	--ctd-bg: oklch(22% 0.005 80);
+	--ctd-bg-deep: oklch(19.5% 0.005 80);
+	--ctd-surface: oklch(25% 0.005 80);
+	--ctd-surface-soft: oklch(27% 0.005 80);
+	--ctd-surface-strong: oklch(30% 0.006 80);
+	--ctd-surface-muted: oklch(33% 0.006 80);
+	--ctd-ink: oklch(92.5% 0.004 80);
+	--ctd-ink-soft: oklch(71% 0.006 80);
+	--ctd-accent: oklch(66% 0.1 160);
+	--ctd-accent-strong: oklch(58% 0.1 160);
+	--ctd-border: oklch(95% 0.004 80 / 0.1);
+	--ctd-border-strong: oklch(95% 0.004 80 / 0.22);
+	--ctd-link: oklch(72% 0.1 160);
+	--ctd-shell-gradient: oklch(22% 0.005 80 / 0.85);
+	--ctd-header-bg: oklch(24% 0.005 80 / 0.9);
+	--ctd-nav-bg: oklch(23% 0.005 80 / 0.88);
+	--ctd-main-gradient: oklch(21% 0.005 80 / 0.8);
+	--ctd-drawer-gradient: oklch(26% 0.005 80 / 0.98);
+	--ctd-control-bg: oklch(29% 0.006 80 / 0.9);
+	--ctd-control-bg-strong: oklch(31% 0.006 80);
+	--ctd-control-text: oklch(93% 0.004 80);
+	--ctd-segmented-root-bg: oklch(18% 0.005 80 / 0.7);
+	--ctd-segmented-indicator-bg: oklch(38% 0.006 80);
+	--ctd-segmented-label: oklch(92% 0.004 80);
+	--ctd-nav-hover-bg: oklch(95% 0.004 80 / 0.07);
+	--ctd-nav-active-bg: oklch(66% 0.1 160 / 0.22);
+	--ctd-nav-active-text: oklch(93% 0.03 160);
+	--ctd-control-disabled-bg: oklch(27% 0.005 80 / 0.9);
+	--ctd-control-disabled-border: oklch(95% 0.004 80 / 0.08);
+	--ctd-control-disabled-text: oklch(75% 0.005 80 / 0.4);
 	--ctd-danger-bg: oklch(58% 0.19 27);
 	--ctd-danger-bg-hover: oklch(52% 0.19 27);
 	--ctd-danger-text: oklch(97% 0.008 27);
 	--ctd-danger-border: oklch(52% 0.19 27);
 	--ctd-cover-shadow:
-		0 0 0 1px oklch(100% 0 0 / 0.07), 0 8px 18px oklch(0% 0 0 / 0.5);
+		0 0 0 1px oklch(100% 0 0 / 0.07), 0 8px 18px oklch(0% 0 0 / 0.5),
+		0 10px 8px -8px oklch(0% 0 0 / 0.6);
 	--ctd-cover-overlay: #12161a;
-	--ctd-cover-title: oklch(98% 0.002 260);
-	--ctd-cover-author: oklch(88% 0.004 260);
+	--ctd-cover-title: oklch(98% 0.003 80);
+	--ctd-cover-author: oklch(88% 0.005 80);
 	--ctd-cover-title-shadow: 0px 1px oklch(25% 0 0 / 0.85);
 	--ctd-cover-author-shadow: 0px 2px oklch(15% 0 0 / 0.85);
 	--ctd-cover-spine-bg:
@@ -145,9 +154,9 @@
 		0 1px 2px oklch(0% 0 0 / 0.4), 0 6px 16px oklch(0% 0 0 / 0.35);
 	--ctd-shadow-lift:
 		0 2px 6px oklch(0% 0 0 / 0.45), 0 16px 32px oklch(0% 0 0 / 0.5);
-	--ctd-content-bg: oklch(23.5% 0.004 260);
-	--ctd-focus-ring: oklch(66% 0.15 255 / 0.35);
-	--ctd-scrollbar-thumb: oklch(90% 0.003 260 / 0.35);
+	--ctd-content-bg: oklch(23.5% 0.005 80);
+	--ctd-focus-ring: oklch(66% 0.1 160 / 0.4);
+	--ctd-scrollbar-thumb: oklch(90% 0.004 80 / 0.35);
 	--ctd-control-shadow: 0 0.5px 1.5px oklch(0% 0 0 / 0.4);
 	--ctd-field-inner-shadow: inset 0 0.5px 1px oklch(0% 0 0 / 0.2);
 }
@@ -166,7 +175,7 @@
 }
 
 :root[data-vibrancy][data-theme="dark"] {
-	--ctd-header-bg: oklch(23% 0.004 260 / 0.12);
+	--ctd-header-bg: oklch(23% 0.005 80 / 0.12);
 	--ctd-nav-bg: transparent;
 }
 

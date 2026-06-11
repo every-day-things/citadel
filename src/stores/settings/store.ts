@@ -74,6 +74,14 @@ export const useSettings = create<SettingsStore>((set, get) => ({
 			}
 
 			set({ ...initialSettings, hydrated: true });
+
+			// Mirror changes persisted by other windows (e.g. the Settings
+			// window changing theme or the active library) into this window's
+			// store. Receiving never re-persists, so there is no echo loop.
+			void settingsManager.onChange?.((key, value) => {
+				if (Object.is(get()[key], value)) return;
+				set({ [key]: value } as Partial<SettingsStore>);
+			});
 		} catch (e) {
 			console.error("Failed to initialize settings:", e);
 		}

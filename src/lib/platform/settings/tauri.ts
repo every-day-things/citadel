@@ -47,5 +47,14 @@ export const createTauriSettingsManager = (
 
 			return value as SettingsValue<K>;
 		},
+
+		// The plugin store lives in the Rust core and is shared by every window;
+		// its change events are how the settings and main windows stay in sync.
+		onChange: (callback) =>
+			store.onChange((key, value) => {
+				if (key in defaultSettings) {
+					callback(key as SettingsKey, value as SettingsSchema[SettingsKey]);
+				}
+			}),
 	};
 };

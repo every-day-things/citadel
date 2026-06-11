@@ -38,7 +38,7 @@
 
 .nav {
 	flex-shrink: 0;
-	width: 248px;
+	width: 200px;
 	padding: 12px;
 	background-color: var(--ctd-nav-bg);
 	overflow: hidden;
@@ -94,7 +94,7 @@
 		top: 46px;
 		left: 0;
 		bottom: 0;
-		width: 248px;
+		width: 200px;
 		background-color: var(--ctd-surface);
 		border-right: 1px solid var(--ctd-border);
 		z-index: 105;
