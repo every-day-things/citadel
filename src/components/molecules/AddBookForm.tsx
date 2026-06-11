@@ -1,4 +1,5 @@
 import { MultiSelectCreatable } from "@/components/atoms/Multiselect";
+import { safeAsyncEventHandler } from "@/lib/async";
 import { Button, Code, Stack, Text, TextInput, Title } from "@mantine/core";
 import { Form, useForm } from "@mantine/form";
 
@@ -34,7 +35,7 @@ export const AddBookForm = ({
 			form={form}
 			onSubmit={() => {
 				if (onSubmit) {
-					void onSubmit(form.values);
+					safeAsyncEventHandler(async () => onSubmit(form.values))();
 				}
 			}}
 		>
@@ -69,7 +70,9 @@ export const AddBookForm = ({
 					label="Authors"
 					placeholder="Search or add author"
 					selectOptions={authorList}
-					onCreateSelectOption={(name) => void onCreateAuthor(name)}
+					onCreateSelectOption={(name) =>
+						safeAsyncEventHandler(async () => onCreateAuthor(name))()
+					}
 					{...form.getInputProps("authorList")}
 				/>
 				<Button mt="mg" variant="filled" color="sepia" fullWidth type="submit">
