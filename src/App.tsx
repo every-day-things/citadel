@@ -5,7 +5,7 @@ import { IS_DEV } from "@/lib/env";
 import { useInitializeLibraryStore } from "@/lib/hooks/use-initialize-library-store";
 import { usePlatform } from "@/lib/platform/context";
 import { checkForUpdates } from "@/lib/services/app-updates";
-import { useApplyColorScheme } from "@/lib/theme-manager";
+import { useApplyColorScheme, useApplyThemePalette } from "@/lib/theme-manager";
 import { safeAsyncEventHandler } from "$lib/async";
 import { FirstTimeSetup } from "./components/pages/firstTimeSetup";
 import { routeTree } from "./routeTree.gen";
@@ -24,9 +24,11 @@ declare module "@tanstack/react-router" {
 export const App = () => {
 	const hydrated = useSettings((state) => state.hydrated);
 	const theme = useSettings((state) => state.theme);
+	const themePalette = useSettings((state) => state.themePalette);
 	const libraryPath = useActiveLibraryPath();
 	const platform = usePlatform();
 	useApplyColorScheme(theme);
+	useApplyThemePalette(themePalette);
 
 	useEffect(() => {
 		if (hydrated) {

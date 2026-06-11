@@ -7,9 +7,33 @@ import classes from "@/components/pages/SettingsWindow.module.css";
 import { useNativeThemeSync } from "@/lib/hooks/use-native-theme-sync";
 import {
 	useApplyColorScheme,
+	useApplyThemePalette,
 	useResolvedColorScheme,
 } from "@/lib/theme-manager";
 import { useSettings } from "@/stores/settings/store";
+
+/**
+ * Resolves the current value of a --ctd-* color token to RGB by painting it
+ * on a 1x1 canvas (computed styles may serialize as oklch(), which the
+ * window API does not accept).
+ */
+const resolveTokenColor = (token: string): [number, number, number] | null => {
+	const probe = document.createElement("div");
+	probe.style.backgroundColor = `var(${token})`;
+	document.body.appendChild(probe);
+	const resolved = getComputedStyle(probe).backgroundColor;
+	probe.remove();
+	const canvas = document.createElement("canvas");
+	canvas.width = 1;
+	canvas.height = 1;
+	const ctx = canvas.getContext("2d");
+	if (!ctx) return null;
+	ctx.fillStyle = resolved;
+	ctx.fillRect(0, 0, 1, 1);
+	const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+	if (r === undefined || g === undefined || b === undefined) return null;
+	return [r, g, b];
+};
 
 /**
  * Full-window settings, opened as its own webview window (label `settings`)
@@ -18,25 +42,26 @@ import { useSettings } from "@/stores/settings/store";
  */
 export const SettingsWindow = () => {
 	const theme = useSettings((state) => state.theme);
+	const themePalette = useSettings((state) => state.themePalette);
 	const router = useRouter();
 	useNativeThemeSync();
 
 	// Keep the document color scheme in sync with the persisted theme; this
 	// window hydrates its own settings store (see src/main.tsx).
 	useApplyColorScheme(theme);
+	useApplyThemePalette(themePalette);
 
 	// macOS tints this window's real title bar from the window background
 	// color, which menu.rs sets once at creation. Without this it stays the
-	// creation-time color forever, e.g. a white bar on a dark window. The
-	// values mirror menu.rs.
+	// creation-time color forever, e.g. a white bar on a dark window.
 	const scheme = useResolvedColorScheme(theme);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: scheme and themePalette are re-run triggers; the value is read from the DOM after the attribute effects above apply.
 	useEffect(() => {
 		if (!isTauri()) return;
-		// Catppuccin Mocha base / Latte base, mirroring menu.rs.
-		void getCurrentWindow().setBackgroundColor(
-			scheme === "dark" ? [30, 30, 46, 255] : [239, 241, 245, 255],
-		);
-	}, [scheme]);
+		const rgb = resolveTokenColor("--ctd-bg");
+		if (!rgb) return;
+		void getCurrentWindow().setBackgroundColor([...rgb, 255]);
+	}, [scheme, themePalette]);
 
 	// The window is created hidden (menu.rs); the main window's reveal path
 	// (showMainWindow after library init) never runs on this route, so this

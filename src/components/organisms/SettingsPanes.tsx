@@ -6,11 +6,18 @@ import { F7Gear } from "@/components/icons/F7Gear";
 import { FluentLibraryFilled } from "@/components/icons/FluentLibraryFilled";
 import { SwitchLibraryForm } from "@/components/molecules/SwitchLibraryForm";
 import classes from "@/components/organisms/SettingsPanes.module.css";
-import { Button, SegmentedControl, Switch, TextInput } from "@/components/ui";
+import {
+	Button,
+	SegmentedControl,
+	Select,
+	Switch,
+	TextInput,
+} from "@/components/ui";
 import { useAppUpdates } from "@/lib/hooks/use-app-updates";
 import { none, some } from "@/lib/option";
 import { usePlatform } from "@/lib/platform/context";
-import { applyColorScheme } from "@/lib/theme-manager";
+import type { ThemePalette } from "@/lib/platform/settings/types";
+import { applyColorScheme, applyThemePalette } from "@/lib/theme-manager";
 import { createLibrary, setActiveLibrary } from "@/stores/settings/actions";
 import { useSettings } from "@/stores/settings/store";
 
@@ -118,9 +125,18 @@ const SettingsRow = ({
 	);
 };
 
+const PALETTE_OPTIONS: { value: ThemePalette; label: string }[] = [
+	{ value: "marble", label: "Marble" },
+	{ value: "cobalt", label: "Cobalt" },
+	{ value: "uchu", label: "Uchu" },
+	{ value: "signal", label: "Signal" },
+];
+
 const GeneralTab = () => {
 	const theme = useSettings((state) => state.theme);
 	const setTheme = useSettings((state) => state.setTheme);
+	const themePalette = useSettings((state) => state.themePalette);
+	const setThemePalette = useSettings((state) => state.setThemePalette);
 	const autoUpdateCheckingEnabled = useSettings(
 		(state) => state.autoUpdateCheckingEnabled,
 	);
@@ -161,6 +177,23 @@ const GeneralTab = () => {
 								{ value: "light", label: "Light" },
 								{ value: "dark", label: "Dark" },
 							]}
+						/>
+					}
+				/>
+				<SettingsRow
+					label="Theme"
+					description="Temporary: candidate palettes while the default is tuned."
+					control={
+						<Select
+							aria-label="Theme"
+							width={140}
+							value={themePalette}
+							options={PALETTE_OPTIONS}
+							onChange={(value) => {
+								const palette = value as ThemePalette;
+								applyThemePalette(palette);
+								void setThemePalette(palette);
+							}}
 						/>
 					}
 				/>

@@ -8,6 +8,7 @@ import {
 	type SettingsManager,
 	type SettingsSchema,
 	type SettingsValue,
+	type ThemePalette,
 } from "@/lib/platform/settings/types";
 
 interface SettingsStore extends SettingsSchema {
@@ -19,6 +20,7 @@ interface SettingsStore extends SettingsSchema {
 
 	// Domain-specific actions
 	setTheme: (theme: "dark" | "light" | "auto") => Promise<void>;
+	setThemePalette: (palette: ThemePalette) => Promise<void>;
 	setStartFullscreen: (enabled: boolean) => Promise<void>;
 	setAutoUpdateCheckingEnabled: (enabled: boolean) => Promise<void>;
 	setHasCompletedFirstLaunch: (enabled: boolean) => Promise<void>;
@@ -89,6 +91,10 @@ export const useSettings = create<SettingsStore>((set, get) => ({
 
 	setTheme: async (theme) => {
 		await persistSetting(set, get, "theme", theme);
+	},
+
+	setThemePalette: async (palette) => {
+		await persistSetting(set, get, "themePalette", palette);
 	},
 
 	setStartFullscreen: async (enabled) => {

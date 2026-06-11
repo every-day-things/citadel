@@ -4,9 +4,12 @@ export interface LibraryPath {
 	absolutePath: string;
 }
 
+export type ThemePalette = "marble" | "cobalt" | "uchu" | "signal";
+
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 export interface SettingsSchema {
 	theme: "dark" | "light" | "auto";
+	themePalette: ThemePalette;
 	startFullscreen: boolean;
 	autoUpdateCheckingEnabled: boolean;
 	hasCompletedFirstLaunch: boolean;
@@ -18,6 +21,7 @@ export interface SettingsSchema {
 
 export const defaultSettings: SettingsSchema = {
 	theme: "auto",
+	themePalette: "marble",
 	startFullscreen: false,
 	autoUpdateCheckingEnabled: true,
 	hasCompletedFirstLaunch: false,
