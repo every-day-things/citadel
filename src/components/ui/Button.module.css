@@ -1,0 +1,127 @@
+.button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	white-space: nowrap;
+	font-family: inherit;
+	font-size: 13px;
+	font-weight: 500;
+	border-radius: 6px;
+	transition:
+		background-color 120ms ease-out,
+		border-color 120ms ease-out,
+		box-shadow 120ms ease-out;
+}
+
+.button:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--ctd-focus-ring);
+}
+
+.md {
+	height: 28px;
+	padding: 0 12px;
+}
+
+.sm {
+	height: 22px;
+	padding: 0 10px;
+}
+
+.fullWidth {
+	width: 100%;
+}
+
+.default {
+	background-color: var(--ctd-control-bg-strong);
+	border: 1px solid var(--ctd-border);
+	box-shadow: var(--ctd-control-shadow);
+	color: var(--ctd-control-text);
+}
+
+.default:hover:not(:disabled) {
+	background-color: var(--ctd-control-bg);
+}
+
+.default:active:not(:disabled) {
+	background-color: oklch(from var(--ctd-control-bg-strong) calc(l - 0.04) c h);
+}
+
+.default:focus-visible {
+	box-shadow:
+		var(--ctd-control-shadow),
+		0 0 0 3px var(--ctd-focus-ring);
+}
+
+.primary {
+	background-color: var(--ctd-accent);
+	border: 1px solid var(--ctd-accent-strong);
+	box-shadow: var(--ctd-control-shadow);
+	color: oklch(99% 0.002 255);
+}
+
+.primary:hover:not(:disabled) {
+	background-color: var(--ctd-accent-strong);
+}
+
+.primary:active:not(:disabled) {
+	background-color: oklch(from var(--ctd-accent-strong) calc(l - 0.04) c h);
+}
+
+.primary:focus-visible {
+	box-shadow:
+		var(--ctd-control-shadow),
+		0 0 0 3px var(--ctd-focus-ring);
+}
+
+.danger {
+	background-color: var(--ctd-danger-bg);
+	border: 1px solid var(--ctd-danger-border);
+	box-shadow: var(--ctd-control-shadow);
+	color: var(--ctd-danger-text);
+}
+
+.danger:hover:not(:disabled) {
+	background-color: var(--ctd-danger-bg-hover);
+}
+
+.danger:active:not(:disabled) {
+	background-color: oklch(from var(--ctd-danger-bg-hover) calc(l - 0.04) c h);
+}
+
+.danger:focus-visible {
+	box-shadow:
+		var(--ctd-control-shadow),
+		0 0 0 3px var(--ctd-focus-ring);
+}
+
+.subtle {
+	background-color: transparent;
+	border: 1px solid transparent;
+	color: var(--ctd-accent);
+}
+
+.subtle:hover:not(:disabled) {
+	background-color: var(--ctd-nav-active-bg);
+}
+
+.subtle:active:not(:disabled) {
+	background-color: oklch(
+		from var(--ctd-nav-active-bg) l c h /
+		calc(alpha + 0.08)
+	);
+}
+
+.button:disabled {
+	background-color: var(--ctd-control-disabled-bg);
+	border-color: var(--ctd-control-disabled-border);
+	color: var(--ctd-control-disabled-text);
+	box-shadow: none;
+}
+
+/* Subtle stays borderless and transparent when disabled. */
+.subtle:disabled {
+	background-color: transparent;
+	border-color: transparent;
+}

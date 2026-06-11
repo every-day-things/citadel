@@ -1,0 +1,68 @@
+.row {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.label {
+	font-size: 13px;
+	color: var(--ctd-ink);
+}
+
+.label[data-disabled] {
+	color: var(--ctd-control-disabled-text);
+}
+
+.box {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: 14px;
+	height: 14px;
+	padding: 0;
+	border-radius: 3px;
+	background-color: var(--ctd-control-bg-strong);
+	border: 1px solid var(--ctd-border-strong);
+	box-shadow: var(--ctd-field-inner-shadow);
+	transition:
+		background-color 120ms ease-out,
+		border-color 120ms ease-out,
+		box-shadow 120ms ease-out;
+}
+
+.box[data-state="unchecked"]:hover:not(:disabled) {
+	background-color: var(--ctd-control-bg);
+	border-color: var(--ctd-border-strong);
+}
+
+.box[data-state="unchecked"]:active:not(:disabled) {
+	background-color: oklch(from var(--ctd-control-bg-strong) calc(l - 0.04) c h);
+}
+
+.box[data-state="checked"] {
+	background-color: var(--ctd-accent);
+	border-color: var(--ctd-accent-strong);
+}
+
+.box[data-state="checked"]:active:not(:disabled) {
+	background-color: var(--ctd-accent-strong);
+}
+
+.box:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--ctd-focus-ring);
+}
+
+.box:disabled {
+	background-color: var(--ctd-control-disabled-bg);
+	border-color: var(--ctd-control-disabled-border);
+	box-shadow: none;
+	opacity: 0.7;
+}
+
+.indicator {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
