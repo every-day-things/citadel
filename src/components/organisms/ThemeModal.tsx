@@ -91,7 +91,7 @@ const ThemeModalPure = ({
 					leftSection={<F7CircleRighthalfFill />}
 					onPointerDown={colorSchemeSetters.auto}
 					variant="outline"
-					color="sepia"
+					color="accent"
 				>
 					Auto
 				</Button>
@@ -99,7 +99,7 @@ const ThemeModalPure = ({
 					leftSection={<F7SunMaxFill title="" />}
 					onPointerDown={colorSchemeSetters.light}
 					variant="outline"
-					color="sepia"
+					color="accent"
 				>
 					Light
 				</Button>
@@ -107,7 +107,7 @@ const ThemeModalPure = ({
 					leftSection={<F7MoonFill />}
 					onPointerDown={colorSchemeSetters.dark}
 					variant="outline"
-					color="sepia"
+					color="accent"
 				>
 					Dark
 				</Button>

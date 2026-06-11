@@ -306,7 +306,7 @@ function FilterControls({ form }: { form: BookViewForm }) {
 
 			<Switch
 				label="Hide read"
-				color="sepia"
+				color="accent"
 				styles={{
 					label: {
 						fontWeight: 600,
@@ -339,13 +339,12 @@ function Header({
 		<Stack
 			gap="xs"
 			p="md"
+			pb="sm"
 			style={{
-				backgroundColor: "var(--ctd-surface-soft)",
-				border: "1px solid var(--ctd-border)",
-				borderRadius: "12px",
+				borderBottom: "1px solid var(--ctd-border)",
 			}}
 		>
-			<Title order={1} mb={2} style={{ letterSpacing: "0.01em" }}>
+			<Title order={3} mb={2}>
 				Your Library
 			</Title>
 			<FilterControls form={form} />
@@ -364,15 +363,7 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 				<BookCover book={book} disableFade />
 				<Stack justify="space-between" mih={"200px"} maw="calc(400px - 133px)">
 					<Stack ml={"sm"} align="flex-start" justify="flex-start" gap={4}>
-						<Text
-							size="xl"
-							fw={"700"}
-							style={{
-								fontFamily:
-									'"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif',
-								lineHeight: 1.15,
-							}}
-						>
+						<Text size="xl" fw={"700"} style={{ lineHeight: 1.15 }}>
 							{book.title}
 						</Text>
 						<Text size="md" c="dimmed">
@@ -406,13 +397,7 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 				<>
 					<Divider />
 					<Stack>
-						<Text
-							fw={700}
-							style={{
-								fontFamily:
-									'"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif',
-							}}
-						>
+						<Text fw={700} style={{}}>
 							Description
 						</Text>
 						{/* We're using DOMPurify to sanitize the HTML before rendering */}
@@ -430,19 +415,12 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 			<Stack gap={6}>
 				{book.tag_list.length > 0 && (
 					<Stack gap="xs">
-						<Text
-							size="sm"
-							fw={700}
-							style={{
-								fontFamily:
-									'"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif',
-							}}
-						>
+						<Text size="sm" fw={700} style={{}}>
 							Tags
 						</Text>
 						<Group gap="xs">
 							{book.tag_list.map((tag) => (
-								<Badge key={tag} variant="light" color="sepia">
+								<Badge key={tag} variant="light" color="accent">
 									{tag}
 								</Badge>
 							))}
@@ -452,13 +430,7 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 				{book.identifier_list.length > 0 && (
 					<BookIdentifiers identifier_list={book.identifier_list} />
 				)}
-				<Text
-					fw={700}
-					style={{
-						fontFamily:
-							'"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif',
-					}}
-				>
+				<Text fw={700} style={{}}>
 					Formats
 				</Text>
 				<p style={{ marginTop: 0 }}>
@@ -526,14 +498,7 @@ const BookIdentifiers = ({
 	const platform = usePlatform();
 	return (
 		<Stack gap={"xs"}>
-			<Text
-				size="sm"
-				fw={700}
-				style={{
-					fontFamily:
-						'"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif',
-				}}
-			>
+			<Text size="sm" fw={700} style={{}}>
 				Identifiers
 			</Text>
 			<ul style={{ listStyle: "none", padding: 0, margin: 0 }}>

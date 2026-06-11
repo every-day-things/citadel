@@ -75,7 +75,7 @@ export const AddBookForm = ({
 					}
 					{...form.getInputProps("authorList")}
 				/>
-				<Button mt="mg" variant="filled" color="sepia" fullWidth type="submit">
+				<Button mt="mg" variant="filled" color="accent" fullWidth type="submit">
 					Add book
 				</Button>
 			</Stack>

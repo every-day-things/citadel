@@ -30,7 +30,6 @@ import {
 	NavLink,
 	Stack,
 	Text,
-	Title,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
@@ -442,26 +441,25 @@ const SidebarPure = ({
 			p="md"
 			style={{
 				paddingTop: "1rem",
-				backgroundColor: "var(--ctd-nav-bg)",
-				borderRadius: "10px",
-				border: "1px solid var(--ctd-border)",
-				boxShadow: "var(--ctd-shadow-soft)",
 			}}
 		>
 			<Stack gap="xs">
-				<Title
-					order={5}
+				<Text
+					component="h2"
+					size="xs"
+					fw={600}
+					tt="uppercase"
 					style={{
-						fontFamily:
-							'"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif',
-						letterSpacing: "0.01em",
+						margin: 0,
+						letterSpacing: "0.05em",
+						color: "var(--ctd-ink-soft)",
 					}}
 				>
 					My library
-				</Title>
+				</Text>
 				{canAddBook && (
-					<Button variant="filled" onPointerDown={addBookHandler}>
-						⊕ Add book
+					<Button variant="default" onPointerDown={addBookHandler}>
+						Add Book…
 					</Button>
 				)}
 				<NavLink
@@ -497,16 +495,19 @@ const SidebarPure = ({
 					}}
 				/>
 				<Divider my="md" />
-				<Title
-					order={5}
+				<Text
+					component="h2"
+					size="xs"
+					fw={600}
+					tt="uppercase"
 					style={{
-						fontFamily:
-							'"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif',
-						letterSpacing: "0.01em",
+						margin: 0,
+						letterSpacing: "0.05em",
+						color: "var(--ctd-ink-soft)",
 					}}
 				>
 					Shelves
-				</Title>
+				</Text>
 				{shelves.map(({ title, path, isActive }) => (
 					<NavLink
 						key={path}

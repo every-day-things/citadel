@@ -72,7 +72,7 @@ export const SwitchLibraryForm = ({
 							<Button
 								key={library.id}
 								variant="outline"
-								color="sepia"
+								color="accent"
 								styles={{
 									root: {
 										"&:disabled, &[data-disabled]": {
@@ -164,7 +164,7 @@ const AddNewLibraryPathForm = ({
 				<Button
 					mt="mg"
 					variant="filled"
-					color="sepia"
+					color="accent"
 					styles={{
 						root: {
 							"&:disabled, &[data-disabled]": {

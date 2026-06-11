@@ -3,27 +3,27 @@ import classes from "./theme.module.css";
 
 export const theme = createTheme({
 	cursorType: "default",
-	primaryColor: "sepia",
+	primaryColor: "accent",
 	fontFamily:
-		'"Avenir Next", "Avenir", "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+		'-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
 	headings: {
 		fontFamily:
-			'"Iowan Old Style", "Palatino Linotype", "Book Antiqua", "URW Palladio L", "Georgia", serif',
+			'-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
 		fontWeight: "600",
 	},
 	defaultRadius: "sm",
 	colors: {
-		sepia: [
-			"#fff5e8",
-			"#f8e2c5",
-			"#f0cc9e",
-			"#e6b374",
-			"#da994d",
-			"#cf852f",
-			"#b97327",
-			"#9f611f",
-			"#855016",
-			"#6d410e",
+		accent: [
+			"#e8f2ff",
+			"#cfe4ff",
+			"#a3cbff",
+			"#74b0ff",
+			"#4d99ff",
+			"#2f88ff",
+			"#1a7fff",
+			"#0a6ce6",
+			"#005fce",
+			"#0052b5",
 		],
 	},
 	shadows: {

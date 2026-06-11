@@ -3,7 +3,7 @@
 		background-color: var(--ctd-danger-bg);
 		color: var(--ctd-danger-text);
 		border: 1px solid var(--ctd-danger-border);
-		transition: ease-in-out background-color 140ms;
+		transition: background-color 140ms ease-out;
 
 		&:hover,
 		&:focus-visible {
@@ -12,16 +12,14 @@
 	}
 
 	&[data-variant="primary"] {
-		background: var(--ctd-segmented-indicator-bg);
-		color: var(--ctd-surface-strong);
-		border-width: 1px;
-		border-color: var(--ctd-border-strong);
-		box-shadow: var(--ctd-shadow-soft);
+		background-color: var(--ctd-accent);
+		color: oklch(99% 0.002 255);
+		border: 1px solid transparent;
+		transition: background-color 140ms ease-out;
 
 		&:hover,
 		&:focus-visible {
-			background: var(--ctd-segmented-indicator-bg);
-			transform: translateY(-1px);
+			background-color: var(--ctd-accent-strong);
 		}
 	}
 

@@ -64,7 +64,7 @@ export const AuthorFilterControls = ({
 
 			<Switch
 				label="No books"
-				color="sepia"
+				color="accent"
 				styles={{
 					label: {
 						fontWeight: 600,

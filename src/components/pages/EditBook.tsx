@@ -446,7 +446,7 @@ const EditBookForm = ({
 													.catch(console.error);
 											}}
 											variant="outline"
-											color="sepia"
+											color="accent"
 											mt={LABEL_OFFSET_MARGIN}
 										>
 											Add identifier

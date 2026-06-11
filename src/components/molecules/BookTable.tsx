@@ -80,13 +80,7 @@ const BookTablePure = ({
 					accessor: "title",
 					title: "Title",
 					render: ({ title }) => (
-						<Text
-							fw={600}
-							style={{
-								fontFamily:
-									'"Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif',
-							}}
-						>
+						<Text fw={600} style={{}}>
 							{title}
 						</Text>
 					),
@@ -106,7 +100,7 @@ const BookTablePure = ({
 					width: 110,
 					render: ({ is_read }) => (
 						<Badge
-							color={is_read ? "gray" : "sepia"}
+							color={is_read ? "gray" : "accent"}
 							variant={is_read ? "light" : "filled"}
 						>
 							{is_read ? "Read" : "Unread"}
