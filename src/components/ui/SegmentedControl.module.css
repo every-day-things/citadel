@@ -1,0 +1,45 @@
+.root {
+	display: inline-flex;
+	padding: 2px;
+	gap: 2px;
+	background-color: var(--ctd-segmented-root-bg);
+	border: 1px solid var(--ctd-border);
+	border-radius: 7px;
+}
+
+.item {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	height: 20px;
+	min-width: 30px;
+	padding: 0 9px;
+	font-size: 12px;
+	font-weight: 500;
+	font-family: inherit;
+	color: var(--ctd-segmented-label);
+	background-color: transparent;
+	border: none;
+	border-radius: 5px;
+	transition: background-color 120ms ease-out;
+}
+
+.item[data-state="off"]:hover {
+	color: var(--ctd-ink);
+}
+
+.item[data-state="on"] {
+	background-color: var(--ctd-segmented-indicator-bg);
+	box-shadow: 0 0.5px 2px oklch(0% 0 0 / 0.22);
+}
+
+.item:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--ctd-focus-ring);
+}
+
+.item[data-state="on"]:focus-visible {
+	box-shadow:
+		0 0.5px 2px oklch(0% 0 0 / 0.22),
+		0 0 0 3px var(--ctd-focus-ring);
+}

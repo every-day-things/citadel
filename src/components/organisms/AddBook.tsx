@@ -3,6 +3,7 @@ import {
 	AddBookForm,
 	title as addBookFormTitle,
 } from "@/components/molecules/AddBookForm";
+import { Button, Sheet } from "@/components/ui";
 import { usePlatform } from "@/lib/platform/context";
 import {
 	LibraryState,
@@ -10,11 +11,10 @@ import {
 	useLibraryActions,
 	useLibraryState,
 } from "@/stores/library/store";
-import { Button, Modal } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { isTauri } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export const AddBookButton = () => {
 	const state = useLibraryState();
@@ -23,6 +23,7 @@ export const AddBookButton = () => {
 	const platform = usePlatform();
 
 	const [metadata, setMetadata] = useState<ImportableBookMetadata | null>();
+	const addBookButtonRef = useRef<HTMLButtonElement>(null);
 	const [isModalOpen, { close: closeModal, open: openModal }] =
 		useDisclosure(false);
 
@@ -104,24 +105,19 @@ export const AddBookButton = () => {
 		<>
 			{metadata && (
 				// Compact sheet anchored under the toolbar (macOS document-sheet
-				// feel): light dim, no blur, the library stays visible behind it.
-				<Modal
-					opened={isModalOpen}
-					onClose={closeModal}
+				// feel): light dim, the library stays visible behind it.
+				<Sheet
+					open={isModalOpen}
+					onOpenChange={(open) => {
+						if (!open) closeModal();
+					}}
 					title={addBookFormTitle}
-					size={460}
-					yOffset={64}
-					centered={false}
-					radius={10}
-					overlayProps={{ backgroundOpacity: 0.18, blur: 0 }}
-					transitionProps={{ transition: "slide-down", duration: 180 }}
-					styles={{
-						content: {
-							background: "var(--ctd-drawer-gradient)",
-							border: "1px solid var(--ctd-border)",
-						},
-						header: { backgroundColor: "transparent" },
-						title: { fontSize: 13, fontWeight: 600 },
+					width={480}
+					onCloseAutoFocus={(event) => {
+						// The sheet opens from a file-picker flow, not a Dialog.Trigger,
+						// so return focus to the Add Book button ourselves.
+						event.preventDefault();
+						addBookButtonRef.current?.focus();
 					}}
 				>
 					<AddBookForm
@@ -136,30 +132,29 @@ export const AddBookButton = () => {
 						onSubmit={addBookByMetadataWithEffects}
 						onCancel={closeModal}
 					/>
-				</Modal>
+				</Sheet>
 			)}
 			<Button
+				ref={addBookButtonRef}
 				variant="default"
-				size="xs"
+				size="sm"
 				aria-label="Add Book"
 				onClick={selectAndEditBookFile}
-				leftSection={
-					<svg
-						width="13"
-						height="13"
-						viewBox="0 0 15 15"
-						fill="none"
-						aria-hidden="true"
-					>
-						<path
-							d="M7.5 2v11M2 7.5h11"
-							stroke="currentColor"
-							strokeWidth="1.4"
-							strokeLinecap="round"
-						/>
-					</svg>
-				}
 			>
+				<svg
+					width="13"
+					height="13"
+					viewBox="0 0 15 15"
+					fill="none"
+					aria-hidden="true"
+				>
+					<path
+						d="M7.5 2v11M2 7.5h11"
+						stroke="currentColor"
+						strokeWidth="1.4"
+						strokeLinecap="round"
+					/>
+				</svg>
 				Add Book…
 			</Button>
 		</>

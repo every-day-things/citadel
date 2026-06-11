@@ -1,0 +1,25 @@
+.content {
+	font-size: 12px;
+	padding: 3px 8px;
+	background-color: var(--ctd-surface-strong);
+	color: var(--ctd-ink);
+	border: 1px solid var(--ctd-border);
+	border-radius: 5px;
+	box-shadow: var(--ctd-shadow-soft);
+	z-index: 400;
+	max-width: 260px;
+}
+
+.content[data-state="delayed-open"],
+.content[data-state="instant-open"] {
+	animation: tooltip-fade-in 120ms ease-out;
+}
+
+@keyframes tooltip-fade-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}

@@ -82,3 +82,17 @@
 	color: var(--ctd-ink);
 	font-weight: 500;
 }
+
+.formTitle {
+	margin: 0 0 12px;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--ctd-ink);
+}
+
+.footer {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+	margin-top: 18px;
+}

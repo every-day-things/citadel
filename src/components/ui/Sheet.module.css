@@ -1,0 +1,124 @@
+/*
+ * The AppShell header and navbar sit at z-index 100, so the sheet and its
+ * scrim stay below them: the content genuinely slides out from under the
+ * toolbar and the window chrome is never dimmed, matching a macOS sheet.
+ */
+.overlay {
+	position: fixed;
+	inset: 0;
+	background-color: oklch(0% 0 0 / 0.18);
+	z-index: 90;
+}
+
+.overlay[data-state="open"] {
+	animation: sheet-overlay-in 180ms ease-out;
+}
+
+.overlay[data-state="closed"] {
+	animation: sheet-overlay-out 120ms ease-in;
+}
+
+/* top matches the 46px AppShell header so the sheet slides out from under the toolbar */
+.content {
+	position: fixed;
+	top: 46px;
+	left: 50%;
+	transform: translateX(-50%);
+	max-height: calc(100vh - 46px - 24px);
+	overflow-y: auto;
+	background-color: var(--ctd-surface);
+	border: 1px solid var(--ctd-border);
+	border-top: none;
+	border-radius: 0 0 10px 10px;
+	box-shadow: var(--ctd-shadow-lift);
+	z-index: 91;
+}
+
+.content[data-state="open"] {
+	animation: sheet-in 180ms ease-out;
+}
+
+.content[data-state="closed"] {
+	animation: sheet-out 120ms ease-in;
+}
+
+@keyframes sheet-overlay-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes sheet-overlay-out {
+	from {
+		opacity: 1;
+	}
+	to {
+		opacity: 0;
+	}
+}
+
+@keyframes sheet-in {
+	from {
+		transform: translate(-50%, -10px);
+		opacity: 0;
+	}
+	to {
+		transform: translate(-50%, 0);
+		opacity: 1;
+	}
+}
+
+@keyframes sheet-out {
+	from {
+		transform: translate(-50%, 0);
+		opacity: 1;
+	}
+	to {
+		transform: translate(-50%, -10px);
+		opacity: 0;
+	}
+}
+
+.header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 10px 16px;
+	border-bottom: 1px solid var(--ctd-border);
+}
+
+.title {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--ctd-ink);
+	margin: 0;
+}
+
+.close {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 20px;
+	height: 20px;
+	padding: 0;
+	border-radius: 50%;
+	background-color: var(--ctd-control-bg);
+	border: 1px solid var(--ctd-border);
+	color: var(--ctd-ink-soft);
+}
+
+.close:hover {
+	background-color: var(--ctd-control-bg-strong);
+}
+
+.close:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 3px var(--ctd-focus-ring);
+}
+
+.body {
+	padding: 16px;
+}

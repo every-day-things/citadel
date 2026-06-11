@@ -1,6 +1,6 @@
 import { MultiSelectCreatable } from "@/components/atoms/Multiselect";
+import { Button, TextInput } from "@/components/ui";
 import { safeAsyncEventHandler } from "@/lib/async";
-import { Button, Group, TextInput, Title } from "@mantine/core";
 import { Form, useForm } from "@mantine/form";
 import type { ReactNode } from "react";
 import styles from "./AddBookForm.module.css";
@@ -89,11 +89,7 @@ export const AddBookForm = ({
 				}
 			}}
 		>
-			{!hideTitle && (
-				<Title order={4} mb="sm">
-					{title}
-				</Title>
-			)}
+			{!hideTitle && <h4 className={styles.formTitle}>{title}</h4>}
 			<div className={styles.rows}>
 				<FormRow label="File">
 					<SelectedFile path={fileName} />
@@ -113,16 +109,16 @@ export const AddBookForm = ({
 					/>
 				</FormRow>
 			</div>
-			<Group justify="flex-end" gap="sm" mt="lg">
+			<div className={styles.footer}>
 				{onCancel && (
 					<Button variant="default" onClick={onCancel}>
 						Cancel
 					</Button>
 				)}
-				<Button variant="filled" color="accent" type="submit">
+				<Button variant="primary" type="submit">
 					Add Book
 				</Button>
-			</Group>
+			</div>
 		</Form>
 	);
 };

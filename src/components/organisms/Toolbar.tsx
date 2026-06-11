@@ -1,7 +1,7 @@
 import { F7ListBullet } from "@/components/icons/F7ListBullet";
 import { F7SquareGrid2x2 } from "@/components/icons/F7SquareGrid2x2";
+import { SegmentedControl } from "@/components/ui";
 import { useLibraryView } from "@/stores/library-view/store";
-import { Center, Group, SegmentedControl } from "@mantine/core";
 import { useRouterState } from "@tanstack/react-router";
 
 /**
@@ -19,43 +19,32 @@ export const LibraryToolbarControls = () => {
 	}
 
 	return (
-		<Group gap="xs" wrap="nowrap" data-tauri-drag-region>
+		<div
+			style={{
+				display: "flex",
+				alignItems: "center",
+				gap: 8,
+				flexWrap: "nowrap",
+			}}
+			data-tauri-drag-region
+		>
 			<SegmentedControl
-				size="xs"
-				radius="sm"
-				data={[
+				aria-label="Library view"
+				items={[
 					{
 						value: "covers",
-						label: (
-							<Center>
-								<F7SquareGrid2x2 />
-							</Center>
-						),
+						label: <F7SquareGrid2x2 />,
+						"aria-label": "Covers view",
 					},
 					{
 						value: "list",
-						label: (
-							<Center>
-								<F7ListBullet />
-							</Center>
-						),
+						label: <F7ListBullet />,
+						"aria-label": "List view",
 					},
 				]}
 				value={view}
 				onChange={(value) => setView(value as "covers" | "list")}
-				styles={{
-					root: {
-						backgroundColor: "var(--ctd-segmented-root-bg)",
-						border: "1px solid var(--ctd-border)",
-					},
-					indicator: {
-						backgroundColor: "var(--ctd-segmented-indicator-bg)",
-					},
-					label: {
-						color: "var(--ctd-segmented-label)",
-					},
-				}}
 			/>
-		</Group>
+		</div>
 	);
 };
