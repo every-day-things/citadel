@@ -1,0 +1,84 @@
+/*
+ * Get Info-style form rows (same idiom as EditBook): right-aligned 13px
+ * label in a fixed gutter, control filling the remaining width.
+ */
+.rows {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.formRow {
+	display: grid;
+	grid-template-columns: 64px minmax(0, 1fr);
+	column-gap: 12px;
+	align-items: center;
+}
+
+.rowLabel {
+	text-align: right;
+	font-size: 13px;
+	line-height: 1.45;
+	color: var(--ctd-ink-soft);
+	user-select: none;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* Multi-line controls (pill inputs) align to the top of the row; pad the
+ * label down so it sits on the control's first line. */
+.formRowTop {
+	align-items: start;
+}
+
+.formRowTop .rowLabel {
+	padding-top: 8px;
+}
+
+.rowControl {
+	min-width: 0;
+}
+
+/* Controls that render their own Mantine label (MultiSelectCreatable) keep
+ * it for assistive tech only; the gutter label is the visible one. */
+.rowControl :global(.mantine-InputWrapper-label) {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+/* Selected file: one dimmed truncating line; the directory gives way first
+ * so the emphasized filename stays readable. Full path lives in `title`. */
+.filePath {
+	display: flex;
+	min-width: 0;
+	font-size: 13px;
+	line-height: 1.45;
+	color: var(--ctd-ink-soft);
+	padding-top: 5px;
+	padding-bottom: 5px;
+}
+
+.fileDir {
+	flex: 0 1 auto;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.fileName {
+	flex: 0 0 auto;
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--ctd-ink);
+	font-weight: 500;
+}

@@ -6,11 +6,14 @@ import {
 	Badge,
 	Button,
 	Center,
+	Checkbox,
 	Divider,
 	Drawer,
 	Group,
+	Select,
 	Stack,
 	Text,
+	TextInput,
 	rem,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
@@ -23,11 +26,22 @@ import { BookTable } from "../molecules/BookTable";
 import { TablerCopy } from "../icons/TablerCopy";
 import { F7Pencil } from "../icons/F7Pencil";
 import { useBooks, useBooksLoading } from "@/stores/library/store";
-import { useLibraryView } from "@/stores/library-view/store";
+import {
+	LibraryBookSortOrder,
+	type LibraryBookSortOrderKey,
+	useLibraryView,
+} from "@/stores/library-view/store";
 
 interface BookSearchOptions {
 	search_for_author?: string;
 }
+
+const SORT_LABELS: Record<LibraryBookSortOrderKey, string> = {
+	nameAz: "Name (A–Z)",
+	nameZa: "Name (Z–A)",
+	authorAz: "Author (A–Z)",
+	authorZa: "Author (Z–A)",
+};
 
 export const Books = ({ search_for_author }: BookSearchOptions) => {
 	const query = useLibraryView((s) => s.query);
@@ -35,6 +49,8 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 	const view = useLibraryView((s) => s.view);
 	const hideRead = useLibraryView((s) => s.hideRead);
 	const setQuery = useLibraryView((s) => s.setQuery);
+	const setSortOrder = useLibraryView((s) => s.setSortOrder);
+	const setHideRead = useLibraryView((s) => s.setHideRead);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: author deep-links override the saved query exactly once, on mount.
 	useEffect(() => {
@@ -95,6 +111,88 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 
 	return (
 		<Stack gap={0} mih="100%">
+			{/*
+			 * Finder-style scope bar: pinned to the top of the scroll container
+			 * (the panel div wrapping <Outlet/> in __root), above the content.
+			 */}
+			<Group
+				gap="sm"
+				wrap="nowrap"
+				style={{
+					position: "sticky",
+					top: 0,
+					zIndex: 3,
+					padding: "8px 24px",
+					backgroundColor: "var(--ctd-content-bg)",
+					borderBottom: "1px solid var(--ctd-border)",
+				}}
+			>
+				<TextInput
+					size="xs"
+					placeholder="Search"
+					aria-label="Search book titles and authors"
+					value={query}
+					onChange={(event) => setQuery(event.currentTarget.value)}
+					style={{ flexGrow: 1, maxWidth: 320 }}
+					leftSection={
+						<svg
+							width="12"
+							height="12"
+							viewBox="0 0 15 15"
+							fill="none"
+							aria-hidden="true"
+						>
+							<circle
+								cx="6.5"
+								cy="6.5"
+								r="4.5"
+								stroke="currentColor"
+								strokeWidth="1.4"
+							/>
+							<path
+								d="M10 10l3.5 3.5"
+								stroke="currentColor"
+								strokeWidth="1.4"
+								strokeLinecap="round"
+							/>
+						</svg>
+					}
+					styles={{
+						section: { color: "var(--ctd-ink-soft)" },
+					}}
+				/>
+				<Select
+					size="xs"
+					w={150}
+					allowDeselect={false}
+					aria-label="Sort order"
+					data={(
+						Object.keys(LibraryBookSortOrder) as LibraryBookSortOrderKey[]
+					).map((key) => ({
+						value: key,
+						label: SORT_LABELS[key],
+					}))}
+					value={sortOrder}
+					onChange={(value) =>
+						value && setSortOrder(value as LibraryBookSortOrderKey)
+					}
+					styles={{
+						dropdown: {
+							backgroundColor: "var(--ctd-surface-strong)",
+							borderColor: "var(--ctd-border)",
+						},
+					}}
+				/>
+				<Checkbox
+					size="xs"
+					label="Unread only"
+					checked={hideRead}
+					onChange={(event) => setHideRead(event.currentTarget.checked)}
+					styles={{
+						label: { fontSize: 13, color: "var(--ctd-ink)" },
+					}}
+				/>
+			</Group>
 			<div style={{ flex: 1 }}>
 				{view === "covers" ? (
 					<BookGrid

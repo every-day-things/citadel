@@ -1,48 +1,28 @@
 import { F7SidebarLeft } from "@/components/icons/F7SidebarLeft";
 import { AddBookButton } from "@/components/organisms/AddBook";
 import { LibraryToolbarControls } from "@/components/organisms/Toolbar";
-import { SettingsModal } from "@/components/organisms/SettingsModal";
 import { Sidebar } from "@/components/organisms/Sidebar";
-import { SettingsModalProvider } from "@/lib/contexts/modal-settings/Provider";
-import {
-	ActionIcon,
-	AppShell,
-	Burger,
-	Group,
-	useComputedColorScheme,
-} from "@mantine/core";
+import { useNativeThemeSync } from "@/lib/hooks/use-native-theme-sync";
+import { ActionIcon, AppShell, Burger, Group } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { Outlet, createRootRoute } from "@tanstack/react-router";
-import { isTauri } from "@tauri-apps/api/core";
-import { getCurrentWindow } from "@tauri-apps/api/window";
-import { useEffect } from "react";
-
-/**
- * Keeps the native window appearance (and with it the vibrancy material
- * behind the transparent webview) in step with the in-app theme choice, so
- * forcing dark Citadel on a light desktop doesn't produce light glass behind
- * dark text.
- */
-const useNativeThemeSync = () => {
-	const scheme = useComputedColorScheme("light");
-	useEffect(() => {
-		if (!isTauri()) return;
-		getCurrentWindow()
-			.setTheme(scheme === "dark" ? "dark" : "light")
-			.catch(() => {
-				// Pre-2.x runtimes without setTheme: vibrancy follows the system.
-			});
-	}, [scheme]);
-};
+import { Outlet, createRootRoute, useRouterState } from "@tanstack/react-router";
 
 const Root = () => {
 	const [mobileOpened, { toggle: toggleMobile }] = useDisclosure(false);
 	const [desktopOpened, { toggle: toggleDesktop }] = useDisclosure(true);
+	const { location } = useRouterState();
 	useNativeThemeSync();
+
+	// The settings window loads /settings in its own webview; it brings its
+	// own full-window layout and must not inherit the library chrome
+	// (toolbar, sidebar, Add Book).
+	if (location.pathname.startsWith("/settings")) {
+		return <Outlet />;
+	}
 
 	return (
 		<AppShell
-			padding={10}
+			padding={0}
 			header={{ height: 46 }}
 			navbar={{
 				width: 248,
@@ -85,7 +65,7 @@ const MainPure = ({
 				<Group
 					h="100%"
 					px="md"
-					pl={"84px"}
+					pl={"92px"}
 					justify="space-between"
 					wrap="nowrap"
 					data-tauri-drag-region
@@ -112,8 +92,6 @@ const MainPure = ({
 				</Group>
 			</AppShell.Header>
 
-			<SettingsModal />
-
 			<AppShell.Navbar
 				p="sm"
 				withBorder={false}
@@ -130,14 +108,18 @@ const MainPure = ({
 					background: "var(--ctd-main-gradient)",
 				}}
 			>
+				{/*
+				 * Flush content region, separated from the glass chrome by
+				 * hairlines only (Finder/Mail style). This div is the app's
+				 * scroll container; sticky headers/status bars pin to it.
+				 */}
 				<div
 					style={{
 						minHeight: 0,
 						overflowY: "auto",
 						background: "var(--ctd-content-bg)",
-						border: "1px solid var(--ctd-border)",
-						borderRadius: "var(--ctd-radius-panel)",
-						boxShadow: "var(--ctd-shadow-soft)",
+						borderTop: "1px solid var(--ctd-border)",
+						borderLeft: "1px solid var(--ctd-border)",
 					}}
 				>
 					<Outlet />
@@ -159,13 +141,11 @@ const Main = ({
 	toggleMobile,
 }: MainProps) => {
 	return (
-		<SettingsModalProvider>
-			<MainPure
-				toggleDesktop={toggleDesktop}
-				isSidebarOpenMobile={isSidebarOpenMobile}
-				toggleMobile={toggleMobile}
-			/>
-		</SettingsModalProvider>
+		<MainPure
+			toggleDesktop={toggleDesktop}
+			isSidebarOpenMobile={isSidebarOpenMobile}
+			toggleMobile={toggleMobile}
+		/>
 	);
 };
 

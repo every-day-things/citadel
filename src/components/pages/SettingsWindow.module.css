@@ -1,0 +1,16 @@
+/*
+ * Full-viewport layout for the dedicated settings window (the /settings
+ * route renders without the library chrome; see __root.tsx). The window has
+ * a standard macOS title bar, like System Settings, so no drag strip needed.
+ */
+/*
+ * Stays opaque even under data-vibrancy: this window is a plain NSWindow
+ * (no glass effects), so a transparent page would show the bare window
+ * backing instead of our tokens.
+ */
+.window {
+	position: fixed;
+	inset: 0;
+	display: flex;
+	background: var(--ctd-bg);
+}

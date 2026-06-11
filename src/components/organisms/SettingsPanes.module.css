@@ -1,21 +1,22 @@
-.modalContent {
-	background: var(--ctd-bg);
-	border: 1px solid var(--ctd-border);
-	overflow: hidden;
-}
-
 .pane {
 	display: flex;
-	height: 440px;
+	flex: 1;
+	min-height: 0;
+	height: 100%;
 }
 
+/*
+ * The window's title bar is overlay (hidden), so the rail's top padding keeps
+ * the heading clear of the traffic lights; under vibrancy the rail is glass,
+ * mirroring the main window's chrome.
+ */
 .nav {
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
 	width: 150px;
 	flex-shrink: 0;
-	padding: 0.875rem 0.625rem;
+	padding: 2.5rem 0.625rem 0.875rem;
 	border-right: 1px solid var(--ctd-border);
 	background-color: var(--ctd-nav-bg);
 }
@@ -65,6 +66,7 @@
 	flex-direction: column;
 	flex: 1;
 	min-width: 0;
+	background-color: var(--ctd-content-bg);
 }
 
 .contentHeader {

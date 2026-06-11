@@ -4,7 +4,8 @@
 	"description": "Essential capabilities for Citadel app",
 	"local": true,
 	"windows": [
-		"main"
+		"main",
+		"settings"
 	],
 	"permissions": [
 		"core:default",

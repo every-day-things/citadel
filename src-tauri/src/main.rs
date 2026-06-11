@@ -15,6 +15,7 @@ pub mod libs {
 }
 mod book;
 mod hardcover;
+mod menu;
 mod state;
 
 fn run_tauri_backend() -> std::io::Result<()> {
@@ -46,6 +47,8 @@ fn run_tauri_backend() -> std::io::Result<()> {
         hardcover::search_hardcover_books,
         app_updates::clb_cmd_check_for_updates,
         app_updates::clb_cmd_install_update_if_available,
+        // Window commands
+        menu::clb_cmd_open_settings,
     ]);
 
     #[cfg(debug_assertions)] // <- Only export on non-release builds
@@ -70,24 +73,36 @@ fn run_tauri_backend() -> std::io::Result<()> {
         .setup(move |app| {
             builder.mount_events(app);
 
-            // Get the main window that was created from config and center it
+            // Native macOS menu bar: app menu with Settings…, File > Add
+            // Book…, and the standard Edit/View/Window items.
+            #[cfg(target_os = "macos")]
+            {
+                let app_menu = menu::build_menu(app.handle())?;
+                app.set_menu(app_menu)?;
+                app.on_menu_event(menu::handle_menu_event);
+            }
+
+            // Get the main window that was created from config and center it.
             if let Some(main_window) = app.get_webview_window("main") {
                 main_window.center().unwrap();
 
-                // Native material behind the transparent webview: the sidebar
-                // reads as real glass (desktop tint shows through), matching
-                // macOS source-list apps. Webview transparency itself comes
-                // from `windows[].transparent` + `macOSPrivateApi` in config.
+                // Glass behind the transparent webview. The `windowEffects`
+                // config on the window never attaches (bare window backing
+                // shows through instead); applying the same effects after the
+                // window exists does work.
                 #[cfg(target_os = "macos")]
                 {
-                    use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
-                    if let Err(err) = apply_vibrancy(
-                        &main_window,
-                        NSVisualEffectMaterial::Sidebar,
-                        None,
-                        None,
-                    ) {
-                        eprintln!("vibrancy unavailable: {err}");
+                    use tauri::{
+                        utils::config::WindowEffectsConfig,
+                        window::{Effect, EffectState},
+                    };
+                    if let Err(err) = main_window.set_effects(WindowEffectsConfig {
+                        effects: vec![Effect::Sidebar],
+                        state: Some(EffectState::FollowsWindowActiveState),
+                        radius: None,
+                        color: None,
+                    }) {
+                        eprintln!("window effects unavailable: {err}");
                     }
                 }
             }

@@ -1,13 +1,10 @@
-import type { SettingsTab } from "@/lib/contexts/modal-settings/context";
 import type { ReactNode } from "react";
 import { commands } from "@/bindings";
 import { F7BookFill } from "@/components/icons/F7BookFill";
 import { F7Gear } from "@/components/icons/F7Gear";
 import { FluentLibraryFilled } from "@/components/icons/FluentLibraryFilled";
 import { SwitchLibraryForm } from "@/components/molecules/SwitchLibraryForm";
-import classes from "@/components/organisms/SettingsModal.module.css";
-import { SETTINGS_TABS } from "@/lib/contexts/modal-settings/context";
-import { useSettingsModal } from "@/lib/contexts/modal-settings/hooks";
+import classes from "@/components/organisms/SettingsPanes.module.css";
 import { useAppUpdates } from "@/lib/hooks/use-app-updates";
 import { none, some } from "@/lib/option";
 import { usePlatform } from "@/lib/platform/context";
@@ -16,16 +13,17 @@ import { useSettings } from "@/stores/settings/store";
 import {
 	Alert,
 	Button,
-	CloseButton,
 	Group,
-	Modal,
 	SegmentedControl,
 	Switch,
 	TextInput,
 	UnstyledButton,
 	useMantineColorScheme,
 } from "@mantine/core";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+
+const SETTINGS_TABS = ["general", "library", "integrations"] as const;
+type SettingsTab = (typeof SETTINGS_TABS)[number];
 
 const TAB_META: Record<
 	SettingsTab,
@@ -45,55 +43,52 @@ const TAB_META: Record<
 	},
 };
 
-export const SettingsModal = () => {
-	const { isOpen, activeTab, close, setActiveTab } = useSettingsModal();
-	const { setColorScheme } = useMantineColorScheme();
-	const theme = useSettings((state) => state.theme);
+interface SettingsPanesProps {
+	/**
+	 * Called when a pane wants to dismiss settings, e.g. after switching
+	 * libraries. In the settings window this closes the window.
+	 */
+	onRequestClose?: () => void;
+}
 
-	// Keep Mantine's color scheme in sync with the persisted theme.
-	useEffect(() => {
-		setColorScheme(theme);
-	}, [theme, setColorScheme]);
+/**
+ * The System Settings style rail + content layout, rendered full-window by
+ * the `/settings` route.
+ */
+export const SettingsPanes = ({ onRequestClose }: SettingsPanesProps) => {
+	const [activeTab, setActiveTab] = useState<SettingsTab>("general");
+
+	const close = useCallback(() => {
+		onRequestClose?.();
+	}, [onRequestClose]);
 
 	return (
-		<Modal.Root opened={isOpen} onClose={close} size={640} centered>
-			<Modal.Overlay backgroundOpacity={0.35} blur={3} />
-			<Modal.Content className={classes.modalContent}>
-				<div className={classes.pane}>
-					<nav className={classes.nav} aria-label="Settings sections">
-						<h2 className={classes.navHeading}>Settings</h2>
-						{SETTINGS_TABS.map((tab) => (
-							<UnstyledButton
-								key={tab}
-								className={classes.navItem}
-								aria-current={tab === activeTab ? "true" : undefined}
-								onClick={() => setActiveTab(tab)}
-							>
-								{TAB_META[tab].icon(classes.navItemIcon)}
-								{TAB_META[tab].label}
-							</UnstyledButton>
-						))}
-					</nav>
-					<div className={classes.content}>
-						<header className={classes.contentHeader}>
-							<h3 className={classes.contentTitle}>
-								{TAB_META[activeTab].label}
-							</h3>
-							<CloseButton
-								size="sm"
-								aria-label="Close settings"
-								onClick={close}
-							/>
-						</header>
-						<div className={classes.contentBody}>
-							{activeTab === "general" && <GeneralTab />}
-							{activeTab === "library" && <LibraryTab closeSettings={close} />}
-							{activeTab === "integrations" && <IntegrationsTab />}
-						</div>
-					</div>
+		<div className={classes.pane}>
+			<nav className={classes.nav} aria-label="Settings sections">
+				<h2 className={classes.navHeading}>Settings</h2>
+				{SETTINGS_TABS.map((tab) => (
+					<UnstyledButton
+						key={tab}
+						className={classes.navItem}
+						aria-current={tab === activeTab ? "true" : undefined}
+						onClick={() => setActiveTab(tab)}
+					>
+						{TAB_META[tab].icon(classes.navItemIcon)}
+						{TAB_META[tab].label}
+					</UnstyledButton>
+				))}
+			</nav>
+			<div className={classes.content}>
+				<header className={classes.contentHeader}>
+					<h3 className={classes.contentTitle}>{TAB_META[activeTab].label}</h3>
+				</header>
+				<div className={classes.contentBody}>
+					{activeTab === "general" && <GeneralTab />}
+					{activeTab === "library" && <LibraryTab closeSettings={close} />}
+					{activeTab === "integrations" && <IntegrationsTab />}
 				</div>
-			</Modal.Content>
-		</Modal.Root>
+			</div>
+		</div>
 	);
 };
 

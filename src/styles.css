@@ -161,13 +161,13 @@
 :root[data-vibrancy] {
 	--ctd-shell-gradient: transparent;
 	--ctd-main-gradient: transparent;
-	--ctd-header-bg: oklch(97% 0.003 80 / 0.22);
-	--ctd-nav-bg: oklch(97% 0.003 80 / 0.22);
+	--ctd-header-bg: oklch(97% 0.003 80 / 0.08);
+	--ctd-nav-bg: transparent;
 }
 
 :root[data-vibrancy][data-mantine-color-scheme="dark"] {
-	--ctd-header-bg: oklch(23% 0.004 260 / 0.3);
-	--ctd-nav-bg: oklch(23% 0.004 260 / 0.3);
+	--ctd-header-bg: oklch(23% 0.004 260 / 0.12);
+	--ctd-nav-bg: transparent;
 }
 
 body {

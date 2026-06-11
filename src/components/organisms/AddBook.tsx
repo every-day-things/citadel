@@ -10,9 +10,11 @@ import {
 	useLibraryActions,
 	useLibraryState,
 } from "@/stores/library/store";
-import { ActionIcon, Modal, Tooltip } from "@mantine/core";
+import { Button, Modal } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { useCallback, useMemo, useState } from "react";
+import { isTauri } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const AddBookButton = () => {
 	const state = useLibraryState();
@@ -63,6 +65,18 @@ export const AddBookButton = () => {
 		})();
 	}, [actions, state, openModal, platform]);
 
+	// File > Add Book… in the native menu emits this event to the main window
+	// (see src-tauri/src/menu.rs); it triggers the same flow as the button.
+	useEffect(() => {
+		if (!isTauri()) return;
+		const unlisten = listen("menu://add-book", () => {
+			selectAndEditBookFile();
+		});
+		return () => {
+			void unlisten.then((dispose) => dispose());
+		};
+	}, [selectAndEditBookFile]);
+
 	const addBookByMetadataWithEffects = async (form: AddBookForm) => {
 		if (!metadata || state !== LibraryState.ready) return;
 		const editedMetadata: ImportableBookMetadata = {
@@ -89,55 +103,50 @@ export const AddBookButton = () => {
 	return (
 		<>
 			{metadata && (
-				<Modal.Root opened={isModalOpen} onClose={closeModal} size={"lg"}>
-					<Modal.Overlay blur={3} backgroundOpacity={0.35} />
-					<Modal.Content
-						style={{
+				// Compact sheet anchored under the toolbar (macOS document-sheet
+				// feel): light dim, no blur, the library stays visible behind it.
+				<Modal
+					opened={isModalOpen}
+					onClose={closeModal}
+					title={addBookFormTitle}
+					size={460}
+					yOffset={64}
+					centered={false}
+					radius={10}
+					overlayProps={{ backgroundOpacity: 0.18, blur: 0 }}
+					transitionProps={{ transition: "slide-down", duration: 180 }}
+					styles={{
+						content: {
 							background: "var(--ctd-drawer-gradient)",
 							border: "1px solid var(--ctd-border)",
-						}}
-					>
-						<Modal.Header
-							style={{
-								backgroundColor: "transparent",
-								borderBottom: "1px solid var(--ctd-border)",
-							}}
-						>
-							<Modal.Title>{addBookFormTitle}</Modal.Title>
-							<Modal.CloseButton
-								style={{
-									border: "1px solid var(--ctd-border)",
-									backgroundColor: "var(--ctd-control-bg)",
-								}}
-							/>
-						</Modal.Header>
-						<Modal.Body style={{ paddingTop: "0.9rem" }}>
-							<AddBookForm
-								initial={{
-									authorList: metadata?.author_names ?? [],
-									title: metadata?.title ?? "",
-								}}
-								authorList={authorList}
-								fileName={metadata?.path ?? ""}
-								hideTitle={true}
-								onCreateAuthor={onCreateAuthor}
-								onSubmit={addBookByMetadataWithEffects}
-							/>
-						</Modal.Body>
-					</Modal.Content>
-				</Modal.Root>
-			)}
-			<Tooltip label="Add Book…" openDelay={500}>
-				<ActionIcon
-					variant="subtle"
-					color="gray"
-					aria-label="Add Book"
-					onPointerDown={selectAndEditBookFile}
-					style={{ color: "var(--ctd-ink-soft)" }}
+						},
+						header: { backgroundColor: "transparent" },
+						title: { fontSize: 13, fontWeight: 600 },
+					}}
 				>
+					<AddBookForm
+						initial={{
+							authorList: metadata?.author_names ?? [],
+							title: metadata?.title ?? "",
+						}}
+						authorList={authorList}
+						fileName={metadata?.path ?? ""}
+						hideTitle={true}
+						onCreateAuthor={onCreateAuthor}
+						onSubmit={addBookByMetadataWithEffects}
+						onCancel={closeModal}
+					/>
+				</Modal>
+			)}
+			<Button
+				variant="default"
+				size="xs"
+				aria-label="Add Book"
+				onClick={selectAndEditBookFile}
+				leftSection={
 					<svg
-						width="15"
-						height="15"
+						width="13"
+						height="13"
 						viewBox="0 0 15 15"
 						fill="none"
 						aria-hidden="true"
@@ -149,8 +158,10 @@ export const AddBookButton = () => {
 							strokeLinecap="round"
 						/>
 					</svg>
-				</ActionIcon>
-			</Tooltip>
+				}
+			>
+				Add Book…
+			</Button>
 		</>
 	);
 };

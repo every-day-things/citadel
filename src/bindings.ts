@@ -160,6 +160,9 @@ async clbCmdInstallUpdateIfAvailable() : Promise<Result<string, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async clbCmdOpenSettings() : Promise<void> {
+    await TAURI_INVOKE("clb_cmd_open_settings");
 }
 }
 

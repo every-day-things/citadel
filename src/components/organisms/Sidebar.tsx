@@ -1,5 +1,5 @@
+import { commands } from "@/bindings";
 import { F7Gear } from "@/components/icons/F7Gear";
-import { useSettingsModal } from "@/lib/contexts/modal-settings/hooks";
 import { useAppUpdates } from "@/lib/hooks/use-app-updates";
 import { LibraryState, useLibraryState } from "@/stores/library/store";
 import {
@@ -11,13 +11,24 @@ import {
 	Stack,
 	Text,
 } from "@mantine/core";
-import { Link, useRouterState } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { isTauri } from "@tauri-apps/api/core";
+import { useCallback, useMemo } from "react";
 
 export const Sidebar = () => {
 	const state = useLibraryState();
 	const { location } = useRouterState();
-	const { open: openSettings } = useSettingsModal();
+	const navigate = useNavigate();
+
+	// Settings live in their own window; the Rust command owns the window
+	// options and focuses the existing window if one is already open.
+	const openSettings = useCallback(() => {
+		if (isTauri()) {
+			void commands.clbCmdOpenSettings();
+		} else {
+			void navigate({ to: "/settings" });
+		}
+	}, [navigate]);
 
 	const isUpdatePromptOpen = useAppUpdates((s) => s.isUpdatePromptOpen);
 	const isInstallingUpdate = useAppUpdates((s) => s.isInstallingUpdate);
@@ -73,7 +84,7 @@ export const Sidebar = () => {
 			<SidebarPure
 				currentPathname={location.pathname}
 				shelves={shelves}
-				openSettings={() => openSettings()}
+				openSettings={openSettings}
 			/>
 		</>
 	);
