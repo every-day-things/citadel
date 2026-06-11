@@ -8,6 +8,7 @@ import {
 	useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { POPOVER_ATTRIBUTE } from "./popover-interop";
 import styles from "./TagsInput.module.css";
 
 export interface TagsInputProps {
@@ -278,6 +279,7 @@ export const TagsInput = ({
 						role="listbox"
 						aria-label={label ?? ariaLabel ?? "Suggestions"}
 						className={styles.listbox}
+						{...{ [POPOVER_ATTRIBUTE]: "" }}
 						style={{
 							left: listRect.left,
 							top: listRect.top,

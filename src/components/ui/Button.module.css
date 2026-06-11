@@ -58,7 +58,7 @@
 	background-color: var(--ctd-accent);
 	border: 1px solid var(--ctd-accent-strong);
 	box-shadow: var(--ctd-control-shadow);
-	color: oklch(99% 0.002 255);
+	color: var(--ctd-accent-text);
 }
 
 .primary:hover:not(:disabled) {

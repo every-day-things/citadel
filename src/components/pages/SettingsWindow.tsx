@@ -32,8 +32,9 @@ export const SettingsWindow = () => {
 	const scheme = useResolvedColorScheme(theme);
 	useEffect(() => {
 		if (!isTauri()) return;
+		// Catppuccin Mocha base / Latte base, mirroring menu.rs.
 		void getCurrentWindow().setBackgroundColor(
-			scheme === "dark" ? [25, 27, 28, 255] : [244, 243, 241, 255],
+			scheme === "dark" ? [30, 30, 46, 255] : [239, 241, 245, 255],
 		);
 	}, [scheme]);
 

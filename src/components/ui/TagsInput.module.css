@@ -123,9 +123,12 @@
 	cursor: default;
 }
 
-/* Rendered in a body portal; left/top/width/max-height come in via style. */
+/* Rendered in a body portal; left/top/width/max-height come in via style.
+   pointer-events must be reasserted because Radix modal dialogs lock the
+   rest of the document to pointer-events: none while open. */
 .listbox {
 	position: fixed;
+	pointer-events: auto;
 	overflow-y: auto;
 	padding: 4px;
 	background-color: var(--ctd-surface-strong);
@@ -144,7 +147,7 @@
 
 .optionHighlighted {
 	background-color: var(--ctd-accent);
-	color: oklch(99% 0.002 255);
+	color: var(--ctd-accent-text);
 }
 
 .error {

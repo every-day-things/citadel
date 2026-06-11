@@ -1,47 +1,62 @@
+/*
+ * Palette: Catppuccin Latte (light) / Mocha (dark), accent mauve.
+ * https://catppuccin.com/palette - stones are the official hexes; in-between
+ * neutrals are derived from them with OKLCH relative color syntax so the
+ * AppKit control chrome (near-white fields, hairlines) still reads native.
+ */
 :root {
-	--ctd-bg: oklch(96.5% 0.003 80);
-	--ctd-bg-deep: oklch(94.5% 0.004 80);
-	--ctd-surface: oklch(98.5% 0.002 80);
-	--ctd-surface-soft: oklch(97% 0.003 80);
-	--ctd-surface-strong: oklch(99.4% 0.001 80);
-	--ctd-surface-muted: oklch(93.5% 0.004 80);
-	--ctd-ink: oklch(23% 0.005 80);
-	--ctd-ink-soft: oklch(46% 0.008 80);
-	/* Library-lamp green: the brand accent. Far from danger red on purpose. */
-	--ctd-accent: oklch(47% 0.1 160);
-	--ctd-accent-strong: oklch(41% 0.1 160);
-	--ctd-border: oklch(40% 0.006 80 / 0.18);
-	--ctd-border-strong: oklch(40% 0.006 80 / 0.32);
-	--ctd-link: oklch(44% 0.1 160);
-	--ctd-shell-gradient: oklch(96.5% 0.003 80 / 0.85);
-	--ctd-header-bg: oklch(98% 0.002 80 / 0.88);
-	--ctd-nav-bg: oklch(96% 0.003 80 / 0.85);
-	--ctd-main-gradient: oklch(97.5% 0.002 80 / 0.6);
-	--ctd-drawer-gradient: oklch(98.5% 0.002 80 / 0.98);
-	--ctd-control-bg: oklch(99.5% 0.001 80 / 0.9);
-	--ctd-control-bg-strong: oklch(99.7% 0.001 80);
-	--ctd-control-text: oklch(25% 0.005 80);
-	--ctd-segmented-root-bg: oklch(91% 0.004 80 / 0.85);
-	--ctd-segmented-indicator-bg: oklch(99.5% 0.001 80);
-	--ctd-segmented-label: oklch(28% 0.005 80);
-	--ctd-nav-hover-bg: oklch(50% 0.006 80 / 0.09);
-	--ctd-nav-active-bg: oklch(47% 0.1 160 / 0.14);
-	--ctd-nav-active-text: oklch(36% 0.09 160);
-	--ctd-control-disabled-bg: oklch(94% 0.003 80 / 0.9);
-	--ctd-control-disabled-border: oklch(40% 0.006 80 / 0.12);
-	--ctd-control-disabled-text: oklch(55% 0.005 80 / 0.6);
-	--ctd-danger-bg: oklch(54% 0.19 27);
-	--ctd-danger-bg-hover: oklch(48% 0.19 27);
-	--ctd-danger-text: oklch(98% 0.005 27);
-	--ctd-danger-border: oklch(48% 0.19 27);
+	--ctp-base: #eff1f5;
+	--ctp-mantle: #e6e9ef;
+	--ctp-crust: #dce0e8;
+	--ctp-surface0: #ccd0da;
+	--ctp-text: #4c4f69;
+	--ctp-subtext0: #6c6f85;
+	--ctp-mauve: #8839ef;
+	--ctp-red: #d20f39;
+
+	--ctd-bg: var(--ctp-mantle);
+	--ctd-bg-deep: var(--ctp-crust);
+	--ctd-surface: var(--ctp-base);
+	--ctd-surface-soft: var(--ctp-mantle);
+	--ctd-surface-strong: oklch(from var(--ctp-base) calc(l + 0.02) c h);
+	--ctd-surface-muted: var(--ctp-surface0);
+	--ctd-ink: var(--ctp-text);
+	--ctd-ink-soft: var(--ctp-subtext0);
+	--ctd-accent: var(--ctp-mauve);
+	--ctd-accent-strong: oklch(from var(--ctp-mauve) calc(l - 0.07) c h);
+	--ctd-accent-text: oklch(99% 0.002 280);
+	--ctd-border: oklch(from var(--ctp-text) l c h / 0.18);
+	--ctd-border-strong: oklch(from var(--ctp-text) l c h / 0.32);
+	--ctd-link: oklch(from var(--ctp-mauve) calc(l - 0.04) c h);
+	--ctd-shell-gradient: oklch(from var(--ctp-mantle) l c h / 0.85);
+	--ctd-header-bg: oklch(from var(--ctp-base) l c h / 0.88);
+	--ctd-nav-bg: oklch(from var(--ctp-mantle) l c h / 0.85);
+	--ctd-main-gradient: oklch(from var(--ctp-base) l c h / 0.6);
+	--ctd-drawer-gradient: oklch(from var(--ctp-base) l c h / 0.98);
+	--ctd-control-bg: oklch(from var(--ctp-base) calc(l + 0.03) c h / 0.9);
+	--ctd-control-bg-strong: oklch(from var(--ctp-base) calc(l + 0.035) c h);
+	--ctd-control-text: var(--ctp-text);
+	--ctd-segmented-root-bg: oklch(from var(--ctp-surface0) l c h / 0.85);
+	--ctd-segmented-indicator-bg: oklch(from var(--ctp-base) calc(l + 0.03) c h);
+	--ctd-segmented-label: var(--ctp-text);
+	--ctd-nav-hover-bg: oklch(from var(--ctp-text) l c h / 0.09);
+	--ctd-nav-active-bg: oklch(from var(--ctp-mauve) l c h / 0.14);
+	--ctd-nav-active-text: oklch(from var(--ctp-mauve) calc(l - 0.1) c h);
+	--ctd-control-disabled-bg: oklch(from var(--ctp-mantle) l c h / 0.9);
+	--ctd-control-disabled-border: oklch(from var(--ctp-text) l c h / 0.12);
+	--ctd-control-disabled-text: oklch(from var(--ctp-subtext0) l c h / 0.6);
+	--ctd-danger-bg: var(--ctp-red);
+	--ctd-danger-bg-hover: oklch(from var(--ctp-red) calc(l - 0.06) c h);
+	--ctd-danger-text: oklch(98% 0.005 20);
+	--ctd-danger-border: oklch(from var(--ctp-red) calc(l - 0.06) c h);
 	/* The last layer is a tight contact shadow so covers sit on the shelf
 	   instead of floating above it. */
 	--ctd-cover-shadow:
 		0 1px 2px oklch(0% 0 0 / 0.16), 0 6px 14px oklch(0% 0 0 / 0.12),
 		0 10px 8px -8px oklch(0% 0 0 / 0.3);
 	--ctd-cover-overlay: #12161a;
-	--ctd-cover-title: oklch(99% 0.002 80);
-	--ctd-cover-author: oklch(88% 0.004 80);
+	--ctd-cover-title: oklch(99% 0.002 280);
+	--ctd-cover-author: oklch(88% 0.005 280);
 	--ctd-cover-title-shadow: 0px 1px oklch(25% 0 0 / 0.85);
 	--ctd-cover-author-shadow: 0px 2px oklch(15% 0 0 / 0.85);
 	--ctd-cover-spine-bg:
@@ -65,10 +80,10 @@
 		0 1px 2px oklch(0% 0 0 / 0.06), 0 4px 12px oklch(0% 0 0 / 0.05);
 	--ctd-shadow-lift:
 		0 2px 6px oklch(0% 0 0 / 0.08), 0 14px 28px oklch(0% 0 0 / 0.1);
-	--ctd-content-bg: oklch(98% 0.002 80);
+	--ctd-content-bg: var(--ctp-base);
 	--ctd-radius-panel: 10px;
-	--ctd-focus-ring: oklch(47% 0.1 160 / 0.3);
-	--ctd-scrollbar-thumb: oklch(40% 0.004 80 / 0.4);
+	--ctd-focus-ring: oklch(from var(--ctp-mauve) l c h / 0.3);
+	--ctd-scrollbar-thumb: oklch(from var(--ctp-text) l c h / 0.4);
 	--ctd-control-shadow: 0 0.5px 1.5px oklch(0% 0 0 / 0.12);
 	--ctd-field-inner-shadow: inset 0 0.5px 1px oklch(0% 0 0 / 0.05);
 	/* Book titles get a literary voice; chrome and controls stay system. */
@@ -88,49 +103,67 @@
 	-webkit-text-size-adjust: 100%;
 }
 
-/* Lamplit reading room: the same warm hue family as the light theme, never
-   the default blue-gray. */
+/* Catppuccin Mocha. Cool like the dark vibrancy material behind the window. */
 :root[data-theme="dark"] {
-	--ctd-bg: oklch(22% 0.005 80);
-	--ctd-bg-deep: oklch(19.5% 0.005 80);
-	--ctd-surface: oklch(25% 0.005 80);
-	--ctd-surface-soft: oklch(27% 0.005 80);
-	--ctd-surface-strong: oklch(30% 0.006 80);
-	--ctd-surface-muted: oklch(33% 0.006 80);
-	--ctd-ink: oklch(92.5% 0.004 80);
-	--ctd-ink-soft: oklch(71% 0.006 80);
-	--ctd-accent: oklch(66% 0.1 160);
-	--ctd-accent-strong: oklch(58% 0.1 160);
-	--ctd-border: oklch(95% 0.004 80 / 0.1);
-	--ctd-border-strong: oklch(95% 0.004 80 / 0.22);
-	--ctd-link: oklch(72% 0.1 160);
-	--ctd-shell-gradient: oklch(22% 0.005 80 / 0.85);
-	--ctd-header-bg: oklch(24% 0.005 80 / 0.9);
-	--ctd-nav-bg: oklch(23% 0.005 80 / 0.88);
-	--ctd-main-gradient: oklch(21% 0.005 80 / 0.8);
-	--ctd-drawer-gradient: oklch(26% 0.005 80 / 0.98);
-	--ctd-control-bg: oklch(29% 0.006 80 / 0.9);
-	--ctd-control-bg-strong: oklch(31% 0.006 80);
-	--ctd-control-text: oklch(93% 0.004 80);
-	--ctd-segmented-root-bg: oklch(18% 0.005 80 / 0.7);
-	--ctd-segmented-indicator-bg: oklch(38% 0.006 80);
-	--ctd-segmented-label: oklch(92% 0.004 80);
-	--ctd-nav-hover-bg: oklch(95% 0.004 80 / 0.07);
-	--ctd-nav-active-bg: oklch(66% 0.1 160 / 0.22);
-	--ctd-nav-active-text: oklch(93% 0.03 160);
-	--ctd-control-disabled-bg: oklch(27% 0.005 80 / 0.9);
-	--ctd-control-disabled-border: oklch(95% 0.004 80 / 0.08);
-	--ctd-control-disabled-text: oklch(75% 0.005 80 / 0.4);
-	--ctd-danger-bg: oklch(58% 0.19 27);
-	--ctd-danger-bg-hover: oklch(52% 0.19 27);
-	--ctd-danger-text: oklch(97% 0.008 27);
-	--ctd-danger-border: oklch(52% 0.19 27);
+	--ctp-base: #1e1e2e;
+	--ctp-mantle: #181825;
+	--ctp-crust: #11111b;
+	--ctp-surface0: #313244;
+	--ctp-text: #cdd6f4;
+	--ctp-subtext0: #a6adc8;
+	--ctp-mauve: #cba6f7;
+	--ctp-red: #f38ba8;
+
+	--ctd-bg: var(--ctp-mantle);
+	--ctd-bg-deep: var(--ctp-crust);
+	--ctd-surface: var(--ctp-base);
+	--ctd-surface-soft: oklch(from var(--ctp-base) calc(l + 0.02) c h);
+	--ctd-surface-strong: var(--ctp-surface0);
+	--ctd-surface-muted: oklch(from var(--ctp-surface0) calc(l + 0.05) c h);
+	--ctd-ink: var(--ctp-text);
+	--ctd-ink-soft: var(--ctp-subtext0);
+	--ctd-accent: var(--ctp-mauve);
+	--ctd-accent-strong: oklch(from var(--ctp-mauve) calc(l - 0.08) c h);
+	/* Mocha accents are pastel; dark text on them, never white. */
+	--ctd-accent-text: var(--ctp-crust);
+	--ctd-border: oklch(from var(--ctp-text) l c h / 0.1);
+	--ctd-border-strong: oklch(from var(--ctp-text) l c h / 0.22);
+	--ctd-link: var(--ctp-mauve);
+	--ctd-shell-gradient: oklch(from var(--ctp-mantle) l c h / 0.85);
+	--ctd-header-bg: oklch(from var(--ctp-base) l c h / 0.9);
+	--ctd-nav-bg: oklch(from var(--ctp-mantle) l c h / 0.88);
+	--ctd-main-gradient: oklch(from var(--ctp-crust) l c h / 0.8);
+	--ctd-drawer-gradient: oklch(from var(--ctp-base) calc(l + 0.02) c h / 0.98);
+	--ctd-control-bg: oklch(from var(--ctp-surface0) calc(l - 0.02) c h / 0.9);
+	--ctd-control-bg-strong: var(--ctp-surface0);
+	--ctd-control-text: var(--ctp-text);
+	--ctd-segmented-root-bg: oklch(from var(--ctp-crust) l c h / 0.7);
+	--ctd-segmented-indicator-bg: oklch(
+		from var(--ctp-surface0) calc(l + 0.07) c h
+	);
+	--ctd-segmented-label: var(--ctp-text);
+	--ctd-nav-hover-bg: oklch(from var(--ctp-text) l c h / 0.07);
+	--ctd-nav-active-bg: oklch(from var(--ctp-mauve) l c h / 0.22);
+	--ctd-nav-active-text: oklch(
+		from var(--ctp-mauve) calc(l + 0.06) calc(c - 0.04) h
+	);
+	--ctd-control-disabled-bg: oklch(
+		from var(--ctp-base) calc(l + 0.02) c h /
+		0.9
+	);
+	--ctd-control-disabled-border: oklch(from var(--ctp-text) l c h / 0.08);
+	--ctd-control-disabled-text: oklch(from var(--ctp-subtext0) l c h / 0.4);
+	/* Mocha-style destructive: pastel red pill with crust-dark label. */
+	--ctd-danger-bg: var(--ctp-red);
+	--ctd-danger-bg-hover: oklch(from var(--ctp-red) calc(l - 0.07) c h);
+	--ctd-danger-text: var(--ctp-crust);
+	--ctd-danger-border: oklch(from var(--ctp-red) calc(l - 0.07) c h);
 	--ctd-cover-shadow:
 		0 0 0 1px oklch(100% 0 0 / 0.07), 0 8px 18px oklch(0% 0 0 / 0.5),
 		0 10px 8px -8px oklch(0% 0 0 / 0.6);
 	--ctd-cover-overlay: #12161a;
-	--ctd-cover-title: oklch(98% 0.003 80);
-	--ctd-cover-author: oklch(88% 0.005 80);
+	--ctd-cover-title: oklch(98% 0.003 280);
+	--ctd-cover-author: oklch(88% 0.005 280);
 	--ctd-cover-title-shadow: 0px 1px oklch(25% 0 0 / 0.85);
 	--ctd-cover-author-shadow: 0px 2px oklch(15% 0 0 / 0.85);
 	--ctd-cover-spine-bg:
@@ -154,9 +187,9 @@
 		0 1px 2px oklch(0% 0 0 / 0.4), 0 6px 16px oklch(0% 0 0 / 0.35);
 	--ctd-shadow-lift:
 		0 2px 6px oklch(0% 0 0 / 0.45), 0 16px 32px oklch(0% 0 0 / 0.5);
-	--ctd-content-bg: oklch(23.5% 0.005 80);
-	--ctd-focus-ring: oklch(66% 0.1 160 / 0.4);
-	--ctd-scrollbar-thumb: oklch(90% 0.004 80 / 0.35);
+	--ctd-content-bg: var(--ctp-base);
+	--ctd-focus-ring: oklch(from var(--ctp-mauve) l c h / 0.4);
+	--ctd-scrollbar-thumb: oklch(from var(--ctp-text) l c h / 0.35);
 	--ctd-control-shadow: 0 0.5px 1.5px oklch(0% 0 0 / 0.4);
 	--ctd-field-inner-shadow: inset 0 0.5px 1px oklch(0% 0 0 / 0.2);
 }
@@ -170,12 +203,12 @@
 :root[data-vibrancy] {
 	--ctd-shell-gradient: transparent;
 	--ctd-main-gradient: transparent;
-	--ctd-header-bg: oklch(97% 0.003 80 / 0.08);
+	--ctd-header-bg: oklch(from var(--ctp-base) l c h / 0.08);
 	--ctd-nav-bg: transparent;
 }
 
 :root[data-vibrancy][data-theme="dark"] {
-	--ctd-header-bg: oklch(23% 0.005 80 / 0.12);
+	--ctd-header-bg: oklch(from var(--ctp-base) l c h / 0.12);
 	--ctd-nav-bg: transparent;
 }
 

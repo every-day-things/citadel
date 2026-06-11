@@ -62,7 +62,13 @@ pub fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         "File",
         true,
         &[
-            &MenuItem::with_id(app, MENU_ID_ADD_BOOK, "Add Book…", true, Some("CmdOrCtrl+N"))?,
+            &MenuItem::with_id(
+                app,
+                MENU_ID_ADD_BOOK,
+                "Add Book…",
+                true,
+                Some("CmdOrCtrl+N"),
+            )?,
             &PredefinedMenuItem::separator(app)?,
             &PredefinedMenuItem::close_window(app, None)?,
         ],
@@ -147,8 +153,8 @@ pub fn open_settings_window<R: Runtime>(app: &AppHandle<R>) {
     // Match the webview backing to the app theme (`--ctd-bg` in styles.css)
     // so nothing white can flash before the frontend's first paint.
     let background = match app.get_webview_window("main").and_then(|w| w.theme().ok()) {
-        Some(Theme::Dark) => Color(25, 27, 28, 255),
-        _ => Color(244, 243, 241, 255),
+        Some(Theme::Dark) => Color(30, 30, 46, 255), // Catppuccin Mocha base
+        _ => Color(239, 241, 245, 255),              // Catppuccin Latte base
     };
 
     // Created hidden; the frontend reveals it after its first paint

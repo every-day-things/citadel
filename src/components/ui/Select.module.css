@@ -92,7 +92,7 @@
 
 .item[data-highlighted] {
 	background-color: var(--ctd-accent);
-	color: oklch(99% 0.002 255);
+	color: var(--ctd-accent-text);
 }
 
 .item[data-disabled] {

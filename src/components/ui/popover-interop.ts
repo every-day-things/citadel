@@ -1,0 +1,23 @@
+/**
+ * Kit popovers (e.g. the TagsInput completion list) render in body portals so
+ * they can escape scrolling dialog content. Radix's modal dialogs see them as
+ * "outside" and would close on click, and the modal pointer-events lock would
+ * make them inert. Popover roots carry this attribute; dialogs use the guard
+ * to ignore interactions inside them, and the CSS module sets
+ * pointer-events: auto on the popover itself.
+ */
+export const POPOVER_ATTRIBUTE = "data-ctd-popover";
+
+export const ignorePopoverInteractOutside = (
+	event: CustomEvent<{ originalEvent: Event }> | Event,
+) => {
+	const target =
+		"detail" in event &&
+		(event as CustomEvent<{ originalEvent: Event }>).detail?.originalEvent
+			? ((event as CustomEvent<{ originalEvent: Event }>).detail.originalEvent
+					.target as Element | null)
+			: (event.target as Element | null);
+	if (target?.closest(`[${POPOVER_ATTRIBUTE}]`)) {
+		event.preventDefault();
+	}
+};

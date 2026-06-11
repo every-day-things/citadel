@@ -1,6 +1,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import type { ReactNode } from "react";
 import { DialogCloseButton } from "./DialogCloseButton";
+import { ignorePopoverInteractOutside } from "./popover-interop";
 import styles from "./Sheet.module.css";
 
 export interface SheetProps {
@@ -35,6 +36,8 @@ export const Sheet = ({
 				style={{ width: `min(${width}px, calc(100vw - 32px))` }}
 				aria-describedby={undefined}
 				onCloseAutoFocus={onCloseAutoFocus}
+				onPointerDownOutside={ignorePopoverInteractOutside}
+				onInteractOutside={ignorePopoverInteractOutside}
 			>
 				<div className={styles.header}>
 					<Dialog.Title className={styles.title}>{title}</Dialog.Title>

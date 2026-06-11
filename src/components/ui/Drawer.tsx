@@ -2,6 +2,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import type { ReactNode } from "react";
 import { DialogCloseButton } from "./DialogCloseButton";
 import styles from "./Drawer.module.css";
+import { ignorePopoverInteractOutside } from "./popover-interop";
 
 export interface DrawerProps {
 	open: boolean;
@@ -35,6 +36,8 @@ export const Drawer = ({
 				style={{ width: `min(${width}px, calc(100vw - 32px))` }}
 				aria-describedby={undefined}
 				onCloseAutoFocus={onCloseAutoFocus}
+				onPointerDownOutside={ignorePopoverInteractOutside}
+				onInteractOutside={ignorePopoverInteractOutside}
 			>
 				<div className={styles.header}>
 					{title ? (
