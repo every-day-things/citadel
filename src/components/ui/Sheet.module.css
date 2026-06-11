@@ -1,8 +1,13 @@
+/*
+ * The AppShell header and navbar sit at z-index 100, so the sheet and its
+ * scrim stay below them: the content genuinely slides out from under the
+ * toolbar and the window chrome is never dimmed, matching a macOS sheet.
+ */
 .overlay {
 	position: fixed;
 	inset: 0;
 	background-color: oklch(0% 0 0 / 0.18);
-	z-index: 200;
+	z-index: 90;
 }
 
 .overlay[data-state="open"] {
@@ -26,7 +31,7 @@
 	border-top: none;
 	border-radius: 0 0 10px 10px;
 	box-shadow: var(--ctd-shadow-lift);
-	z-index: 201;
+	z-index: 91;
 }
 
 .content[data-state="open"] {

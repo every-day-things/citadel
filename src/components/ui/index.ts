@@ -11,4 +11,9 @@ export { Select, type SelectOption, type SelectProps } from "./Select";
 export { Sheet, type SheetProps } from "./Sheet";
 export { Switch, type SwitchProps } from "./Switch";
 export { TextInput, type TextInputProps } from "./TextInput";
-export { Tooltip, type TooltipProps } from "./Tooltip";
+export {
+	Tooltip,
+	TooltipProvider,
+	type TooltipProps,
+	type TooltipProviderProps,
+} from "./Tooltip";

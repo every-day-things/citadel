@@ -1,21 +1,15 @@
-import { LibraryBookSortOrder } from "@/stores/library-view/store";
 import { describe, expect, it } from "vitest";
 import { librarySortOptions } from "./library-sort-options";
 
 describe("librarySortOptions", () => {
-	it("includes every LibraryBookSortOrder key exactly once", () => {
-		const keys = Object.keys(LibraryBookSortOrder);
-		const optionValues = librarySortOptions.map((option) => option.value);
-
-		expect(optionValues).toHaveLength(keys.length);
-		for (const key of keys) {
-			expect(optionValues.filter((value) => value === key)).toHaveLength(1);
-		}
-	});
-
-	it("has a non-empty label for every option", () => {
-		for (const option of librarySortOptions) {
-			expect(option.label.length).toBeGreaterThan(0);
-		}
+	// Pins the user-visible labels and menu order, which the type system
+	// (Record<LibraryBookSortOrderKey, string>) cannot guarantee.
+	it("exposes the four sort orders with their labels, in menu order", () => {
+		expect(librarySortOptions).toEqual([
+			{ value: "nameAz", label: "Name (A–Z)" },
+			{ value: "nameZa", label: "Name (Z–A)" },
+			{ value: "authorAz", label: "Author (A–Z)" },
+			{ value: "authorZa", label: "Author (Z–A)" },
+		]);
 	});
 });

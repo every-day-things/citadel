@@ -12,7 +12,7 @@ import {
 } from "@/stores/library/store";
 import { IconButton, Sheet, Tooltip } from "@/components/ui";
 import { useDisclosure } from "@mantine/hooks";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 export const AddBookButton = () => {
 	const state = useLibraryState();
@@ -21,6 +21,7 @@ export const AddBookButton = () => {
 	const platform = usePlatform();
 
 	const [metadata, setMetadata] = useState<ImportableBookMetadata | null>();
+	const addBookButtonRef = useRef<HTMLButtonElement>(null);
 	const [isModalOpen, { close: closeModal, open: openModal }] =
 		useDisclosure(false);
 
@@ -96,6 +97,12 @@ export const AddBookButton = () => {
 					}}
 					title={addBookFormTitle}
 					width={560}
+					onCloseAutoFocus={(event) => {
+						// The sheet opens from a file-picker flow, not a Dialog.Trigger,
+						// so return focus to the Add Book button ourselves.
+						event.preventDefault();
+						addBookButtonRef.current?.focus();
+					}}
 				>
 					<AddBookForm
 						initial={{
@@ -112,6 +119,7 @@ export const AddBookButton = () => {
 			)}
 			<Tooltip label="Add Book…" openDelay={500}>
 				<IconButton
+					ref={addBookButtonRef}
 					aria-label="Add Book"
 					onPointerDown={selectAndEditBookFile}
 				>

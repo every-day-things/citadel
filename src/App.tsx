@@ -11,6 +11,7 @@ import { FirstTimeSetup } from "./components/pages/firstTimeSetup";
 import { routeTree } from "./routeTree.gen";
 import { useActiveLibraryPath, useSettings } from "./stores/settings/store";
 import { useInitializeLibraryStore } from "@/lib/hooks/use-initialize-library-store";
+import { TooltipProvider } from "@/components/ui";
 
 const router = createRouter({
 	routeTree,
@@ -89,10 +90,12 @@ export const App = () => {
 		<>
 			<ColorSchemeScript defaultColorScheme="auto" />
 			<MantineProvider theme={theme} defaultColorScheme="auto">
-				<Notifications />
-				<LibraryStoreInitializer>
-					<RouterProvider router={router} />
-				</LibraryStoreInitializer>
+				<TooltipProvider>
+					<Notifications />
+					<LibraryStoreInitializer>
+						<RouterProvider router={router} />
+					</LibraryStoreInitializer>
+				</TooltipProvider>
 			</MantineProvider>
 		</>
 	);

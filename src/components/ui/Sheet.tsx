@@ -8,6 +8,12 @@ export interface SheetProps {
 	title: string;
 	children: ReactNode;
 	width?: number;
+	/**
+	 * Sheets are usually opened programmatically (no Dialog.Trigger), so Radix
+	 * has no trigger to return focus to on close. Callers should preventDefault
+	 * here and refocus the control that opened the sheet.
+	 */
+	onCloseAutoFocus?: (event: Event) => void;
 }
 
 /** A macOS document sheet that slides out from under the toolbar. */
@@ -17,6 +23,7 @@ export const Sheet = ({
 	title,
 	children,
 	width = 540,
+	onCloseAutoFocus,
 }: SheetProps) => (
 	<Dialog.Root open={open} onOpenChange={onOpenChange}>
 		<Dialog.Portal>
@@ -26,6 +33,7 @@ export const Sheet = ({
 				className={styles.content}
 				style={{ width: `min(${width}px, calc(100vw - 32px))` }}
 				aria-describedby={undefined}
+				onCloseAutoFocus={onCloseAutoFocus}
 			>
 				<div className={styles.header}>
 					<Dialog.Title className={styles.title}>{title}</Dialog.Title>
