@@ -23,6 +23,9 @@
 	flex-direction: column;
 	background-color: var(--ctd-surface);
 	border-left: var(--ctd-control-border-width) solid var(--ctd-border);
+	/* The window clips the right-side corners natively; the exposed interior
+	 * corner gets the macOS panel radius. */
+	border-top-left-radius: var(--ctd-radius-panel);
 	box-shadow: var(--ctd-dialog-shadow);
 	z-index: 111;
 }
