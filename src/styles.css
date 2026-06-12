@@ -361,6 +361,12 @@ textarea {
 	background-color: var(--ctd-nav-hover-bg);
 }
 
+/* Replace the UA focus rectangle with the shared halo (cf. .ctd-author-row-link). */
+.ctd-nav-link:focus-visible {
+	outline: none;
+	box-shadow: inset 0 0 0 3px var(--ctd-focus-ring);
+}
+
 /* Sidebar settings (gear) button: same hover token as the nav rows. */
 .ctd-settings-button:hover {
 	background-color: var(--ctd-nav-hover-bg);

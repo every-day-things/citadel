@@ -17,7 +17,9 @@
 	align-items: center;
 	gap: 12px;
 	flex-wrap: nowrap;
-	padding: 8px 24px;
+	/* Even insets so the search field sits square with the panel's rounded
+	 * top-left corner (was 8px top / 24px left). */
+	padding: 12px;
 	background-color: var(--ctd-content-bg);
 	border-bottom: 1px solid var(--ctd-border);
 }

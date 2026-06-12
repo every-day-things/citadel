@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import DOMPurify from "dompurify";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Identifier, LibraryBook, LocalFile } from "@/bindings";
@@ -14,6 +14,7 @@ import {
 	Tooltip,
 } from "@/components/ui";
 import { safeAsyncEventHandler } from "@/lib/async";
+import { useLibraryKeymap } from "@/lib/hooks/use-library-keymap";
 import { usePlatform } from "@/lib/platform/context";
 import { useBooks, useBooksLoading } from "@/stores/library/store";
 import {
@@ -103,6 +104,18 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 		[books],
 	);
 
+	const searchInputRef = useRef<HTMLInputElement>(null);
+	const gridContainerRef = useRef<HTMLDivElement>(null);
+
+	const { selectedBookId } = useLibraryKeymap({
+		books: sortedBooks,
+		drawerOpened: isBookSidebarOpen,
+		searchInputRef,
+		gridContainerRef,
+		onBookOpen,
+		onClearSearch: () => setQuery(""),
+	});
+
 	const noMatches = !loading && sortedBooks.length === 0 && books.length > 0;
 
 	return (
@@ -114,6 +127,7 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 			<div className={styles.scopeBar}>
 				<span className={styles.searchWrap}>
 					<SearchField
+						ref={searchInputRef}
 						placeholder="Search"
 						aria-label="Search book titles and authors"
 						value={query}
@@ -144,7 +158,12 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 					hideRead={hideRead}
 				/>
 			</div>
-			<div className={styles.gridArea}>
+			<div
+				ref={gridContainerRef}
+				tabIndex={-1}
+				style={{ outline: "none" }}
+				className={styles.gridArea}
+			>
 				{noMatches ? (
 					<div className={styles.emptyState}>
 						<span className={styles.emptyText}>
@@ -159,6 +178,7 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 						bookList={sortedBooks}
 						loading={loading}
 						onBookOpen={onBookOpen}
+						selectedBookId={selectedBookId}
 					/>
 				)}
 			</div>
@@ -175,6 +195,20 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 					if (!open) setIsBookSidebarOpen(false);
 				}}
 				width={440}
+				onCloseAutoFocus={(event) => {
+					// No Dialog.Trigger to return focus to; hand it to the grid so
+					// arrow keys keep working after the drawer closes.
+					event.preventDefault();
+					gridContainerRef.current?.focus();
+				}}
+				onOpenAutoFocus={(event) => {
+					// Land on the primary action instead of the header close button.
+					const target = document.querySelector("[data-drawer-initial-focus]");
+					if (target instanceof HTMLElement) {
+						event.preventDefault();
+						target.focus();
+					}
+				}}
 			>
 				{selectedSidebarBook && <BookDetails book={selectedSidebarBook} />}
 			</Drawer>
@@ -297,6 +331,8 @@ const SaveAsShelfControl = ({
 
 const BookDetails = ({ book }: { book: LibraryBook }) => {
 	const platform = usePlatform();
+	const navigate = useNavigate();
+	const canRead = platform.capabilities.canOpenLocalPaths;
 	return (
 		<div className={styles.details}>
 			<div className={styles.detailsTop}>
@@ -309,10 +345,11 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 						</span>
 					</div>
 					<div className={styles.detailsActions}>
-						{platform.capabilities.canOpenLocalPaths && (
+						{canRead && (
 							<Button
 								variant="subtle"
-								onPointerDown={safeAsyncEventHandler(async () => {
+								data-drawer-initial-focus=""
+								onClick={safeAsyncEventHandler(async () => {
 									const firstFile = book.file_list[0];
 									if (firstFile === undefined) return;
 
@@ -325,12 +362,19 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 								Read
 							</Button>
 						)}
-						<Link to={`/books/${book.id}`}>
-							<Button variant="primary">
-								<F7Pencil />
-								Edit
-							</Button>
-						</Link>
+						<Button
+							variant="primary"
+							data-drawer-initial-focus={canRead ? undefined : ""}
+							onClick={() =>
+								void navigate({
+									to: "/books/$bookId",
+									params: { bookId: book.id },
+								})
+							}
+						>
+							<F7Pencil />
+							Edit
+						</Button>
 					</div>
 				</div>
 			</div>

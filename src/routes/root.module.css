@@ -64,6 +64,9 @@
 	background: var(--ctd-content-bg);
 	border-top: 1px solid var(--ctd-border);
 	border-left: 1px solid var(--ctd-border);
+	/* macOS panel corner where the toolbar and sidebar hairlines meet;
+	 * overflow clips scrolled content to the curve. */
+	border-top-left-radius: var(--ctd-radius-panel);
 }
 
 .sidebarToggle {

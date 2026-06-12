@@ -16,3 +16,19 @@
 	justify-self: center;
 	min-width: 0;
 }
+
+/* Shrink-wraps the cover so the keyboard selection ring hugs the art
+ * rather than the full-height shelf cell. */
+.coverWrap {
+	display: inline-flex;
+	max-width: 100%;
+	border-radius: 4px;
+}
+
+.coverWrapSelected {
+	/* Crisp accent line (3:1 contrast floor) inside the same soft halo the
+	 * focused controls wear, so selection and focus share one language. */
+	outline: 2px solid var(--ctd-accent);
+	outline-offset: 2px;
+	box-shadow: 0 0 0 7px var(--ctd-focus-ring);
+}

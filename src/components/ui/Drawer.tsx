@@ -16,6 +16,11 @@ export interface DrawerProps {
 	 * here and refocus the control that opened the drawer.
 	 */
 	onCloseAutoFocus?: (event: Event) => void;
+	/**
+	 * Radix autofocuses the first focusable element — the header close button.
+	 * Callers can preventDefault here and focus a more useful default.
+	 */
+	onOpenAutoFocus?: (event: Event) => void;
 }
 
 /** A right-edge slide-over panel, e.g. for book details. */
@@ -26,6 +31,7 @@ export const Drawer = ({
 	children,
 	width = 420,
 	onCloseAutoFocus,
+	onOpenAutoFocus,
 }: DrawerProps) => (
 	<Dialog.Root open={open} onOpenChange={onOpenChange}>
 		<Dialog.Portal>
@@ -36,6 +42,7 @@ export const Drawer = ({
 				style={{ width: `min(${width}px, calc(100vw - 32px))` }}
 				aria-describedby={undefined}
 				onCloseAutoFocus={onCloseAutoFocus}
+				onOpenAutoFocus={onOpenAutoFocus}
 				onPointerDownOutside={ignorePopoverInteractOutside}
 				onInteractOutside={ignorePopoverInteractOutside}
 			>
