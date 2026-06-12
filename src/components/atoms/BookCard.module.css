@@ -16,3 +16,16 @@
 	justify-self: center;
 	min-width: 0;
 }
+
+/* Shrink-wraps the cover so the keyboard selection ring hugs the art
+ * rather than the full-height shelf cell. */
+.coverWrap {
+	display: inline-flex;
+	max-width: 100%;
+	border-radius: 4px;
+}
+
+.coverWrapSelected {
+	outline: 2px solid var(--ctd-accent);
+	outline-offset: 3px;
+}

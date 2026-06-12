@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import DOMPurify from "dompurify";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Identifier, LibraryBook, LocalFile } from "@/bindings";
 import {
 	Button,
@@ -11,6 +11,7 @@ import {
 	Select,
 } from "@/components/ui";
 import { safeAsyncEventHandler } from "@/lib/async";
+import { useLibraryKeymap } from "@/lib/hooks/use-library-keymap";
 import { usePlatform } from "@/lib/platform/context";
 import { useBooks, useBooksLoading } from "@/stores/library/store";
 import {
@@ -97,6 +98,18 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 		[books],
 	);
 
+	const searchInputRef = useRef<HTMLInputElement>(null);
+	const gridContainerRef = useRef<HTMLDivElement>(null);
+
+	const { selectedBookId } = useLibraryKeymap({
+		books: sortedBooks,
+		drawerOpened: isBookSidebarOpen,
+		searchInputRef,
+		gridContainerRef,
+		onBookOpen,
+		onClearSearch: () => setQuery(""),
+	});
+
 	return (
 		<div className={styles.page}>
 			{/*
@@ -106,6 +119,7 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 			<div className={styles.scopeBar}>
 				<span className={styles.searchWrap}>
 					<SearchField
+						ref={searchInputRef}
 						placeholder="Search"
 						aria-label="Search book titles and authors"
 						value={query}
@@ -131,11 +145,17 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 					onCheckedChange={setHideRead}
 				/>
 			</div>
-			<div className={styles.gridArea}>
+			<div
+				ref={gridContainerRef}
+				tabIndex={-1}
+				style={{ outline: "none" }}
+				className={styles.gridArea}
+			>
 				<BookGrid
 					bookList={sortedBooks}
 					loading={loading}
 					onBookOpen={onBookOpen}
+					selectedBookId={selectedBookId}
 				/>
 			</div>
 			<div className={styles.footer}>
@@ -151,6 +171,12 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 					if (!open) setIsBookSidebarOpen(false);
 				}}
 				width={440}
+				onCloseAutoFocus={(event) => {
+					// No Dialog.Trigger to return focus to; hand it to the grid so
+					// arrow keys keep working after the drawer closes.
+					event.preventDefault();
+					gridContainerRef.current?.focus();
+				}}
 			>
 				{selectedSidebarBook && <BookDetails book={selectedSidebarBook} />}
 			</Drawer>

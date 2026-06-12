@@ -4,7 +4,12 @@ import type { LibraryBook } from "@/bindings";
 import { LoadingOverlay } from "@/components/ui";
 import { BookCard } from "../atoms/BookCard";
 
-export const BookGrid = ({ loading, bookList, onBookOpen }: BookView) => {
+export const BookGrid = ({
+	loading,
+	bookList,
+	onBookOpen,
+	selectedBookId,
+}: BookView) => {
 	const actionsContext = useMemo(() => {
 		return {
 			onViewBook: onBookOpen,
@@ -13,7 +18,11 @@ export const BookGrid = ({ loading, bookList, onBookOpen }: BookView) => {
 
 	return (
 		<bookActionsContext.Provider value={actionsContext}>
-			<BookGridPure loading={loading} bookList={bookList} />
+			<BookGridPure
+				loading={loading}
+				bookList={bookList}
+				selectedBookId={selectedBookId}
+			/>
 		</bookActionsContext.Provider>
 	);
 };
@@ -21,9 +30,11 @@ export const BookGrid = ({ loading, bookList, onBookOpen }: BookView) => {
 const BookGridPure = ({
 	loading,
 	bookList: books,
+	selectedBookId,
 }: {
 	loading: boolean;
 	bookList: LibraryBook[];
+	selectedBookId?: LibraryBook["id"] | null;
 }) => {
 	const actions = useContext(bookActionsContext);
 
@@ -42,6 +53,7 @@ const BookGridPure = ({
 			 * (see BookCard.module.css) so the bases sit on one line.
 			 */}
 			<div
+				data-books-grid
 				style={{
 					display: "grid",
 					gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
@@ -50,7 +62,12 @@ const BookGridPure = ({
 				}}
 			>
 				{books.map((book) => (
-					<BookCard key={book.id} book={book} actions={actions} />
+					<BookCard
+						key={book.id}
+						book={book}
+						actions={actions}
+						selected={book.id === selectedBookId}
+					/>
 				))}
 			</div>
 		</div>

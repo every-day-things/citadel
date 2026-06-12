@@ -1,3 +1,4 @@
+import clsx from "clsx";
 import React, { useCallback } from "react";
 import type { LibraryBook } from "@/bindings";
 import classes from "./BookCard.module.css";
@@ -12,19 +13,28 @@ interface BookActions {
 interface BookCardProps {
 	book: LibraryBook;
 	actions: BookActions;
+	selected?: boolean;
 }
 
 export const BookCard = React.memo(function BookCard({
 	book,
 	actions: { onViewBook },
+	selected,
 }: BookCardProps) {
 	const onCoverTouch = useCallback(() => {
 		onViewBook(book.id);
 	}, [onViewBook, book]);
 
 	return (
-		<div className={classes.cell}>
-			<BookCover book={book} fluid onPointerDown={onCoverTouch} />
+		<div className={classes.cell} data-book-id={book.id}>
+			<span
+				className={clsx(
+					classes.coverWrap,
+					selected && classes.coverWrapSelected,
+				)}
+			>
+				<BookCover book={book} fluid onPointerDown={onCoverTouch} />
+			</span>
 		</div>
 	);
 });
