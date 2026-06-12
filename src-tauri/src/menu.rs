@@ -177,7 +177,7 @@ pub fn open_settings_window<R: Runtime>(app: &AppHandle<R>) {
     let builder = builder
         .title_bar_style(tauri::TitleBarStyle::Overlay)
         .hidden_title(true)
-        .traffic_light_position(tauri::LogicalPosition::new(14.0, 23.0));
+        .traffic_light_position(tauri::LogicalPosition::new(14.0, 28.75));
 
     // NOTE: transparent webview + sidebar effects left off for now — with
     // them, the settings webview came up blank (debugging round 5).
