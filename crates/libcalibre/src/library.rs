@@ -1,13 +1,12 @@
 use std::{collections::HashMap, path::Path, path::PathBuf};
 
 use chrono::{NaiveDate, NaiveDateTime};
-use diesel::{
-    prelude::*, sql_query, sql_types::Integer, QueryableByName, RunQueryDsl, SqliteConnection,
-};
+use diesel::{prelude::*, sql_query, RunQueryDsl, SqliteConnection};
 use sanitise_file_name::sanitise;
 
 use crate::{
     cover_image::cover_image_data_from_path,
+    custom_columns::{self, CustomColumn, CustomColumnKind, CustomColumnSpec, CustomValue},
     entities::book_file::NewBookFile,
     operations,
     persistence::establish_connection,
@@ -528,69 +527,106 @@ impl Library {
     }
 
     // =========================================================================
-    // Read state (custom column)
+    // Custom columns
     // =========================================================================
 
-    pub(crate) fn get_or_create_read_state_column(&mut self) -> Result<i32, CalibreError> {
-        use crate::schema::custom_columns::dsl::*;
-        use diesel::prelude::*;
+    /// All custom columns in the library, excluding columns marked for
+    /// deletion.
+    pub fn custom_columns(&mut self) -> Result<Vec<CustomColumn>, CalibreError> {
+        custom_columns::list(&mut self.conn)
+    }
 
-        let column_id_opt = custom_columns
-            .select(id)
-            .filter(label.eq("read"))
-            .filter(datatype.eq("bool"))
-            .first::<i32>(&mut self.conn)
-            .optional()
-            .map_err(CalibreError::from)?;
+    /// Create a custom column, including its value tables, indexes, triggers,
+    /// and views, exactly as Calibre would.
+    pub fn create_custom_column(
+        &mut self,
+        spec: CustomColumnSpec,
+    ) -> Result<CustomColumn, CalibreError> {
+        custom_columns::create(&mut self.conn, &spec)
+    }
 
-        match column_id_opt {
-            Some(cid) => Ok(cid),
-            None => {
-                let cid = diesel::insert_into(custom_columns)
-                    .values((
-                        label.eq("read"),
-                        name.eq("Read"),
-                        datatype.eq("bool"),
-                        mark_for_delete.eq(false),
-                        editable.eq(true),
-                        is_multiple.eq(false),
-                        normalized.eq(false),
-                        display.eq("{}"),
-                    ))
-                    .returning(id)
-                    .get_result::<i32>(&mut self.conn)
-                    .map_err(CalibreError::from)?;
+    /// One book's value for a custom column. `None` when no value is stored
+    /// (for bool columns this is Calibre's tri-state "unknown").
+    pub fn get_custom_value(
+        &mut self,
+        book_id: BookId,
+        column_id: i32,
+    ) -> Result<Option<CustomValue>, CalibreError> {
+        let column = custom_columns::get_column(&mut self.conn, column_id)?;
+        custom_columns::get_value(&mut self.conn, &column, book_id)
+    }
 
-                sql_query(format!(
-                    "CREATE TABLE custom_column_{cid} (id INTEGER PRIMARY KEY, book INTEGER NOT NULL UNIQUE, value INTEGER NOT NULL);"
-                ))
-                .execute(&mut self.conn)
-                .map_err(CalibreError::from)?;
-
-                Ok(cid)
+    /// All stored custom-column values for a book, keyed by column id.
+    /// Columns with unsupported datatypes (series, rating, composite, ...)
+    /// are skipped.
+    pub fn get_custom_values_for_book(
+        &mut self,
+        book_id: BookId,
+    ) -> Result<HashMap<i32, CustomValue>, CalibreError> {
+        let columns = custom_columns::list(&mut self.conn)?;
+        let mut values = HashMap::new();
+        for column in columns {
+            if !column.kind.supports_value_io() {
+                continue;
+            }
+            if let Some(value) = custom_columns::get_value(&mut self.conn, &column, book_id)? {
+                values.insert(column.id, value);
             }
         }
+        Ok(values)
+    }
+
+    /// Set (or clear, with `None`) one book's value for a custom column.
+    /// The value must match the column's datatype.
+    pub fn set_custom_value(
+        &mut self,
+        book_id: BookId,
+        column_id: i32,
+        value: Option<CustomValue>,
+    ) -> Result<(), CalibreError> {
+        let column = custom_columns::get_column(&mut self.conn, column_id)?;
+        custom_columns::set_value(&mut self.conn, &column, book_id, value)
+    }
+
+    /// One column's values for many books at once. Books with no stored
+    /// value are absent from the result.
+    pub fn batch_get_custom_values(
+        &mut self,
+        column_id: i32,
+        book_ids: &[BookId],
+    ) -> Result<HashMap<BookId, CustomValue>, CalibreError> {
+        let column = custom_columns::get_column(&mut self.conn, column_id)?;
+        custom_columns::batch_get_values(&mut self.conn, &column, book_ids)
+    }
+
+    // =========================================================================
+    // Read state (the `read` bool custom column)
+    // =========================================================================
+
+    pub(crate) fn get_or_create_read_state_column(&mut self) -> Result<CustomColumn, CalibreError> {
+        if let Some(column) =
+            custom_columns::find_by_label_and_kind(&mut self.conn, "read", &CustomColumnKind::Bool)?
+        {
+            return Ok(column);
+        }
+
+        custom_columns::create(
+            &mut self.conn,
+            &CustomColumnSpec {
+                label: "read".to_string(),
+                name: "Read".to_string(),
+                kind: CustomColumnKind::Bool,
+                is_multiple: false,
+                enum_values: vec![],
+                display: None,
+            },
+        )
     }
 
     pub fn get_book_read_state(&mut self, book_id: BookId) -> Result<bool, CalibreError> {
-        let col_id = self.get_or_create_read_state_column()?;
-
-        #[derive(QueryableByName)]
-        struct CustomValue {
-            #[diesel(sql_type = Integer)]
-            value: i32,
-        }
-
-        let result = sql_query(format!(
-            "SELECT value FROM custom_column_{col_id} WHERE book = ?"
-        ))
-        .bind::<Integer, _>(book_id.as_i32())
-        .get_result::<CustomValue>(&mut self.conn);
-
-        match result {
-            Ok(v) => Ok(v.value == 1),
-            Err(_) => Ok(false),
-        }
+        let column = self.get_or_create_read_state_column()?;
+        let value = custom_columns::get_value(&mut self.conn, &column, book_id)?;
+        Ok(matches!(value, Some(CustomValue::Bool(true))))
     }
 
     pub fn set_book_read_state(
@@ -598,17 +634,13 @@ impl Library {
         book_id: BookId,
         is_read: bool,
     ) -> Result<(), CalibreError> {
-        let col_id = self.get_or_create_read_state_column()?;
-        let value = if is_read { 1 } else { 0 };
-
-        sql_query(format!(
-            "INSERT OR REPLACE INTO custom_column_{col_id} (book, value) VALUES (?, ?)"
-        ))
-        .bind::<Integer, _>(book_id.as_i32())
-        .bind::<Integer, _>(value)
-        .execute(&mut self.conn)
-        .map(|_| ())
-        .map_err(CalibreError::from)
+        let column = self.get_or_create_read_state_column()?;
+        custom_columns::set_value(
+            &mut self.conn,
+            &column,
+            book_id,
+            Some(CustomValue::Bool(is_read)),
+        )
     }
 
     pub fn batch_get_read_states(
@@ -619,31 +651,12 @@ impl Library {
             return Ok(HashMap::new());
         }
 
-        let col_id = self.get_or_create_read_state_column()?;
+        let column = self.get_or_create_read_state_column()?;
+        let values = custom_columns::batch_get_values(&mut self.conn, &column, book_ids)?;
 
-        #[derive(QueryableByName)]
-        struct BookReadState {
-            #[diesel(sql_type = Integer)]
-            book: i32,
-            #[diesel(sql_type = Integer)]
-            value: i32,
-        }
-
-        let book_ids_str = book_ids
-            .iter()
-            .map(|id| id.as_i32().to_string())
-            .collect::<Vec<_>>()
-            .join(",");
-
-        let results: Vec<BookReadState> = sql_query(format!(
-            "SELECT book, value FROM custom_column_{col_id} WHERE book IN ({book_ids_str})"
-        ))
-        .load(&mut self.conn)
-        .map_err(CalibreError::from)?;
-
-        Ok(results
+        Ok(values
             .into_iter()
-            .map(|r| (BookId(r.book), r.value == 1))
+            .map(|(book_id, value)| (book_id, matches!(value, CustomValue::Bool(true))))
             .collect())
     }
 

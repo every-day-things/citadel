@@ -32,6 +32,25 @@ pub enum CalibreError {
     #[error("Author cannot be deleted; they have associated books")]
     AuthorHasAssociatedBooks(Vec<BookId>),
 
+    /// Custom column with given ID was not found.
+    #[error("Custom column not found: {0}")]
+    CustomColumnNotFound(i32),
+
+    /// Operation is not supported for the custom column's datatype
+    /// (e.g. reading/writing series, rating, or composite columns).
+    #[error("Unsupported custom column operation: {0}")]
+    UnsupportedCustomColumn(String),
+
+    /// Custom column definition is invalid (e.g. bad label, is_multiple on a
+    /// non-text column).
+    #[error("Invalid custom column: {0}")]
+    InvalidCustomColumn(String),
+
+    /// Custom column value is invalid (type mismatch, value not in an
+    /// enumeration's allowed values, or an unparseable stored value).
+    #[error("Invalid custom column value: {0}")]
+    InvalidCustomValue(String),
+
     #[error("Library not initialized")]
     LibraryNotInitialized,
 
