@@ -179,9 +179,7 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 				}}
 				onOpenAutoFocus={(event) => {
 					// Land on the primary action instead of the header close button.
-					const target = document.querySelector(
-						"[data-drawer-initial-focus]",
-					);
+					const target = document.querySelector("[data-drawer-initial-focus]");
 					if (target instanceof HTMLElement) {
 						event.preventDefault();
 						target.focus();
