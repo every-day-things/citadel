@@ -45,6 +45,17 @@ fn to_library_book(
     library_book
 }
 
+/// One book, hydrated exactly like a `query_page` item (authors, tags,
+/// series, identifiers, files, read state, cover URL).
+pub fn get_one(
+    library_root: String,
+    lib: &mut Library,
+    book_id: libcalibre::BookId,
+) -> Result<LibraryBook, libcalibre::CalibreError> {
+    let book = lib.get_book(book_id)?;
+    Ok(to_library_book(&library_root, &book))
+}
+
 pub fn list_all(
     library_root: String,
     lib: &mut Library,

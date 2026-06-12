@@ -116,6 +116,26 @@ pub fn clb_query_books(
     })
 }
 
+#[tauri::command]
+#[specta::specta]
+pub fn clb_query_get_book(
+    state: tauri::State<CitadelState>,
+    book_id: String,
+) -> Result<LibraryBook, String> {
+    let library_root = state
+        .get_library_path()
+        .ok_or("No library loaded".to_string())?;
+
+    let book_id_int = book_id
+        .parse::<i32>()
+        .map_err(|e| format!("Invalid book id '{book_id}': {e}"))?;
+
+    let book = state.with_library(|lib| {
+        book::get_one(library_root, lib, libcalibre::BookId::from(book_id_int))
+    })?;
+    book.map_err(|e| e.to_string())
+}
+
 /// One series in the library. `id` is what [`LibraryBookQuery::series_id`]
 /// filters on; the frontend otherwise only ever sees series names.
 #[derive(Serialize, Deserialize, specta::Type, Clone)]
@@ -140,6 +160,29 @@ pub fn clb_query_list_series(
             id: series.id,
             name: series.name,
             book_count: u32::try_from(series.book_count).unwrap_or(u32::MAX),
+        })
+        .collect())
+}
+
+/// One tag in the library; `name` is what the tag autocomplete suggests.
+#[derive(Serialize, Deserialize, specta::Type, Clone)]
+pub struct LibraryTag {
+    pub id: i32,
+    pub name: String,
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn clb_query_list_tags(state: tauri::State<CitadelState>) -> Result<Vec<LibraryTag>, String> {
+    let tags = state
+        .with_library(|lib| lib.list_tags())?
+        .map_err(|e| e.to_string())?;
+
+    Ok(tags
+        .into_iter()
+        .map(|tag| LibraryTag {
+            id: tag.id,
+            name: tag.name,
         })
         .collect())
 }

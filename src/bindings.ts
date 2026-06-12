@@ -48,6 +48,14 @@ async clbQueryBooks(query: LibraryBookQuery) : Promise<Result<LibraryBookPage, s
     else return { status: "error", error: e  as any };
 }
 },
+async clbQueryGetBook(bookId: string) : Promise<Result<LibraryBook, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clb_query_get_book", { bookId }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async clbQueryIsFileImportable(pathToFile: string) : Promise<ImportableFile | null> {
     return await TAURI_INVOKE("clb_query_is_file_importable", { pathToFile });
 },
@@ -60,6 +68,14 @@ async clbQueryListAllFiletypes() : Promise<([string, string])[]> {
 async clbQueryListSeries() : Promise<Result<LibrarySeries[], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("clb_query_list_series") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async clbQueryListTags() : Promise<Result<LibraryTag[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clb_query_list_tags") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -333,6 +349,10 @@ limit: number | null; offset: number }
  * filters on; the frontend otherwise only ever sees series names.
  */
 export type LibrarySeries = { id: number; name: string; book_count: number }
+/**
+ * One tag in the library; `name` is what the tag autocomplete suggests.
+ */
+export type LibraryTag = { id: number; name: string }
 export type LocalFile = { 
 /**
  * The absolute path to the file, including extension.
