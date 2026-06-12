@@ -1,7 +1,7 @@
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useKeymap } from "@/lib/hooks/use-keymap";
 import type { KeyBinding } from "@/lib/keymap";
-import { SHELF_TARGETS, chordForShelf } from "@/lib/shelves";
+import { chordForShelf, SHELF_TARGETS } from "@/lib/shelves";
 
 // Radix keeps overlay content mounted only while open, so any open dialog
 // (Drawer, Sheet, AlertDialog) in the DOM should own the keyboard.

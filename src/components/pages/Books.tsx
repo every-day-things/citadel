@@ -9,6 +9,9 @@ import {
 	IconButton,
 	SearchField,
 	Select,
+	Sheet,
+	TextInput,
+	Tooltip,
 } from "@/components/ui";
 import { safeAsyncEventHandler } from "@/lib/async";
 import { useLibraryKeymap } from "@/lib/hooks/use-library-keymap";
@@ -19,7 +22,9 @@ import {
 	type LibraryBookSortOrderKey,
 	useLibraryView,
 } from "@/stores/library-view/store";
+import { createSmartShelf } from "@/stores/settings/actions";
 import { BookCover } from "../atoms/BookCover";
+import { F7Bookmark } from "../icons/F7Bookmark";
 import { F7Pencil } from "../icons/F7Pencil";
 import { TablerCopy } from "../icons/TablerCopy";
 import { BookGrid } from "../molecules/BookGrid";
@@ -43,6 +48,7 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 	const setQuery = useLibraryView((s) => s.setQuery);
 	const setSortOrder = useLibraryView((s) => s.setSortOrder);
 	const setHideRead = useLibraryView((s) => s.setHideRead);
+	const resetToAllBooks = useLibraryView((s) => s.resetToAllBooks);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: author deep-links override the saved query exactly once, on mount.
 	useEffect(() => {
@@ -110,6 +116,8 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 		onClearSearch: () => setQuery(""),
 	});
 
+	const noMatches = !loading && sortedBooks.length === 0 && books.length > 0;
+
 	return (
 		<div className={styles.page}>
 			{/*
@@ -144,6 +152,11 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 					checked={hideRead}
 					onCheckedChange={setHideRead}
 				/>
+				<SaveAsShelfControl
+					query={query}
+					sortOrder={sortOrder}
+					hideRead={hideRead}
+				/>
 			</div>
 			<div
 				ref={gridContainerRef}
@@ -151,12 +164,23 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 				style={{ outline: "none" }}
 				className={styles.gridArea}
 			>
-				<BookGrid
-					bookList={sortedBooks}
-					loading={loading}
-					onBookOpen={onBookOpen}
-					selectedBookId={selectedBookId}
-				/>
+				{noMatches ? (
+					<div className={styles.emptyState}>
+						<span className={styles.emptyText}>
+							No books match these filters.
+						</span>
+						<Button variant="subtle" onClick={() => resetToAllBooks()}>
+							Show all books
+						</Button>
+					</div>
+				) : (
+					<BookGrid
+						bookList={sortedBooks}
+						loading={loading}
+						onBookOpen={onBookOpen}
+						selectedBookId={selectedBookId}
+					/>
+				)}
 			</div>
 			<div className={styles.footer}>
 				<span className={styles.footerText}>
@@ -189,6 +213,119 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 				{selectedSidebarBook && <BookDetails book={selectedSidebarBook} />}
 			</Drawer>
 		</div>
+	);
+};
+
+interface SaveAsShelfControlProps {
+	query: string;
+	sortOrder: LibraryBookSortOrderKey;
+	hideRead: boolean;
+}
+
+const SaveAsShelfControl = ({
+	query,
+	sortOrder,
+	hideRead,
+}: SaveAsShelfControlProps) => {
+	const applyShelf = useLibraryView((s) => s.applyShelf);
+	const bookmarkButtonRef = useRef<HTMLButtonElement>(null);
+
+	const [isOpen, setIsOpen] = useState(false);
+	const [name, setName] = useState("");
+	const [error, setError] = useState<string | null>(null);
+
+	const close = () => {
+		setIsOpen(false);
+		setName("");
+		setError(null);
+	};
+
+	const summary = [
+		query.trim().length > 0 ? `search "${query.trim()}"` : "no search",
+		`sorted by ${SORT_LABELS[sortOrder]}`,
+		hideRead ? "hiding read books" : "showing read books",
+	].join(", ");
+
+	const save = async () => {
+		const trimmed = name.trim();
+		if (trimmed.length === 0) {
+			return;
+		}
+
+		try {
+			const shelf = await createSmartShelf(trimmed, {
+				query,
+				sortOrder,
+				hideRead,
+			});
+			applyShelf(shelf);
+			close();
+		} catch (e) {
+			setError(e instanceof Error ? e.message : String(e));
+		}
+	};
+
+	return (
+		<>
+			<Tooltip label="Save as shelf…">
+				<IconButton
+					ref={bookmarkButtonRef}
+					aria-label="Save as shelf"
+					onClick={() => setIsOpen(true)}
+				>
+					<F7Bookmark style={{ fontSize: 15 }} />
+				</IconButton>
+			</Tooltip>
+			<Sheet
+				open={isOpen}
+				onOpenChange={(open) => {
+					if (!open) close();
+				}}
+				title="Save as shelf"
+				width={420}
+				onCloseAutoFocus={(event) => {
+					// The sheet has no Dialog.Trigger; return focus to the bookmark
+					// button ourselves.
+					event.preventDefault();
+					bookmarkButtonRef.current?.focus();
+				}}
+			>
+				<div className={styles.shelfForm}>
+					<TextInput
+						placeholder="Shelf name"
+						aria-label="Shelf name"
+						// biome-ignore lint/a11y/noAutofocus: the sheet exists to name the shelf; focus must land in the field.
+						autoFocus
+						value={name}
+						error={error}
+						onChange={(event) => {
+							setName(event.currentTarget.value);
+							setError(null);
+						}}
+						onKeyDown={(event) => {
+							if (event.key === "Enter") {
+								void save();
+							}
+						}}
+					/>
+					<span className={styles.shelfFormHint}>
+						Saves the current filters: {summary}.
+					</span>
+					<div className={styles.shelfFormActions}>
+						<Button variant="default" onClick={close}>
+							Cancel
+						</Button>
+						<Button
+							variant="primary"
+							onClick={() => void save()}
+							disabled={name.trim().length === 0}
+						>
+							Save
+						</Button>
+					</div>
+				</div>
+			</Sheet>
+		</>
 	);
 };
 

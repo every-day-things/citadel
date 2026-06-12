@@ -41,6 +41,40 @@
 	overflow-y: auto;
 }
 
+/* Zero-result filters (e.g. a shelf whose query no longer matches). */
+.emptyState {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	height: 100%;
+	min-height: 240px;
+}
+
+.emptyText {
+	font-size: 14px;
+	color: var(--ctd-ink-soft);
+}
+
+/* Save-as-shelf sheet body. */
+.shelfForm {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.shelfFormHint {
+	font-size: 12px;
+	color: var(--ctd-ink-soft);
+}
+
+.shelfFormActions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+}
+
 .footer {
 	flex-shrink: 0;
 	display: flex;
