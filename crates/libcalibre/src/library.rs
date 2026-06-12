@@ -675,8 +675,34 @@ impl Library {
     // Search
     // =========================================================================
 
-    pub fn search_books(&mut self, _query: &str) -> Result<Vec<Book>, CalibreError> {
-        todo!()
+    pub fn search_books(&mut self, query: &str) -> Result<Vec<Book>, CalibreError> {
+        let query = query.trim();
+        if query.is_empty() {
+            return Ok(vec![]);
+        }
+
+        let book_ids = book_queries::search(&mut self.conn, query)?;
+        self.get_books_with_read_states(book_ids)
+    }
+
+    pub fn find_by_author(&mut self, author_id: AuthorId) -> Result<Vec<Book>, CalibreError> {
+        let book_ids = book_queries::find_by_author(&mut self.conn, author_id)?;
+        self.get_books_with_read_states(book_ids)
+    }
+
+    fn get_books_with_read_states(
+        &mut self,
+        book_ids: Vec<BookId>,
+    ) -> Result<Vec<Book>, CalibreError> {
+        let mut books = operations::books::get_many(&mut self.conn, book_ids)?;
+
+        let book_ids: Vec<BookId> = books.iter().map(|b| b.id).collect();
+        let read_states = self.batch_get_read_states(&book_ids)?;
+        for book in &mut books {
+            book.is_read = read_states.get(&book.id).copied().unwrap_or(false);
+        }
+
+        Ok(books)
     }
 }
 

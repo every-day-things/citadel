@@ -32,6 +32,14 @@ async clbQueryListAllBooks() : Promise<Result<LibraryBook[], string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async clbQuerySearchBooks(query: string) : Promise<Result<LibraryBook[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clb_query_search_books", { query }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async clbQueryIsFileImportable(pathToFile: string) : Promise<ImportableFile | null> {
     return await TAURI_INVOKE("clb_query_is_file_importable", { pathToFile });
 },
