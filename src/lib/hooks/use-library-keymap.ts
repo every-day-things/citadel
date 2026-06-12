@@ -48,6 +48,13 @@ export const useLibraryKeymap = ({
 			: books.findIndex((book) => book.id === selectedBookId);
 	const visibleSelectedBookId = selectedIndex >= 0 ? selectedBookId : null;
 
+	const selectBook = (book: LibraryBook) => {
+		setSelectedBookId(book.id);
+		document
+			.querySelector(`[data-book-id="${CSS.escape(book.id)}"]`)
+			?.scrollIntoView({ block: "nearest" });
+	};
+
 	const moveBy = (direction: SelectionDirection) => {
 		const nextIndex = moveSelection({
 			index: selectedIndex,
@@ -58,10 +65,14 @@ export const useLibraryKeymap = ({
 		if (nextIndex < 0) return;
 		const nextBook = books[nextIndex];
 		if (nextBook === undefined) return;
-		setSelectedBookId(nextBook.id);
-		document
-			.querySelector(`[data-book-id="${CSS.escape(nextBook.id)}"]`)
-			?.scrollIntoView({ block: "nearest" });
+		selectBook(nextBook);
+	};
+
+	// Spotlight-style hand-off: commit the query and drop into the results.
+	const leaveSearchForGrid = () => {
+		gridContainerRef.current?.focus();
+		const firstBook = books[0];
+		if (firstBook !== undefined) selectBook(firstBook);
 	};
 
 	const bindings: KeyBinding[] = [];
@@ -84,6 +95,18 @@ export const useLibraryKeymap = ({
 					onClearSearch();
 					gridContainerRef.current?.focus();
 				},
+			},
+			{
+				chord: "enter",
+				allowInEditable: true,
+				when: () => document.activeElement === searchInputRef.current,
+				onMatch: leaveSearchForGrid,
+			},
+			{
+				chord: "arrowdown",
+				allowInEditable: true,
+				when: () => document.activeElement === searchInputRef.current,
+				onMatch: leaveSearchForGrid,
 			},
 		);
 		for (const [chord, direction] of ARROW_CHORDS) {
