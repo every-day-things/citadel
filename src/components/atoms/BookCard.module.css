@@ -1,10 +1,11 @@
 /*
  * One shelf cell in the Apple-Books-style cover grid (BookGrid.tsx).
  *
- * The grid track is flexible (minmax(150px, 1fr)); the cell caps itself at
- * 190px and re-centers in wider tracks. It stretches to the full row height
- * (the tallest cover in the row) and pushes its cover to the bottom edge so
- * every book base in a row sits on one line, like books on a shelf.
+ * The grid track is flexible (equal shares of the row, 150px minimum via
+ * the computed column count); the cell caps itself at 190px and re-centers
+ * in wider tracks. It stretches to the full row height (the tallest cover
+ * in the row) and pushes its cover to the bottom edge so every book base in
+ * a row sits on one line, like books on a shelf.
  */
 .cell {
 	display: flex;

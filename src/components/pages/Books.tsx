@@ -35,7 +35,7 @@ import { BookCover } from "../atoms/BookCover";
 import { F7Bookmark } from "../icons/F7Bookmark";
 import { F7Pencil } from "../icons/F7Pencil";
 import { TablerCopy } from "../icons/TablerCopy";
-import { BookGrid } from "../molecules/BookGrid";
+import { BookGrid, type ScrollToBookIndex } from "../molecules/BookGrid";
 import styles from "./Books.module.css";
 
 interface BookSearchOptions {
@@ -140,12 +140,16 @@ export const Books = ({
 
 	const searchInputRef = useRef<HTMLInputElement>(null);
 	const gridContainerRef = useRef<HTMLDivElement>(null);
+	// Filled in by the virtualized BookGrid; lets keyboard selection scroll
+	// rows into view even when their cards are not mounted.
+	const scrollToBookIndexRef = useRef<ScrollToBookIndex | null>(null);
 
 	const { selectedBookId } = useLibraryKeymap({
 		books: sortedBooks,
 		drawerOpened: isBookSidebarOpen,
 		searchInputRef,
 		gridContainerRef,
+		scrollToBookIndexRef,
 		onBookOpen,
 		onClearSearch: () => setQuery(""),
 	});
@@ -226,6 +230,8 @@ export const Books = ({
 						loading={loading}
 						onBookOpen={onBookOpen}
 						selectedBookId={selectedBookId}
+						scrollElementRef={gridContainerRef}
+						scrollToBookIndexRef={scrollToBookIndexRef}
 					/>
 				)}
 			</div>
