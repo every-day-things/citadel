@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useState } from "react";
+import { F7BookFill } from "@/components/icons/F7BookFill";
 import { HardcoverSearchModal } from "@/components/molecules/HardcoverSearchModal";
 import {
 	Button,
@@ -60,6 +61,23 @@ const FormRow = ({
 		</label>
 		<div className={styles.rowControl}>{children}</div>
 	</div>
+);
+
+const DismissGlyph = () => (
+	<svg
+		width="10"
+		height="10"
+		viewBox="0 0 10 10"
+		fill="none"
+		aria-hidden="true"
+	>
+		<path
+			d="M1.5 1.5l7 7M8.5 1.5l-7 7"
+			stroke="currentColor"
+			strokeWidth="1.4"
+			strokeLinecap="round"
+		/>
+	</svg>
 );
 
 /**
@@ -170,64 +188,72 @@ export const AddBookForm = ({
 					/>
 				</FormRow>
 				{hc.hardcoverApiKey && (
-					<FormRow label="Hardcover" alignTop>
-						<div className={styles.hardcoverStack}>
-							<div className={styles.hardcoverButtons}>
-								{hc.canLookupByIsbn && (
-									<Button
-										variant="default"
-										size="sm"
-										disabled={hc.isLookingUp}
-										onClick={() => void hc.lookupFromFileIsbn()}
-									>
-										{hc.isLookingUp ? "Looking up…" : "Look up by ISBN"}
-									</Button>
-								)}
-								<Button
-									variant="default"
-									size="sm"
-									onClick={() =>
-										hc.openSearch(buildSearchQuery(bookTitle, bookAuthors))
-									}
+					<FormRow label="Hardcover">
+						<Button
+							variant="default"
+							onClick={() =>
+								hc.openSearch(buildSearchQuery(bookTitle, bookAuthors))
+							}
+						>
+							<F7BookFill
+								width={12}
+								height={12}
+								aria-hidden="true"
+								focusable="false"
+							/>
+							Find on Hardcover…
+						</Button>
+					</FormRow>
+				)}
+				{hc.pending ? (
+					<div className={styles.formRow}>
+						<span aria-hidden="true" />
+						<div
+							className={`${styles.rowControl} ${styles.hardcoverNote}`}
+							role="status"
+						>
+							<span className={styles.hardcoverNoteText}>
+								Matched{" "}
+								<span className={styles.hardcoverNoteTitle}>
+									“{hc.pending.title}”
+								</span>
+								. Cover and description will be added on import.
+							</span>
+							<Tooltip label="Remove match">
+								<IconButton
+									className={styles.hardcoverNoteDismiss}
+									aria-label="Remove Hardcover match"
+									onClick={hc.clearPending}
 								>
-									Search Hardcover…
-								</Button>
-							</div>
-							{hc.message && (
-								<div
-									className={styles.hardcoverNote}
-									data-tone={hc.message.type === "success" ? "ok" : "error"}
-									role="status"
-								>
-									<span className={styles.hardcoverNoteText}>
-										{hc.message.text}
-									</span>
+									<DismissGlyph />
+								</IconButton>
+							</Tooltip>
+						</div>
+					</div>
+				) : (
+					hc.message && (
+						<div className={styles.formRow}>
+							<span aria-hidden="true" />
+							<div
+								className={`${styles.rowControl} ${styles.hardcoverNote}`}
+								data-tone="error"
+								role="status"
+							>
+								<span className={styles.hardcoverNoteText}>
+									{hc.message.text}
+								</span>
+								<Tooltip label="Dismiss">
 									<IconButton
+										className={styles.hardcoverNoteDismiss}
 										aria-label="Dismiss message"
 										onClick={hc.clearMessage}
 									>
-										×
+										<DismissGlyph />
 									</IconButton>
-								</div>
-							)}
-							{hc.pending && (
-								<div className={styles.hardcoverNote} data-tone="ok">
-									<span className={styles.hardcoverNoteText}>
-										Matched <strong>{hc.pending.title}</strong> on Hardcover.
-										Description and cover will be applied after import.
-									</span>
-									<Tooltip label="Clear Hardcover match">
-										<IconButton
-											aria-label="Clear Hardcover match"
-											onClick={hc.clearPending}
-										>
-											×
-										</IconButton>
-									</Tooltip>
-								</div>
-							)}
+								</Tooltip>
+							</div>
 						</div>
-					</FormRow>
+					)
 				)}
 			</div>
 			<div className={styles.footer}>
@@ -250,6 +276,7 @@ export const AddBookForm = ({
 				onSearch={() => void hc.searchHardcover()}
 				isSearching={hc.isSearching}
 				results={hc.searchResults}
+				isbnMatchId={hc.isbnMatchId}
 				onSelect={(result) => void hc.selectSearchResult(result)}
 				error={hc.message?.type === "error" ? hc.message.text : null}
 				width={640}

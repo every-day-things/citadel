@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import type { LibraryAuthor } from "@/bindings";
+import { useSettings } from "@/stores/settings/store";
 import { AddBookForm } from "./AddBookForm";
 
 const meta: Meta<typeof AddBookForm> = {
@@ -60,4 +61,15 @@ export const Primary: Story = {
 	args: {
 		fileName: "/Users/you/Downloads/your-book-from-a-drm-free-publisher.epub",
 	},
+};
+
+/** Same form with a Hardcover API key present, so the lookup row renders. */
+export const WithHardcover: Story = {
+	...Primary,
+	decorators: [
+		(Story) => {
+			useSettings.setState({ hardcoverApiKey: "storybook-key" });
+			return <Story />;
+		},
+	],
 };

@@ -5,6 +5,7 @@ import {
 	applyHardcoverMetadataToBook,
 	buildSearchQuery,
 	lookupByIsbn,
+	searchHardcoverCombined,
 } from "./hardcover-import";
 
 vi.mock("@/bindings", () => ({
@@ -266,6 +267,118 @@ describe("lookupByIsbn", () => {
 			expect(result.data.title).toBe("The Forever War");
 			expect(result.data.slug).toBe("the-forever-war");
 		}
+	});
+});
+
+describe("searchHardcoverCombined", () => {
+	it("searches by query only when the file has no usable ISBN", async () => {
+		const queryHit = searchResultFactory({ hardcover_id: 1 });
+		searchHardcoverBooks.mockResolvedValue({ status: "ok", data: [queryHit] });
+
+		const combined = await searchHardcoverCombined(
+			"api-key",
+			"forever war",
+			"uuid:not-an-isbn",
+		);
+
+		expect(searchHardcoverBooks).toHaveBeenCalledTimes(1);
+		expect(searchHardcoverBooks).toHaveBeenCalledWith("api-key", "forever war");
+		expect(combined).toEqual({ results: [queryHit], isbnMatchId: null });
+	});
+
+	it("pins the ISBN-matched edition first and dedupes it from query results", async () => {
+		const isbnEdition = searchResultFactory({
+			hardcover_id: 7,
+			isbn: "9780316212366",
+		});
+		const otherHit = searchResultFactory({ hardcover_id: 8, isbn: null });
+		searchHardcoverBooks.mockImplementation(async (_key, query) =>
+			query === "9780316212366"
+				? {
+						status: "ok",
+						data: [
+							searchResultFactory({ hardcover_id: 9, isbn: "9780000000002" }),
+							isbnEdition,
+						],
+					}
+				: { status: "ok", data: [otherHit, isbnEdition] },
+		);
+
+		const combined = await searchHardcoverCombined(
+			"api-key",
+			"forever war",
+			"978-0-316-21236-6",
+		);
+
+		expect(combined.isbnMatchId).toBe(7);
+		expect(combined.results).toEqual([isbnEdition, otherHit]);
+	});
+
+	it("ignores fuzzy ISBN-search noise when no result matches the ISBN", async () => {
+		const queryHit = searchResultFactory({ hardcover_id: 1 });
+		const fuzzyNoise = searchResultFactory({
+			hardcover_id: 2,
+			isbn: "9999999999999",
+		});
+		searchHardcoverBooks.mockImplementation(async (_key, query) =>
+			query === "9780316212366"
+				? { status: "ok", data: [fuzzyNoise] }
+				: { status: "ok", data: [queryHit] },
+		);
+
+		const combined = await searchHardcoverCombined(
+			"api-key",
+			"forever war",
+			"9780316212366",
+		);
+
+		expect(combined).toEqual({ results: [queryHit], isbnMatchId: null });
+	});
+
+	it("falls back to ISBN-search results when the query is empty", async () => {
+		const isbnHit = searchResultFactory({ hardcover_id: 3, isbn: null });
+		searchHardcoverBooks.mockResolvedValue({ status: "ok", data: [isbnHit] });
+
+		const combined = await searchHardcoverCombined(
+			"api-key",
+			"  ",
+			"9780316212366",
+		);
+
+		expect(searchHardcoverBooks).toHaveBeenCalledTimes(1);
+		expect(searchHardcoverBooks).toHaveBeenCalledWith(
+			"api-key",
+			"9780316212366",
+		);
+		expect(combined).toEqual({ results: [isbnHit], isbnMatchId: null });
+	});
+
+	it("tolerates one of the two searches failing", async () => {
+		const queryHit = searchResultFactory({ hardcover_id: 1 });
+		searchHardcoverBooks.mockImplementation(async (_key, query) =>
+			query === "9780316212366"
+				? { status: "error", error: "rate limited" }
+				: { status: "ok", data: [queryHit] },
+		);
+
+		const combined = await searchHardcoverCombined(
+			"api-key",
+			"forever war",
+			"9780316212366",
+		);
+
+		expect(combined).toEqual({ results: [queryHit], isbnMatchId: null });
+	});
+
+	it("throws when both searches fail", async () => {
+		searchHardcoverBooks.mockResolvedValue({
+			status: "error",
+			error: "Invalid API key",
+		});
+
+		await expect(
+			searchHardcoverCombined("api-key", "forever war", "9780316212366"),
+		).rejects.toThrow("Invalid API key");
 	});
 });
 

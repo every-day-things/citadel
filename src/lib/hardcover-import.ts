@@ -103,6 +103,67 @@ export const lookupByIsbn = async (
 	return { ok: true, data: await resolveSearchResult(apiKey, match) };
 };
 
+export interface CombinedSearchResults {
+	results: HardcoverSearchResult[];
+	/** hardcover_id of the result whose ISBN equals the file's, if any. */
+	isbnMatchId: number | null;
+}
+
+/**
+ * Search Hardcover by free-text query and, when the file carries a usable
+ * ISBN, by that ISBN as well. The edition matching the file's ISBN is pinned
+ * to the top of the merged results so it outranks fuzzy title hits. One of
+ * the two requests failing is tolerated; both failing throws.
+ */
+export const searchHardcoverCombined = async (
+	apiKey: string,
+	query: string,
+	fileIdentifier: string | null,
+): Promise<CombinedSearchResults> => {
+	const trimmedQuery = query.trim();
+	const isbn = fileIdentifier ? normalizeIsbn(fileIdentifier) : null;
+
+	const emptyOk = {
+		status: "ok" as const,
+		data: [] as HardcoverSearchResult[],
+	};
+	const [byQuery, byIsbn] = await Promise.all([
+		trimmedQuery
+			? commands.searchHardcoverBooks(apiKey, trimmedQuery)
+			: Promise.resolve(emptyOk),
+		isbn
+			? commands.searchHardcoverBooks(apiKey, isbn)
+			: Promise.resolve(emptyOk),
+	]);
+
+	if (byQuery.status === "error" && byIsbn.status === "error") {
+		throw new Error(byQuery.error);
+	}
+	const queryResults = byQuery.status === "ok" ? byQuery.data : [];
+	const isbnResults = byIsbn.status === "ok" ? byIsbn.data : [];
+
+	// The ISBN search is fuzzy too: only the result whose ISBN actually
+	// matches is meaningful, the rest is noise next to the title results.
+	const isbnMatch = isbn
+		? (isbnResults.find(
+				(result) => normalizeIsbn(result.isbn ?? "") === isbn,
+			) ?? null)
+		: null;
+
+	const results = isbnMatch
+		? [
+				isbnMatch,
+				...queryResults.filter(
+					(result) => result.hardcover_id !== isbnMatch.hardcover_id,
+				),
+			]
+		: queryResults.length > 0
+			? queryResults
+			: isbnResults;
+
+	return { results, isbnMatchId: isbnMatch?.hardcover_id ?? null };
+};
+
 /**
  * Build a "title firstAuthor" query to prefill the Hardcover search modal.
  */

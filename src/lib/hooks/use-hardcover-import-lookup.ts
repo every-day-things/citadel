@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import type { HardcoverSearchResult } from "@/bindings";
-import { commands } from "@/bindings";
 import {
 	lookupByIsbn,
 	type PendingHardcoverMetadata,
 	resolveSearchResult,
+	searchHardcoverCombined,
 } from "@/lib/hardcover-import";
 import { normalizeIsbn } from "@/lib/isbn";
 import { useSettings } from "@/stores/settings/store";
@@ -34,18 +34,17 @@ export interface UseHardcoverImportLookupReturn {
 	/** Whether `pending` came from the automatic on-mount lookup or a user action. */
 	pendingSource: PendingHardcoverSource | null;
 	message: HardcoverImportMessage | null;
-	isLookingUp: boolean;
-	canLookupByIsbn: boolean;
 	isSearchModalOpen: boolean;
 	searchQuery: string;
 	isSearching: boolean;
 	searchResults: HardcoverSearchResult[];
+	/** hardcover_id of the search result matching the file's ISBN, if any. */
+	isbnMatchId: number | null;
 
 	// Actions
 	clearMessage: () => void;
 	setSearchQuery: (query: string) => void;
 	closeSearchModal: () => void;
-	lookupFromFileIsbn: () => Promise<void>;
 	openSearch: (initialQuery: string) => void;
 	searchHardcover: (queryOverride?: string) => Promise<void>;
 	selectSearchResult: (result: HardcoverSearchResult) => Promise<void>;
@@ -66,13 +65,13 @@ export const useHardcoverImportLookup = ({
 
 	const [pending, setPending] = useState<PendingEntry | null>(null);
 	const [message, setMessage] = useState<HardcoverImportMessage | null>(null);
-	const [isLookingUp, setIsLookingUp] = useState(false);
 	const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [isSearching, setIsSearching] = useState(false);
 	const [searchResults, setSearchResults] = useState<HardcoverSearchResult[]>(
 		[],
 	);
+	const [isbnMatchId, setIsbnMatchId] = useState<number | null>(null);
 
 	const canLookupByIsbn = Boolean(
 		hardcoverApiKey && fileIdentifier && normalizeIsbn(fileIdentifier),
@@ -82,48 +81,29 @@ export const useHardcoverImportLookup = ({
 	// bumps the generation, and an in-flight operation only commits its result
 	// if the generation it captured is still current.
 	const generationRef = useRef(0);
-	// Counts in-flight ISBN lookups so the loading flag survives overlap.
-	const lookupsInFlightRef = useRef(0);
 
-	const lookupFromFileIsbnWithSource = async (
-		source: PendingHardcoverSource,
-	) => {
+	const autoLookupFromFileIsbn = async () => {
 		if (!hardcoverApiKey || !fileIdentifier) {
 			return;
 		}
 
 		generationRef.current += 1;
 		const generation = generationRef.current;
-		lookupsInFlightRef.current += 1;
-		setIsLookingUp(true);
-		setMessage(null);
 
 		try {
 			const result = await lookupByIsbn(hardcoverApiKey, fileIdentifier);
 			if (generationRef.current !== generation) {
 				return;
 			}
+			// The user didn't ask for this lookup, so a miss stays silent; the
+			// "Find on Hardcover…" button remains as the explicit path.
 			if (result.ok) {
-				setPending({ metadata: result.data, source });
-			} else {
-				setMessage({ type: "error", text: result.error });
+				setPending({ metadata: result.data, source: "auto" });
 			}
-		} catch (error) {
-			if (generationRef.current !== generation) {
-				return;
-			}
-			const errorMessage =
-				error instanceof Error ? error.message : String(error);
-			setMessage({ type: "error", text: `Error: ${errorMessage}` });
-		} finally {
-			lookupsInFlightRef.current -= 1;
-			if (lookupsInFlightRef.current === 0) {
-				setIsLookingUp(false);
-			}
+		} catch {
+			// Silent for the same reason.
 		}
 	};
-
-	const lookupFromFileIsbn = async () => lookupFromFileIsbnWithSource("manual");
 
 	const searchHardcover = async (queryOverride?: string) => {
 		const query = (queryOverride ?? searchQuery).trim();
@@ -134,19 +114,17 @@ export const useHardcoverImportLookup = ({
 
 		setIsSearching(true);
 		setSearchResults([]);
+		setIsbnMatchId(null);
 
 		try {
-			const result = await commands.searchHardcoverBooks(
+			const combined = await searchHardcoverCombined(
 				hardcoverApiKey,
 				query,
+				fileIdentifier,
 			);
-
-			if (result.status === "ok") {
-				// Empty results leave the modal open showing its empty state.
-				setSearchResults(result.data);
-			} else {
-				setMessage({ type: "error", text: result.error });
-			}
+			// Empty results leave the modal open showing its empty state.
+			setSearchResults(combined.results);
+			setIsbnMatchId(combined.isbnMatchId);
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error ? error.message : String(error);
@@ -159,8 +137,9 @@ export const useHardcoverImportLookup = ({
 	const openSearch = (initialQuery: string) => {
 		setSearchQuery(initialQuery);
 		setSearchResults([]);
+		setIsbnMatchId(null);
 		setIsSearchModalOpen(true);
-		if (initialQuery.trim()) {
+		if (initialQuery.trim() || canLookupByIsbn) {
 			void searchHardcover(initialQuery);
 		}
 	};
@@ -173,12 +152,10 @@ export const useHardcoverImportLookup = ({
 			if (generationRef.current !== generation) {
 				return;
 			}
+			// No success message: the match row under the form is the confirmation.
 			setPending({ metadata: resolved, source: "manual" });
+			setMessage(null);
 			setIsSearchModalOpen(false);
-			setMessage({
-				type: "success",
-				text: `Matched “${resolved.title}” on Hardcover.`,
-			});
 		} catch (error) {
 			if (generationRef.current !== generation) {
 				return;
@@ -200,7 +177,7 @@ export const useHardcoverImportLookup = ({
 			return;
 		}
 		didAutoLookup.current = true;
-		void lookupFromFileIsbnWithSource("auto");
+		void autoLookupFromFileIsbn();
 	}, [hardcoverAutoLookup, canLookupByIsbn]);
 
 	return {
@@ -208,17 +185,15 @@ export const useHardcoverImportLookup = ({
 		pending: pending?.metadata ?? null,
 		pendingSource: pending?.source ?? null,
 		message,
-		isLookingUp,
-		canLookupByIsbn,
 		isSearchModalOpen,
 		searchQuery,
 		isSearching,
 		searchResults,
+		isbnMatchId,
 
 		clearMessage: () => setMessage(null),
 		setSearchQuery,
 		closeSearchModal: () => setIsSearchModalOpen(false),
-		lookupFromFileIsbn,
 		openSearch,
 		searchHardcover,
 		selectSearchResult,

@@ -83,24 +83,12 @@
 	margin-top: 18px;
 }
 
-/* Hardcover lookup: buttons plus status/match notes under the form fields. */
-.hardcoverStack {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-
-.hardcoverButtons {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	flex-wrap: wrap;
-}
-
+/* Hardcover match/error note: rendered as its own grid row so it shares the
+ * control column; the gutter cell stays empty. */
 .hardcoverNote {
 	display: flex;
 	align-items: flex-start;
-	gap: 6px;
+	gap: 4px;
 	font-size: 12px;
 	line-height: 1.45;
 	color: var(--ctd-ink-soft);
@@ -113,4 +101,16 @@
 .hardcoverNoteText {
 	flex: 1;
 	min-width: 0;
+	padding-top: 2px;
+}
+
+.hardcoverNoteTitle {
+	font-weight: 500;
+	color: var(--ctd-ink);
+}
+
+/* 26px hit area, optically centered on the note's first text line. */
+.hardcoverNoteDismiss {
+	margin-top: -2px;
+	flex-shrink: 0;
 }

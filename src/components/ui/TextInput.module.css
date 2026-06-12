@@ -10,6 +10,10 @@
 }
 
 .input {
+	/* Fill the container like a native text field; a bare <input> otherwise
+	 * collapses to the browser's ~20ch default width. */
+	width: 100%;
+	box-sizing: border-box;
 	height: 24px;
 	padding: 0 8px;
 	font-family: inherit;

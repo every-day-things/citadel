@@ -11,6 +11,8 @@ export interface HardcoverSearchModalProps {
 	onSearch: () => void;
 	isSearching: boolean;
 	results: HardcoverSearchResult[];
+	/** hardcover_id of the result matching the imported file's ISBN, if any. */
+	isbnMatchId?: number | null;
 	onSelect: (result: HardcoverSearchResult) => void;
 	/** When set, rendered as an error notice above the results area. */
 	error?: string | null;
@@ -29,6 +31,7 @@ export const HardcoverSearchModal = ({
 	onSearch,
 	isSearching,
 	results,
+	isbnMatchId = null,
 	onSelect,
 	error = null,
 	width = 780,
@@ -89,7 +92,12 @@ export const HardcoverSearchModal = ({
 								/>
 							)}
 							<div className={styles.searchResultMeta}>
-								<span className={styles.searchResultTitle}>{result.title}</span>
+								<span className={styles.searchResultTitle}>
+									{result.title}
+									{result.hardcover_id === isbnMatchId && (
+										<span className={styles.isbnBadge}>This file’s ISBN</span>
+									)}
+								</span>
 								{result.authors && result.authors.length > 0 && (
 									<span className={styles.searchResultDetail}>
 										{result.authors.join(", ")}
