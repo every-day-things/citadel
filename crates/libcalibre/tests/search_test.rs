@@ -1,4 +1,6 @@
 // Tests for Library search and author lookup
+// This binary uses only a subset of the shared test helpers.
+#[allow(dead_code, unused_imports)]
 mod common;
 
 use common::setup_with_library;
