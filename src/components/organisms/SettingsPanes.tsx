@@ -187,7 +187,7 @@ const SettingsRow = ({
 const PALETTE_OPTIONS: { value: ThemePalette; label: string }[] = [
 	{ value: "marble", label: "Marble" },
 	{ value: "signal", label: "Signal" },
-	{ value: "ledger", label: "Ledger" },
+	{ value: "folio", label: "Folio" },
 ];
 
 const GeneralTab = () => {

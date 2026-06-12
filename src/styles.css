@@ -156,21 +156,22 @@
 	--pal-border-strong-alpha: 1;
 }
 
-/* Ledger: an accountant's register. Aged paper, archival ink-blue, ruled
-   lines; monospaced chrome comes from its shape block below. */
-:root[data-palette="ledger"] {
-	--pal-base: oklch(96.8% 0.011 95);
-	--pal-mantle: oklch(94.6% 0.013 95);
-	--pal-crust: oklch(92% 0.014 95);
-	--pal-surface0: oklch(89% 0.015 95);
-	--pal-text: oklch(25% 0.025 265);
-	--pal-subtext: oklch(46% 0.025 265);
-	--pal-accent: oklch(42% 0.09 265);
-	--pal-accent-text: oklch(97% 0.01 95);
-	--pal-red: oklch(50% 0.17 27);
-	--pal-red-text: oklch(97.5% 0.01 27);
-	--pal-border-alpha: 0.3;
-	--pal-border-strong-alpha: 0.5;
+/* Folio: a fine-press edition. Ivory page, charcoal ink, deep ink-blue
+   accent; serif chrome and flat printed depth come from its shape block
+   below. */
+:root[data-palette="folio"] {
+	--pal-base: oklch(97.2% 0.005 85);
+	--pal-mantle: oklch(95% 0.006 85);
+	--pal-crust: oklch(92.5% 0.006 85);
+	--pal-surface0: oklch(89.5% 0.007 85);
+	--pal-text: oklch(22% 0.01 270);
+	--pal-subtext: oklch(44% 0.012 270);
+	--pal-accent: oklch(38% 0.1 262);
+	--pal-accent-text: oklch(97.5% 0.004 85);
+	--pal-red: oklch(48% 0.16 25);
+	--pal-red-text: oklch(97.5% 0.008 25);
+	--pal-border-alpha: 0.25;
+	--pal-border-strong-alpha: 0.45;
 }
 
 /* Dark stones (marble: polished black, marble-white accent) + shared dark
@@ -286,22 +287,22 @@
 	--pal-border-strong-alpha: 1;
 }
 
-/* Ledger dark: blue-black ink the paper tones reverse into (cool, not warm,
-   so it sits with the blurred desktop like the others). */
-:root[data-palette="ledger"][data-theme="dark"] {
-	--pal-base: oklch(23% 0.018 265);
-	--pal-mantle: oklch(20% 0.018 265);
-	--pal-crust: oklch(16.5% 0.018 265);
-	--pal-surface0: oklch(30% 0.02 265);
-	--pal-text: oklch(92% 0.012 95);
-	--pal-subtext: oklch(71% 0.012 95);
-	--pal-accent: oklch(72% 0.08 262);
+/* Folio dark: a night reading room. Cool charcoal-blue page, ivory ink,
+   the accent lightened to stay legible as ink-blue. */
+:root[data-palette="folio"][data-theme="dark"] {
+	--pal-base: oklch(22.5% 0.012 262);
+	--pal-mantle: oklch(19.5% 0.012 262);
+	--pal-crust: oklch(16% 0.012 262);
+	--pal-surface0: oklch(29.5% 0.014 262);
+	--pal-text: oklch(93% 0.006 85);
+	--pal-subtext: oklch(72% 0.008 85);
+	--pal-accent: oklch(74% 0.07 262);
 	/* Lightened ink accent: dark label keeps contrast. */
-	--pal-accent-text: oklch(18% 0.018 265);
-	--pal-red: oklch(63% 0.15 27);
-	--pal-red-text: oklch(16% 0.018 265);
-	--pal-border-alpha: 0.18;
-	--pal-border-strong-alpha: 0.35;
+	--pal-accent-text: oklch(17% 0.012 262);
+	--pal-red: oklch(64% 0.14 25);
+	--pal-red-text: oklch(16% 0.012 262);
+	--pal-border-alpha: 0.16;
+	--pal-border-strong-alpha: 0.32;
 }
 
 /*
@@ -332,22 +333,22 @@
 	--ctd-cover-shadow: 4px 4px 0 oklch(from var(--pal-text) l c h / 0.8);
 }
 
-/* Ledger shape: a typewritten register. Monospaced chrome on a 13px base,
-   near-square corners, no fake depth (paper is flat); elevation is a ruled
-   outline plus a quiet drop. */
-:root[data-palette="ledger"] {
-	font-size: 13px;
-	--ctd-font-ui:
-		ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-	--ctd-radius-control: 2px;
-	--ctd-radius-capsule: 2px;
-	--ctd-radius-panel: 4px;
+/* Folio shape: a printed page. The book serif carries the whole chrome,
+   corners are a crisp plate-edge 3px, controls sit flat (print has no
+   depth), and roomier inline padding gives the type air. Elevation is a
+   hairline plate outline plus a quiet drop. */
+:root[data-palette="folio"] {
+	--ctd-font-ui: var(--ctd-font-serif);
+	--ctd-radius-control: 3px;
+	--ctd-radius-capsule: 3px;
+	--ctd-radius-panel: 6px;
+	--ctd-control-pad-x: 14px;
 	--ctd-control-shadow: none;
 	--ctd-field-inner-shadow: none;
-	--ctd-shadow-soft: 0 1px 0 oklch(from var(--pal-text) l c h / 0.14);
+	--ctd-shadow-soft: 0 1px 0 oklch(from var(--pal-text) l c h / 0.12);
 	--ctd-shadow-lift:
-		0 0 0 1px oklch(from var(--pal-text) l c h / 0.25),
-		0 10px 24px oklch(0% 0 0 / 0.18);
+		0 0 0 1px oklch(from var(--pal-text) l c h / 0.22),
+		0 12px 28px oklch(0% 0 0 / 0.16);
 }
 
 /*
