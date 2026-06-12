@@ -45,33 +45,6 @@ const genLocalCalibreClient = async (
 			}
 			return results.data;
 		},
-		listBooks: async () => {
-			const results = await commands.clbQueryListAllBooks();
-			if (results.status === "error") {
-				throw new Error(results.error);
-			}
-			const books = results.data;
-
-			for (const book of books) {
-				bookCoverCache.set(book.id.toString(), {
-					localPath: book.cover_image?.local_path ?? "",
-					url: book.cover_image?.url ?? "",
-				});
-				if (book.file_list[0] === undefined) {
-					return [];
-				}
-
-				const primaryFile = book.file_list[0];
-				if ("Local" in primaryFile) {
-					bookFilePath.set(book.id.toString(), {
-						localPath: primaryFile.Local.path,
-						url: undefined,
-					});
-				}
-			}
-
-			return books;
-		},
 		queryBooks: async (query: LibraryBookQuery) => {
 			const results = await commands.clbQueryBooks(query);
 			if (results.status === "error") {
@@ -216,33 +189,21 @@ const genLocalCalibreClient = async (
 };
 
 const genRemoteCalibreClient = async (
-	options: RemoteConnectionOptions,
+	_options: RemoteConnectionOptions,
 	// The interface requires this function to be async.
 	// eslint-disable-next-line @typescript-eslint/require-await
 ): Promise<Library> => {
 	// All remote clients are really Citadel clients... but for a certain kind of
 	// library. In this case, Calibre.
-	const baseUrl = options.url;
+	// `_options.url` will be the base URL once any remote method is implemented.
 
+	// Nothing populates this yet (the whole-library fetch is gone); remote
+	// cover/file lookups return undefined until a remote book fetch exists.
 	const bookCache = new Map<LibraryBook["id"], LibraryBook>();
 
 	return {
 		createAuthors() {
 			throw new Error("Not implemented");
-		},
-		listBooks: async () => {
-			const res = await fetch(`${baseUrl}/books`)
-				.then((res) => res.json() as unknown as { items: LibraryBook[] })
-				.then((res) => res.items)
-				.then((res) => {
-					return res;
-				});
-
-			for (const book of res) {
-				bookCache.set(book.id, book);
-			}
-
-			return res;
 		},
 		queryBooks() {
 			throw new Error("Not implemented");

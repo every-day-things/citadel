@@ -23,7 +23,6 @@ export interface FileType {
 
 export interface Library {
 	createAuthors(newAuthors: NewAuthor[]): Promise<LibraryAuthor[]>;
-	listBooks(): Promise<LibraryBook[]>;
 	/**
 	 * One page of a filtered, sorted book query (the cover grid's data
 	 * source). `query.text = null` matches all books; `total` counts the

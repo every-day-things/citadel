@@ -13,7 +13,8 @@ use crate::{
 /// accurate, and our own cover writes — `Library::set_book_cover` and
 /// `Library::add_book` — set it alongside writing cover.jpg) instead of
 /// statting cover.jpg per book: at 5k books the per-book
-/// `PathBuf::exists` dominated `clb_query_list_all_books` (~90% of 340ms).
+/// `PathBuf::exists` dominated the (since-retired) whole-library list
+/// command (~90% of 340ms).
 /// If the flag is stale (file deleted behind Calibre's back) the URL
 /// dangles and the frontend's cover `onerror` fallback takes over.
 fn book_cover_image(
@@ -46,27 +47,15 @@ fn to_library_book(
 }
 
 /// One book, hydrated exactly like a `query_page` item (authors, tags,
-/// series, identifiers, files, read state, cover URL).
+/// series, identifiers, files, read state, cover URL, author book counts).
 pub fn get_one(
     library_root: String,
     lib: &mut Library,
     book_id: libcalibre::BookId,
 ) -> Result<LibraryBook, libcalibre::CalibreError> {
     let book = lib.get_book(book_id)?;
-    Ok(to_library_book(&library_root, &book))
-}
-
-pub fn list_all(
-    library_root: String,
-    lib: &mut Library,
-) -> Result<Vec<LibraryBook>, libcalibre::CalibreError> {
-    let results = lib.books()?;
     let author_book_counts = lib.author_book_counts()?;
-
-    Ok(results
-        .iter()
-        .map(|book| to_library_book(&library_root, book, &author_book_counts))
-        .collect())
+    Ok(to_library_book(&library_root, &book, &author_book_counts))
 }
 
 pub fn search(

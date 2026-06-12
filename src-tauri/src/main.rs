@@ -25,7 +25,6 @@ fn run_tauri_backend() -> std::io::Result<()> {
         calibre::query::clb_query_is_path_valid_library,
         calibre::command::clb_cmd_create_library,
         // Book query commands
-        calibre::query::clb_query_list_all_books,
         calibre::query::clb_query_search_books,
         calibre::query::clb_query_books,
         calibre::query::clb_query_get_book,

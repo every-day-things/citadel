@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { create } from "zustand";
 
 import type {
@@ -6,7 +5,6 @@ import type {
 	BookUpdate,
 	ImportableBookMetadata,
 	LibraryAuthor,
-	LibraryBook,
 	LibrarySeries,
 	NewAuthor,
 } from "@/bindings";
@@ -38,15 +36,6 @@ export enum LibraryState {
 
 interface LibraryActions {
 	// Core actions
-	/**
-	 * Loads the ENTIRE library into `books` via clb_query_list_all_books.
-	 *
-	 * No page consumes this anymore: the Authors page rides on the authors
-	 * payload, the cover grid pages via `ensureBookRange`, and the book
-	 * edit route fetches its own book and the tag vocabulary (see
-	 * useEditBookData).
-	 */
-	loadBooks: () => Promise<void>;
 	loadAuthors: () => Promise<void>;
 	loadSeries: () => Promise<void>;
 	initialize: (libraryPath: string) => Promise<void>;
@@ -104,14 +93,6 @@ interface LibraryStoreState {
 	libraryState: LibraryState;
 	libraryError: Error | null;
 
-	// Whole-library book list (lazy; see LibraryActions.loadBooks)
-	books: LibraryBook[];
-	booksLoading: boolean;
-	booksError: string | null;
-	/** Bumped by invalidateBooks; the full list is fresh iff it matches. */
-	allBooksGeneration: number;
-	allBooksLoadedGeneration: number;
-
 	// Paged book grid state
 	bookFilter: BookGridFilter;
 	bookCache: PagedBookCache;
@@ -137,11 +118,6 @@ const initialState = {
 	library: null,
 	libraryState: LibraryState.uninitialized,
 	libraryError: null,
-	books: [],
-	booksLoading: false,
-	booksError: null,
-	allBooksGeneration: 0,
-	allBooksLoadedGeneration: -1,
 	bookFilter: ALL_BOOKS_FILTER,
 	bookCache: emptyBookCache(serializeBookFilter(ALL_BOOKS_FILTER), 0),
 	bookPagesError: null,
@@ -162,7 +138,6 @@ const localLibraryFromPath = (path: string): Options => ({
 
 // In-flight de-dupe (module scope: promises are not store state).
 const inFlightBookPages = new Map<string, Promise<void>>();
-let inFlightAllBooks: Promise<void> | null = null;
 
 export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 	const fetchBookPage = (
@@ -229,34 +204,6 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 
 		// Stable actions object - ALL actions go here, created once and never change
 		actions: {
-			loadBooks: async () => {
-				const { library } = get();
-				if (!library) return;
-				if (inFlightAllBooks) return inFlightAllBooks;
-
-				const generation = get().allBooksGeneration;
-				set({ booksLoading: true, booksError: null });
-				inFlightAllBooks = (async () => {
-					try {
-						const books = await library.listBooks();
-						set({
-							books,
-							booksLoading: false,
-							allBooksLoadedGeneration: generation,
-						});
-					} catch (error) {
-						set({
-							booksError:
-								error instanceof Error ? error.message : "Failed to load books",
-							booksLoading: false,
-						});
-					} finally {
-						inFlightAllBooks = null;
-					}
-				})();
-				return inFlightAllBooks;
-			},
-
 			loadAuthors: async () => {
 				const { library } = get();
 				if (!library) return;
@@ -330,7 +277,6 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 			invalidateBooks: () => {
 				set((state) => ({
 					bookCache: invalidateBookCache(state.bookCache),
-					allBooksGeneration: state.allBooksGeneration + 1,
 				}));
 				// Mutations can rename/create series, change the library size,
 				// and change per-author book counts (which ride on the authors
@@ -349,8 +295,6 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 				set((state) => ({
 					libraryState: LibraryState.initializing,
 					libraryError: null,
-					books: [],
-					allBooksLoadedGeneration: -1,
 					bookCache: emptyBookCache(
 						state.bookCache.key,
 						state.bookCache.generation + 1,
@@ -524,33 +468,6 @@ export const useBookPagesError = () =>
 	useLibraryStore((state) => state.bookPagesError);
 export const useLibraryTotal = () =>
 	useLibraryStore((state) => state.libraryTotal);
-
-/**
- * The whole-library book list, loaded lazily on first use and reloaded
- * after mutations mark it stale. Only for consumers that genuinely need
- * every book (see LibraryActions.loadBooks); the cover grid pages instead.
- */
-export const useAllBooks = (): { books: LibraryBook[]; loading: boolean } => {
-	const books = useLibraryStore((state) => state.books);
-	const loading = useLibraryStore((state) => state.booksLoading);
-	// Both generations (not a derived boolean) so the effect re-fires when a
-	// load lands but a newer invalidation already superseded it.
-	const generation = useLibraryStore((state) => state.allBooksGeneration);
-	const loadedGeneration = useLibraryStore(
-		(state) => state.allBooksLoadedGeneration,
-	);
-	const ready = useLibraryReady();
-	const actions = useLibraryActions();
-
-	const stale = loadedGeneration !== generation;
-	useEffect(() => {
-		if (ready && loadedGeneration !== generation) {
-			void actions.loadBooks();
-		}
-	}, [ready, generation, loadedGeneration, actions]);
-
-	return { books, loading: loading || (stale && books.length === 0) };
-};
 
 // Selectors for authors
 export const useAuthors = () => useLibraryStore((state) => state.authors);

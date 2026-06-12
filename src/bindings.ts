@@ -24,14 +24,6 @@ async clbCmdCreateLibrary(libraryRoot: string) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async clbQueryListAllBooks() : Promise<Result<LibraryBook[], string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("clb_query_list_all_books") };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
 async clbQuerySearchBooks(query: string) : Promise<Result<LibraryBook[], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("clb_query_search_books", { query }) };
