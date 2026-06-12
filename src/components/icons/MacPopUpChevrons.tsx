@@ -26,7 +26,7 @@ export const MacPopUpChevrons = () => (
 		>
 			<path
 				d="M1 3.5L4 1l3 2.5M1 6.5L4 9l3-2.5"
-				stroke="oklch(99% 0.002 255)"
+				stroke="var(--ctd-accent-text)"
 				strokeWidth="1.3"
 				strokeLinecap="round"
 				strokeLinejoin="round"

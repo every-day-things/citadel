@@ -489,6 +489,183 @@ fn crate_tag_count(conn: &mut diesel::SqliteConnection) -> i64 {
 }
 
 #[test]
+fn test_add_book_with_series() {
+    let (_temp, mut lib) = setup_with_library();
+
+    let book = lib
+        .add_book(BookAdd {
+            series: Some("The Saga".to_string()),
+            series_index: Some(2.0),
+            ..empty_book("Series Book")
+        })
+        .unwrap();
+
+    assert_eq!(book.series, Some("The Saga".to_string()));
+    assert_eq!(book.series_index, Some(2.0));
+
+    let fetched = lib.get_book(book.id).unwrap();
+    assert_eq!(fetched.series, Some("The Saga".to_string()));
+    assert_eq!(fetched.series_index, Some(2.0));
+
+    let all_books = lib.books().unwrap();
+    let listed = all_books.iter().find(|b| b.id == book.id).unwrap();
+    assert_eq!(listed.series, Some("The Saga".to_string()));
+    assert_eq!(listed.series_index, Some(2.0));
+}
+
+#[test]
+fn test_book_without_series_has_no_series_fields() {
+    let (_temp, mut lib) = setup_with_library();
+
+    let book = lib.add_book(empty_book("Standalone Book")).unwrap();
+
+    assert_eq!(book.series, None);
+    assert_eq!(book.series_index, None);
+
+    let fetched = lib.get_book(book.id).unwrap();
+    assert_eq!(fetched.series, None);
+    assert_eq!(fetched.series_index, None);
+
+    let all_books = lib.books().unwrap();
+    let listed = all_books.iter().find(|b| b.id == book.id).unwrap();
+    assert_eq!(listed.series, None);
+    assert_eq!(listed.series_index, None);
+}
+
+#[test]
+fn test_update_book_can_set_series() {
+    let (_temp, mut lib) = setup_with_library();
+
+    let book = lib.add_book(empty_book("Standalone Book")).unwrap();
+
+    let updated = lib
+        .update_book(
+            book.id,
+            BookUpdate {
+                series: Some("The Saga".to_string()),
+                series_index: Some(3.0),
+                ..empty_update()
+            },
+        )
+        .unwrap();
+
+    assert_eq!(updated.series, Some("The Saga".to_string()));
+    assert_eq!(updated.series_index, Some(3.0));
+}
+
+#[test]
+fn test_update_book_can_change_series() {
+    let (_temp, mut lib) = setup_with_library();
+
+    let book = lib
+        .add_book(BookAdd {
+            series: Some("First Saga".to_string()),
+            series_index: Some(1.0),
+            ..empty_book("Series Book")
+        })
+        .unwrap();
+
+    let updated = lib
+        .update_book(
+            book.id,
+            BookUpdate {
+                series: Some("Second Saga".to_string()),
+                ..empty_update()
+            },
+        )
+        .unwrap();
+
+    // The book moved series and kept its index; it must not hold a second
+    // link back to the old series.
+    assert_eq!(updated.series, Some("Second Saga".to_string()));
+    assert_eq!(updated.series_index, Some(1.0));
+}
+
+#[test]
+fn test_update_book_reuses_existing_series_row() {
+    let (_temp, mut lib) = setup_with_library();
+
+    let first = lib
+        .add_book(BookAdd {
+            series: Some("Shared Saga".to_string()),
+            series_index: Some(1.0),
+            ..empty_book("Book One")
+        })
+        .unwrap();
+    let second = lib.add_book(empty_book("Book Two")).unwrap();
+
+    lib.update_book(
+        second.id,
+        BookUpdate {
+            series: Some("shared saga".to_string()),
+            series_index: Some(2.0),
+            ..empty_update()
+        },
+    )
+    .unwrap();
+
+    // Case-insensitive match joins the existing series instead of creating
+    // a near-duplicate row, so both books list under the same name.
+    let all_books = lib.books().unwrap();
+    let b1 = all_books.iter().find(|b| b.id == first.id).unwrap();
+    let b2 = all_books.iter().find(|b| b.id == second.id).unwrap();
+    assert_eq!(b1.series, Some("Shared Saga".to_string()));
+    assert_eq!(b2.series, Some("Shared Saga".to_string()));
+}
+
+#[test]
+fn test_update_book_empty_series_name_clears_series() {
+    let (_temp, mut lib) = setup_with_library();
+
+    let book = lib
+        .add_book(BookAdd {
+            series: Some("The Saga".to_string()),
+            series_index: Some(2.0),
+            ..empty_book("Series Book")
+        })
+        .unwrap();
+
+    let updated = lib
+        .update_book(
+            book.id,
+            BookUpdate {
+                series: Some("".to_string()),
+                ..empty_update()
+            },
+        )
+        .unwrap();
+
+    assert_eq!(updated.series, None);
+    assert_eq!(updated.series_index, None);
+}
+
+#[test]
+fn test_update_book_none_series_leaves_series_unchanged() {
+    let (_temp, mut lib) = setup_with_library();
+
+    let book = lib
+        .add_book(BookAdd {
+            series: Some("The Saga".to_string()),
+            series_index: Some(2.0),
+            ..empty_book("Series Book")
+        })
+        .unwrap();
+
+    let updated = lib
+        .update_book(
+            book.id,
+            BookUpdate {
+                title: Some("Renamed".to_string()),
+                ..empty_update()
+            },
+        )
+        .unwrap();
+
+    assert_eq!(updated.series, Some("The Saga".to_string()));
+    assert_eq!(updated.series_index, Some(2.0));
+}
+
+#[test]
 fn test_books_returns_read_state() {
     let (_temp, mut lib) = setup_with_library();
 

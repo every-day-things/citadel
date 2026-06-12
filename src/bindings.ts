@@ -178,7 +178,12 @@ async clbCmdOpenSettings() : Promise<void> {
 
 export type AuthorUpdate = { full_name: string | null; sortable_name: string | null; external_url: string | null }
 export type BookFile = { Local: LocalFile } | { Remote: RemoteFile }
-export type BookUpdate = { author_id_list: string[] | null; tag_list: string[] | null; title: string | null; timestamp: string | null; publication_date: string | null; is_read: boolean | null; description: string | null }
+export type BookUpdate = { author_id_list: string[] | null; tag_list: string[] | null; title: string | null; timestamp: string | null; publication_date: string | null; is_read: boolean | null; description: string | null; 
+/**
+ * An empty (or whitespace) name unlinks the book from its series;
+ * `None` leaves it unchanged.
+ */
+series: string | null; series_index: number | null }
 export type CalibreClientConfig = { library_path: string }
 export type HardcoverApiStatus = { is_valid: boolean; message: string }
 export type HardcoverBookMetadata = { title: string; description: string | null; image_url: string | null; isbn: string | null; release_year: number | null; hardcover_id: number | null; slug: string | null }
@@ -211,7 +216,7 @@ file_contains_cover: boolean }
 export type ImportableBookType = "Epub" | "Pdf" | "Mobi" | "Text"
 export type ImportableFile = { path: string }
 export type LibraryAuthor = { id: string; name: string; sortable_name: string }
-export type LibraryBook = { id: string; uuid: string | null; title: string; author_list: LibraryAuthor[]; tag_list: string[]; sortable_title: string | null; file_list: BookFile[]; cover_image: LocalOrRemoteUrl | null; identifier_list: Identifier[]; description: string | null; is_read: boolean }
+export type LibraryBook = { id: string; uuid: string | null; title: string; author_list: LibraryAuthor[]; tag_list: string[]; sortable_title: string | null; file_list: BookFile[]; cover_image: LocalOrRemoteUrl | null; identifier_list: Identifier[]; description: string | null; is_read: boolean; series: string | null; series_index: number | null }
 export type LocalFile = { 
 /**
  * The absolute path to the file, including extension.

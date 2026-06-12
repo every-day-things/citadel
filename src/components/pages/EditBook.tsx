@@ -22,6 +22,7 @@ import {
 } from "@/components/ui";
 import { safeAsyncEventHandler } from "@/lib/async";
 import { useHardcoverBookActions } from "@/lib/hooks/use-hardcover-book-actions";
+import { formatSeriesIndex } from "@/lib/series";
 import { BookCover } from "../atoms/BookCover";
 import { HardcoverSearchModal } from "../molecules/HardcoverSearchModal";
 import { RichTextEditor } from "../molecules/RichTextEditor";
@@ -146,6 +147,10 @@ const Cover = ({ book }: { book: LibraryBook } & HTMLProps<HTMLDivElement>) => {
 interface EditBookFormValues {
 	title: string;
 	sortTitle: string;
+	/** Series name; empty string means "not in a series". */
+	series: string;
+	/** Position within the series, kept as entered until save. */
+	seriesIndex: string;
 	authorList: string[];
 	tagList: string[];
 	identifierList: LibraryBook["identifier_list"];
@@ -156,6 +161,9 @@ interface EditBookFormValues {
 const formValuesFromBook = (book: LibraryBook): EditBookFormValues => ({
 	title: book.title,
 	sortTitle: book.sortable_title ?? "",
+	series: book.series ?? "",
+	seriesIndex:
+		book.series_index !== null ? formatSeriesIndex(book.series_index) : "",
 	authorList: book.author_list.map((author) => author.name),
 	tagList: book.tag_list,
 	identifierList: book.identifier_list,
@@ -255,6 +263,7 @@ const EditBookForm = ({
 					"-1",
 			);
 
+			const parsedSeriesIndex = Number.parseFloat(values.seriesIndex);
 			const bookUpdate: BookUpdate = {
 				title: values.title,
 				author_id_list: authorIdsFromName,
@@ -263,6 +272,11 @@ const EditBookForm = ({
 				publication_date: null,
 				is_read: values.isRead,
 				description: values.description === "<p></p>" ? "" : values.description,
+				// An empty name unlinks the book from its series.
+				series: values.series.trim(),
+				series_index: Number.isFinite(parsedSeriesIndex)
+					? parsedSeriesIndex
+					: null,
 			};
 
 			await onSave(bookUpdate);
@@ -349,6 +363,30 @@ const EditBookForm = ({
 								value={values.sortTitle}
 								onChange={(event) =>
 									setFieldValue("sortTitle", event.target.value)
+								}
+							/>
+						</FormRow>
+						<FormRow label="Series" htmlFor="edit-book-series">
+							<TextInput
+								id="edit-book-series"
+								placeholder="Not in a series"
+								value={values.series}
+								onChange={(event) =>
+									setFieldValue("series", event.target.value)
+								}
+							/>
+						</FormRow>
+						<FormRow label="Series index" htmlFor="edit-book-series-index">
+							<TextInput
+								id="edit-book-series-index"
+								type="number"
+								step="any"
+								min="0"
+								placeholder="1"
+								disabled={values.series.trim() === ""}
+								value={values.seriesIndex}
+								onChange={(event) =>
+									setFieldValue("seriesIndex", event.target.value)
 								}
 							/>
 						</FormRow>

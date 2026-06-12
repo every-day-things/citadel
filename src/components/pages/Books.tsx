@@ -1,6 +1,13 @@
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import DOMPurify from "dompurify";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+	Fragment,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import type { Identifier, LibraryBook, LocalFile } from "@/bindings";
 import {
 	Button,
@@ -16,6 +23,7 @@ import {
 import { safeAsyncEventHandler } from "@/lib/async";
 import { useLibraryKeymap } from "@/lib/hooks/use-library-keymap";
 import { usePlatform } from "@/lib/platform/context";
+import { formatSeriesIndex } from "@/lib/series";
 import { useBooks, useBooksLoading } from "@/stores/library/store";
 import {
 	LibraryBookSortOrder,
@@ -32,6 +40,7 @@ import styles from "./Books.module.css";
 
 interface BookSearchOptions {
 	search_for_author?: string;
+	search_for_series?: string;
 }
 
 const SORT_LABELS: Record<LibraryBookSortOrderKey, string> = {
@@ -41,7 +50,10 @@ const SORT_LABELS: Record<LibraryBookSortOrderKey, string> = {
 	authorZa: "Author (Z–A)",
 };
 
-export const Books = ({ search_for_author }: BookSearchOptions) => {
+export const Books = ({
+	search_for_author,
+	search_for_series,
+}: BookSearchOptions) => {
 	const query = useLibraryView((s) => s.query);
 	const sortOrder = useLibraryView((s) => s.sortOrder);
 	const hideRead = useLibraryView((s) => s.hideRead);
@@ -50,22 +62,44 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 	const setHideRead = useLibraryView((s) => s.setHideRead);
 	const resetToAllBooks = useLibraryView((s) => s.resetToAllBooks);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: author deep-links override the saved query exactly once, on mount.
+	// Author deep-links (Authors page, drawer author names) fill the text
+	// query; reacting to the param means in-page clicks work too, while
+	// later hand-edits to the query stick.
 	useEffect(() => {
 		if (search_for_author) {
 			setQuery(search_for_author);
 		}
-	}, []);
+	}, [search_for_author, setQuery]);
+
+	// A series link promises "the rest of this series in one click", so a
+	// text query from before the click must not keep filtering the results.
+	useEffect(() => {
+		if (search_for_series) {
+			setQuery("");
+		}
+	}, [search_for_series, setQuery]);
 
 	const books = useBooks();
 	const loading = useBooksLoading();
 
-	const filteredBooks = useMemo(
-		() => filterBooksByQuery(books, { query, hideRead }),
-		[books, query, hideRead],
-	);
+	const navigate = useNavigate();
+	const onClearSeriesFilter = useCallback(() => {
+		void navigate({ to: "/", search: {} });
+	}, [navigate]);
+
+	const filteredBooks = useMemo(() => {
+		const queryFiltered = filterBooksByQuery(books, { query, hideRead });
+		if (!search_for_series) return queryFiltered;
+		return queryFiltered.filter((book) => book.series === search_for_series);
+	}, [books, query, hideRead, search_for_series]);
 
 	const sortedBooks = useMemo(() => {
+		// An active series filter overrides the user's chosen sort order:
+		// books read best in series order.
+		if (search_for_series) {
+			return [...filteredBooks].sort(compareBySeriesIndex);
+		}
+
 		const compare = (a: LibraryBook, b: LibraryBook) => {
 			const authorA = a.author_list[0]?.sortable_name ?? "";
 			const authorB = b.author_list[0]?.sortable_name ?? "";
@@ -88,7 +122,7 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 			}
 		};
 		return [...filteredBooks].sort(compare);
-	}, [filteredBooks, sortOrder]);
+	}, [filteredBooks, sortOrder, search_for_series]);
 
 	const [isBookSidebarOpen, setIsBookSidebarOpen] = useState(false);
 
@@ -128,11 +162,23 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 				<span className={styles.searchWrap}>
 					<SearchField
 						ref={searchInputRef}
-						placeholder="Search"
+						placeholder={search_for_series !== undefined ? undefined : "Search"}
 						aria-label="Search book titles and authors"
 						value={query}
 						onChange={(event) => setQuery(event.currentTarget.value)}
 						className={styles.searchInput}
+						tokens={
+							search_for_series !== undefined
+								? [
+										{
+											label: `Series: ${search_for_series}`,
+											onRemove: onClearSeriesFilter,
+											title:
+												"Books are sorted in series order while this filter is active",
+										},
+									]
+								: undefined
+						}
 					/>
 				</span>
 				<Select
@@ -146,6 +192,7 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 					}))}
 					value={sortOrder}
 					onChange={(value) => setSortOrder(value as LibraryBookSortOrderKey)}
+					disabled={search_for_series !== undefined}
 				/>
 				<Checkbox
 					label="Unread only"
@@ -210,7 +257,12 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 					}
 				}}
 			>
-				{selectedSidebarBook && <BookDetails book={selectedSidebarBook} />}
+				{selectedSidebarBook && (
+					<BookDetails
+						book={selectedSidebarBook}
+						onClose={() => setIsBookSidebarOpen(false)}
+					/>
+				)}
 			</Drawer>
 		</div>
 	);
@@ -329,7 +381,13 @@ const SaveAsShelfControl = ({
 	);
 };
 
-const BookDetails = ({ book }: { book: LibraryBook }) => {
+const BookDetails = ({
+	book,
+	onClose,
+}: {
+	book: LibraryBook;
+	onClose: () => void;
+}) => {
 	const platform = usePlatform();
 	const navigate = useNavigate();
 	const canRead = platform.capabilities.canOpenLocalPaths;
@@ -341,8 +399,35 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 					<div className={styles.detailsHeading}>
 						<span className={styles.detailsTitle}>{book.title}</span>
 						<span className={styles.detailsAuthors}>
-							{book.author_list.map((author) => author.name).join(", ")}
+							{book.author_list.map((author, index) => (
+								<Fragment key={author.id}>
+									{index > 0 && ", "}
+									<Link
+										to="/"
+										search={{ search_for_author: author.name }}
+										onClick={onClose}
+										className={styles.detailsLink}
+									>
+										{author.name}
+									</Link>
+								</Fragment>
+							))}
 						</span>
+						{book.series !== null && (
+							<span className={styles.detailsSeries}>
+								{book.series_index !== null
+									? `Book ${formatSeriesIndex(book.series_index)} of `
+									: "Part of "}
+								<Link
+									to="/"
+									search={{ search_for_series: book.series }}
+									onClick={onClose}
+									className={styles.detailsLink}
+								>
+									{book.series}
+								</Link>
+							</span>
+						)}
 					</div>
 					<div className={styles.detailsActions}>
 						{canRead && (
@@ -521,6 +606,13 @@ export interface BookViewOptions {
 	sortOrder: "authorAz" | "authorZa" | "nameAz" | "nameZa";
 	searchQuery: string;
 }
+
+const compareBySeriesIndex = (a: LibraryBook, b: LibraryBook): number => {
+	const indexA = a.series_index ?? Number.POSITIVE_INFINITY;
+	const indexB = b.series_index ?? Number.POSITIVE_INFINITY;
+	if (indexA !== indexB) return indexA - indexB;
+	return a.title.localeCompare(b.title);
+};
 
 const filterBooksByQuery = (
 	books: LibraryBook[],

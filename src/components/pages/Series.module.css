@@ -1,0 +1,99 @@
+/*
+ * Series page chrome, mirroring the Authors page. The shared column grid
+ * (SERIES_GRID) stays inline in Series.tsx so the header row and body rows
+ * cannot drift apart; the whole-row hover/overlay behavior lives in
+ * styles.css (.ctd-author-row / .ctd-author-row-link).
+ */
+.page {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+
+.filterBar {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	flex-shrink: 0;
+	padding: 10px 24px;
+	border-bottom: 1px solid var(--ctd-border);
+}
+
+.searchInput {
+	min-width: 28ch;
+}
+
+.headerRow {
+	position: sticky;
+	top: 0;
+	z-index: 2;
+	padding: 6px 24px;
+	background-color: var(--ctd-content-bg);
+	border-bottom: 1px solid var(--ctd-border);
+}
+
+.columnLabel {
+	font-size: 12px;
+	line-height: 1.4;
+	font-weight: 600;
+	text-transform: uppercase;
+	color: var(--ctd-ink-soft);
+	white-space: nowrap;
+}
+
+.columnLabelRight {
+	text-align: right;
+}
+
+.rows {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+}
+
+.row {
+	padding: 6px 24px;
+	border-bottom: 1px solid var(--ctd-border);
+}
+
+.cellText {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 14px;
+	line-height: 1.45;
+	color: var(--ctd-ink);
+}
+
+/* Sits above the whole-row overlay link so it stays independently clickable. */
+.countLink {
+	justify-self: end;
+	position: relative;
+	z-index: 1;
+	font-size: 14px;
+	line-height: 1.45;
+	color: var(--ctd-link);
+	text-decoration: none;
+}
+
+.countLink:hover,
+.countLink:focus-visible {
+	text-decoration: underline;
+}
+
+.footer {
+	position: sticky;
+	bottom: 0;
+	display: flex;
+	justify-content: center;
+	padding: 6px 0;
+	background-color: var(--ctd-content-bg);
+	border-top: 1px solid var(--ctd-border);
+}
+
+.footerText {
+	font-size: 12px;
+	line-height: 1.4;
+	color: var(--ctd-ink-soft);
+}

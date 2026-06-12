@@ -217,6 +217,8 @@ export const applyHardcoverMetadataToBook = async (
 			publication_date: null,
 			is_read: null,
 			description: pending.description,
+			series: null,
+			series_index: null,
 		});
 	}
 

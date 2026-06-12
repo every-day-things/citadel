@@ -43,6 +43,10 @@ pub struct BookUpdate {
     pub publication_date: Option<NaiveDateTime>,
     pub is_read: Option<bool>,
     pub description: Option<String>,
+    /// An empty (or whitespace) name unlinks the book from its series;
+    /// `None` leaves it unchanged.
+    pub series: Option<String>,
+    pub series_index: Option<f32>,
 }
 
 impl BookUpdate {
@@ -60,8 +64,8 @@ impl BookUpdate {
             is_read: self.is_read,
             publication_date: self.publication_date.map(|dt| dt.date()),
             tags: self.tag_list.clone(),
-            series: None,
-            series_index: None,
+            series: self.series.clone(),
+            series_index: self.series_index,
             publisher: None,
             rating: None,
             comments: None,

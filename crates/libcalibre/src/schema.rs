@@ -235,11 +235,15 @@ diesel::joinable!(books_authors_link -> books (book));
 diesel::joinable!(books_authors_link -> authors (author));
 diesel::joinable!(books_tags_link -> books (book));
 diesel::joinable!(books_tags_link -> tags (tag));
+diesel::joinable!(books_series_link -> books (book));
+diesel::joinable!(books_series_link -> series (series));
 
 diesel::allow_tables_to_appear_in_same_query!(
     authors,
     books,
     books_authors_link,
+    books_series_link,
     books_tags_link,
+    series,
     tags
 );

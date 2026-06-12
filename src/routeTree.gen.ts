@@ -12,6 +12,7 @@
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as SettingsImport } from './routes/settings'
+import { Route as SeriesImport } from './routes/series'
 import { Route as AuthorsImport } from './routes/authors'
 import { Route as IndexImport } from './routes/index'
 import { Route as BooksBookIdImport } from './routes/books.$bookId'
@@ -20,6 +21,11 @@ import { Route as BooksBookIdImport } from './routes/books.$bookId'
 
 const SettingsRoute = SettingsImport.update({
   path: '/settings',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const SeriesRoute = SeriesImport.update({
+  path: '/series',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -50,6 +56,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthorsImport
       parentRoute: typeof rootRoute
     }
+    '/series': {
+      preLoaderRoute: typeof SeriesImport
+      parentRoute: typeof rootRoute
+    }
     '/settings': {
       preLoaderRoute: typeof SettingsImport
       parentRoute: typeof rootRoute
@@ -66,6 +76,7 @@ declare module '@tanstack/react-router' {
 export const routeTree = rootRoute.addChildren([
   IndexRoute,
   AuthorsRoute,
+  SeriesRoute,
   SettingsRoute,
   BooksBookIdRoute,
 ])

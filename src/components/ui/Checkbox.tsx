@@ -34,7 +34,7 @@ export const Checkbox = forwardRef<HTMLButtonElement, CheckboxProps>(
 					>
 						<path
 							d="M1.8 5.2L4 7.4L8.2 2.6"
-							stroke="oklch(100% 0 0)"
+							stroke="var(--ctd-accent-text)"
 							strokeWidth="1.8"
 							strokeLinecap="round"
 							strokeLinejoin="round"

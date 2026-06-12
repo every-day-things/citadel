@@ -33,6 +33,10 @@ pub struct Book {
     pub sortable_title: Option<String>,
     pub authors: Vec<Author>,
     pub tags: Vec<String>,
+    /// Series name; `Some` iff the book is linked to a series.
+    pub series: Option<String>,
+    /// Position within the series; `Some` iff the book is linked to a series.
+    pub series_index: Option<f32>,
     pub description: Option<String>,
     pub identifiers: Vec<BookIdentifier>,
     pub has_cover: bool,
@@ -93,6 +97,9 @@ pub struct BookUpdate {
     pub is_read: Option<bool>,
 
     pub tags: Option<Vec<String>>,
+    /// If provided, links the book to the named series (created if it does
+    /// not exist), replacing any existing series. An empty (or whitespace)
+    /// name unlinks the book from its series. `None` leaves it unchanged.
     pub series: Option<String>,
     pub series_index: Option<f32>,
     pub publisher: Option<String>,
@@ -195,6 +202,11 @@ impl Library {
                 let tag = crate::queries::tags::create_if_not_exists(&mut self.conn, tag_name)?;
                 crate::queries::tags::link_book(&mut self.conn, tag.id, BookId(book_row.id))?;
             }
+        }
+
+        if let Some(series_name) = &book.series {
+            let series = crate::queries::series::create_if_not_exists(&mut self.conn, series_name)?;
+            crate::queries::series::link_book(&mut self.conn, series.id, BookId(book_row.id))?;
         }
 
         // 4. Create directories

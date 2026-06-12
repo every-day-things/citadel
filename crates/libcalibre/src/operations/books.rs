@@ -5,7 +5,7 @@ use diesel::{Connection, SqliteConnection};
 
 use crate::{
     library::{Book, BookFileInfo, BookIdentifier, BookUpdate},
-    queries::{authors, book_descriptions, book_files, book_identifiers, books, tags},
+    queries::{authors, book_descriptions, book_files, book_identifiers, books, series, tags},
     types::{AuthorId, BookId},
     CalibreError, UpdateBookData,
 };
@@ -40,6 +40,16 @@ pub fn update_book(
             };
 
             books::update(conn, book_id, book_update)?;
+        }
+
+        if let Some(series_name) = update.series {
+            let series_name = series_name.trim();
+            if series_name.is_empty() {
+                series::unlink_book(conn, book_id)?;
+            } else {
+                let book_series = series::create_if_not_exists(conn, series_name)?;
+                series::set_book_series(conn, book_series.id, book_id)?;
+            }
         }
 
         if let Some(description) = update.description {
@@ -161,6 +171,7 @@ pub fn get_book(conn: &mut SqliteConnection, book_id: BookId) -> Result<Book, Ca
     let author_ids = books::find_authors(conn, book_id)?;
     let author_models = authors::get_many(conn, author_ids)?;
     let tags = tags::find_for_book(conn, book_id)?;
+    let series_name = series::find_series_name_for_book(conn, book_id)?;
     let identifier_models = book_identifiers::get(conn, book_id)?;
     let file_models = book_files::find_by_book_id(conn, book_id)?;
 
@@ -194,6 +205,8 @@ pub fn get_book(conn: &mut SqliteConnection, book_id: BookId) -> Result<Book, Ca
         sortable_title: book.sort,
         authors: book_authors,
         tags: tags.into_iter().map(|tag| tag.name).collect(),
+        series_index: series_name.as_ref().map(|_| book.series_index),
+        series: series_name,
         identifiers,
         description: book_desc,
         has_cover: book.has_cover.unwrap_or(false),
@@ -215,6 +228,7 @@ pub fn all(conn: &mut SqliteConnection) -> Result<Vec<Book>, CalibreError> {
     let descriptions_map = book_descriptions::find_many_by_book_ids(conn, book_ids.clone())?;
     let identifiers_map = book_identifiers::find_many_by_book_ids(conn, book_ids.clone())?;
     let tags_map = tags::find_tag_names_by_book_ids(conn, book_ids.clone())?;
+    let series_map = series::find_series_names_by_book_ids(conn, book_ids.clone())?;
     let files_map = book_files::find_many_by_book_ids(conn, book_ids)?;
 
     let unique_author_ids: Vec<AuthorId> = author_ids_by_book
@@ -242,6 +256,7 @@ pub fn all(conn: &mut SqliteConnection) -> Result<Vec<Book>, CalibreError> {
 
         let book_description = descriptions_map.get(&book_id).cloned();
         let book_tags = tags_map.get(&book_id).cloned().unwrap_or_default();
+        let book_series = series_map.get(&book_id).cloned();
         let raw_files = files_map.get(&book_id).cloned().unwrap_or_default();
 
         let book_identifiers = identifiers_map
@@ -276,6 +291,8 @@ pub fn all(conn: &mut SqliteConnection) -> Result<Vec<Book>, CalibreError> {
             sortable_title: book_row.sort,
             authors: book_authors,
             tags: book_tags,
+            series_index: book_series.as_ref().map(|_| book_row.series_index),
+            series: book_series,
             identifiers: book_identifiers,
             description: book_description,
             has_cover: book_row.has_cover.unwrap_or(false),
