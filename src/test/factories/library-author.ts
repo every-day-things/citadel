@@ -19,6 +19,7 @@ export const LibraryAuthorFactory = (
 		id: faker.string.uuid(),
 		name,
 		sortable_name,
+		book_count: faker.number.int({ min: 0, max: 30 }),
 		...opts,
 	};
 };
