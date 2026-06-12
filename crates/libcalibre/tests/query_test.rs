@@ -532,6 +532,48 @@ fn test_page_items_are_hydrated() {
 }
 
 // =============================================================================
+// Tag listing
+// =============================================================================
+
+#[test]
+fn test_list_tags_returns_deduped_vocabulary_sorted_by_name() {
+    let (_temp, mut lib) = setup_with_library();
+
+    lib.add_book(BookAdd {
+        tags: Some(vec!["fantasy".to_string(), "Adventure".to_string()]),
+        ..book("A Wizard of Earthsea", &["Ursula K. Le Guin"])
+    })
+    .unwrap();
+    // "FANTASY" matches the existing "fantasy" case-insensitively, so the
+    // vocabulary keeps the first spelling instead of growing a duplicate.
+    lib.add_book(BookAdd {
+        tags: Some(vec!["FANTASY".to_string(), "banned".to_string()]),
+        ..book("The Tombs of Atuan", &["Ursula K. Le Guin"])
+    })
+    .unwrap();
+    lib.add_book(book("Untagged", &["Nobody"])).unwrap();
+
+    let tags = lib.list_tags().unwrap();
+    let names: Vec<&str> = tags.iter().map(|t| t.name.as_str()).collect();
+    // Case-insensitive name sort: Adventure < banned < fantasy.
+    assert_eq!(names, ["Adventure", "banned", "fantasy"]);
+
+    // Ids are the real `tags` rows, each one distinct.
+    let mut ids: Vec<i32> = tags.iter().map(|t| t.id).collect();
+    ids.dedup();
+    assert_eq!(ids.len(), 3);
+}
+
+#[test]
+fn test_list_tags_empty_library() {
+    let (_temp, mut lib) = setup_with_library();
+
+    lib.add_book(book("No Tags Here", &[])).unwrap();
+
+    assert!(lib.list_tags().unwrap().is_empty());
+}
+
+// =============================================================================
 // Series listing
 // =============================================================================
 

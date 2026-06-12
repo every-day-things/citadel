@@ -6,8 +6,28 @@ use diesel::sql_types::{Integer, Text};
 use diesel::{QueryDsl, RunQueryDsl, SqliteConnection};
 
 use crate::entities::tag::NewTag;
+use crate::library::TagSummary;
 use crate::types::BookId;
 use crate::{CalibreError, Tag};
+
+/// Every tag in the library, sorted case-insensitively by name (with the
+/// raw name as a stable tiebreak, matching [`find_for_book`]).
+pub(crate) fn list_all(conn: &mut SqliteConnection) -> Result<Vec<TagSummary>, CalibreError> {
+    use crate::schema::tags::dsl::*;
+
+    tags.select(Tag::as_select())
+        .order_by(diesel::dsl::sql::<Text>("LOWER(name), name"))
+        .load(conn)
+        .map(|rows: Vec<Tag>| {
+            rows.into_iter()
+                .map(|tag| TagSummary {
+                    id: tag.id,
+                    name: tag.name,
+                })
+                .collect()
+        })
+        .map_err(CalibreError::from)
+}
 
 pub(crate) fn find_by_name_case_insensitive(
     conn: &mut SqliteConnection,
