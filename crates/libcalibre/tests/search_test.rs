@@ -2,9 +2,7 @@
 mod common;
 
 use common::setup_with_library;
-use diesel::sql_types::{Integer, Text};
-use diesel::RunQueryDsl;
-use libcalibre::{BookAdd, BookId, Library};
+use libcalibre::BookAdd;
 use std::collections::HashMap;
 
 fn book_with_authors(title: &str, author_names: &[&str]) -> BookAdd {
@@ -21,23 +19,6 @@ fn book_with_authors(title: &str, author_names: &[&str]) -> BookAdd {
         identifiers: HashMap::new(),
         file_paths: vec![],
     }
-}
-
-fn link_series(lib: &Library, book_id: BookId, series_name: &str) {
-    let mut conn = libcalibre::persistence::establish_connection(lib.database_path()).unwrap();
-    diesel::sql_query("INSERT INTO series (name, sort) VALUES (?, ?)")
-        .bind::<Text, _>(series_name)
-        .bind::<Text, _>(series_name)
-        .execute(&mut conn)
-        .unwrap();
-    diesel::sql_query(
-        "INSERT INTO books_series_link (book, series) \
-         SELECT ?, id FROM series WHERE name = ?",
-    )
-    .bind::<Integer, _>(book_id.as_i32())
-    .bind::<Text, _>(series_name)
-    .execute(&mut conn)
-    .unwrap();
 }
 
 #[test]
@@ -73,12 +54,14 @@ fn test_search_series_name() {
     let (_temp, mut lib) = setup_with_library();
 
     let in_series = lib
-        .add_book(book_with_authors("The Fellowship of the Ring", &[]))
+        .add_book(BookAdd {
+            series: Some("The Lord of the Rings".to_string()),
+            series_index: Some(1.0),
+            ..book_with_authors("The Fellowship of the Ring", &[])
+        })
         .unwrap();
     lib.add_book(book_with_authors("Unrelated Book", &[]))
         .unwrap();
-
-    link_series(&lib, in_series.id, "The Lord of the Rings");
 
     let results = lib.search_books("lord of the rings").unwrap();
     assert_eq!(results.len(), 1);
