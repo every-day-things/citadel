@@ -183,6 +183,14 @@ pub struct SeriesSummary {
     pub book_count: i64,
 }
 
+/// One tag in the library. Returned by [`Library::list_tags`]; the full
+/// vocabulary feeds tag autocomplete in clients.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TagSummary {
+    pub id: i32,
+    pub name: String,
+}
+
 impl Library {
     pub fn new(db_path: ValidDbPath) -> Result<Self, CalibreError> {
         let conn = establish_connection(&db_path.database_path)
@@ -778,6 +786,12 @@ impl Library {
     /// by name. The returned ids feed [`BookQuery::series_id`].
     pub fn list_series(&mut self) -> Result<Vec<SeriesSummary>, CalibreError> {
         crate::queries::series::list_with_book_counts(&mut self.conn)
+    }
+
+    /// List every tag in the library (the whole vocabulary, including tags
+    /// no longer linked to any book), sorted case-insensitively by name.
+    pub fn list_tags(&mut self) -> Result<Vec<TagSummary>, CalibreError> {
+        crate::queries::tags::list_all(&mut self.conn)
     }
 
     pub fn search_books(&mut self, query: &str) -> Result<Vec<Book>, CalibreError> {
