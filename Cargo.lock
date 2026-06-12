@@ -641,7 +641,7 @@ dependencies = [
 
 [[package]]
 name = "citadel-rs"
-version = "0.4.3"
+version = "0.5.0"
 dependencies = [
  "chrono",
  "diesel",
@@ -2477,6 +2477,8 @@ dependencies = [
  "num-traits",
  "png 0.18.1",
  "tiff",
+ "zune-core",
+ "zune-jpeg",
 ]
 
 [[package]]
@@ -2728,6 +2730,8 @@ dependencies = [
  "diesel",
  "diesel_migrations",
  "epub",
+ "fastrand",
+ "image",
  "insta",
  "mobi",
  "proptest",
