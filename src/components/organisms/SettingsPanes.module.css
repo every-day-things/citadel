@@ -188,7 +188,9 @@
 	margin-left: auto;
 }
 
-.keyInput {
+/* Doubled class beats the ui-kit input's own width: 100% regardless of
+ * CSS-module emit order. */
+.keyInput.keyInput {
 	width: 220px;
 }
 

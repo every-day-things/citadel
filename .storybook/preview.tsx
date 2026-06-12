@@ -3,6 +3,7 @@ import type { Preview } from "@storybook/react";
 import React, { type PropsWithChildren, useEffect, useCallback } from "react";
 import { DARK_MODE_EVENT_NAME } from "storybook-dark-mode";
 
+import { TooltipProvider } from "../src/components/ui";
 import "../src/styles.css";
 
 const STORYBOOK_IFRAME_PADDING_OFFSET = "36px";
@@ -39,7 +40,10 @@ const preview: Preview = {
 	decorators: [
 		(Story) => (
 			<ColorSchemeWrapper>
-				<Story />
+				{/* Same provider the app mounts in App.tsx. */}
+				<TooltipProvider>
+					<Story />
+				</TooltipProvider>
 			</ColorSchemeWrapper>
 		),
 		(Story) => (
