@@ -9,6 +9,12 @@ interface LibraryKeymapOptions {
 	drawerOpened: boolean;
 	searchInputRef: RefObject<HTMLInputElement>;
 	gridContainerRef: RefObject<HTMLElement>;
+	/**
+	 * The virtualized grid's scroll-to-index function (BookGrid). Selection
+	 * can land on a row that is not mounted; this brings the row into view so
+	 * the selected card mounts and renders its ring.
+	 */
+	scrollToBookIndexRef?: RefObject<((index: number) => void) | null>;
 	onBookOpen: (bookId: LibraryBook["id"]) => void;
 	onClearSearch: () => void;
 }
@@ -20,8 +26,9 @@ const ARROW_CHORDS: [string, SelectionDirection][] = [
 	["arrowright", "right"],
 ];
 
-// The cover grid is auto-fill responsive, so its column count exists only in
-// layout; read it off the resolved grid-template-columns track list.
+// The cover grid's column count exists only in layout (it is derived from
+// the container width); read it off the resolved grid-template-columns track
+// list of any mounted shelf row.
 const measureColumns = (container: HTMLElement | null): number => {
 	const grid = container?.querySelector("[data-books-grid]");
 	if (!(grid instanceof HTMLElement)) return 1;
@@ -35,6 +42,7 @@ export const useLibraryKeymap = ({
 	drawerOpened,
 	searchInputRef,
 	gridContainerRef,
+	scrollToBookIndexRef,
 	onBookOpen,
 	onClearSearch,
 }: LibraryKeymapOptions): { selectedBookId: LibraryBook["id"] | null } => {
@@ -48,8 +56,14 @@ export const useLibraryKeymap = ({
 			: books.findIndex((book) => book.id === selectedBookId);
 	const visibleSelectedBookId = selectedIndex >= 0 ? selectedBookId : null;
 
-	const selectBook = (book: LibraryBook) => {
+	const selectBook = (book: LibraryBook, index: number) => {
 		setSelectedBookId(book.id);
+		// The grid is virtualized: the target row may not be mounted, so ask
+		// the virtualizer to scroll it into view first. When the card is
+		// already mounted, the follow-up scrollIntoView fine-tunes alignment;
+		// when it is not, the row-level scroll alone places it in view and the
+		// card renders selected on the next frame.
+		scrollToBookIndexRef?.current?.(index);
 		document
 			.querySelector(`[data-book-id="${CSS.escape(book.id)}"]`)
 			?.scrollIntoView({ block: "nearest" });
@@ -65,14 +79,14 @@ export const useLibraryKeymap = ({
 		if (nextIndex < 0) return;
 		const nextBook = books[nextIndex];
 		if (nextBook === undefined) return;
-		selectBook(nextBook);
+		selectBook(nextBook, nextIndex);
 	};
 
 	// Spotlight-style hand-off: commit the query and drop into the results.
 	const leaveSearchForGrid = () => {
 		gridContainerRef.current?.focus();
 		const firstBook = books[0];
-		if (firstBook !== undefined) selectBook(firstBook);
+		if (firstBook !== undefined) selectBook(firstBook, 0);
 	};
 
 	const bindings: KeyBinding[] = [];
