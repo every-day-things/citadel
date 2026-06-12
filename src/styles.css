@@ -1,15 +1,11 @@
 /*
- * Theming: each palette defines STONES (--pal-*) for light and dark; the
- * semantic --ctd-* tokens every component uses are derived from stones with
- * OKLCH relative color syntax in the two shared blocks below. Palettes are
- * selected via data-palette on <html> (theme-manager.ts; Settings > General),
- * dark mode via data-theme. Adding a palette = one light + one dark stone
- * block, plus an optional SHAPE block (after the shared dark block) that
- * overrides the geometry tokens: radii, border weight, padding, press
- * motion, shadows, and the UI font itself.
- *
- * Default palette: "marble", drawn from the app icon (carved white marble,
- * charcoal ink, monochrome accent).
+ * Theming: the marble theme (drawn from the app icon: carved white marble,
+ * charcoal ink, monochrome accent) defines STONES (--pal-*) for light and
+ * dark; the semantic --ctd-* tokens every component uses are derived from
+ * stones with OKLCH relative color syntax. Dark mode is selected via
+ * data-theme on <html> (theme-manager.ts). Geometry lives in the shape
+ * tokens (radii, border weight, padding, press motion, shadows, the UI
+ * font), so the look can be retuned without touching components.
  */
 :root {
 	--pal-base: oklch(97.5% 0.003 90);
@@ -105,10 +101,9 @@
 	--ctd-font-serif: "New York", ui-serif, Georgia, "Times New Roman", serif;
 
 	/* Shape tokens: every control in src/components/ui reads its geometry
-	   from these, so a palette can reshape the whole kit (radii, border
-	   weight, padding, press motion, focus halo, popover depth) without
-	   touching the color stones. Defaults reproduce the previous hardcoded
-	   values exactly. */
+	   from these, so the whole kit can be reshaped (radii, border weight,
+	   padding, press motion, focus halo, popover depth) without touching
+	   the color stones or any component CSS. */
 	--ctd-font-ui:
 		-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto,
 		Helvetica, Arial, sans-serif;
@@ -137,23 +132,6 @@
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 	-webkit-text-size-adjust: 100%;
-}
-
-/* Signal: neo-brutalist poster. Pure paper, solid ink lines, electric blue.
-   Its geometry lives in the shape block after the dark derivations. */
-:root[data-palette="signal"] {
-	--pal-base: oklch(99% 0 0);
-	--pal-mantle: oklch(96.5% 0 0);
-	--pal-crust: oklch(94% 0 0);
-	--pal-surface0: oklch(92% 0 0);
-	--pal-text: oklch(15% 0 0);
-	--pal-subtext: oklch(35% 0 0);
-	--pal-accent: oklch(58% 0.23 256);
-	--pal-accent-text: oklch(99% 0 0);
-	--pal-red: oklch(55% 0.22 28);
-	--pal-red-text: oklch(99% 0 0);
-	--pal-border-alpha: 0.9;
-	--pal-border-strong-alpha: 1;
 }
 
 /* Dark stones (marble: polished black, marble-white accent) + shared dark
@@ -252,49 +230,6 @@
 	--ctd-scrollbar-thumb: oklch(from var(--pal-text) l c h / 0.35);
 	--ctd-control-shadow: 0 0.5px 1.5px oklch(0% 0 0 / 0.4);
 	--ctd-field-inner-shadow: inset 0 0.5px 1px oklch(0% 0 0 / 0.2);
-}
-
-:root[data-palette="signal"][data-theme="dark"] {
-	--pal-base: oklch(16% 0 0);
-	--pal-mantle: oklch(13% 0 0);
-	--pal-crust: oklch(10% 0 0);
-	--pal-surface0: oklch(24% 0 0);
-	--pal-text: oklch(96% 0 0);
-	--pal-subtext: oklch(75% 0 0);
-	--pal-accent: oklch(67% 0.2 256);
-	--pal-accent-text: oklch(10% 0 0);
-	--pal-red: oklch(62% 0.21 28);
-	--pal-red-text: oklch(10% 0 0);
-	--pal-border-alpha: 0.75;
-	--pal-border-strong-alpha: 1;
-}
-
-/*
- * Per-palette SHAPE blocks. These sit AFTER the shared dark block on purpose:
- * --ctd-control-shadow, --ctd-field-inner-shadow, --ctd-focus-ring and the
- * --ctd-shadow-* tokens are redefined there at equal specificity, so the
- * palette's version must win on source order to hold in both color schemes.
- */
-
-/* Signal shape: poster geometry. Sharp corners everywhere, 2px ink borders,
-   bold labels, and hard offset shadows the control physically moves into
-   when pressed. Focus is a solid double ring, not a halo. */
-:root[data-palette="signal"] {
-	--ctd-radius-control: 0px;
-	--ctd-radius-capsule: 0px;
-	--ctd-radius-panel: 0px;
-	--ctd-control-border-width: 2px;
-	--ctd-control-pad-x: 14px;
-	--ctd-control-font-weight: 700;
-	--ctd-control-shadow: 2px 2px 0 oklch(from var(--pal-text) l c h / 0.9);
-	--ctd-control-active-translate: translate(2px, 2px);
-	--ctd-control-active-shadow: none;
-	--ctd-field-inner-shadow: none;
-	--ctd-focus-ring: var(--pal-accent);
-	--ctd-focus-shadow: 0 0 0 2px var(--pal-base), 0 0 0 4px var(--pal-accent);
-	--ctd-shadow-soft: 3px 3px 0 oklch(from var(--pal-text) l c h / 0.8);
-	--ctd-shadow-lift: 6px 6px 0 oklch(from var(--pal-text) l c h / 0.85);
-	--ctd-cover-shadow: 4px 4px 0 oklch(from var(--pal-text) l c h / 0.8);
 }
 
 /*

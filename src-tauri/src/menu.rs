@@ -153,12 +153,17 @@ pub fn open_settings_window<R: Runtime>(app: &AppHandle<R>) {
     // Match the webview backing to the app theme (`--ctd-bg` in styles.css)
     // so nothing white can flash before the frontend's first paint.
     let background = match app.get_webview_window("main").and_then(|w| w.theme().ok()) {
-        Some(Theme::Dark) => Color(30, 30, 46, 255), // Catppuccin Mocha base
-        _ => Color(239, 241, 245, 255),              // Catppuccin Latte base
+        Some(Theme::Dark) => Color(18, 19, 20, 255), // marble dark --ctd-bg
+        _ => Color(241, 240, 237, 255),              // marble light --ctd-bg
     };
 
     // Created hidden; the frontend reveals it after its first paint
     // (SettingsWindow.tsx), so the user never sees an unstyled frame.
+    // Overlay title bar with the title hidden: the native title text picked
+    // its color from a window appearance that did not always match the
+    // backing color (white-on-white in light mode), so the webview owns the
+    // whole chrome and the tab strip doubles as the drag region. The lights
+    // are vertically centered on the ~58px tab strip.
     let builder = WebviewWindowBuilder::new(app, "settings", url)
         .title("Settings")
         .inner_size(680.0, 480.0)
@@ -168,9 +173,14 @@ pub fn open_settings_window<R: Runtime>(app: &AppHandle<R>) {
         .background_color(background)
         .center();
 
-    // NOTE: overlay title bar + transparent + sidebar effects left off for
-    // now — with them, the settings webview came up blank (debugging round
-    // 5). Plain window first; re-add the glass once the cause is found.
+    #[cfg(target_os = "macos")]
+    let builder = builder
+        .title_bar_style(tauri::TitleBarStyle::Overlay)
+        .hidden_title(true)
+        .traffic_light_position(tauri::LogicalPosition::new(14.0, 23.0));
+
+    // NOTE: transparent webview + sidebar effects left off for now — with
+    // them, the settings webview came up blank (debugging round 5).
 
     if let Err(err) = builder.build() {
         log::error!("Failed to open settings window: {err}");

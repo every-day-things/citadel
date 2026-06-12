@@ -8,8 +8,6 @@ import {
 	type SettingsManager,
 	type SettingsSchema,
 	type SettingsValue,
-	THEME_PALETTES,
-	type ThemePalette,
 } from "@/lib/platform/settings/types";
 
 interface SettingsStore extends SettingsSchema {
@@ -21,7 +19,6 @@ interface SettingsStore extends SettingsSchema {
 
 	// Domain-specific actions
 	setTheme: (theme: "dark" | "light" | "auto") => Promise<void>;
-	setThemePalette: (palette: ThemePalette) => Promise<void>;
 	setStartFullscreen: (enabled: boolean) => Promise<void>;
 	setAutoUpdateCheckingEnabled: (enabled: boolean) => Promise<void>;
 	setHasCompletedFirstLaunch: (enabled: boolean) => Promise<void>;
@@ -76,13 +73,6 @@ export const useSettings = create<SettingsStore>((set, get) => ({
 				setSetting(initialSettings, key, value);
 			}
 
-			// Palettes get removed during design iteration; a persisted value
-			// from a retired one falls back to the default.
-			if (!THEME_PALETTES.includes(initialSettings.themePalette)) {
-				initialSettings.themePalette = defaultSettings.themePalette;
-				await settingsManager.set("themePalette", defaultSettings.themePalette);
-			}
-
 			set({ ...initialSettings, hydrated: true });
 
 			// Mirror changes persisted by other windows (e.g. the Settings
@@ -99,10 +89,6 @@ export const useSettings = create<SettingsStore>((set, get) => ({
 
 	setTheme: async (theme) => {
 		await persistSetting(set, get, "theme", theme);
-	},
-
-	setThemePalette: async (palette) => {
-		await persistSetting(set, get, "themePalette", palette);
 	},
 
 	setStartFullscreen: async (enabled) => {

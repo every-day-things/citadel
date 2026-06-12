@@ -6,18 +6,11 @@ import { F7Gear } from "@/components/icons/F7Gear";
 import { FluentLibraryFilled } from "@/components/icons/FluentLibraryFilled";
 import { SwitchLibraryForm } from "@/components/molecules/SwitchLibraryForm";
 import classes from "@/components/organisms/SettingsPanes.module.css";
-import {
-	Button,
-	SegmentedControl,
-	Select,
-	Switch,
-	TextInput,
-} from "@/components/ui";
+import { Button, SegmentedControl, Switch, TextInput } from "@/components/ui";
 import { useAppUpdates } from "@/lib/hooks/use-app-updates";
 import { none, some } from "@/lib/option";
 import { usePlatform } from "@/lib/platform/context";
-import type { ThemePalette } from "@/lib/platform/settings/types";
-import { applyColorScheme, applyThemePalette } from "@/lib/theme-manager";
+import { applyColorScheme } from "@/lib/theme-manager";
 import { createLibrary, setActiveLibrary } from "@/stores/settings/actions";
 import { useSettings } from "@/stores/settings/store";
 
@@ -53,8 +46,10 @@ interface SettingsPanesProps {
 /**
  * Classic macOS preferences layout (iTerm2 / pre-Ventura System Preferences):
  * a centered icon-over-label tab strip across the top, a hairline divider,
- * then the active pane on the window chrome background. The window's native
- * title bar already says "Settings", so the pane renders no title of its own.
+ * then the active pane on the window chrome background. The window uses an
+ * overlay title bar with the native title hidden (menu.rs), so the strip is
+ * the top of the window and doubles as the drag region; the traffic lights
+ * overlay its left edge.
  */
 export const SettingsPanes = ({ onRequestClose }: SettingsPanesProps) => {
 	const [activeTab, setActiveTab] = useState<SettingsTab>("general");
@@ -111,6 +106,7 @@ export const SettingsPanes = ({ onRequestClose }: SettingsPanesProps) => {
 				role="tablist"
 				aria-label="Settings sections"
 				className={classes.tabStrip}
+				data-tauri-drag-region
 			>
 				{SETTINGS_TABS.map((tab) => (
 					<button
@@ -184,16 +180,9 @@ const SettingsRow = ({
 	);
 };
 
-const PALETTE_OPTIONS: { value: ThemePalette; label: string }[] = [
-	{ value: "marble", label: "Marble" },
-	{ value: "signal", label: "Signal" },
-];
-
 const GeneralTab = () => {
 	const theme = useSettings((state) => state.theme);
 	const setTheme = useSettings((state) => state.setTheme);
-	const themePalette = useSettings((state) => state.themePalette);
-	const setThemePalette = useSettings((state) => state.setThemePalette);
 	const autoUpdateCheckingEnabled = useSettings(
 		(state) => state.autoUpdateCheckingEnabled,
 	);
@@ -234,23 +223,6 @@ const GeneralTab = () => {
 								{ value: "light", label: "Light" },
 								{ value: "dark", label: "Dark" },
 							]}
-						/>
-					}
-				/>
-				<SettingsRow
-					label="Theme"
-					description="Each restyles the whole app: color, shape, and type."
-					control={
-						<Select
-							aria-label="Theme"
-							width={140}
-							value={themePalette}
-							options={PALETTE_OPTIONS}
-							onChange={(value) => {
-								const palette = value as ThemePalette;
-								applyThemePalette(palette);
-								void setThemePalette(palette);
-							}}
 						/>
 					}
 				/>

@@ -1,22 +1,7 @@
 import { useEffect, useSyncExternalStore } from "react";
-import type { ThemePalette } from "@/lib/platform/settings/types";
 
 export type ColorScheme = "light" | "dark" | "auto";
 
-/**
- * Selects which palette's stone block applies in styles.css. The "marble"
- * stones are the :root defaults, but the attribute is always set so the
- * active palette is inspectable.
- */
-export const applyThemePalette = (palette: ThemePalette): void => {
-	document.documentElement.setAttribute("data-palette", palette);
-};
-
-export const useApplyThemePalette = (palette: ThemePalette): void => {
-	useEffect(() => {
-		applyThemePalette(palette);
-	}, [palette]);
-};
 export type ResolvedColorScheme = Exclude<ColorScheme, "auto">;
 
 const DARK_QUERY = "(prefers-color-scheme: dark)";

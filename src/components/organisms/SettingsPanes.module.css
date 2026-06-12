@@ -9,9 +9,11 @@
 /*
  * Classic preferences tab strip: icon-over-label tabs centered across the
  * window width, sitting directly on the window chrome background (--ctd-bg,
- * painted by the window wrapper) with a hairline below. The window has a
- * plain macOS title bar titled "Settings" (see menu.rs), so the strip starts
- * right under it.
+ * painted by the window wrapper) with a hairline below. The native title
+ * bar is an overlay with its title hidden (menu.rs), so this strip is the
+ * top of the window: it carries data-tauri-drag-region and leaves the
+ * traffic lights overlaying its left edge. The 72px side padding keeps the
+ * centered tabs clear of them even at narrow widths.
  */
 .tabStrip {
 	display: flex;
@@ -19,7 +21,7 @@
 	align-items: stretch;
 	gap: 0.25rem;
 	flex-shrink: 0;
-	padding: 0.3125rem 0.75rem 0.375rem;
+	padding: 0.375rem 4.5rem;
 	border-bottom: 1px solid var(--ctd-border);
 }
 

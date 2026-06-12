@@ -7,7 +7,6 @@ import classes from "@/components/pages/SettingsWindow.module.css";
 import { useNativeThemeSync } from "@/lib/hooks/use-native-theme-sync";
 import {
 	useApplyColorScheme,
-	useApplyThemePalette,
 	useResolvedColorScheme,
 } from "@/lib/theme-manager";
 import { useSettings } from "@/stores/settings/store";
@@ -42,26 +41,24 @@ const resolveTokenColor = (token: string): [number, number, number] | null => {
  */
 export const SettingsWindow = () => {
 	const theme = useSettings((state) => state.theme);
-	const themePalette = useSettings((state) => state.themePalette);
 	const router = useRouter();
 	useNativeThemeSync();
 
 	// Keep the document color scheme in sync with the persisted theme; this
 	// window hydrates its own settings store (see src/main.tsx).
 	useApplyColorScheme(theme);
-	useApplyThemePalette(themePalette);
 
 	// macOS tints this window's real title bar from the window background
 	// color, which menu.rs sets once at creation. Without this it stays the
 	// creation-time color forever, e.g. a white bar on a dark window.
 	const scheme = useResolvedColorScheme(theme);
-	// biome-ignore lint/correctness/useExhaustiveDependencies: scheme and themePalette are re-run triggers; the value is read from the DOM after the attribute effects above apply.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: scheme is a re-run trigger; the value is read from the DOM after the attribute effect above applies.
 	useEffect(() => {
 		if (!isTauri()) return;
 		const rgb = resolveTokenColor("--ctd-bg");
 		if (!rgb) return;
 		void getCurrentWindow().setBackgroundColor([...rgb, 255]);
-	}, [scheme, themePalette]);
+	}, [scheme]);
 
 	// The window is created hidden (menu.rs); the main window's reveal path
 	// (showMainWindow after library init) never runs on this route, so this
