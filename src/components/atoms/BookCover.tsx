@@ -1,6 +1,7 @@
 import { type HTMLAttributes, useState } from "react";
 import type { LibraryBook } from "@/bindings";
 import { formatAuthorList } from "@/lib/authors";
+import { resolveCoverLoad } from "@/lib/cover-load";
 import { selectByStringHash } from "@/lib/hash-string";
 import { shortenToChars } from "$lib/domain/book";
 
@@ -57,6 +58,24 @@ const BookCoverUsingImage = ({
 	fluid: boolean;
 } & HTMLAttributes<HTMLDivElement>) => {
 	const [isHovering, setIsHovering] = useState(false);
+	// A cover can fail without an `error` event: an asset:// URL outside the
+	// asset scope "loads" at 0×0, which would render a zero-height cell and
+	// collapse the virtualized grid's row measurement. Either failure mode
+	// falls back to the same placeholder treatment as books with no cover,
+	// whose fixed aspect ratio keeps the cell dimensions stable.
+	const [coverFailed, setCoverFailed] = useState(false);
+
+	if (coverFailed) {
+		return (
+			<BookCoverWithPlaceholder
+				book={book}
+				disableFade={disableFade}
+				fluid={fluid}
+				{...props}
+			/>
+		);
+	}
+
 	return (
 		<div
 			style={{
@@ -83,6 +102,14 @@ const BookCoverUsingImage = ({
 			<img
 				src={book.cover_image.url}
 				alt={book.title}
+				onError={() => {
+					setCoverFailed(true);
+				}}
+				onLoad={(event) => {
+					if (resolveCoverLoad(event.currentTarget) === "failed") {
+						setCoverFailed(true);
+					}
+				}}
 				style={{
 					...(fluid
 						? {
@@ -246,6 +273,9 @@ export const BookCover = ({
 	if (book.cover_image?.url !== undefined) {
 		return (
 			<BookCoverUsingImage
+				// Remounting on URL change resets the failed-cover fallback state
+				// when a book gains a (new) cover.
+				key={book.cover_image.url}
 				// @ts-expect-error `cover_image` obviously exists
 				book={book}
 				disableFade={disableFade}
