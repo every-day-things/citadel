@@ -511,6 +511,13 @@ impl Library {
         operations::authors::all(&mut self.conn)
     }
 
+    /// Linked-book count per author, computed in one GROUP BY pass over
+    /// `books_authors_link` (no per-author scans). Authors with no linked
+    /// books are absent from the map — treat a missing entry as 0.
+    pub fn author_book_counts(&mut self) -> Result<HashMap<AuthorId, i64>, CalibreError> {
+        author_queries::book_counts(&mut self.conn)
+    }
+
     pub fn get_author(&mut self, author_id: AuthorId) -> Result<Author, CalibreError> {
         operations::authors::get(&mut self.conn, author_id)
     }

@@ -485,6 +485,15 @@ fn run() -> Result<(), String> {
         let authors = library.authors().expect("authors()");
         format!("{} rows", authors.len())
     }));
+    results.push(bench(
+        "author_book_counts() [Authors page counts, one GROUP BY]",
+        runs,
+        warmup,
+        || {
+            let counts = library.author_book_counts().expect("author_book_counts()");
+            format!("{} authors with books", counts.len())
+        },
+    ));
 
     // ---- Report ----------------------------------------------------------
     println!("\n## Benchmark results ({runs} runs after {warmup} warmup, ms)\n");

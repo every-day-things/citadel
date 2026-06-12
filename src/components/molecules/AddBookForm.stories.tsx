@@ -26,11 +26,13 @@ const AUTHORS: LibraryAuthor[] = [
 		name: "Robert Pattison",
 		sortable_name: "Pattison, Robert",
 		id: "gid/author/1234",
+		book_count: 2,
 	},
 	{
 		name: "Frank Herbert",
 		sortable_name: "Herbert, Frank",
 		id: "gid/author/4321",
+		book_count: 6,
 	},
 ];
 

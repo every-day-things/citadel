@@ -151,8 +151,13 @@ pub fn clb_query_list_all_authors(
 ) -> Result<Vec<LibraryAuthor>, String> {
     state
         .with_library(|lib| {
-            lib.authors()
-                .map(|author_list| author_list.iter().map(LibraryAuthor::from).collect())
+            let book_counts = lib.author_book_counts()?;
+            lib.authors().map(|author_list| {
+                author_list
+                    .iter()
+                    .map(|author| LibraryAuthor::from_author(author, &book_counts))
+                    .collect()
+            })
         })
         .and_then(|result| result.map_err(|e| format!("Failed to list authors: {}", e)))
 }

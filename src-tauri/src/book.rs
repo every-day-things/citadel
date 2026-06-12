@@ -59,12 +59,20 @@ pub struct LibraryBook {
 }
 
 impl LibraryBook {
-    pub fn from_library_book(book: &libcalibre::library::Book, library_path: &str) -> Self {
+    pub fn from_library_book(
+        book: &libcalibre::library::Book,
+        library_path: &str,
+        author_book_counts: &HashMap<libcalibre::AuthorId, i64>,
+    ) -> Self {
         Self {
             id: book.id.as_i32().to_string(),
             uuid: Some(book.uuid.clone()),
             title: book.title.clone(),
-            author_list: book.authors.iter().map(LibraryAuthor::from).collect(),
+            author_list: book
+                .authors
+                .iter()
+                .map(|author| LibraryAuthor::from_author(author, author_book_counts))
+                .collect(),
             tag_list: book.tags.clone(),
             sortable_title: book.sortable_title.clone(),
             identifier_list: book.identifiers.iter().map(Identifier::from).collect(),
@@ -97,6 +105,11 @@ pub struct LibraryAuthor {
     pub id: String,
     pub name: String,
     pub sortable_name: String,
+    /// Number of books in the library linked to this author, from
+    /// `Library::author_book_counts` (one GROUP BY pass over
+    /// `books_authors_link`). The Authors page renders this directly
+    /// instead of deriving counts from the whole book list.
+    pub book_count: u32,
 }
 
 #[derive(Serialize, Deserialize, specta::Type)]

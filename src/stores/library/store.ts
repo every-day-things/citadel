@@ -43,11 +43,10 @@ interface LibraryActions {
 	 *
 	 * Kept (and loaded lazily, see `useAllBooks`) for the consumers that
 	 * genuinely need whole-library data and have no targeted query:
-	 * - the Authors page: per-author book counts and the "authors without
-	 *   books" filter need every book↔author link;
 	 * - the book detail route: the tag autocomplete needs the full tag
 	 *   vocabulary (and there is no fetch-one-book command).
-	 * The cover grid does NOT use this; it pages via `ensureBookRange`.
+	 * The Authors page no longer uses this (per-author book counts ride on
+	 * the authors payload); the cover grid pages via `ensureBookRange`.
 	 */
 	loadBooks: () => Promise<void>;
 	loadAuthors: () => Promise<void>;
@@ -335,9 +334,11 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 					bookCache: invalidateBookCache(state.bookCache),
 					allBooksGeneration: state.allBooksGeneration + 1,
 				}));
-				// Mutations can rename/create series and change the library
-				// size; refresh both in the background.
+				// Mutations can rename/create series, change the library size,
+				// and change per-author book counts (which ride on the authors
+				// payload); refresh all three in the background.
 				void get().actions.loadSeries();
+				void get().actions.loadAuthors();
 				void refreshLibraryTotal();
 			},
 

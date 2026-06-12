@@ -69,6 +69,28 @@ pub(crate) fn all(conn: &mut SqliteConnection) -> Result<Vec<Author>, CalibreErr
         .map_err(CalibreError::from)
 }
 
+/// Linked-book count per author, in one GROUP BY pass over
+/// `books_authors_link`. Authors with no linked books are absent from the
+/// map (their count is 0).
+pub(crate) fn book_counts(
+    conn: &mut SqliteConnection,
+) -> Result<HashMap<AuthorId, i64>, CalibreError> {
+    use diesel::dsl::count_star;
+
+    use crate::schema::books_authors_link::dsl::*;
+
+    let rows: Vec<(i32, i64)> = books_authors_link
+        .group_by(author)
+        .select((author, count_star()))
+        .load(conn)
+        .map_err(CalibreError::from)?;
+
+    Ok(rows
+        .into_iter()
+        .map(|(author_id, book_count)| (AuthorId(author_id), book_count))
+        .collect())
+}
+
 pub(crate) fn create(
     conn: &mut SqliteConnection,
     new_author: NewAuthor,

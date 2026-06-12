@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { LibraryAuthor, LibraryBook } from "@/bindings";
+import type { LibraryAuthor } from "@/bindings";
 import { sortAuthors } from "@/lib/domain/author";
 
 export const AuthorSortOrder = {
@@ -42,7 +42,6 @@ export interface UseAuthorFiltersReturn {
 
 export const useAuthorFilters = (
 	authors: LibraryAuthor[],
-	books: LibraryBook[],
 ): UseAuthorFiltersReturn => {
 	const [searchTerm, setSearchTerm] = useState("");
 	const [sortOrder, setSortOrder] = useState<AuthorSortOrderValue>(
@@ -64,10 +63,7 @@ export const useAuthorFilters = (
 		}
 
 		if (showOnlyAuthorsWithoutBooks) {
-			const authorIdsWithBooks = new Set(
-				books.flatMap((book) => book.author_list.map((a) => a.id)),
-			);
-			result = result.filter((author) => !authorIdsWithBooks.has(author.id));
+			result = result.filter((author) => author.book_count === 0);
 		}
 
 		result.sort(sortAuthors);
@@ -77,7 +73,7 @@ export const useAuthorFilters = (
 		}
 
 		return result;
-	}, [authors, books, searchTerm, sortOrder, showOnlyAuthorsWithoutBooks]);
+	}, [authors, searchTerm, sortOrder, showOnlyAuthorsWithoutBooks]);
 
 	return {
 		filters: {
