@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import DOMPurify from "dompurify";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Identifier, LibraryBook, LocalFile } from "@/bindings";
@@ -177,6 +177,16 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 					event.preventDefault();
 					gridContainerRef.current?.focus();
 				}}
+				onOpenAutoFocus={(event) => {
+					// Land on the primary action instead of the header close button.
+					const target = document.querySelector(
+						"[data-drawer-initial-focus]",
+					);
+					if (target instanceof HTMLElement) {
+						event.preventDefault();
+						target.focus();
+					}
+				}}
 			>
 				{selectedSidebarBook && <BookDetails book={selectedSidebarBook} />}
 			</Drawer>
@@ -186,6 +196,8 @@ export const Books = ({ search_for_author }: BookSearchOptions) => {
 
 const BookDetails = ({ book }: { book: LibraryBook }) => {
 	const platform = usePlatform();
+	const navigate = useNavigate();
+	const canRead = platform.capabilities.canOpenLocalPaths;
 	return (
 		<div className={styles.details}>
 			<div className={styles.detailsTop}>
@@ -198,10 +210,11 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 						</span>
 					</div>
 					<div className={styles.detailsActions}>
-						{platform.capabilities.canOpenLocalPaths && (
+						{canRead && (
 							<Button
 								variant="subtle"
-								onPointerDown={safeAsyncEventHandler(async () => {
+								data-drawer-initial-focus=""
+								onClick={safeAsyncEventHandler(async () => {
 									const firstFile = book.file_list[0];
 									if (firstFile === undefined) return;
 
@@ -214,12 +227,19 @@ const BookDetails = ({ book }: { book: LibraryBook }) => {
 								Read
 							</Button>
 						)}
-						<Link to={`/books/${book.id}`}>
-							<Button variant="primary">
-								<F7Pencil />
-								Edit
-							</Button>
-						</Link>
+						<Button
+							variant="primary"
+							data-drawer-initial-focus={canRead ? undefined : ""}
+							onClick={() =>
+								void navigate({
+									to: "/books/$bookId",
+									params: { bookId: book.id },
+								})
+							}
+						>
+							<F7Pencil />
+							Edit
+						</Button>
 					</div>
 				</div>
 			</div>

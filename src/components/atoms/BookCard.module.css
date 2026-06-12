@@ -26,6 +26,9 @@
 }
 
 .coverWrapSelected {
+	/* Crisp accent line (3:1 contrast floor) inside the same soft halo the
+	 * focused controls wear, so selection and focus share one language. */
 	outline: 2px solid var(--ctd-accent);
-	outline-offset: 3px;
+	outline-offset: 2px;
+	box-shadow: 0 0 0 7px var(--ctd-focus-ring);
 }
