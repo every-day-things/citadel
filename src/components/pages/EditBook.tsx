@@ -10,6 +10,7 @@ import {
 	useState,
 } from "react";
 import type { BookUpdate, LibraryAuthor, LibraryBook } from "@/bindings";
+import { HardcoverLogo } from "@/components/icons/HardcoverLogo";
 import {
 	Button,
 	IconButton,
@@ -492,6 +493,12 @@ const EditBookForm = ({
 										}
 									}}
 								>
+									<HardcoverLogo
+										width={14}
+										height={14}
+										aria-hidden="true"
+										focusable="false"
+									/>
 									Find on Hardcover…
 								</Button>
 							</FormRow>

@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useState } from "react";
-import { F7BookFill } from "@/components/icons/F7BookFill";
+import { HardcoverLogo } from "@/components/icons/HardcoverLogo";
 import { HardcoverSearchModal } from "@/components/molecules/HardcoverSearchModal";
 import {
 	Button,
@@ -195,9 +195,9 @@ export const AddBookForm = ({
 								hc.openSearch(buildSearchQuery(bookTitle, bookAuthors))
 							}
 						>
-							<F7BookFill
-								width={12}
-								height={12}
+							<HardcoverLogo
+								width={14}
+								height={14}
 								aria-hidden="true"
 								focusable="false"
 							/>
