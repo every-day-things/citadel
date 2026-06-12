@@ -154,3 +154,53 @@ fn test_delete_author_with_books_fails() {
     let result = lib.remove_author(author.id);
     assert!(result.is_err());
 }
+
+#[test]
+fn test_author_book_counts_empty_library() {
+    let (_temp, mut lib) = setup_with_library();
+
+    let counts = lib.author_book_counts().unwrap();
+    assert!(counts.is_empty());
+}
+
+#[test]
+fn test_author_book_counts_groups_links_per_author() {
+    let (_temp, mut lib) = setup_with_library();
+
+    let bookless_author_id = lib
+        .add_author(AuthorAdd {
+            name: "No Books".to_string(),
+            sort: Some("Books, No".to_string()),
+            link: None,
+        })
+        .unwrap();
+
+    let book = |title: &str, author_names: Vec<&str>| BookAdd {
+        title: title.to_string(),
+        author_names: author_names.into_iter().map(String::from).collect(),
+        tags: None,
+        series: None,
+        series_index: None,
+        publisher: None,
+        publication_date: None,
+        rating: None,
+        comments: None,
+        identifiers: HashMap::new(),
+        file_paths: vec![],
+    };
+
+    lib.add_book(book("Solo Work", vec!["Author A"])).unwrap();
+    lib.add_book(book("Another Solo Work", vec!["Author A"]))
+        .unwrap();
+    lib.add_book(book("Co-Written Work", vec!["Author A", "Author B"]))
+        .unwrap();
+
+    let authors = lib.authors().unwrap();
+    let id_of = |name: &str| authors.iter().find(|a| a.name == name).unwrap().id;
+
+    let counts = lib.author_book_counts().unwrap();
+    assert_eq!(counts.get(&id_of("Author A")), Some(&3));
+    assert_eq!(counts.get(&id_of("Author B")), Some(&1));
+    // Authors with no linked books are absent, not present-with-zero.
+    assert!(!counts.contains_key(&bookless_author_id));
+}
