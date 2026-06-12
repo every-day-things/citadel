@@ -200,6 +200,9 @@ pub fn clb_cmd_create_authors(
     new_authors: Vec<NewAuthor>,
 ) -> Result<Vec<LibraryAuthor>, String> {
     state.with_library(|lib| {
+        // Freshly created authors have no linked books yet, so an empty
+        // counts map is exact (from_author defaults missing entries to 0).
+        let no_book_counts = std::collections::HashMap::new();
         let mut created = Vec::new();
         for author in &new_authors {
             let author_add = libcalibre::AuthorAdd {
@@ -209,7 +212,7 @@ pub fn clb_cmd_create_authors(
             };
             let author_id = lib.add_author(author_add).map_err(|e| e.to_string())?;
             let library_author = lib.get_author(author_id).map_err(|e| e.to_string())?;
-            created.push(LibraryAuthor::from(&library_author));
+            created.push(LibraryAuthor::from_author(&library_author, &no_book_counts));
         }
         Ok(created)
     })?

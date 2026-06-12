@@ -304,7 +304,14 @@ path: string; publication_date: string | null;
 file_contains_cover: boolean }
 export type ImportableBookType = "Epub" | "Pdf" | "Mobi" | "Text"
 export type ImportableFile = { path: string }
-export type LibraryAuthor = { id: string; name: string; sortable_name: string }
+export type LibraryAuthor = { id: string; name: string; sortable_name: string;
+/**
+ * Number of books in the library linked to this author, from
+ * `Library::author_book_counts` (one GROUP BY pass over
+ * `books_authors_link`). The Authors page renders this directly
+ * instead of deriving counts from the whole book list.
+ */
+book_count: number }
 export type LibraryBook = { id: string; uuid: string | null; title: string; author_list: LibraryAuthor[]; tag_list: string[]; sortable_title: string | null; file_list: BookFile[]; cover_image: LocalOrRemoteUrl | null; identifier_list: Identifier[]; description: string | null; is_read: boolean; series: string | null; series_index: number | null }
 export type LibraryBookPage = { items: LibraryBook[];
 /**
