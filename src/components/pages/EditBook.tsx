@@ -355,40 +355,60 @@ const EditBookForm = ({
 		null,
 	);
 
-	const loadCustomColumns = useCallback(async () => {
-		const columnsResult = await commands.clbQueryListCustomColumns();
-		if (columnsResult.status === "error") {
-			throw new Error(columnsResult.error);
-		}
+	const loadCustomColumns = useCallback(
+		async (isCancelled: () => boolean = () => false) => {
+			const columnsResult = await commands.clbQueryListCustomColumns();
+			if (isCancelled()) {
+				return;
+			}
+			if (columnsResult.status === "error") {
+				throw new Error(columnsResult.error);
+			}
 
-		const editable = editableCustomColumns(columnsResult.data);
-		if (editable.length === 0) {
-			setCustomColumns([]);
-			setCustomSnapshot({});
-			setCustomValues({});
-			return;
-		}
+			const editable = editableCustomColumns(columnsResult.data);
+			if (editable.length === 0) {
+				setCustomColumns([]);
+				setCustomSnapshot({});
+				setCustomValues({});
+				return;
+			}
 
-		const valuesResult = await commands.clbQueryGetCustomValuesForBook(
-			book.id,
-		);
-		if (valuesResult.status === "error") {
-			throw new Error(valuesResult.error);
-		}
+			const valuesResult = await commands.clbQueryGetCustomValuesForBook(
+				book.id,
+			);
+			if (isCancelled()) {
+				return;
+			}
+			if (valuesResult.status === "error") {
+				throw new Error(valuesResult.error);
+			}
 
-		const fieldValues = buildCustomFieldValues(editable, valuesResult.data);
-		setCustomColumns(editable);
-		setCustomSnapshot(fieldValues);
-		setCustomValues(fieldValues);
-	}, [book.id]);
+			const fieldValues = buildCustomFieldValues(editable, valuesResult.data);
+			setCustomColumns(editable);
+			setCustomSnapshot(fieldValues);
+			setCustomValues(fieldValues);
+		},
+		[book.id],
+	);
 
 	useEffect(() => {
-		loadCustomColumns().catch((error: unknown) => {
+		let cancelled = false;
+		loadCustomColumns(() => cancelled).catch((error: unknown) => {
+			if (cancelled) {
+				return;
+			}
 			console.error(error);
 			setCustomColumnError(
 				error instanceof Error ? error.message : String(error),
 			);
+			// Do not leave the previous book's inputs rendered under the error.
+			setCustomColumns([]);
+			setCustomSnapshot({});
+			setCustomValues({});
 		});
+		return () => {
+			cancelled = true;
+		};
 	}, [loadCustomColumns]);
 
 	const customChanges = useMemo(

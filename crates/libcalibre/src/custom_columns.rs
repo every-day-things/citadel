@@ -794,16 +794,26 @@ pub(crate) fn set_value(
         (CustomColumnKind::Float, CustomValue::Float(f)) => {
             upsert_non_normalized_f64(conn, n, book_id, f)
         }
+        // Calibre never stores empty text values: an empty string clears.
         (CustomColumnKind::Comments, CustomValue::Text(s)) => {
-            upsert_non_normalized_text(conn, n, book_id, &s)
+            if s.is_empty() {
+                clear_value(conn, column, book_id)
+            } else {
+                upsert_non_normalized_text(conn, n, book_id, &s)
+            }
         }
         (CustomColumnKind::Datetime, CustomValue::Datetime(dt)) => {
             upsert_non_normalized_text(conn, n, book_id, &format_calibre_datetime(&dt))
         }
         (CustomColumnKind::Text, CustomValue::Text(s)) if !column.is_multiple => {
-            set_normalized_values(conn, n, book_id, std::slice::from_ref(&s))
+            if s.is_empty() {
+                clear_value(conn, column, book_id)
+            } else {
+                set_normalized_values(conn, n, book_id, std::slice::from_ref(&s))
+            }
         }
         (CustomColumnKind::Text, CustomValue::TextMultiple(values)) if column.is_multiple => {
+            let values: Vec<String> = values.into_iter().filter(|v| !v.is_empty()).collect();
             if values.is_empty() {
                 clear_value(conn, column, book_id)
             } else {

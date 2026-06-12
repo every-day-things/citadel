@@ -26,7 +26,7 @@ export const editableCustomColumns = (
 		(column) =>
 			column.supported &&
 			column.editable &&
-			column.label !== READ_COLUMN_LABEL,
+			!(column.label === READ_COLUMN_LABEL && column.datatype === "bool"),
 	);
 
 /** The form value representing "no value stored" for a column. */
@@ -69,21 +69,96 @@ export const fieldValueFromDto = (
 		return value.TextMultiple;
 	}
 	if ("Datetime" in value) {
-		// Edit at date-only granularity.
-		return value.Datetime.slice(0, 10);
+		// Edit at date-only granularity, in the user's local calendar.
+		return localDateOfInstant(value.Datetime) ?? value.Datetime;
 	}
 	return value.Enumeration;
 };
 
-const numberFieldToValue = (value: string | number): number | null => {
-	if (typeof value === "number") {
-		return Number.isFinite(value) ? value : null;
+const pad2 = (n: number): string => String(n).padStart(2, "0");
+
+/**
+ * The LOCAL calendar date (`YYYY-MM-DD`) of an RFC3339 instant, or `null`
+ * when the string cannot be parsed.
+ */
+export const localDateOfInstant = (rfc3339: string): string | null => {
+	const parsed = new Date(rfc3339);
+	if (Number.isNaN(parsed.getTime())) {
+		return null;
 	}
-	const parsed = Number.parseFloat(value);
-	return Number.isFinite(parsed) ? parsed : null;
+	return `${parsed.getFullYear()}-${pad2(parsed.getMonth() + 1)}-${pad2(
+		parsed.getDate(),
+	)}`;
+};
+
+const I32_MIN = -2147483648;
+const I32_MAX = 2147483647;
+
+/**
+ * Parse a NumberInput value. Uses `Number()` semantics, so trailing garbage
+ * (`"12abc"`) is rejected rather than truncated. For int columns, values
+ * outside i32 range are rejected. `null` means "not a usable number"; callers
+ * must treat that as "no change", never as "clear".
+ */
+const numberFieldToValue = (
+	value: string | number,
+	isInt: boolean,
+): number | null => {
+	const parsed = typeof value === "number" ? value : Number(value.trim());
+	if (!Number.isFinite(parsed)) {
+		return null;
+	}
+	if (isInt) {
+		const truncated = Math.trunc(parsed);
+		return truncated >= I32_MIN && truncated <= I32_MAX ? truncated : null;
+	}
+	return parsed;
+};
+
+/**
+ * Whether a form value for an int/float column is non-empty but not a usable
+ * number (junk text, out-of-range int). Such input must not be written — and
+ * in particular must not clear the stored value.
+ */
+const isUnusableNumberInput = (
+	column: CustomColumnDef,
+	value: CustomFieldValue,
+): boolean => {
+	if (column.datatype !== "int" && column.datatype !== "float") {
+		return false;
+	}
+	if (value === null || Array.isArray(value)) {
+		return false;
+	}
+	if (typeof value === "string" && value.trim() === "") {
+		return false; // empty = clear, which is fine
+	}
+	return numberFieldToValue(value, column.datatype === "int") === null;
 };
 
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * RFC3339 string for the LOCAL midnight of a `YYYY-MM-DD` date, carrying the
+ * local UTC offset in effect on that date (DST-safe), matching Calibre's
+ * local-midnight-with-offset semantics. `null` when the input is not a
+ * date-only string.
+ */
+export const localMidnightRfc3339 = (date: string): string | null => {
+	if (!DATE_ONLY_PATTERN.test(date)) {
+		return null;
+	}
+	const year = Number(date.slice(0, 4));
+	const month = Number(date.slice(5, 7));
+	const day = Number(date.slice(8, 10));
+	const midnight = new Date(year, month - 1, day, 0, 0, 0);
+	// getTimezoneOffset() is minutes BEHIND UTC (e.g. 480 for UTC-8).
+	const offsetMinutes = -midnight.getTimezoneOffset();
+	const sign = offsetMinutes < 0 ? "-" : "+";
+	const absolute = Math.abs(offsetMinutes);
+	const offset = `${sign}${pad2(Math.floor(absolute / 60))}:${pad2(absolute % 60)}`;
+	return `${date}T00:00:00${offset}`;
+};
 
 /**
  * Convert a form field value into the DTO to send to the backend.
@@ -100,13 +175,15 @@ export const dtoFromFieldValue = (
 			return null;
 		}
 		case "int": {
-			if (value === null || value === "" || Array.isArray(value)) return null;
-			const parsed = numberFieldToValue(value);
-			return parsed === null ? null : { Int: Math.trunc(parsed) };
+			if (value === null || Array.isArray(value)) return null;
+			if (typeof value === "string" && value.trim() === "") return null;
+			const parsed = numberFieldToValue(value, true);
+			return parsed === null ? null : { Int: parsed };
 		}
 		case "float": {
-			if (value === null || value === "" || Array.isArray(value)) return null;
-			const parsed = numberFieldToValue(value);
+			if (value === null || Array.isArray(value)) return null;
+			if (typeof value === "string" && value.trim() === "") return null;
+			const parsed = numberFieldToValue(value, false);
 			return parsed === null ? null : { Float: parsed };
 		}
 		case "text": {
@@ -128,9 +205,10 @@ export const dtoFromFieldValue = (
 			if (typeof value !== "string") return null;
 			const trimmed = value.trim();
 			if (trimmed === "") return null;
-			if (DATE_ONLY_PATTERN.test(trimmed)) {
-				// Date-only input: send midnight UTC.
-				return { Datetime: `${trimmed}T00:00:00+00:00` };
+			// Date-only input: send local midnight with the local UTC offset.
+			const localMidnight = localMidnightRfc3339(trimmed);
+			if (localMidnight !== null) {
+				return { Datetime: localMidnight };
 			}
 			// Pass through; the backend rejects strings that are not RFC3339.
 			return { Datetime: trimmed };
@@ -167,8 +245,36 @@ export interface CustomValueChange {
 }
 
 /**
+ * Compare two datetime strings by the instant they denote, so a round-tripped
+ * unchanged date (e.g. re-serialized with a different offset) is not reported
+ * as a change. Falls back to string equality when either side fails to parse.
+ */
+const datetimesEqual = (a: string, b: string): boolean => {
+	const aMs = new Date(a).getTime();
+	const bMs = new Date(b).getTime();
+	if (Number.isNaN(aMs) || Number.isNaN(bMs)) {
+		return a === b;
+	}
+	return aMs === bMs;
+};
+
+const dtosEqual = (
+	a: CustomValueDto | null,
+	b: CustomValueDto | null,
+): boolean => {
+	if (a !== null && b !== null && "Datetime" in a && "Datetime" in b) {
+		return datetimesEqual(a.Datetime, b.Datetime);
+	}
+	return JSON.stringify(a) === JSON.stringify(b);
+};
+
+/**
  * The set of columns whose effective value differs between two form
  * snapshots, with the DTO to write for each.
+ *
+ * Columns whose `after` value is unusable number input (junk text,
+ * out-of-range int) are treated as unchanged: a junk paste must not silently
+ * clear a stored value.
  */
 export const diffCustomValues = (
 	columns: CustomColumnDef[],
@@ -178,15 +284,16 @@ export const diffCustomValues = (
 	const changes: CustomValueChange[] = [];
 	for (const column of columns) {
 		const key = String(column.column_id);
+		const afterValue = after[key] ?? emptyFieldValue(column);
+		if (isUnusableNumberInput(column, afterValue)) {
+			continue;
+		}
 		const beforeDto = dtoFromFieldValue(
 			column,
 			before[key] ?? emptyFieldValue(column),
 		);
-		const afterDto = dtoFromFieldValue(
-			column,
-			after[key] ?? emptyFieldValue(column),
-		);
-		if (JSON.stringify(beforeDto) !== JSON.stringify(afterDto)) {
+		const afterDto = dtoFromFieldValue(column, afterValue);
+		if (!dtosEqual(beforeDto, afterDto)) {
 			changes.push({ columnId: column.column_id, value: afterDto });
 		}
 	}

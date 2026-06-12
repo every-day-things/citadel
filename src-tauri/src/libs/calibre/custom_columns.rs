@@ -95,3 +95,53 @@ pub struct BookCustomValue {
     pub column_id: i32,
     pub value: CustomValueDto,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::TimeZone;
+
+    #[test]
+    fn int_out_of_i32_range_yields_err() {
+        let too_big = libcalibre::CustomValue::Int(i64::from(i32::MAX) + 1);
+        assert!(CustomValueDto::try_from(too_big).is_err());
+
+        let too_small = libcalibre::CustomValue::Int(i64::from(i32::MIN) - 1);
+        assert!(CustomValueDto::try_from(too_small).is_err());
+
+        let in_range = libcalibre::CustomValue::Int(i64::from(i32::MAX));
+        let dto = CustomValueDto::try_from(in_range).unwrap();
+        assert!(matches!(dto, CustomValueDto::Int(i) if i == i32::MAX));
+    }
+
+    #[test]
+    fn datetime_round_trips_both_directions() {
+        // libcalibre -> DTO
+        let dt = Utc.with_ymd_and_hms(2024, 1, 15, 10, 30, 0).unwrap();
+        let dto = CustomValueDto::try_from(libcalibre::CustomValue::Datetime(dt)).unwrap();
+        let CustomValueDto::Datetime(raw) = &dto else {
+            panic!("expected Datetime DTO");
+        };
+        assert_eq!(raw, "2024-01-15T10:30:00+00:00");
+
+        // DTO -> libcalibre, back to the same instant
+        let value = libcalibre::CustomValue::try_from(dto).unwrap();
+        assert_eq!(value, libcalibre::CustomValue::Datetime(dt));
+
+        // RFC3339 string with a non-UTC offset normalizes to the same instant
+        let offset_dto = CustomValueDto::Datetime("2024-01-15T11:30:00+01:00".to_string());
+        let value = libcalibre::CustomValue::try_from(offset_dto).unwrap();
+        assert_eq!(value, libcalibre::CustomValue::Datetime(dt));
+    }
+
+    #[test]
+    fn invalid_datetime_string_yields_err() {
+        for raw in ["not a date", "", "2024-01-15", "2024-01-15 10:30:00"] {
+            let dto = CustomValueDto::Datetime(raw.to_string());
+            assert!(
+                libcalibre::CustomValue::try_from(dto).is_err(),
+                "'{raw}' should be rejected"
+            );
+        }
+    }
+}

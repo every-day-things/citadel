@@ -274,6 +274,172 @@ fn test_batch_get_custom_values() {
 }
 
 #[test]
+fn test_batch_get_custom_values_normalized_kinds() {
+    let (_temp, mut lib) = setup_with_library();
+    let book1 = add_book(&mut lib);
+    let book2 = add_book(&mut lib);
+    let book3 = add_book(&mut lib); // never gets any value
+
+    let mood = lib
+        .create_custom_column(spec("mood", CustomColumnKind::Text))
+        .unwrap();
+    let genres = lib
+        .create_custom_column(CustomColumnSpec {
+            is_multiple: true,
+            ..spec("genres", CustomColumnKind::Text)
+        })
+        .unwrap();
+    let status = lib
+        .create_custom_column(CustomColumnSpec {
+            enum_values: vec!["reading".to_string(), "read".to_string()],
+            ..spec("status", CustomColumnKind::Enumeration)
+        })
+        .unwrap();
+
+    // Single-value text
+    lib.set_custom_value(book1, mood.id, Some(CustomValue::Text("cozy".to_string())))
+        .unwrap();
+    lib.set_custom_value(book2, mood.id, Some(CustomValue::Text("grim".to_string())))
+        .unwrap();
+
+    // Multiple text (grouping): two values for book1, one for book2
+    lib.set_custom_value(
+        book1,
+        genres.id,
+        Some(CustomValue::TextMultiple(vec![
+            "fantasy".to_string(),
+            "epic".to_string(),
+        ])),
+    )
+    .unwrap();
+    lib.set_custom_value(
+        book2,
+        genres.id,
+        Some(CustomValue::TextMultiple(vec!["noir".to_string()])),
+    )
+    .unwrap();
+
+    // Enumeration
+    lib.set_custom_value(
+        book1,
+        status.id,
+        Some(CustomValue::Enumeration("reading".to_string())),
+    )
+    .unwrap();
+    lib.set_custom_value(
+        book2,
+        status.id,
+        Some(CustomValue::Enumeration("read".to_string())),
+    )
+    .unwrap();
+
+    let books = [book1, book2, book3];
+
+    let moods = lib.batch_get_custom_values(mood.id, &books).unwrap();
+    assert_eq!(moods.len(), 2);
+    assert_eq!(
+        moods.get(&book1),
+        Some(&CustomValue::Text("cozy".to_string()))
+    );
+    assert_eq!(
+        moods.get(&book2),
+        Some(&CustomValue::Text("grim".to_string()))
+    );
+    assert_eq!(moods.get(&book3), None);
+
+    let genre_values = lib.batch_get_custom_values(genres.id, &books).unwrap();
+    assert_eq!(genre_values.len(), 2);
+    let Some(CustomValue::TextMultiple(mut book1_genres)) = genre_values.get(&book1).cloned()
+    else {
+        panic!("expected TextMultiple for book1");
+    };
+    book1_genres.sort();
+    assert_eq!(
+        book1_genres,
+        vec!["epic".to_string(), "fantasy".to_string()]
+    );
+    assert_eq!(
+        genre_values.get(&book2),
+        Some(&CustomValue::TextMultiple(vec!["noir".to_string()]))
+    );
+    assert_eq!(genre_values.get(&book3), None);
+
+    let statuses = lib.batch_get_custom_values(status.id, &books).unwrap();
+    assert_eq!(statuses.len(), 2);
+    assert_eq!(
+        statuses.get(&book1),
+        Some(&CustomValue::Enumeration("reading".to_string()))
+    );
+    assert_eq!(
+        statuses.get(&book2),
+        Some(&CustomValue::Enumeration("read".to_string()))
+    );
+    assert_eq!(statuses.get(&book3), None);
+}
+
+#[test]
+fn test_empty_text_values_clear() {
+    let (_temp, mut lib) = setup_with_library();
+    let book = add_book(&mut lib);
+
+    // Single-value text: empty string clears
+    let mood = lib
+        .create_custom_column(spec("mood", CustomColumnKind::Text))
+        .unwrap();
+    lib.set_custom_value(book, mood.id, Some(CustomValue::Text("cozy".to_string())))
+        .unwrap();
+    lib.set_custom_value(book, mood.id, Some(CustomValue::Text(String::new())))
+        .unwrap();
+    assert_eq!(lib.get_custom_value(book, mood.id).unwrap(), None);
+
+    // Comments: empty string clears
+    let notes = lib
+        .create_custom_column(spec("notes", CustomColumnKind::Comments))
+        .unwrap();
+    lib.set_custom_value(book, notes.id, Some(CustomValue::Text("x".to_string())))
+        .unwrap();
+    lib.set_custom_value(book, notes.id, Some(CustomValue::Text(String::new())))
+        .unwrap();
+    assert_eq!(lib.get_custom_value(book, notes.id).unwrap(), None);
+
+    // Multiple text: empty entries are filtered out before writing
+    let genres = lib
+        .create_custom_column(CustomColumnSpec {
+            is_multiple: true,
+            ..spec("genres", CustomColumnKind::Text)
+        })
+        .unwrap();
+    lib.set_custom_value(
+        book,
+        genres.id,
+        Some(CustomValue::TextMultiple(vec![
+            "fantasy".to_string(),
+            String::new(),
+            "epic".to_string(),
+        ])),
+    )
+    .unwrap();
+    let Some(CustomValue::TextMultiple(mut values)) = lib.get_custom_value(book, genres.id).unwrap()
+    else {
+        panic!("expected TextMultiple");
+    };
+    values.sort();
+    assert_eq!(values, vec!["epic".to_string(), "fantasy".to_string()]);
+
+    // All entries empty: clears
+    lib.set_custom_value(
+        book,
+        genres.id,
+        Some(CustomValue::TextMultiple(vec![
+            String::new(),
+            String::new(),
+        ])),
+    )
+    .unwrap();
+    assert_eq!(lib.get_custom_value(book, genres.id).unwrap(), None);
+}
+
+#[test]
 fn test_get_custom_values_for_book_skips_unsupported() {
     let (_temp, mut lib) = setup_with_library();
     let book = add_book(&mut lib);

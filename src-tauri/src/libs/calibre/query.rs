@@ -86,12 +86,17 @@ pub fn clb_query_get_custom_values_for_book(
             .get_custom_values_for_book(libcalibre::BookId::from(book_id_int))
             .map_err(|e| e.to_string())?;
 
+        // Skip values that cannot cross the Tauri boundary (e.g. an i64 out
+        // of i32 range) instead of failing the whole command and hiding
+        // every other column from the UI.
         let mut book_values = values
             .into_iter()
-            .map(|(column_id, value)| {
-                CustomValueDto::try_from(value).map(|value| BookCustomValue { column_id, value })
+            .filter_map(|(column_id, value)| {
+                CustomValueDto::try_from(value)
+                    .map(|value| BookCustomValue { column_id, value })
+                    .ok()
             })
-            .collect::<Result<Vec<_>, String>>()?;
+            .collect::<Vec<_>>();
         book_values.sort_by_key(|book_value| book_value.column_id);
         Ok(book_values)
     })?
