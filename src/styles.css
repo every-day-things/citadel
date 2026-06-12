@@ -8,6 +8,10 @@
  * font), so the look can be retuned without touching components.
  */
 :root {
+	/* Native form chrome (number spinners, selection, scrollbars) follows
+	 * the app theme, not the OS appearance. */
+	color-scheme: light;
+
 	--pal-base: oklch(97.5% 0.003 90);
 	--pal-mantle: oklch(95.5% 0.004 90);
 	--pal-crust: oklch(93% 0.004 90);
@@ -137,6 +141,8 @@
 /* Dark stones (marble: polished black, marble-white accent) + shared dark
    semantic derivations. */
 :root[data-theme="dark"] {
+	color-scheme: dark;
+
 	--pal-base: oklch(21% 0.004 270);
 	--pal-mantle: oklch(18.5% 0.004 270);
 	--pal-crust: oklch(15% 0.004 270);

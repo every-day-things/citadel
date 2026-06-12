@@ -486,6 +486,8 @@ describe("applyHardcoverMetadataToBook", () => {
 			publication_date: null,
 			is_read: null,
 			description: "A war across the stars.",
+			series: null,
+			series_index: null,
 		});
 	});
 

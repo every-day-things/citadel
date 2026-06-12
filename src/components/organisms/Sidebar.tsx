@@ -10,8 +10,8 @@ import { AlertDialog, IconButton, TextInput } from "@/components/ui";
 import { safeAsyncEventHandler } from "@/lib/async";
 import { useAppUpdates } from "@/lib/hooks/use-app-updates";
 import type { SmartShelf } from "@/lib/platform/settings/types";
-import { useLibraryView } from "@/stores/library-view/store";
 import { LibraryState, useLibraryState } from "@/stores/library/store";
+import { useLibraryView } from "@/stores/library-view/store";
 import { deleteSmartShelf, renameSmartShelf } from "@/stores/settings/actions";
 import { useSettings } from "@/stores/settings/store";
 import styles from "./Sidebar.module.css";
@@ -112,6 +112,13 @@ const SidebarPure = ({ currentPathname, openSettings }: SidebarPureProps) => {
 						data-active={currentPathname === "/authors" || undefined}
 					>
 						Authors
+					</Link>
+					<Link
+						to="/series"
+						className={clsx("ctd-nav-link", styles.navLink)}
+						data-active={currentPathname === "/series" || undefined}
+					>
+						Series
 					</Link>
 				</div>
 				{smartShelves.length > 0 && (

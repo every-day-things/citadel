@@ -38,6 +38,8 @@ const MOCK_BOOK: LibraryBook = {
 	title: "The Day I Bug'd",
 	sortable_title: "Day I Bug'd, The",
 	is_read: false,
+	series: "The Bug Chronicles",
+	series_index: 1.5,
 	identifier_list: [
 		{
 			id: 123,

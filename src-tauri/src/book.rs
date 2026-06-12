@@ -53,6 +53,9 @@ pub struct LibraryBook {
     pub description: Option<String>,
 
     pub is_read: bool,
+
+    pub series: Option<String>,
+    pub series_index: Option<f32>,
 }
 
 impl LibraryBook {
@@ -67,6 +70,8 @@ impl LibraryBook {
             identifier_list: book.identifiers.iter().map(Identifier::from).collect(),
             description: book.description.clone(),
             is_read: book.is_read,
+            series: book.series.clone(),
+            series_index: book.series_index,
             cover_image: None,
             file_list: book
                 .files

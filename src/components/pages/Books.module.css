@@ -229,3 +229,19 @@
 	text-decoration: underline;
 	cursor: pointer;
 }
+
+.detailsSeries {
+	font-size: 14px;
+	color: var(--ctd-ink-soft);
+}
+
+/* Author and series links in the drawer heading. */
+.detailsLink {
+	color: var(--ctd-link);
+	text-decoration: none;
+}
+
+.detailsLink:hover,
+.detailsLink:focus-visible {
+	text-decoration: underline;
+}
