@@ -40,6 +40,14 @@ async clbQuerySearchBooks(query: string) : Promise<Result<LibraryBook[], string>
     else return { status: "error", error: e  as any };
 }
 },
+async clbQueryBooks(query: LibraryBookQuery) : Promise<Result<LibraryBookPage, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clb_query_books", { query }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async clbQueryIsFileImportable(pathToFile: string) : Promise<ImportableFile | null> {
     return await TAURI_INVOKE("clb_query_is_file_importable", { pathToFile });
 },
@@ -214,6 +222,7 @@ export type AuthorUpdate = { full_name: string | null; sortable_name: string | n
  */
 export type BookCustomValue = { column_id: number; value: CustomValueDto }
 export type BookFile = { Local: LocalFile } | { Remote: RemoteFile }
+export type BookSortOrder = "TitleAsc" | "TitleDesc" | "AuthorAsc" | "AuthorDesc"
 export type BookUpdate = { author_id_list: string[] | null; tag_list: string[] | null; title: string | null; timestamp: string | null; publication_date: string | null; is_read: boolean | null; description: string | null; 
 /**
  * An empty (or whitespace) name unlinks the book from its series;
@@ -289,6 +298,21 @@ export type ImportableBookType = "Epub" | "Pdf" | "Mobi" | "Text"
 export type ImportableFile = { path: string }
 export type LibraryAuthor = { id: string; name: string; sortable_name: string }
 export type LibraryBook = { id: string; uuid: string | null; title: string; author_list: LibraryAuthor[]; tag_list: string[]; sortable_title: string | null; file_list: BookFile[]; cover_image: LocalOrRemoteUrl | null; identifier_list: Identifier[]; description: string | null; is_read: boolean; series: string | null; series_index: number | null }
+export type LibraryBookPage = { items: LibraryBook[];
+/**
+ * Total number of books matching the filters, ignoring limit/offset.
+ */
+total: number }
+export type LibraryBookQuery = { 
+/**
+ * Substring match across title, author names, and series names.
+ * `None` or empty text matches all books.
+ */
+text: string | null; author_id: string | null; series_id: number | null; hide_read: boolean; sort: BookSortOrder; 
+/**
+ * Page size. `None` returns all matches.
+ */
+limit: number | null; offset: number }
 export type LocalFile = { 
 /**
  * The absolute path to the file, including extension.

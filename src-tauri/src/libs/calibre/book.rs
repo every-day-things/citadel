@@ -63,3 +63,19 @@ pub fn search(
         .map(|book| to_library_book(&library_root, book))
         .collect())
 }
+
+pub fn query_page(
+    library_root: String,
+    lib: &mut Library,
+    query: libcalibre::BookQuery,
+) -> Result<(Vec<LibraryBook>, i64), libcalibre::CalibreError> {
+    let page = lib.query_books(query)?;
+
+    Ok((
+        page.items
+            .iter()
+            .map(|book| to_library_book(&library_root, book))
+            .collect(),
+        page.total,
+    ))
+}
