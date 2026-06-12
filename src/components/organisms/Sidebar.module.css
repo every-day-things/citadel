@@ -37,7 +37,7 @@
 	align-items: center;
 	min-height: 34px;
 	padding: 0.4rem 0.65rem;
-	border-radius: 0.375rem;
+	border-radius: var(--ctd-radius-control);
 	font-size: 14px;
 	line-height: 1.2;
 	color: var(--ctd-ink-soft);

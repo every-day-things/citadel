@@ -7,9 +7,9 @@
 	padding: 0 4px 0 10px;
 	font-size: 13px;
 	font-family: inherit;
-	border-radius: 6px;
+	border-radius: var(--ctd-radius-control);
 	background-color: var(--ctd-control-bg-strong);
-	border: 1px solid var(--ctd-border);
+	border: var(--ctd-control-border-width) solid var(--ctd-border);
 	box-shadow: var(--ctd-control-shadow);
 	color: var(--ctd-control-text);
 }
@@ -21,9 +21,7 @@
 
 .trigger:focus-visible {
 	outline: none;
-	box-shadow:
-		var(--ctd-control-shadow),
-		0 0 0 3px var(--ctd-focus-ring);
+	box-shadow: var(--ctd-control-shadow), var(--ctd-focus-shadow);
 }
 
 .trigger[data-placeholder] {
@@ -57,9 +55,9 @@
 
 .content {
 	background-color: var(--ctd-surface-strong);
-	border: 1px solid var(--ctd-border);
-	border-radius: 6px;
-	box-shadow: var(--ctd-shadow-lift);
+	border: var(--ctd-control-border-width) solid var(--ctd-border);
+	border-radius: var(--ctd-radius-control);
+	box-shadow: var(--ctd-popover-shadow);
 	padding: 4px 0;
 	z-index: 300;
 }
@@ -85,7 +83,7 @@
 	font-size: 13px;
 	padding: 0 10px 0 24px;
 	margin: 0 5px;
-	border-radius: 4px;
+	border-radius: min(4px, var(--ctd-radius-control));
 	color: var(--ctd-ink);
 	outline: none;
 }

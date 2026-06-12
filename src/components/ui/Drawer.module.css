@@ -22,8 +22,8 @@
 	display: flex;
 	flex-direction: column;
 	background-color: var(--ctd-surface);
-	border-left: 1px solid var(--ctd-border);
-	box-shadow: var(--ctd-shadow-lift);
+	border-left: var(--ctd-control-border-width) solid var(--ctd-border);
+	box-shadow: var(--ctd-dialog-shadow);
 	z-index: 111;
 }
 

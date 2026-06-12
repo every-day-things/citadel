@@ -8,6 +8,7 @@ import {
 	type SettingsManager,
 	type SettingsSchema,
 	type SettingsValue,
+	THEME_PALETTES,
 	type ThemePalette,
 } from "@/lib/platform/settings/types";
 
@@ -73,6 +74,13 @@ export const useSettings = create<SettingsStore>((set, get) => ({
 			for (const key of Object.keys(defaultSettings) as SettingsKey[]) {
 				const value = await settingsManager.get(key);
 				setSetting(initialSettings, key, value);
+			}
+
+			// Palettes get removed during design iteration; a persisted value
+			// from a retired one falls back to the default.
+			if (!THEME_PALETTES.includes(initialSettings.themePalette)) {
+				initialSettings.themePalette = defaultSettings.themePalette;
+				await settingsManager.set("themePalette", defaultSettings.themePalette);
 			}
 
 			set({ ...initialSettings, hydrated: true });

@@ -6,8 +6,8 @@
 	white-space: nowrap;
 	font-family: inherit;
 	font-size: 13px;
-	font-weight: 500;
-	border-radius: 6px;
+	font-weight: var(--ctd-control-font-weight);
+	border-radius: var(--ctd-radius-control);
 	transition:
 		background-color 120ms ease-out,
 		border-color 120ms ease-out,
@@ -16,17 +16,32 @@
 
 .button:focus-visible {
 	outline: none;
-	box-shadow: 0 0 0 3px var(--ctd-focus-ring);
+	box-shadow: var(--ctd-focus-shadow);
+}
+
+/* Press hooks: visual no-ops by default; a theme can translate the control
+   and collapse its shadow for a pushed-in look. The per-variant
+   :focus-visible rules below tie on specificity and win on source order, so
+   the keyboard focus halo survives a held press. */
+.button:active:not(:disabled) {
+	transform: var(--ctd-control-active-translate);
+}
+
+.default:active,
+.primary:active,
+.danger:active {
+	box-shadow: var(--ctd-control-active-shadow);
 }
 
 .md {
 	height: 28px;
-	padding: 0 12px;
+	padding: var(--ctd-control-pad-y) var(--ctd-control-pad-x);
 }
 
+/* sm trims 2px off the md inline padding. */
 .sm {
 	height: 22px;
-	padding: 0 10px;
+	padding: var(--ctd-control-pad-y) calc(var(--ctd-control-pad-x) - 2px);
 }
 
 .fullWidth {
@@ -35,7 +50,7 @@
 
 .default {
 	background-color: var(--ctd-control-bg-strong);
-	border: 1px solid var(--ctd-border);
+	border: var(--ctd-control-border-width) solid var(--ctd-border);
 	box-shadow: var(--ctd-control-shadow);
 	color: var(--ctd-control-text);
 }
@@ -49,14 +64,12 @@
 }
 
 .default:focus-visible {
-	box-shadow:
-		var(--ctd-control-shadow),
-		0 0 0 3px var(--ctd-focus-ring);
+	box-shadow: var(--ctd-control-shadow), var(--ctd-focus-shadow);
 }
 
 .primary {
 	background-color: var(--ctd-accent);
-	border: 1px solid var(--ctd-accent-strong);
+	border: var(--ctd-control-border-width) solid var(--ctd-accent-strong);
 	box-shadow: var(--ctd-control-shadow);
 	color: var(--ctd-accent-text);
 }
@@ -70,14 +83,12 @@
 }
 
 .primary:focus-visible {
-	box-shadow:
-		var(--ctd-control-shadow),
-		0 0 0 3px var(--ctd-focus-ring);
+	box-shadow: var(--ctd-control-shadow), var(--ctd-focus-shadow);
 }
 
 .danger {
 	background-color: var(--ctd-danger-bg);
-	border: 1px solid var(--ctd-danger-border);
+	border: var(--ctd-control-border-width) solid var(--ctd-danger-border);
 	box-shadow: var(--ctd-control-shadow);
 	color: var(--ctd-danger-text);
 }
@@ -91,14 +102,12 @@
 }
 
 .danger:focus-visible {
-	box-shadow:
-		var(--ctd-control-shadow),
-		0 0 0 3px var(--ctd-focus-ring);
+	box-shadow: var(--ctd-control-shadow), var(--ctd-focus-shadow);
 }
 
 .subtle {
 	background-color: transparent;
-	border: 1px solid transparent;
+	border: var(--ctd-control-border-width) solid transparent;
 	color: var(--ctd-accent);
 }
 

@@ -16,9 +16,9 @@
 	font-family: inherit;
 	font-size: 13px;
 	line-height: 1.45;
-	border-radius: 6px;
+	border-radius: var(--ctd-radius-control);
 	background-color: var(--ctd-control-bg);
-	border: 1px solid var(--ctd-border);
+	border: var(--ctd-control-border-width) solid var(--ctd-border);
 	color: var(--ctd-control-text);
 	box-shadow: var(--ctd-field-inner-shadow);
 	transition:
@@ -35,7 +35,7 @@
 .textarea:focus {
 	outline: none;
 	border-color: var(--ctd-accent);
-	box-shadow: 0 0 0 3px var(--ctd-focus-ring);
+	box-shadow: var(--ctd-focus-shadow);
 }
 
 .textarea:disabled {

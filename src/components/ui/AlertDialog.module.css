@@ -23,9 +23,9 @@
 	max-width: calc(100vw - 32px);
 	padding: 16px;
 	background-color: var(--ctd-surface);
-	border: 1px solid var(--ctd-border);
+	border: var(--ctd-control-border-width) solid var(--ctd-border);
 	border-radius: var(--ctd-radius-panel);
-	box-shadow: var(--ctd-shadow-lift);
+	box-shadow: var(--ctd-dialog-shadow);
 	text-align: center;
 	z-index: 113;
 }

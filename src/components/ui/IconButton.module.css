@@ -6,7 +6,7 @@
 	height: 26px;
 	padding: 0;
 	border: none;
-	border-radius: 6px;
+	border-radius: var(--ctd-radius-control);
 	background-color: transparent;
 	color: var(--ctd-ink-soft);
 	transition:
@@ -23,6 +23,8 @@
 		from var(--ctd-nav-hover-bg) l c h /
 		calc(alpha + 0.06)
 	);
+	/* Press hook: a visual no-op by default. */
+	transform: var(--ctd-control-active-translate);
 }
 
 .iconButton[data-active]:not(:disabled) {
@@ -32,7 +34,7 @@
 
 .iconButton:focus-visible {
 	outline: none;
-	box-shadow: 0 0 0 3px var(--ctd-focus-ring);
+	box-shadow: var(--ctd-focus-shadow);
 }
 
 .iconButton:disabled {

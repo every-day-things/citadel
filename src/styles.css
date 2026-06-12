@@ -4,7 +4,9 @@
  * OKLCH relative color syntax in the two shared blocks below. Palettes are
  * selected via data-palette on <html> (theme-manager.ts; Settings > General),
  * dark mode via data-theme. Adding a palette = one light + one dark stone
- * block.
+ * block, plus an optional SHAPE block (after the shared dark block) that
+ * overrides the geometry tokens: radii, border weight, padding, press
+ * motion, shadows, and the UI font itself.
  *
  * Default palette: "marble", drawn from the app icon (carved white marble,
  * charcoal ink, monochrome accent).
@@ -102,9 +104,30 @@
 	/* Book titles get a literary voice; chrome and controls stay system. */
 	--ctd-font-serif: "New York", ui-serif, Georgia, "Times New Roman", serif;
 
-	font-family:
+	/* Shape tokens: every control in src/components/ui reads its geometry
+	   from these, so a palette can reshape the whole kit (radii, border
+	   weight, padding, press motion, focus halo, popover depth) without
+	   touching the color stones. Defaults reproduce the previous hardcoded
+	   values exactly. */
+	--ctd-font-ui:
 		-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto,
 		Helvetica, Arial, sans-serif;
+	--ctd-radius-control: 6px;
+	--ctd-radius-capsule: 9999px;
+	--ctd-control-border-width: 1px;
+	--ctd-control-pad-y: 0px;
+	--ctd-control-pad-x: 12px;
+	--ctd-control-font-weight: 500;
+	/* Pressed-state hooks, consumed by :active rules: a theme can set a
+	   translate (e.g. translate(2px, 2px)) and collapse the shadow for a
+	   pushed-in look. The defaults are visual no-ops. */
+	--ctd-control-active-translate: none;
+	--ctd-control-active-shadow: var(--ctd-control-shadow);
+	--ctd-focus-shadow: 0 0 0 3px var(--ctd-focus-ring);
+	--ctd-popover-shadow: var(--ctd-shadow-lift);
+	--ctd-dialog-shadow: var(--ctd-shadow-lift);
+
+	font-family: var(--ctd-font-ui);
 	font-size: 14px;
 	line-height: 1.45;
 	font-weight: 400;
@@ -116,35 +139,8 @@
 	-webkit-text-size-adjust: 100%;
 }
 
-/* Cobalt: HIG-quiet neutrals with the vivid system-blue accent. */
-:root[data-palette="cobalt"] {
-	--pal-base: oklch(98% 0.001 250);
-	--pal-mantle: oklch(96% 0.002 250);
-	--pal-crust: oklch(93.5% 0.002 250);
-	--pal-surface0: oklch(90% 0.003 250);
-	--pal-text: oklch(24% 0.005 250);
-	--pal-subtext: oklch(47% 0.006 250);
-	--pal-accent: oklch(55% 0.19 258);
-	--pal-accent-text: oklch(99% 0.002 258);
-	--pal-red: oklch(55% 0.2 25);
-	--pal-red-text: oklch(98% 0.005 25);
-}
-
-/* Uchu: stones from uchu.style (gray/yin neutrals, hue-260 blue). */
-:root[data-palette="uchu"] {
-	--pal-base: oklch(97.8% 0.002 286);
-	--pal-mantle: oklch(95.57% 0.003 286);
-	--pal-crust: oklch(93% 0.003 286);
-	--pal-surface0: oklch(89% 0.004 286);
-	--pal-text: oklch(25.11% 0.006 258);
-	--pal-subtext: oklch(46% 0.005 258);
-	--pal-accent: oklch(50% 0.13 260);
-	--pal-accent-text: oklch(99% 0.002 260);
-	--pal-red: oklch(53% 0.18 20);
-	--pal-red-text: oklch(98% 0.005 20);
-}
-
-/* Signal: neo-brutalist paper and ink, hard hairlines, electric blue. */
+/* Signal: neo-brutalist poster. Pure paper, solid ink lines, electric blue.
+   Its geometry lives in the shape block after the dark derivations. */
 :root[data-palette="signal"] {
 	--pal-base: oklch(99% 0 0);
 	--pal-mantle: oklch(96.5% 0 0);
@@ -156,8 +152,25 @@
 	--pal-accent-text: oklch(99% 0 0);
 	--pal-red: oklch(55% 0.22 28);
 	--pal-red-text: oklch(99% 0 0);
-	--pal-border-alpha: 0.5;
-	--pal-border-strong-alpha: 0.85;
+	--pal-border-alpha: 0.9;
+	--pal-border-strong-alpha: 1;
+}
+
+/* Ledger: an accountant's register. Aged paper, archival ink-blue, ruled
+   lines; monospaced chrome comes from its shape block below. */
+:root[data-palette="ledger"] {
+	--pal-base: oklch(96.8% 0.011 95);
+	--pal-mantle: oklch(94.6% 0.013 95);
+	--pal-crust: oklch(92% 0.014 95);
+	--pal-surface0: oklch(89% 0.015 95);
+	--pal-text: oklch(25% 0.025 265);
+	--pal-subtext: oklch(46% 0.025 265);
+	--pal-accent: oklch(42% 0.09 265);
+	--pal-accent-text: oklch(97% 0.01 95);
+	--pal-red: oklch(50% 0.17 27);
+	--pal-red-text: oklch(97.5% 0.01 27);
+	--pal-border-alpha: 0.3;
+	--pal-border-strong-alpha: 0.5;
 }
 
 /* Dark stones (marble: polished black, marble-white accent) + shared dark
@@ -258,33 +271,6 @@
 	--ctd-field-inner-shadow: inset 0 0.5px 1px oklch(0% 0 0 / 0.2);
 }
 
-:root[data-palette="cobalt"][data-theme="dark"] {
-	--pal-base: oklch(23% 0.004 250);
-	--pal-mantle: oklch(20% 0.004 250);
-	--pal-crust: oklch(17% 0.004 250);
-	--pal-surface0: oklch(30% 0.005 250);
-	--pal-text: oklch(92.5% 0.003 250);
-	--pal-subtext: oklch(71% 0.005 250);
-	--pal-accent: oklch(64% 0.17 258);
-	--pal-accent-text: oklch(99% 0.002 258);
-	--pal-red: oklch(60% 0.19 25);
-	--pal-red-text: oklch(98% 0.005 25);
-}
-
-:root[data-palette="uchu"][data-theme="dark"] {
-	--pal-base: oklch(25% 0.006 258);
-	--pal-mantle: oklch(22% 0.006 258);
-	--pal-crust: oklch(18.5% 0.006 258);
-	--pal-surface0: oklch(32% 0.006 258);
-	--pal-text: oklch(91.87% 0.003 264);
-	--pal-subtext: oklch(70% 0.004 264);
-	--pal-accent: oklch(68% 0.11 260);
-	/* Pastel accent: dark label keeps contrast. */
-	--pal-accent-text: oklch(18.5% 0.006 258);
-	--pal-red: oklch(62% 0.16 20);
-	--pal-red-text: oklch(15% 0.006 258);
-}
-
 :root[data-palette="signal"][data-theme="dark"] {
 	--pal-base: oklch(16% 0 0);
 	--pal-mantle: oklch(13% 0 0);
@@ -296,8 +282,72 @@
 	--pal-accent-text: oklch(10% 0 0);
 	--pal-red: oklch(62% 0.21 28);
 	--pal-red-text: oklch(10% 0 0);
-	--pal-border-alpha: 0.35;
-	--pal-border-strong-alpha: 0.7;
+	--pal-border-alpha: 0.75;
+	--pal-border-strong-alpha: 1;
+}
+
+/* Ledger dark: blue-black ink the paper tones reverse into (cool, not warm,
+   so it sits with the blurred desktop like the others). */
+:root[data-palette="ledger"][data-theme="dark"] {
+	--pal-base: oklch(23% 0.018 265);
+	--pal-mantle: oklch(20% 0.018 265);
+	--pal-crust: oklch(16.5% 0.018 265);
+	--pal-surface0: oklch(30% 0.02 265);
+	--pal-text: oklch(92% 0.012 95);
+	--pal-subtext: oklch(71% 0.012 95);
+	--pal-accent: oklch(72% 0.08 262);
+	/* Lightened ink accent: dark label keeps contrast. */
+	--pal-accent-text: oklch(18% 0.018 265);
+	--pal-red: oklch(63% 0.15 27);
+	--pal-red-text: oklch(16% 0.018 265);
+	--pal-border-alpha: 0.18;
+	--pal-border-strong-alpha: 0.35;
+}
+
+/*
+ * Per-palette SHAPE blocks. These sit AFTER the shared dark block on purpose:
+ * --ctd-control-shadow, --ctd-field-inner-shadow, --ctd-focus-ring and the
+ * --ctd-shadow-* tokens are redefined there at equal specificity, so the
+ * palette's version must win on source order to hold in both color schemes.
+ */
+
+/* Signal shape: poster geometry. Sharp corners everywhere, 2px ink borders,
+   bold labels, and hard offset shadows the control physically moves into
+   when pressed. Focus is a solid double ring, not a halo. */
+:root[data-palette="signal"] {
+	--ctd-radius-control: 0px;
+	--ctd-radius-capsule: 0px;
+	--ctd-radius-panel: 0px;
+	--ctd-control-border-width: 2px;
+	--ctd-control-pad-x: 14px;
+	--ctd-control-font-weight: 700;
+	--ctd-control-shadow: 2px 2px 0 oklch(from var(--pal-text) l c h / 0.9);
+	--ctd-control-active-translate: translate(2px, 2px);
+	--ctd-control-active-shadow: none;
+	--ctd-field-inner-shadow: none;
+	--ctd-focus-ring: var(--pal-accent);
+	--ctd-focus-shadow: 0 0 0 2px var(--pal-base), 0 0 0 4px var(--pal-accent);
+	--ctd-shadow-soft: 3px 3px 0 oklch(from var(--pal-text) l c h / 0.8);
+	--ctd-shadow-lift: 6px 6px 0 oklch(from var(--pal-text) l c h / 0.85);
+	--ctd-cover-shadow: 4px 4px 0 oklch(from var(--pal-text) l c h / 0.8);
+}
+
+/* Ledger shape: a typewritten register. Monospaced chrome on a 13px base,
+   near-square corners, no fake depth (paper is flat); elevation is a ruled
+   outline plus a quiet drop. */
+:root[data-palette="ledger"] {
+	font-size: 13px;
+	--ctd-font-ui:
+		ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+	--ctd-radius-control: 2px;
+	--ctd-radius-capsule: 2px;
+	--ctd-radius-panel: 4px;
+	--ctd-control-shadow: none;
+	--ctd-field-inner-shadow: none;
+	--ctd-shadow-soft: 0 1px 0 oklch(from var(--pal-text) l c h / 0.14);
+	--ctd-shadow-lift:
+		0 0 0 1px oklch(from var(--pal-text) l c h / 0.25),
+		0 10px 24px oklch(0% 0 0 / 0.18);
 }
 
 /*

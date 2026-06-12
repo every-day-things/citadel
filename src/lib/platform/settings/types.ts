@@ -4,7 +4,13 @@ export interface LibraryPath {
 	absolutePath: string;
 }
 
-export type ThemePalette = "marble" | "cobalt" | "uchu" | "signal";
+export type ThemePalette = "marble" | "signal" | "ledger";
+
+export const THEME_PALETTES: readonly ThemePalette[] = [
+	"marble",
+	"signal",
+	"ledger",
+];
 
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 export interface SettingsSchema {

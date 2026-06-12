@@ -3,8 +3,10 @@
 	padding: 2px;
 	gap: 2px;
 	background-color: var(--ctd-segmented-root-bg);
-	border: 1px solid var(--ctd-border);
-	border-radius: 7px;
+	border: var(--ctd-control-border-width) solid var(--ctd-border);
+	/* Root wraps the items: control radius plus the 2px inner padding,
+	   minus the 1px the items give back below. */
+	border-radius: calc(var(--ctd-radius-control) + 1px);
 }
 
 .item {
@@ -15,12 +17,12 @@
 	min-width: 30px;
 	padding: 0 9px;
 	font-size: 12px;
-	font-weight: 500;
+	font-weight: var(--ctd-control-font-weight);
 	font-family: inherit;
 	color: var(--ctd-segmented-label);
 	background-color: transparent;
 	border: none;
-	border-radius: 5px;
+	border-radius: max(0px, calc(var(--ctd-radius-control) - 1px));
 	transition: background-color 120ms ease-out;
 }
 
@@ -33,13 +35,18 @@
 	box-shadow: 0 0.5px 2px oklch(0% 0 0 / 0.22);
 }
 
+/* Press hook: a visual no-op by default. */
+.item:active {
+	transform: var(--ctd-control-active-translate);
+}
+
 .item:focus-visible {
 	outline: none;
-	box-shadow: 0 0 0 3px var(--ctd-focus-ring);
+	box-shadow: var(--ctd-focus-shadow);
 }
 
 .item[data-state="on"]:focus-visible {
 	box-shadow:
 		0 0.5px 2px oklch(0% 0 0 / 0.22),
-		0 0 0 3px var(--ctd-focus-ring);
+		var(--ctd-focus-shadow);
 }

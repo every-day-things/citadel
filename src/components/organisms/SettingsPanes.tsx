@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
-import { useCallback, useId, useState } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
+import { useCallback, useId, useRef, useState } from "react";
 import { commands } from "@/bindings";
 import { F7BookFill } from "@/components/icons/F7BookFill";
 import { F7Gear } from "@/components/icons/F7Gear";
@@ -51,38 +51,97 @@ interface SettingsPanesProps {
 }
 
 /**
- * The System Settings style rail + content layout, rendered full-window by
- * the `/settings` route. The window's native title bar already says
- * "Settings", so the pane renders no title bar of its own.
+ * Classic macOS preferences layout (iTerm2 / pre-Ventura System Preferences):
+ * a centered icon-over-label tab strip across the top, a hairline divider,
+ * then the active pane on the window chrome background. The window's native
+ * title bar already says "Settings", so the pane renders no title of its own.
  */
 export const SettingsPanes = ({ onRequestClose }: SettingsPanesProps) => {
 	const [activeTab, setActiveTab] = useState<SettingsTab>("general");
+	const tabRefs = useRef<
+		Partial<Record<SettingsTab, HTMLButtonElement | null>>
+	>({});
+	const baseId = useId();
+
+	const tabId = (tab: SettingsTab) => `${baseId}-tab-${tab}`;
+	const panelId = (tab: SettingsTab) => `${baseId}-panel-${tab}`;
 
 	const close = useCallback(() => {
 		onRequestClose?.();
 	}, [onRequestClose]);
 
+	const selectAndFocusTab = useCallback((tab: SettingsTab) => {
+		setActiveTab(tab);
+		tabRefs.current[tab]?.focus();
+	}, []);
+
+	// Automatic activation: arrows move both focus and selection, macOS style.
+	const handleTabKeyDown = useCallback(
+		(event: KeyboardEvent<HTMLButtonElement>) => {
+			const index = SETTINGS_TABS.indexOf(activeTab);
+			let next: SettingsTab | undefined;
+			switch (event.key) {
+				case "ArrowRight":
+					next = SETTINGS_TABS[(index + 1) % SETTINGS_TABS.length];
+					break;
+				case "ArrowLeft":
+					next =
+						SETTINGS_TABS[
+							(index - 1 + SETTINGS_TABS.length) % SETTINGS_TABS.length
+						];
+					break;
+				case "Home":
+					next = SETTINGS_TABS[0];
+					break;
+				case "End":
+					next = SETTINGS_TABS[SETTINGS_TABS.length - 1];
+					break;
+				default:
+					return;
+			}
+			event.preventDefault();
+			if (next) selectAndFocusTab(next);
+		},
+		[activeTab, selectAndFocusTab],
+	);
+
 	return (
 		<div className={classes.pane}>
-			<nav className={classes.nav} aria-label="Settings sections">
+			<div
+				role="tablist"
+				aria-label="Settings sections"
+				className={classes.tabStrip}
+			>
 				{SETTINGS_TABS.map((tab) => (
 					<button
 						key={tab}
+						ref={(node) => {
+							tabRefs.current[tab] = node;
+						}}
 						type="button"
-						className={classes.navItem}
-						aria-current={tab === activeTab ? "true" : undefined}
+						role="tab"
+						id={tabId(tab)}
+						aria-selected={tab === activeTab}
+						aria-controls={panelId(tab)}
+						tabIndex={tab === activeTab ? 0 : -1}
+						className={classes.tab}
 						onClick={() => setActiveTab(tab)}
+						onKeyDown={handleTabKeyDown}
 					>
-						{TAB_META[tab].icon(classes.navItemIcon)}
-						{TAB_META[tab].label}
+						<span className={classes.tabIcon} aria-hidden="true">
+							{TAB_META[tab].icon(classes.tabIconGlyph)}
+						</span>
+						<span className={classes.tabLabel}>{TAB_META[tab].label}</span>
 					</button>
 				))}
-			</nav>
-			<div className={classes.content}>
-				<header className={classes.contentHeader}>
-					<h3 className={classes.contentTitle}>{TAB_META[activeTab].label}</h3>
-				</header>
-				<div className={classes.contentBody}>
+			</div>
+			<div
+				role="tabpanel"
+				id={panelId(activeTab)}
+				aria-labelledby={tabId(activeTab)}
+				className={classes.panel}
+			>
+				<div className={classes.panelInner}>
 					{activeTab === "general" && <GeneralTab />}
 					{activeTab === "library" && <LibraryTab closeSettings={close} />}
 					{activeTab === "integrations" && <IntegrationsTab />}
@@ -127,9 +186,8 @@ const SettingsRow = ({
 
 const PALETTE_OPTIONS: { value: ThemePalette; label: string }[] = [
 	{ value: "marble", label: "Marble" },
-	{ value: "cobalt", label: "Cobalt" },
-	{ value: "uchu", label: "Uchu" },
 	{ value: "signal", label: "Signal" },
+	{ value: "ledger", label: "Ledger" },
 ];
 
 const GeneralTab = () => {
@@ -182,7 +240,7 @@ const GeneralTab = () => {
 				/>
 				<SettingsRow
 					label="Theme"
-					description="Temporary: candidate palettes while the default is tuned."
+					description="Each restyles the whole app: color, shape, and type."
 					control={
 						<Select
 							aria-label="Theme"

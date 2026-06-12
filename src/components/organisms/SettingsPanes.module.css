@@ -1,106 +1,100 @@
 .pane {
 	display: flex;
+	flex-direction: column;
 	flex: 1;
 	min-height: 0;
 	height: 100%;
 }
 
 /*
- * The window has a plain macOS title bar (titled "Settings", see menu.rs), so
- * the rail starts right under it; under vibrancy the rail is glass, mirroring
- * the main window's chrome.
+ * Classic preferences tab strip: icon-over-label tabs centered across the
+ * window width, sitting directly on the window chrome background (--ctd-bg,
+ * painted by the window wrapper) with a hairline below. The window has a
+ * plain macOS title bar titled "Settings" (see menu.rs), so the strip starts
+ * right under it.
  */
-.nav {
+.tabStrip {
 	display: flex;
-	flex-direction: column;
-	gap: 2px;
-	width: 160px;
+	justify-content: center;
+	align-items: stretch;
+	gap: 0.25rem;
 	flex-shrink: 0;
-	padding: 0.625rem;
-	border-right: 1px solid var(--ctd-border);
-	background-color: var(--ctd-nav-bg);
+	padding: 0.3125rem 0.75rem 0.375rem;
+	border-bottom: 1px solid var(--ctd-border);
 }
 
-.navItem {
+.tab {
 	appearance: none;
 	display: flex;
+	flex-direction: column;
 	align-items: center;
-	gap: 0.5rem;
-	width: 100%;
-	padding: 0.4rem 0.5rem;
+	justify-content: center;
+	gap: 0.1875rem;
+	min-width: 4.5rem;
+	padding: 0.375rem 0.75rem 0.3125rem;
 	border: 0;
 	border-radius: 0.375rem;
 	background-color: transparent;
 	font-family: inherit;
-	font-size: 0.8125rem;
-	line-height: 1.25;
-	text-align: left;
-	color: var(--ctd-ink);
+	color: var(--ctd-ink-soft);
 	transition:
-		background-color 140ms ease,
-		color 140ms ease;
+		background-color 120ms ease,
+		color 120ms ease;
 }
 
-.navItem:hover {
-	background-color: var(--ctd-nav-hover-bg);
+.tab:hover {
+	background-color: color-mix(in oklab, var(--ctd-ink) 6%, transparent);
 }
 
-.navItem:focus-visible {
+.tab:active {
+	background-color: color-mix(in oklab, var(--ctd-ink) 12%, transparent);
+}
+
+.tab:focus-visible {
 	outline: none;
 	box-shadow: 0 0 0 3px var(--ctd-focus-ring);
 }
 
-/* Selected item: accent-filled pill, System Settings style. */
-.navItem[aria-current="true"],
-.navItem[aria-current="true"]:hover {
-	background-color: var(--ctd-accent);
-	color: var(--ctd-accent-text);
-}
-
-.navItemIcon {
-	display: inline-flex;
-	width: 0.9rem;
-	height: 0.9rem;
-	flex-shrink: 0;
-	color: var(--ctd-ink-soft);
-	transition: color 140ms ease;
-}
-
-.navItem[aria-current="true"] .navItemIcon {
-	color: inherit;
-}
-
-.content {
-	display: flex;
-	flex-direction: column;
-	flex: 1;
-	min-width: 0;
-	background-color: var(--ctd-content-bg);
-}
-
-.contentHeader {
-	display: flex;
-	align-items: center;
-	flex-shrink: 0;
-	gap: 0.5rem;
-	padding: 0.65rem 0.75rem 0.65rem 1.25rem;
-	border-bottom: 1px solid var(--ctd-border);
-}
-
-.contentTitle {
-	margin: 0;
-	font-size: 0.8125rem;
-	font-weight: 600;
+/* Selected tab: a quiet recessed tint, not an accent pill. */
+.tab[aria-selected="true"],
+.tab[aria-selected="true"]:hover {
+	background-color: var(--ctd-nav-hover-bg);
 	color: var(--ctd-ink);
 }
 
-.contentBody {
+.tabIcon {
+	display: inline-flex;
+}
+
+.tabIconGlyph {
+	width: 1.375rem;
+	height: 1.375rem;
+}
+
+.tabLabel {
+	font-size: 0.6875rem;
+	font-weight: 500;
+	line-height: 1.2;
+}
+
+/*
+ * The active pane scrolls on the window chrome background; --ctd-content-bg
+ * is reserved for the main window's book surface and would make this read
+ * like a mini library window.
+ */
+.panel {
 	flex: 1;
+	min-height: 0;
 	overflow-y: auto;
 	padding: 1.25rem;
 }
 
-/* Stacked grouped boxes, System Settings style; 18px between groups. */
+.panelInner {
+	max-width: 35rem;
+	margin: 0 auto;
+}
+
+/* Stacked grouped boxes, utility register; 18px between groups. */
 .groups {
 	display: flex;
 	flex-direction: column;
@@ -151,8 +145,8 @@
 	align-items: center;
 	justify-content: space-between;
 	gap: 1rem;
-	min-height: 2.5rem;
-	padding: 0.5rem 0.875rem;
+	min-height: 2.375rem;
+	padding: 0.4375rem 0.875rem;
 }
 
 .rowLabels {

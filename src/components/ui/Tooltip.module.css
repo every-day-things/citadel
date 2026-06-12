@@ -3,8 +3,8 @@
 	padding: 3px 8px;
 	background-color: var(--ctd-surface-strong);
 	color: var(--ctd-ink);
-	border: 1px solid var(--ctd-border);
-	border-radius: 5px;
+	border: var(--ctd-control-border-width) solid var(--ctd-border);
+	border-radius: min(5px, var(--ctd-radius-control));
 	box-shadow: var(--ctd-shadow-soft);
 	z-index: 400;
 	max-width: 260px;

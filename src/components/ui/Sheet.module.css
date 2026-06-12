@@ -27,9 +27,9 @@
 	max-height: calc(100vh - 64px - 24px);
 	overflow-y: auto;
 	background-color: var(--ctd-surface);
-	border: 1px solid var(--ctd-border);
-	border-radius: 10px;
-	box-shadow: var(--ctd-shadow-lift);
+	border: var(--ctd-control-border-width) solid var(--ctd-border);
+	border-radius: var(--ctd-radius-panel);
+	box-shadow: var(--ctd-dialog-shadow);
 	z-index: 111;
 }
 

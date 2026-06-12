@@ -21,9 +21,10 @@
 	width: 14px;
 	height: 14px;
 	padding: 0;
-	border-radius: 3px;
+	/* Follows the control radius down but never exceeds the AppKit 3px. */
+	border-radius: min(3px, var(--ctd-radius-control));
 	background-color: var(--ctd-control-bg-strong);
-	border: 1px solid var(--ctd-border-strong);
+	border: var(--ctd-control-border-width) solid var(--ctd-border-strong);
 	box-shadow: var(--ctd-field-inner-shadow);
 	transition:
 		background-color 120ms ease-out,
@@ -51,7 +52,7 @@
 
 .box:focus-visible {
 	outline: none;
-	box-shadow: 0 0 0 3px var(--ctd-focus-ring);
+	box-shadow: var(--ctd-focus-shadow);
 }
 
 .box:disabled {

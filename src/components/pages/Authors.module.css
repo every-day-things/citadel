@@ -71,7 +71,8 @@
 	display: inline-block;
 	height: 16px;
 	padding: 0 8px;
-	border-radius: 8px;
+	/* Capsule clamps to half the 16px height, matching the old 8px. */
+	border-radius: var(--ctd-radius-capsule);
 	font-size: 9px;
 	line-height: 16px;
 	font-weight: 700;
