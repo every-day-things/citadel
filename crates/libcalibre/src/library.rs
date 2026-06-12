@@ -603,14 +603,10 @@ impl Library {
     // Read state (the `read` bool custom column)
     // =========================================================================
 
-    pub(crate) fn get_or_create_read_state_column(
-        &mut self,
-    ) -> Result<CustomColumn, CalibreError> {
-        if let Some(column) = custom_columns::find_by_label_and_kind(
-            &mut self.conn,
-            "read",
-            &CustomColumnKind::Bool,
-        )? {
+    pub(crate) fn get_or_create_read_state_column(&mut self) -> Result<CustomColumn, CalibreError> {
+        if let Some(column) =
+            custom_columns::find_by_label_and_kind(&mut self.conn, "read", &CustomColumnKind::Bool)?
+        {
             return Ok(column);
         }
 

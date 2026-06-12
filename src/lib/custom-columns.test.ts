@@ -42,9 +42,7 @@ describe("editableCustomColumns", () => {
 			column({ column_id: 3, label: "mood" }),
 		];
 
-		expect(editableCustomColumns(columns).map((c) => c.column_id)).toEqual([
-			3,
-		]);
+		expect(editableCustomColumns(columns).map((c) => c.column_id)).toEqual([3]);
 	});
 
 	it("excludes the bool read column, which is written through BookUpdate", () => {
@@ -53,9 +51,7 @@ describe("editableCustomColumns", () => {
 			column({ column_id: 2, label: "mood" }),
 		];
 
-		expect(editableCustomColumns(columns).map((c) => c.column_id)).toEqual([
-			2,
-		]);
+		expect(editableCustomColumns(columns).map((c) => c.column_id)).toEqual([2]);
 	});
 
 	it("keeps non-bool columns that happen to be labelled read", () => {
@@ -64,9 +60,7 @@ describe("editableCustomColumns", () => {
 			column({ column_id: 2, label: "read", datatype: "bool" }),
 		];
 
-		expect(editableCustomColumns(columns).map((c) => c.column_id)).toEqual([
-			1,
-		]);
+		expect(editableCustomColumns(columns).map((c) => c.column_id)).toEqual([1]);
 	});
 });
 
@@ -177,9 +171,7 @@ describe("dtoFromFieldValue", () => {
 
 	it("rejects number strings with trailing garbage", () => {
 		expect(dtoFromFieldValue(column({ datatype: "int" }), "12abc")).toBeNull();
-		expect(
-			dtoFromFieldValue(column({ datatype: "float" }), "2.5x"),
-		).toBeNull();
+		expect(dtoFromFieldValue(column({ datatype: "float" }), "2.5x")).toBeNull();
 	});
 
 	it("rejects int values outside i32 range", () => {
@@ -202,9 +194,9 @@ describe("dtoFromFieldValue", () => {
 				"b",
 			]),
 		).toEqual({ TextMultiple: ["a", "b"] });
-		expect(
-			dtoFromFieldValue(column({ datatype: "comments" }), "note"),
-		).toEqual({ Text: "note" });
+		expect(dtoFromFieldValue(column({ datatype: "comments" }), "note")).toEqual(
+			{ Text: "note" },
+		);
 	});
 
 	it("sends LOCAL midnight with the local offset for date-only input", () => {
@@ -223,7 +215,10 @@ describe("dtoFromFieldValue", () => {
 	});
 
 	it("writes a local midnight that parses back to the same calendar date", () => {
-		const dto = dtoFromFieldValue(column({ datatype: "datetime" }), "2024-01-15");
+		const dto = dtoFromFieldValue(
+			column({ datatype: "datetime" }),
+			"2024-01-15",
+		);
 		if (dto === null || !("Datetime" in dto)) {
 			throw new Error("expected a Datetime DTO");
 		}
@@ -339,7 +334,9 @@ describe("diffCustomValues", () => {
 				{ "6": "2024-01-15T00:00:00+00:00" },
 				{ "6": "2024-01-16T00:00:00+00:00" },
 			),
-		).toEqual([{ columnId: 6, value: { Datetime: "2024-01-16T00:00:00+00:00" } }]);
+		).toEqual([
+			{ columnId: 6, value: { Datetime: "2024-01-16T00:00:00+00:00" } },
+		]);
 	});
 
 	it("does not write when a stored date round-trips unchanged", () => {

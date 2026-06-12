@@ -3,9 +3,7 @@ mod common;
 
 use chrono::{TimeZone, Utc};
 use common::{setup_with_library, standard_test_book};
-use libcalibre::{
-    BookId, CalibreError, CustomColumnKind, CustomColumnSpec, CustomValue, Library,
-};
+use libcalibre::{BookId, CalibreError, CustomColumnKind, CustomColumnSpec, CustomValue, Library};
 
 fn spec(label: &str, kind: CustomColumnKind) -> CustomColumnSpec {
     CustomColumnSpec {
@@ -223,10 +221,7 @@ fn test_enumeration_round_trip() {
             ..spec("status", CustomColumnKind::Enumeration)
         })
         .unwrap();
-    assert_eq!(
-        col.enum_values,
-        vec!["want-to-read", "reading", "read"]
-    );
+    assert_eq!(col.enum_values, vec!["want-to-read", "reading", "read"]);
 
     lib.set_custom_value(
         book,
@@ -240,12 +235,8 @@ fn test_enumeration_round_trip() {
     );
 
     // Empty enumeration value clears
-    lib.set_custom_value(
-        book,
-        col.id,
-        Some(CustomValue::Enumeration(String::new())),
-    )
-    .unwrap();
+    lib.set_custom_value(book, col.id, Some(CustomValue::Enumeration(String::new())))
+        .unwrap();
     assert_eq!(lib.get_custom_value(book, col.id).unwrap(), None);
 }
 
@@ -419,7 +410,8 @@ fn test_empty_text_values_clear() {
         ])),
     )
     .unwrap();
-    let Some(CustomValue::TextMultiple(mut values)) = lib.get_custom_value(book, genres.id).unwrap()
+    let Some(CustomValue::TextMultiple(mut values)) =
+        lib.get_custom_value(book, genres.id).unwrap()
     else {
         panic!("expected TextMultiple");
     };
@@ -664,13 +656,7 @@ fn test_calibre_created_columns_are_read_correctly() {
 
     // Datetime column, with a fractional-seconds value
     let released_id = insert_custom_columns_row(
-        &conn,
-        "released",
-        "Released",
-        "datetime",
-        false,
-        false,
-        "{}",
+        &conn, "released", "Released", "datetime", false, false, "{}",
     );
     calibre_non_normalized_ddl(&conn, released_id, "timestamp");
     conn.execute(
@@ -688,10 +674,7 @@ fn test_calibre_created_columns_are_read_correctly() {
     let status = columns.iter().find(|c| c.label == "status").unwrap();
     assert_eq!(status.kind, CustomColumnKind::Enumeration);
     assert!(status.normalized);
-    assert_eq!(
-        status.enum_values,
-        vec!["want-to-read", "reading", "read"]
-    );
+    assert_eq!(status.enum_values, vec!["want-to-read", "reading", "read"]);
 
     let genres = columns.iter().find(|c| c.label == "genres").unwrap();
     assert_eq!(genres.kind, CustomColumnKind::Text);
@@ -713,7 +696,10 @@ fn test_calibre_created_columns_are_read_correctly() {
         panic!("expected TextMultiple");
     };
     genre_values.sort();
-    assert_eq!(genre_values, vec!["epic".to_string(), "fantasy".to_string()]);
+    assert_eq!(
+        genre_values,
+        vec!["epic".to_string(), "fantasy".to_string()]
+    );
 
     let expected = Utc.with_ymd_and_hms(2024, 3, 2, 8, 15, 30).unwrap()
         + chrono::Duration::microseconds(123456);

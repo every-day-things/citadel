@@ -1,4 +1,8 @@
-import type { BookCustomValue, CustomColumnDef, CustomValueDto } from "@/bindings";
+import type {
+	BookCustomValue,
+	CustomColumnDef,
+	CustomValueDto,
+} from "@/bindings";
 
 /**
  * The label of the Calibre custom column backing the "Finished" switch.
@@ -192,14 +196,10 @@ export const dtoFromFieldValue = (
 					? { TextMultiple: value }
 					: null;
 			}
-			return typeof value === "string" && value !== ""
-				? { Text: value }
-				: null;
+			return typeof value === "string" && value !== "" ? { Text: value } : null;
 		}
 		case "comments": {
-			return typeof value === "string" && value !== ""
-				? { Text: value }
-				: null;
+			return typeof value === "string" && value !== "" ? { Text: value } : null;
 		}
 		case "datetime": {
 			if (typeof value !== "string") return null;

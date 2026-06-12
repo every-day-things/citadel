@@ -708,12 +708,14 @@ fn get_non_normalized_i64(
     n: i32,
     book_id: BookId,
 ) -> Result<Option<i64>, CalibreError> {
-    sql_query(format!("SELECT value FROM custom_column_{n} WHERE book = ?"))
-        .bind::<Integer, _>(book_id.as_i32())
-        .get_result::<I64ValueRow>(conn)
-        .optional()
-        .map(|row| row.map(|r| r.value))
-        .map_err(CalibreError::from)
+    sql_query(format!(
+        "SELECT value FROM custom_column_{n} WHERE book = ?"
+    ))
+    .bind::<Integer, _>(book_id.as_i32())
+    .get_result::<I64ValueRow>(conn)
+    .optional()
+    .map(|row| row.map(|r| r.value))
+    .map_err(CalibreError::from)
 }
 
 fn get_non_normalized_f64(
@@ -721,12 +723,14 @@ fn get_non_normalized_f64(
     n: i32,
     book_id: BookId,
 ) -> Result<Option<f64>, CalibreError> {
-    sql_query(format!("SELECT value FROM custom_column_{n} WHERE book = ?"))
-        .bind::<Integer, _>(book_id.as_i32())
-        .get_result::<F64ValueRow>(conn)
-        .optional()
-        .map(|row| row.map(|r| r.value))
-        .map_err(CalibreError::from)
+    sql_query(format!(
+        "SELECT value FROM custom_column_{n} WHERE book = ?"
+    ))
+    .bind::<Integer, _>(book_id.as_i32())
+    .get_result::<F64ValueRow>(conn)
+    .optional()
+    .map(|row| row.map(|r| r.value))
+    .map_err(CalibreError::from)
 }
 
 fn get_non_normalized_text(
@@ -734,12 +738,14 @@ fn get_non_normalized_text(
     n: i32,
     book_id: BookId,
 ) -> Result<Option<String>, CalibreError> {
-    sql_query(format!("SELECT value FROM custom_column_{n} WHERE book = ?"))
-        .bind::<Integer, _>(book_id.as_i32())
-        .get_result::<TextValueRow>(conn)
-        .optional()
-        .map(|row| row.map(|r| r.value))
-        .map_err(CalibreError::from)
+    sql_query(format!(
+        "SELECT value FROM custom_column_{n} WHERE book = ?"
+    ))
+    .bind::<Integer, _>(book_id.as_i32())
+    .get_result::<TextValueRow>(conn)
+    .optional()
+    .map(|row| row.map(|r| r.value))
+    .map_err(CalibreError::from)
 }
 
 fn get_normalized_texts(
@@ -942,13 +948,15 @@ fn set_normalized_values(
                 Some(row) => row.id,
                 // Older Calibre value tables lack the `link` column, so only
                 // mention `value` here.
-                None => sql_query(format!(
-                    "INSERT INTO custom_column_{n} (value) VALUES (?) RETURNING id"
-                ))
-                .bind::<SqlText, _>(value)
-                .get_result::<IdRow>(conn)
-                .map_err(CalibreError::from)?
-                .id,
+                None => {
+                    sql_query(format!(
+                        "INSERT INTO custom_column_{n} (value) VALUES (?) RETURNING id"
+                    ))
+                    .bind::<SqlText, _>(value)
+                    .get_result::<IdRow>(conn)
+                    .map_err(CalibreError::from)?
+                    .id
+                }
             };
 
             // OR IGNORE: duplicate input values (incl. case-insensitive
