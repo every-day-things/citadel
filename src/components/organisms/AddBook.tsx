@@ -130,10 +130,10 @@ export const AddBookButton = () => {
 						}
 					},
 				});
-				// addBook/upsertBookIdentifier/updateBook already reload books;
-				// only a cover change happens outside the store's reloads.
+				// addBook/upsertBookIdentifier/updateBook already invalidate the
+				// book caches; only a cover change happens outside those.
 				if (pendingHardcover.image_url) {
-					await actions.loadBooks();
+					actions.invalidateBooks();
 				}
 			}
 			createdBookIdRef.current = null;

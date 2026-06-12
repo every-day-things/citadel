@@ -57,6 +57,14 @@ async clbQueryImportableFileMetadata(file: ImportableFile) : Promise<ImportableB
 async clbQueryListAllFiletypes() : Promise<([string, string])[]> {
     return await TAURI_INVOKE("clb_query_list_all_filetypes");
 },
+async clbQueryListSeries() : Promise<Result<LibrarySeries[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clb_query_list_series") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async clbCmdCreateBook(md: ImportableBookMetadata) : Promise<Result<string, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("clb_cmd_create_book", { md }) };
@@ -313,6 +321,11 @@ text: string | null; author_id: string | null; series_id: number | null; hide_re
  * Page size. `None` returns all matches.
  */
 limit: number | null; offset: number }
+/**
+ * One series in the library. `id` is what [`LibraryBookQuery::series_id`]
+ * filters on; the frontend otherwise only ever sees series names.
+ */
+export type LibrarySeries = { id: number; name: string; book_count: number }
 export type LocalFile = { 
 /**
  * The absolute path to the file, including extension.

@@ -20,6 +20,7 @@ import {
 	rowSlice,
 } from "@/lib/grid-virtual";
 import { BookCard } from "../atoms/BookCard";
+import cardClasses from "../atoms/BookCard.module.css";
 
 /**
  * Shelf-grid layout constants. The per-row tracks mirror the old
@@ -37,6 +38,9 @@ const OVERSCAN_ROWS = 4;
 /** Scrolls the shelf row containing the given flat book index into view. */
 export type ScrollToBookIndex = (index: number) => void;
 
+/** The inclusive flat-index range of books near the viewport. */
+export type VisibleRangeChange = (startIndex: number, endIndex: number) => void;
+
 interface BookGridProps extends BookView {
 	/** The page-owned scroll region the virtualizer windows against. */
 	scrollElementRef: RefObject<HTMLElement>;
@@ -45,6 +49,11 @@ interface BookGridProps extends BookView {
 	 * reach rows that are not currently mounted (use-library-keymap).
 	 */
 	scrollToBookIndexRef?: MutableRefObject<ScrollToBookIndex | null>;
+	/**
+	 * Fires when the rendered (viewport + overscan) flat-index range moves,
+	 * so the owner can page the covered books in (ensureBookRange).
+	 */
+	onVisibleRangeChange?: VisibleRangeChange;
 }
 
 export const BookGrid = ({
@@ -54,6 +63,7 @@ export const BookGrid = ({
 	selectedBookId,
 	scrollElementRef,
 	scrollToBookIndexRef,
+	onVisibleRangeChange,
 }: BookGridProps) => {
 	const actionsContext = useMemo(() => {
 		return {
@@ -69,6 +79,7 @@ export const BookGrid = ({
 				selectedBookId={selectedBookId}
 				scrollElementRef={scrollElementRef}
 				scrollToBookIndexRef={scrollToBookIndexRef}
+				onVisibleRangeChange={onVisibleRangeChange}
 			/>
 		</bookActionsContext.Provider>
 	);
@@ -80,12 +91,14 @@ const BookGridPure = ({
 	selectedBookId,
 	scrollElementRef,
 	scrollToBookIndexRef,
+	onVisibleRangeChange,
 }: {
 	loading: boolean;
-	bookList: LibraryBook[];
+	bookList: (LibraryBook | undefined)[];
 	selectedBookId?: LibraryBook["id"] | null;
 	scrollElementRef: RefObject<HTMLElement>;
 	scrollToBookIndexRef?: MutableRefObject<ScrollToBookIndex | null>;
+	onVisibleRangeChange?: VisibleRangeChange;
 }) => {
 	const actions = useContext(bookActionsContext);
 
@@ -136,6 +149,20 @@ const BookGridPure = ({
 		};
 	}, [scrollToBookIndexRef, virtualizer, columns]);
 
+	// Report the rendered row window (includes overscan) as a flat-index
+	// range so unfetched pages covering it can load.
+	const virtualRows = virtualizer.getVirtualItems();
+	const firstRow = virtualRows[0]?.index;
+	const lastRow = virtualRows[virtualRows.length - 1]?.index;
+	useEffect(() => {
+		if (!onVisibleRangeChange) return;
+		if (firstRow === undefined || lastRow === undefined) return;
+		const start = rowSlice(firstRow, columns, books.length).start;
+		const end = rowSlice(lastRow, columns, books.length).end - 1;
+		if (end < start) return;
+		onVisibleRangeChange(start, end);
+	}, [onVisibleRangeChange, firstRow, lastRow, columns, books.length]);
+
 	return (
 		<div
 			ref={wrapperRef}
@@ -159,7 +186,7 @@ const BookGridPure = ({
 				 * bottom-aligns its book (see BookCard.module.css) so the bases
 				 * sit on one line.
 				 */}
-				{virtualizer.getVirtualItems().map((virtualRow) => {
+				{virtualRows.map((virtualRow) => {
 					const { start, end } = rowSlice(
 						virtualRow.index,
 						columns,
@@ -182,14 +209,19 @@ const BookGridPure = ({
 								columnGap: COLUMN_GAP,
 							}}
 						>
-							{books.slice(start, end).map((book) => (
-								<BookCard
-									key={book.id}
-									book={book}
-									actions={actions}
-									selected={book.id === selectedBookId}
-								/>
-							))}
+							{books.slice(start, end).map((book, offset) =>
+								book !== undefined ? (
+									<BookCard
+										key={book.id}
+										book={book}
+										actions={actions}
+										selected={book.id === selectedBookId}
+									/>
+								) : (
+									// biome-ignore lint/suspicious/noArrayIndexKey: an unfetched slot has no id; its flat grid index IS its identity until the book arrives (and then the keyed BookCard replaces it).
+									<BookCardPlaceholder key={`placeholder-${start + offset}`} />
+								),
+							)}
 						</div>
 					);
 				})}
@@ -197,6 +229,17 @@ const BookGridPure = ({
 		</div>
 	);
 };
+
+/**
+ * Stand-in cell for a book whose page has not been fetched yet: the same
+ * shelf-cell layout as BookCard with a quiet cover-shaped block, so rows
+ * keep their height and books pop in without the shelf reflowing.
+ */
+const BookCardPlaceholder = () => (
+	<div className={cardClasses.cell} aria-hidden>
+		<span className={cardClasses.coverPlaceholder} />
+	</div>
+);
 
 type BookAction = (bookId: LibraryBook["id"]) => void;
 interface BookActionsContext {

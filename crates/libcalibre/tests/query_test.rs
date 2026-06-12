@@ -530,3 +530,39 @@ fn test_page_items_are_hydrated() {
     assert_eq!(item.tags, ["fantasy"]);
     assert!(item.is_read);
 }
+
+// =============================================================================
+// Series listing
+// =============================================================================
+
+#[test]
+fn test_list_series_returns_counts_sorted_by_name() {
+    let (_temp, mut lib) = setup_with_library();
+
+    for n in 1u8..=2 {
+        lib.add_book(BookAdd {
+            series: Some("Earthsea".to_string()),
+            series_index: Some(f32::from(n)),
+            ..book(&format!("Earthsea {n}"), &["Ursula K. Le Guin"])
+        })
+        .unwrap();
+    }
+    lib.add_book(BookAdd {
+        series: Some("Culture".to_string()),
+        series_index: Some(1.0),
+        ..book("Consider Phlebas", &["Iain M. Banks"])
+    })
+    .unwrap();
+    lib.add_book(book("Standalone", &["Nobody"])).unwrap();
+
+    let series = lib.list_series().unwrap();
+    let names: Vec<&str> = series.iter().map(|s| s.name.as_str()).collect();
+    assert_eq!(names, ["Culture", "Earthsea"]);
+
+    let counts: Vec<i64> = series.iter().map(|s| s.book_count).collect();
+    assert_eq!(counts, [1, 2]);
+
+    // The listed ids are the ones BookQuery::series_id filters on.
+    let earthsea = series.iter().find(|s| s.name == "Earthsea").unwrap();
+    assert_eq!(earthsea.id, series_id_by_name(&mut lib, "Earthsea"));
+}

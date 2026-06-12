@@ -31,6 +31,8 @@ fn run_tauri_backend() -> std::io::Result<()> {
         calibre::query::clb_query_is_file_importable,
         calibre::query::clb_query_importable_file_metadata,
         calibre::query::clb_query_list_all_filetypes,
+        // Series query commands
+        calibre::query::clb_query_list_series,
         // Book manipulation commands
         calibre::command::clb_cmd_create_book,
         calibre::command::clb_cmd_update_book,

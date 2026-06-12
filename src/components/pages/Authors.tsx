@@ -21,10 +21,9 @@ import {
 } from "@/components/ui";
 import { useAuthorFilters } from "@/lib/hooks/use-author-filters";
 import {
+	useAllBooks,
 	useAuthors,
 	useAuthorsLoading,
-	useBooks,
-	useBooksLoading,
 	useLibraryActions,
 } from "@/stores/library/store";
 import { F7Pencil } from "../icons/F7Pencil";
@@ -45,8 +44,10 @@ const AUTHOR_GRID: CSSProperties = {
 export const Authors = () => {
 	const authors = useAuthors();
 	const loadingAuthors = useAuthorsLoading();
-	const books = useBooks();
-	const loadingBooks = useBooksLoading();
+	// Whole-library list (lazy): per-author book counts and the
+	// "authors without books" filter need every book↔author link, and no
+	// targeted per-author count query exists. See LibraryActions.loadBooks.
+	const { books, loading: loadingBooks } = useAllBooks();
 	const actions = useLibraryActions();
 
 	const {
@@ -311,7 +312,7 @@ const AuthorRow = ({
 			    own without stopPropagation. */}
 			<Link
 				to="/"
-				search={{ search_for_author: author.name }}
+				search={{ author_id: author.id }}
 				className="ctd-author-row-link"
 				aria-label={`Show books by ${author.name}`}
 			/>
@@ -334,7 +335,7 @@ const AuthorRow = ({
 
 			<Link
 				to="/"
-				search={{ search_for_author: author.name }}
+				search={{ author_id: author.id }}
 				className={styles.countLink}
 			>
 				{numBooksByAuthor}

@@ -5,8 +5,8 @@ import { BookPage } from "@/components/pages/EditBook";
 import { Spinner } from "@/components/ui";
 import {
 	LibraryState,
+	useAllBooks,
 	useAuthors,
-	useBooks,
 	useLibraryActions,
 	useLibraryState,
 } from "@/stores/library/store";
@@ -23,8 +23,11 @@ const EditBookRoute = () => {
 	const state = useLibraryState();
 	const actions = useLibraryActions();
 
-	// Get data from store - no local state needed!
-	const books = useBooks();
+	// Whole-library list (lazy): the tag autocomplete needs the full tag
+	// vocabulary and there is no fetch-one-book or list-tags command, so
+	// this route stays on clb_query_list_all_books (one fetch on entry, off
+	// the hot path). See LibraryActions.loadBooks.
+	const { books, loading: loadingBooks } = useAllBooks();
 	const allAuthorList = useAuthors();
 	const allTagList = useMemo(
 		() =>
@@ -88,11 +91,15 @@ const EditBookRoute = () => {
 
 	const onReloadBooks = useCallback(async () => {
 		if (actions) {
+			// Drop stale paged-grid pages too, then refresh this route's list.
+			actions.invalidateBooks();
 			await actions.loadBooks();
 		}
 	}, [actions]);
 
-	if (state !== LibraryState.ready) {
+	// Spinner only for the initial fetch; refetches after edits keep the
+	// (stale-for-a-moment) form on screen instead of flashing.
+	if (state !== LibraryState.ready || (loadingBooks && books.length === 0)) {
 		return (
 			<div style={centeredFill}>
 				<Spinner size={18} />

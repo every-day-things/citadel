@@ -5,6 +5,9 @@ import type {
 	ImportableFile,
 	LibraryAuthor,
 	LibraryBook,
+	LibraryBookPage,
+	LibraryBookQuery,
+	LibrarySeries,
 	NewAuthor,
 } from "@/bindings";
 
@@ -20,7 +23,15 @@ export interface FileType {
 export interface Library {
 	createAuthors(newAuthors: NewAuthor[]): Promise<LibraryAuthor[]>;
 	listBooks(): Promise<LibraryBook[]>;
+	/**
+	 * One page of a filtered, sorted book query (the cover grid's data
+	 * source). `query.text = null` matches all books; `total` counts the
+	 * filtered set ignoring paging.
+	 */
+	queryBooks(query: LibraryBookQuery): Promise<LibraryBookPage>;
 	listAuthors(): Promise<LibraryAuthor[]>;
+	/** Every series with its book count; ids feed `LibraryBookQuery.series_id`. */
+	listSeries(): Promise<LibrarySeries[]>;
 	sendToDevice(
 		book: LibraryBook,
 		deviceOptions: {

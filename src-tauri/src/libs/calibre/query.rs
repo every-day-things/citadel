@@ -116,6 +116,34 @@ pub fn clb_query_books(
     })
 }
 
+/// One series in the library. `id` is what [`LibraryBookQuery::series_id`]
+/// filters on; the frontend otherwise only ever sees series names.
+#[derive(Serialize, Deserialize, specta::Type, Clone)]
+pub struct LibrarySeries {
+    pub id: i32,
+    pub name: String,
+    pub book_count: u32,
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn clb_query_list_series(
+    state: tauri::State<CitadelState>,
+) -> Result<Vec<LibrarySeries>, String> {
+    let summaries = state
+        .with_library(|lib| lib.list_series())?
+        .map_err(|e| e.to_string())?;
+
+    Ok(summaries
+        .into_iter()
+        .map(|series| LibrarySeries {
+            id: series.id,
+            name: series.name,
+            book_count: u32::try_from(series.book_count).unwrap_or(u32::MAX),
+        })
+        .collect())
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn clb_query_list_all_authors(

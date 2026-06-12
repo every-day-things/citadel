@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deriveSeriesSummaries, formatSeriesIndex } from "./series";
+import { formatSeriesIndex } from "./series";
 
 describe("formatSeriesIndex", () => {
 	it("formats whole indices without a trailing .0", () => {
@@ -15,37 +15,5 @@ describe("formatSeriesIndex", () => {
 
 	it("rounds away f32 float noise", () => {
 		expect(formatSeriesIndex(0.10000000149011612)).toBe("0.1");
-	});
-});
-
-describe("deriveSeriesSummaries", () => {
-	it("groups books by series and counts them", () => {
-		const books = [
-			{ series: "Discworld" },
-			{ series: "Discworld" },
-			{ series: "Culture" },
-			{ series: null },
-		];
-
-		expect(deriveSeriesSummaries(books)).toEqual([
-			{ name: "Culture", bookCount: 1 },
-			{ name: "Discworld", bookCount: 2 },
-		]);
-	});
-
-	it("ignores books without a series", () => {
-		expect(deriveSeriesSummaries([{ series: null }, { series: null }])).toEqual(
-			[],
-		);
-	});
-
-	it("sorts series alphabetically", () => {
-		const books = [{ series: "Zeta" }, { series: "Alpha" }, { series: "Mu" }];
-
-		expect(deriveSeriesSummaries(books).map(({ name }) => name)).toEqual([
-			"Alpha",
-			"Mu",
-			"Zeta",
-		]);
 	});
 });
