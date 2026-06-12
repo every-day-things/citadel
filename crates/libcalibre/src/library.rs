@@ -173,6 +173,16 @@ pub struct BookPage {
     pub total: i64,
 }
 
+/// One series in the library, with its linked-book count. Returned by
+/// [`Library::list_series`]; series ids are what [`BookQuery::series_id`]
+/// filters on.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct SeriesSummary {
+    pub id: i32,
+    pub name: String,
+    pub book_count: i64,
+}
+
 impl Library {
     pub fn new(db_path: ValidDbPath) -> Result<Self, CalibreError> {
         let conn = establish_connection(&db_path.database_path)
@@ -755,6 +765,12 @@ impl Library {
         let items = self.get_books_with_read_states(book_ids)?;
 
         Ok(BookPage { items, total })
+    }
+
+    /// List every series in the library with its linked-book count, sorted
+    /// by name. The returned ids feed [`BookQuery::series_id`].
+    pub fn list_series(&mut self) -> Result<Vec<SeriesSummary>, CalibreError> {
+        crate::queries::series::list_with_book_counts(&mut self.conn)
     }
 
     pub fn search_books(&mut self, query: &str) -> Result<Vec<Book>, CalibreError> {

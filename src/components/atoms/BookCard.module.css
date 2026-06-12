@@ -33,3 +33,17 @@
 	outline-offset: 2px;
 	box-shadow: 0 0 0 7px var(--ctd-focus-ring);
 }
+
+/* Cover-shaped stand-in for a book whose page has not been fetched yet
+ * (BookGrid placeholder cells). Sized like a typical cover (2:3, capped at
+ * the shelf height) so rows hold steady while real books stream in. */
+.coverPlaceholder {
+	display: block;
+	width: 100%;
+	max-width: 150px;
+	aspect-ratio: 2 / 3;
+	max-height: 230px;
+	border-radius: 4px;
+	background: var(--ctd-surface-muted);
+	border: 1px solid var(--ctd-border);
+}

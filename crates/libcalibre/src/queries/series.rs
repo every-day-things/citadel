@@ -2,12 +2,46 @@ use std::collections::HashMap;
 
 use diesel::prelude::*;
 use diesel::sql_query;
-use diesel::sql_types::{Integer, Text};
+use diesel::sql_types::{BigInt, Integer, Text};
 use diesel::{QueryDsl, RunQueryDsl, SqliteConnection};
 
 use crate::entities::series::{NewSeries, Series};
+use crate::library::SeriesSummary;
 use crate::types::BookId;
 use crate::CalibreError;
+
+pub(crate) fn list_with_book_counts(
+    conn: &mut SqliteConnection,
+) -> Result<Vec<SeriesSummary>, CalibreError> {
+    #[derive(QueryableByName)]
+    struct SeriesCountRow {
+        #[diesel(sql_type = Integer)]
+        id: i32,
+        #[diesel(sql_type = Text)]
+        name: String,
+        #[diesel(sql_type = BigInt)]
+        book_count: i64,
+    }
+
+    let rows: Vec<SeriesCountRow> = sql_query(
+        "SELECT s.id AS id, s.name AS name, COUNT(bsl.book) AS book_count
+         FROM series s
+         LEFT JOIN books_series_link bsl ON bsl.series = s.id
+         GROUP BY s.id, s.name
+         ORDER BY s.name COLLATE NOCASE, s.id",
+    )
+    .load(conn)
+    .map_err(CalibreError::from)?;
+
+    Ok(rows
+        .into_iter()
+        .map(|row| SeriesSummary {
+            id: row.id,
+            name: row.name,
+            book_count: row.book_count,
+        })
+        .collect())
+}
 
 pub(crate) fn find_by_name_case_insensitive(
     conn: &mut SqliteConnection,

@@ -1,11 +1,24 @@
-import { type RefObject, useState } from "react";
+import { type RefObject, useEffect, useState } from "react";
 import type { LibraryBook } from "@/bindings";
 import { useKeymap } from "@/lib/hooks/use-keymap";
 import type { KeyBinding, SelectionDirection } from "@/lib/keymap";
 import { moveSelection } from "@/lib/keymap";
 
 interface LibraryKeymapOptions {
-	books: LibraryBook[];
+	/**
+	 * Indexed view of the filtered library: length is the total match count,
+	 * `undefined` entries are books whose page has not been fetched yet.
+	 * Selection tracks the INDEX, so arrow keys can move onto an unfetched
+	 * slot; the scroll-into-view below makes its page load, and the
+	 * selection ring appears once the book arrives.
+	 */
+	books: (LibraryBook | undefined)[];
+	/**
+	 * Identity of the filter behind `books` (the paged cache key). Selection
+	 * is positional, so it resets when the filter changes — index 4 of a new
+	 * result set is an unrelated book.
+	 */
+	resetToken?: string;
 	drawerOpened: boolean;
 	searchInputRef: RefObject<HTMLInputElement>;
 	gridContainerRef: RefObject<HTMLElement>;
@@ -39,6 +52,7 @@ const measureColumns = (container: HTMLElement | null): number => {
 
 export const useLibraryKeymap = ({
 	books,
+	resetToken,
 	drawerOpened,
 	searchInputRef,
 	gridContainerRef,
@@ -46,47 +60,51 @@ export const useLibraryKeymap = ({
 	onBookOpen,
 	onClearSearch,
 }: LibraryKeymapOptions): { selectedBookId: LibraryBook["id"] | null } => {
-	const [selectedBookId, setSelectedBookId] = useState<
-		LibraryBook["id"] | null
-	>(null);
+	const [selectedIndex, setSelectedIndex] = useState<number>(-1);
 
-	const selectedIndex =
-		selectedBookId === null
-			? -1
-			: books.findIndex((book) => book.id === selectedBookId);
-	const visibleSelectedBookId = selectedIndex >= 0 ? selectedBookId : null;
+	// New filter, new result set: positional selection no longer points at
+	// the book the user picked.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: resetToken exists solely to trigger this reset.
+	useEffect(() => {
+		setSelectedIndex(-1);
+	}, [resetToken]);
 
-	const selectBook = (book: LibraryBook, index: number) => {
-		setSelectedBookId(book.id);
+	const inRange = selectedIndex >= 0 && selectedIndex < books.length;
+	const selectedBook = inRange ? books[selectedIndex] : undefined;
+	const visibleSelectedBookId = selectedBook?.id ?? null;
+
+	const selectIndex = (index: number) => {
+		setSelectedIndex(index);
 		// The grid is virtualized: the target row may not be mounted, so ask
-		// the virtualizer to scroll it into view first. When the card is
-		// already mounted, the follow-up scrollIntoView fine-tunes alignment;
-		// when it is not, the row-level scroll alone places it in view and the
-		// card renders selected on the next frame.
+		// the virtualizer to scroll it into view first (which also pages the
+		// books covering it in). When the card is already mounted, the
+		// follow-up scrollIntoView fine-tunes alignment; when it is not, the
+		// row-level scroll alone places it in view and the card renders
+		// selected once its book arrives.
 		scrollToBookIndexRef?.current?.(index);
-		document
-			.querySelector(`[data-book-id="${CSS.escape(book.id)}"]`)
-			?.scrollIntoView({ block: "nearest" });
+		const book = books[index];
+		if (book !== undefined) {
+			document
+				.querySelector(`[data-book-id="${CSS.escape(book.id)}"]`)
+				?.scrollIntoView({ block: "nearest" });
+		}
 	};
 
 	const moveBy = (direction: SelectionDirection) => {
 		const nextIndex = moveSelection({
-			index: selectedIndex,
+			index: inRange ? selectedIndex : -1,
 			count: books.length,
 			columns: measureColumns(gridContainerRef.current),
 			direction,
 		});
-		if (nextIndex < 0) return;
-		const nextBook = books[nextIndex];
-		if (nextBook === undefined) return;
-		selectBook(nextBook, nextIndex);
+		if (nextIndex < 0 || nextIndex >= books.length) return;
+		selectIndex(nextIndex);
 	};
 
 	// Spotlight-style hand-off: commit the query and drop into the results.
 	const leaveSearchForGrid = () => {
 		gridContainerRef.current?.focus();
-		const firstBook = books[0];
-		if (firstBook !== undefined) selectBook(firstBook, 0);
+		if (books.length > 0) selectIndex(0);
 	};
 
 	const bindings: KeyBinding[] = [];

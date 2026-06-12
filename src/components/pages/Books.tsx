@@ -21,10 +21,19 @@ import {
 	Tooltip,
 } from "@/components/ui";
 import { safeAsyncEventHandler } from "@/lib/async";
+import { type BookGridFilter, sparseBookItems } from "@/lib/book-page-cache";
+import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useLibraryKeymap } from "@/lib/hooks/use-library-keymap";
 import { usePlatform } from "@/lib/platform/context";
 import { formatSeriesIndex } from "@/lib/series";
-import { useBooks, useBooksLoading } from "@/stores/library/store";
+import {
+	useAuthors,
+	useBookCache,
+	useLibraryActions,
+	useLibraryReady,
+	useLibraryTotal,
+	useSeriesList,
+} from "@/stores/library/store";
 import {
 	LibraryBookSortOrder,
 	type LibraryBookSortOrderKey,
@@ -39,8 +48,10 @@ import { BookGrid, type ScrollToBookIndex } from "../molecules/BookGrid";
 import styles from "./Books.module.css";
 
 interface BookSearchOptions {
-	search_for_author?: string;
-	search_for_series?: string;
+	/** Deep-link: only books by this author (LibraryAuthor id). */
+	author_id?: string;
+	/** Deep-link: only books in this series (LibrarySeries id). */
+	series_id?: number;
 }
 
 const SORT_LABELS: Record<LibraryBookSortOrderKey, string> = {
@@ -50,10 +61,14 @@ const SORT_LABELS: Record<LibraryBookSortOrderKey, string> = {
 	authorZa: "Author (Z–A)",
 };
 
-export const Books = ({
-	search_for_author,
-	search_for_series,
-}: BookSearchOptions) => {
+/**
+ * How long the search text must sit still before it becomes a new paged
+ * cache key (each distinct key costs backend fetches). The field itself
+ * stays instant; only the query is debounced.
+ */
+const QUERY_DEBOUNCE_MS = 200;
+
+export const Books = ({ author_id, series_id }: BookSearchOptions) => {
 	const query = useLibraryView((s) => s.query);
 	const sortOrder = useLibraryView((s) => s.sortOrder);
 	const hideRead = useLibraryView((s) => s.hideRead);
@@ -62,67 +77,73 @@ export const Books = ({
 	const setHideRead = useLibraryView((s) => s.setHideRead);
 	const resetToAllBooks = useLibraryView((s) => s.resetToAllBooks);
 
-	// Author deep-links (Authors page, drawer author names) fill the text
-	// query; reacting to the param means in-page clicks work too, while
-	// later hand-edits to the query stick.
-	useEffect(() => {
-		if (search_for_author) {
-			setQuery(search_for_author);
-		}
-	}, [search_for_author, setQuery]);
-
-	// A series link promises "the rest of this series in one click", so a
+	// An author or series link promises "those books in one click", so a
 	// text query from before the click must not keep filtering the results.
 	useEffect(() => {
-		if (search_for_series) {
+		if (author_id !== undefined || series_id !== undefined) {
 			setQuery("");
 		}
-	}, [search_for_series, setQuery]);
+	}, [author_id, series_id, setQuery]);
 
-	const books = useBooks();
-	const loading = useBooksLoading();
+	const actions = useLibraryActions();
+	const libraryReady = useLibraryReady();
+	const cache = useBookCache();
+	const libraryTotal = useLibraryTotal();
+	const authors = useAuthors();
+	const seriesList = useSeriesList();
+
+	const debouncedQuery = useDebouncedValue(query, QUERY_DEBOUNCE_MS);
+	const filter = useMemo<BookGridFilter>(
+		() => ({
+			text: debouncedQuery,
+			authorId: author_id ?? null,
+			seriesId: series_id ?? null,
+			hideRead,
+			sortOrder,
+		}),
+		[debouncedQuery, author_id, series_id, hideRead, sortOrder],
+	);
+
+	useEffect(() => {
+		if (!libraryReady) return;
+		actions.setBookFilter(filter);
+	}, [libraryReady, filter, actions]);
+
+	// The grid's last reported viewport; pages covering it are (re)fetched
+	// whenever the cache key or generation moves (filter change, mutation).
+	const lastRangeRef = useRef({ start: 0, end: 0 });
+	// biome-ignore lint/correctness/useExhaustiveDependencies: cache.key/cache.generation are triggers — a new filter or an invalidation must refetch the pages behind the current viewport.
+	useEffect(() => {
+		if (!libraryReady) return;
+		const { start, end } = lastRangeRef.current;
+		void actions.ensureBookRange(start, end);
+	}, [libraryReady, cache.key, cache.generation, actions]);
+
+	const onVisibleRangeChange = useCallback(
+		(start: number, end: number) => {
+			lastRangeRef.current = { start, end };
+			void actions.ensureBookRange(start, end);
+		},
+		[actions],
+	);
+
+	const books = useMemo(() => sparseBookItems(cache), [cache]);
+	const total = cache.total ?? 0;
+	const loading = !libraryReady || cache.total === null;
 
 	const navigate = useNavigate();
-	const onClearSeriesFilter = useCallback(() => {
+	const onClearDeepLinkFilter = useCallback(() => {
 		void navigate({ to: "/", search: {} });
 	}, [navigate]);
 
-	const filteredBooks = useMemo(() => {
-		const queryFiltered = filterBooksByQuery(books, { query, hideRead });
-		if (!search_for_series) return queryFiltered;
-		return queryFiltered.filter((book) => book.series === search_for_series);
-	}, [books, query, hideRead, search_for_series]);
-
-	const sortedBooks = useMemo(() => {
-		// An active series filter overrides the user's chosen sort order:
-		// books read best in series order.
-		if (search_for_series) {
-			return [...filteredBooks].sort(compareBySeriesIndex);
-		}
-
-		const compare = (a: LibraryBook, b: LibraryBook) => {
-			const authorA = a.author_list[0]?.sortable_name ?? "";
-			const authorB = b.author_list[0]?.sortable_name ?? "";
-
-			switch (sortOrder) {
-				case "authorAz":
-					return authorA.localeCompare(authorB);
-				case "authorZa":
-					return authorB.localeCompare(authorA);
-				case "nameAz":
-					return (a.sortable_title ?? a.title).localeCompare(
-						b.sortable_title ?? b.title,
-					);
-				case "nameZa":
-					return (b.sortable_title ?? b.title).localeCompare(
-						a.sortable_title ?? a.title,
-					);
-				default:
-					return 0;
-			}
-		};
-		return [...filteredBooks].sort(compare);
-	}, [filteredBooks, sortOrder, search_for_series]);
+	const authorTokenName =
+		author_id !== undefined
+			? (authors.find((author) => author.id === author_id)?.name ?? "Author")
+			: undefined;
+	const seriesTokenName =
+		series_id !== undefined
+			? (seriesList.find((series) => series.id === series_id)?.name ?? "Series")
+			: undefined;
 
 	const [isBookSidebarOpen, setIsBookSidebarOpen] = useState(false);
 
@@ -130,7 +151,9 @@ export const Books = ({
 		useState<LibraryBook | null>(null);
 	const onBookOpen = useCallback(
 		(bookId: LibraryBook["id"]) => {
-			const book = books.filter((book) => book.id === bookId).at(0);
+			const book = books.find(
+				(candidate) => candidate !== undefined && candidate.id === bookId,
+			);
 			if (!book) return;
 			setSelectedSidebarBook(book);
 			setIsBookSidebarOpen(true);
@@ -145,7 +168,8 @@ export const Books = ({
 	const scrollToBookIndexRef = useRef<ScrollToBookIndex | null>(null);
 
 	const { selectedBookId } = useLibraryKeymap({
-		books: sortedBooks,
+		books,
+		resetToken: cache.key,
 		drawerOpened: isBookSidebarOpen,
 		searchInputRef,
 		gridContainerRef,
@@ -154,7 +178,29 @@ export const Books = ({
 		onClearSearch: () => setQuery(""),
 	});
 
-	const noMatches = !loading && sortedBooks.length === 0 && books.length > 0;
+	const noMatches = !loading && total === 0 && (libraryTotal ?? 0) > 0;
+
+	const searchTokens = [
+		...(authorTokenName !== undefined
+			? [
+					{
+						label: `Author: ${authorTokenName}`,
+						onRemove: onClearDeepLinkFilter,
+						title: "Showing only books by this author",
+					},
+				]
+			: []),
+		...(seriesTokenName !== undefined
+			? [
+					{
+						label: `Series: ${seriesTokenName}`,
+						onRemove: onClearDeepLinkFilter,
+						title:
+							"Books are sorted in series order while this filter is active",
+					},
+				]
+			: []),
+	];
 
 	return (
 		<div className={styles.page}>
@@ -166,23 +212,12 @@ export const Books = ({
 				<span className={styles.searchWrap}>
 					<SearchField
 						ref={searchInputRef}
-						placeholder={search_for_series !== undefined ? undefined : "Search"}
+						placeholder={searchTokens.length > 0 ? undefined : "Search"}
 						aria-label="Search book titles and authors"
 						value={query}
 						onChange={(event) => setQuery(event.currentTarget.value)}
 						className={styles.searchInput}
-						tokens={
-							search_for_series !== undefined
-								? [
-										{
-											label: `Series: ${search_for_series}`,
-											onRemove: onClearSeriesFilter,
-											title:
-												"Books are sorted in series order while this filter is active",
-										},
-									]
-								: undefined
-						}
+						tokens={searchTokens.length > 0 ? searchTokens : undefined}
 					/>
 				</span>
 				<Select
@@ -196,7 +231,7 @@ export const Books = ({
 					}))}
 					value={sortOrder}
 					onChange={(value) => setSortOrder(value as LibraryBookSortOrderKey)}
-					disabled={search_for_series !== undefined}
+					disabled={series_id !== undefined}
 				/>
 				<Checkbox
 					label="Unread only"
@@ -220,26 +255,35 @@ export const Books = ({
 						<span className={styles.emptyText}>
 							No books match these filters.
 						</span>
-						<Button variant="subtle" onClick={() => resetToAllBooks()}>
+						<Button
+							variant="subtle"
+							onClick={() => {
+								resetToAllBooks();
+								onClearDeepLinkFilter();
+							}}
+						>
 							Show all books
 						</Button>
 					</div>
 				) : (
 					<BookGrid
-						bookList={sortedBooks}
+						bookList={books}
 						loading={loading}
 						onBookOpen={onBookOpen}
 						selectedBookId={selectedBookId}
 						scrollElementRef={gridContainerRef}
 						scrollToBookIndexRef={scrollToBookIndexRef}
+						onVisibleRangeChange={onVisibleRangeChange}
 					/>
 				)}
 			</div>
 			<div className={styles.footer}>
 				<span className={styles.footerText}>
-					{sortedBooks.length === books.length
-						? `${books.length} books`
-						: `${sortedBooks.length} of ${books.length} books`}
+					{loading
+						? "Loading books…"
+						: libraryTotal === null || total === libraryTotal
+							? `${total} books`
+							: `${total} of ${libraryTotal} books`}
 				</span>
 			</div>
 			<Drawer
@@ -397,6 +441,15 @@ const BookDetails = ({
 	const platform = usePlatform();
 	const navigate = useNavigate();
 	const canRead = platform.capabilities.canOpenLocalPaths;
+	// Books carry only their series NAME; the id that LibraryBookQuery
+	// filters on comes from the store's series list (loaded at init and
+	// refreshed on mutations). An unresolvable name (shouldn't happen)
+	// degrades to plain text.
+	const seriesList = useSeriesList();
+	const seriesId =
+		book.series !== null
+			? seriesList.find((series) => series.name === book.series)?.id
+			: undefined;
 	return (
 		<div className={styles.details}>
 			<div className={styles.detailsTop}>
@@ -410,7 +463,7 @@ const BookDetails = ({
 									{index > 0 && ", "}
 									<Link
 										to="/"
-										search={{ search_for_author: author.name }}
+										search={{ author_id: author.id }}
 										onClick={onClose}
 										className={styles.detailsLink}
 									>
@@ -424,14 +477,18 @@ const BookDetails = ({
 								{book.series_index !== null
 									? `Book ${formatSeriesIndex(book.series_index)} of `
 									: "Part of "}
-								<Link
-									to="/"
-									search={{ search_for_series: book.series }}
-									onClick={onClose}
-									className={styles.detailsLink}
-								>
-									{book.series}
-								</Link>
+								{seriesId !== undefined ? (
+									<Link
+										to="/"
+										search={{ series_id: seriesId }}
+										onClick={onClose}
+										className={styles.detailsLink}
+									>
+										{book.series}
+									</Link>
+								) : (
+									book.series
+								)}
 							</span>
 						)}
 					</div>
@@ -612,24 +669,3 @@ export interface BookViewOptions {
 	sortOrder: "authorAz" | "authorZa" | "nameAz" | "nameZa";
 	searchQuery: string;
 }
-
-const compareBySeriesIndex = (a: LibraryBook, b: LibraryBook): number => {
-	const indexA = a.series_index ?? Number.POSITIVE_INFINITY;
-	const indexB = b.series_index ?? Number.POSITIVE_INFINITY;
-	if (indexA !== indexB) return indexA - indexB;
-	return a.title.localeCompare(b.title);
-};
-
-const filterBooksByQuery = (
-	books: LibraryBook[],
-	{ query, hideRead }: { query: string; hideRead: boolean },
-) => {
-	const lowerQuery = query.toLowerCase();
-	return books
-		.filter(
-			({ title, author_list }) =>
-				title.toLowerCase().includes(lowerQuery) ||
-				author_list.some(({ name }) => name.toLowerCase().includes(lowerQuery)),
-		)
-		.filter((book) => (hideRead ? !book.is_read : true));
-};

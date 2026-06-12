@@ -3,6 +3,7 @@ import {
 	type ImportableBookMetadata,
 	type ImportableFile,
 	type LibraryBook,
+	type LibraryBookQuery,
 	type NewAuthor,
 	type RemoteFile,
 } from "@/bindings";
@@ -71,8 +72,37 @@ const genLocalCalibreClient = async (
 
 			return books;
 		},
+		queryBooks: async (query: LibraryBookQuery) => {
+			const results = await commands.clbQueryBooks(query);
+			if (results.status === "error") {
+				throw new Error(results.error);
+			}
+
+			for (const book of results.data.items) {
+				bookCoverCache.set(book.id.toString(), {
+					localPath: book.cover_image?.local_path ?? "",
+					url: book.cover_image?.url ?? "",
+				});
+				const primaryFile = book.file_list[0];
+				if (primaryFile !== undefined && "Local" in primaryFile) {
+					bookFilePath.set(book.id.toString(), {
+						localPath: primaryFile.Local.path,
+						url: undefined,
+					});
+				}
+			}
+
+			return results.data;
+		},
 		listAuthors: async () => {
 			const results = await commands.clbQueryListAllAuthors();
+			if (results.status === "error") {
+				throw new Error(results.error);
+			}
+			return results.data;
+		},
+		listSeries: async () => {
+			const results = await commands.clbQueryListSeries();
 			if (results.status === "error") {
 				throw new Error(results.error);
 			}
@@ -186,7 +216,13 @@ const genRemoteCalibreClient = async (
 
 			return res;
 		},
+		queryBooks() {
+			throw new Error("Not implemented");
+		},
 		listAuthors() {
+			throw new Error("Not implemented");
+		},
+		listSeries() {
 			throw new Error("Not implemented");
 		},
 		sendToDevice: () => {

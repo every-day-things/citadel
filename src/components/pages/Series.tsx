@@ -2,9 +2,9 @@ import { Link } from "@tanstack/react-router";
 import clsx from "clsx";
 import { type CSSProperties, useMemo, useState } from "react";
 
+import type { LibrarySeries } from "@/bindings";
 import { SearchField } from "@/components/ui";
-import { deriveSeriesSummaries, type SeriesSummary } from "@/lib/series";
-import { useBooks, useBooksLoading } from "@/stores/library/store";
+import { useSeriesList, useSeriesLoading } from "@/stores/library/store";
 import styles from "./Series.module.css";
 
 /**
@@ -19,21 +19,21 @@ const SERIES_GRID: CSSProperties = {
 };
 
 export const Series = () => {
-	const books = useBooks();
-	const loadingBooks = useBooksLoading();
+	// The store's series list (clb_query_list_series) arrives sorted by name
+	// with book counts; no need to derive it from the full book list.
+	const seriesList = useSeriesList();
+	const loadingSeries = useSeriesLoading();
 
 	const [searchTerm, setSearchTerm] = useState("");
 
-	const seriesSummaries = useMemo(() => deriveSeriesSummaries(books), [books]);
-
 	const filteredSeries = useMemo(() => {
 		const lowerSearch = searchTerm.toLowerCase();
-		return seriesSummaries.filter(({ name }) =>
+		return seriesList.filter(({ name }) =>
 			name.toLowerCase().includes(lowerSearch),
 		);
-	}, [seriesSummaries, searchTerm]);
+	}, [seriesList, searchTerm]);
 
-	if (loadingBooks) {
+	if (loadingSeries) {
 		return null;
 	}
 
@@ -58,22 +58,22 @@ export const Series = () => {
 
 			<div className={styles.rows}>
 				{filteredSeries.map((series) => (
-					<SeriesRow series={series} key={series.name} />
+					<SeriesRow series={series} key={series.id} />
 				))}
 			</div>
 
 			<div className={styles.footer}>
 				<span className={styles.footerText}>
-					{filteredSeries.length === seriesSummaries.length
-						? `${seriesSummaries.length} series`
-						: `${filteredSeries.length} of ${seriesSummaries.length} series`}
+					{filteredSeries.length === seriesList.length
+						? `${seriesList.length} series`
+						: `${filteredSeries.length} of ${seriesList.length} series`}
 				</span>
 			</div>
 		</div>
 	);
 };
 
-const SeriesRow = ({ series }: { series: SeriesSummary }) => {
+const SeriesRow = ({ series }: { series: LibrarySeries }) => {
 	return (
 		// The whole row links to the library filtered by this series. The hover
 		// background, 40px min-height, and the overlay-link positioning live in
@@ -84,7 +84,7 @@ const SeriesRow = ({ series }: { series: SeriesSummary }) => {
 			    relative + zIndex), so it keeps working without stopPropagation. */}
 			<Link
 				to="/"
-				search={{ search_for_series: series.name }}
+				search={{ series_id: series.id }}
 				className="ctd-author-row-link"
 				aria-label={`Show books in ${series.name}`}
 			/>
@@ -93,10 +93,10 @@ const SeriesRow = ({ series }: { series: SeriesSummary }) => {
 
 			<Link
 				to="/"
-				search={{ search_for_series: series.name }}
+				search={{ series_id: series.id }}
 				className={styles.countLink}
 			>
-				{series.bookCount}
+				{series.book_count}
 			</Link>
 		</div>
 	);
