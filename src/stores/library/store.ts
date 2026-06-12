@@ -41,12 +41,10 @@ interface LibraryActions {
 	/**
 	 * Loads the ENTIRE library into `books` via clb_query_list_all_books.
 	 *
-	 * Kept (and loaded lazily, see `useAllBooks`) for the consumers that
-	 * genuinely need whole-library data and have no targeted query:
-	 * - the book detail route: the tag autocomplete needs the full tag
-	 *   vocabulary (and there is no fetch-one-book command).
-	 * The Authors page no longer uses this (per-author book counts ride on
-	 * the authors payload); the cover grid pages via `ensureBookRange`.
+	 * No page consumes this anymore: the Authors page rides on the authors
+	 * payload, the cover grid pages via `ensureBookRange`, and the book
+	 * edit route fetches its own book and the tag vocabulary (see
+	 * useEditBookData).
 	 */
 	loadBooks: () => Promise<void>;
 	loadAuthors: () => Promise<void>;

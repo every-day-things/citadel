@@ -1,11 +1,12 @@
 import { createFileRoute, useParams } from "@tanstack/react-router";
-import { type CSSProperties, useCallback, useMemo } from "react";
+import { type CSSProperties, useCallback } from "react";
 import type { BookUpdate, NewAuthor } from "@/bindings";
 import { BookPage } from "@/components/pages/EditBook";
 import { Spinner } from "@/components/ui";
+import { tagListChanged } from "@/lib/domain/tag";
+import { useEditBookData } from "@/lib/hooks/use-edit-book-data";
 import {
 	LibraryState,
-	useAllBooks,
 	useAuthors,
 	useLibraryActions,
 	useLibraryState,
@@ -23,33 +24,28 @@ const EditBookRoute = () => {
 	const state = useLibraryState();
 	const actions = useLibraryActions();
 
-	// Whole-library list (lazy): the tag autocomplete needs the full tag
-	// vocabulary and there is no fetch-one-book or list-tags command, so
-	// this route stays on clb_query_list_all_books (one fetch on entry, off
-	// the hot path). See LibraryActions.loadBooks.
-	const { books, loading: loadingBooks } = useAllBooks();
+	// Scoped fetches: this route loads exactly its own book and the tag
+	// vocabulary (for the tag autocomplete) — never the whole library.
+	const { book, allTagList, loading, error, refreshBook, refreshTags } =
+		useEditBookData(bookId);
 	const allAuthorList = useAuthors();
-	const allTagList = useMemo(
-		() =>
-			Array.from(
-				new Set(books.flatMap((candidate) => candidate.tag_list)),
-			).sort((left, right) => left.localeCompare(right)),
-		[books],
-	);
-
-	// Find the book from the store
-	const book = useMemo(
-		() => books.find((b) => b.id === bookId),
-		[books, bookId],
-	);
 
 	const onSave = useCallback(
 		async (bookUpdate: BookUpdate) => {
-			if (actions) {
-				await actions.updateBook(bookId, bookUpdate);
+			if (!actions) return;
+			const tagsChanged = tagListChanged(
+				book?.tag_list ?? [],
+				bookUpdate.tag_list,
+			);
+			// updateBook drops the paged grid cache (visible pages refetch
+			// lazily); this route then re-fetches only its own data.
+			await actions.updateBook(bookId, bookUpdate);
+			await refreshBook();
+			if (tagsChanged) {
+				await refreshTags();
 			}
 		},
-		[actions, bookId],
+		[actions, bookId, book, refreshBook, refreshTags],
 	);
 
 	const onCreateAuthor = useCallback(
@@ -73,33 +69,35 @@ const EditBookRoute = () => {
 			label: string,
 			value: string,
 		) => {
-			if (actions) {
-				await actions.upsertBookIdentifier(bookId, identifierId, label, value);
-			}
+			if (!actions) return;
+			await actions.upsertBookIdentifier(bookId, identifierId, label, value);
+			// The form resets from the book prop; re-fetch so the new
+			// identifier row appears.
+			await refreshBook();
 		},
-		[actions],
+		[actions, refreshBook],
 	);
 
 	const onDeleteIdentifier = useCallback(
 		async (bookId: string, identifierId: number) => {
-			if (actions) {
-				await actions.deleteBookIdentifier(bookId, identifierId);
-			}
+			if (!actions) return;
+			await actions.deleteBookIdentifier(bookId, identifierId);
+			await refreshBook();
 		},
-		[actions],
+		[actions, refreshBook],
 	);
 
 	const onReloadBooks = useCallback(async () => {
-		if (actions) {
-			// Drop stale paged-grid pages too, then refresh this route's list.
-			actions.invalidateBooks();
-			await actions.loadBooks();
-		}
-	}, [actions]);
+		if (!actions) return;
+		// Hardcover imports change many fields at once: drop stale grid
+		// pages, then refresh this route's book and tag vocabulary.
+		actions.invalidateBooks();
+		await Promise.all([refreshBook(), refreshTags()]);
+	}, [actions, refreshBook, refreshTags]);
 
-	// Spinner only for the initial fetch; refetches after edits keep the
+	// Spinner only for the initial fetch; refreshes after edits keep the
 	// (stale-for-a-moment) form on screen instead of flashing.
-	if (state !== LibraryState.ready || (loadingBooks && books.length === 0)) {
+	if (state !== LibraryState.ready || loading) {
 		return (
 			<div style={centeredFill}>
 				<Spinner size={18} />
@@ -110,7 +108,7 @@ const EditBookRoute = () => {
 		return (
 			<div style={centeredFill}>
 				<span style={{ fontSize: 13, color: "var(--ctd-ink-soft)" }}>
-					Book not found.
+					{error ?? "Book not found."}
 				</span>
 			</div>
 		);

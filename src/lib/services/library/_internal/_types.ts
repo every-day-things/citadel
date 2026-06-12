@@ -8,6 +8,7 @@ import type {
 	LibraryBookPage,
 	LibraryBookQuery,
 	LibrarySeries,
+	LibraryTag,
 	NewAuthor,
 } from "@/bindings";
 
@@ -29,9 +30,16 @@ export interface Library {
 	 * filtered set ignoring paging.
 	 */
 	queryBooks(query: LibraryBookQuery): Promise<LibraryBookPage>;
+	/**
+	 * One book, hydrated exactly like a `queryBooks` page item. Rejects when
+	 * no book has the given id.
+	 */
+	getBook(bookId: LibraryBook["id"]): Promise<LibraryBook>;
 	listAuthors(): Promise<LibraryAuthor[]>;
 	/** Every series with its book count; ids feed `LibraryBookQuery.series_id`. */
 	listSeries(): Promise<LibrarySeries[]>;
+	/** The library's full tag vocabulary (feeds tag autocomplete). */
+	listTags(): Promise<LibraryTag[]>;
 	sendToDevice(
 		book: LibraryBook,
 		deviceOptions: {
