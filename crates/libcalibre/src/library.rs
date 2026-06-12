@@ -128,6 +128,51 @@ pub struct AuthorUpdate {
     pub link: Option<String>,
 }
 
+/// Sort order for [`Library::query_books`]. Orders by Calibre's precomputed
+/// sort columns (`books.sort` for titles, the primary linked author's
+/// `authors.sort` for authors), with `books.id` as a stable tiebreak.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum BookSortOrder {
+    #[default]
+    TitleAsc,
+    TitleDesc,
+    AuthorAsc,
+    AuthorDesc,
+}
+
+/// A paged, sorted, filtered book query. All filters compose (AND).
+#[derive(Clone, Debug, Default)]
+pub struct BookQuery {
+    /// Case-insensitive substring match across the book title, linked author
+    /// names, and linked series names, with LIKE wildcards escaped — the
+    /// same semantics as [`Library::search_books`], EXCEPT that `None` or
+    /// empty/whitespace text matches ALL books (where `search_books` returns
+    /// no books).
+    pub text: Option<String>,
+    /// Only books linked to this author.
+    pub author_id: Option<AuthorId>,
+    /// Only books linked to this series.
+    pub series_id: Option<i32>,
+    /// Exclude books marked read (filtered in SQL, so paging and totals stay
+    /// correct).
+    pub hide_read: bool,
+    pub sort: BookSortOrder,
+    /// Maximum number of books to return. `None` returns all matches.
+    pub limit: Option<i64>,
+    /// Number of matching books to skip before the page starts.
+    pub offset: i64,
+}
+
+/// One page of results from [`Library::query_books`].
+#[derive(Clone, Debug)]
+pub struct BookPage {
+    /// The fully hydrated books in this page, in sorted order.
+    pub items: Vec<Book>,
+    /// Total number of books matching the query's filters, ignoring
+    /// limit/offset.
+    pub total: i64,
+}
+
 impl Library {
     pub fn new(db_path: ValidDbPath) -> Result<Self, CalibreError> {
         let conn = establish_connection(&db_path.database_path)
@@ -675,19 +720,62 @@ impl Library {
     // Search
     // =========================================================================
 
+    /// Run a paged, sorted, filtered book query. Returns one page of
+    /// hydrated books plus the total match count (ignoring limit/offset).
+    pub fn query_books(&mut self, query: BookQuery) -> Result<BookPage, CalibreError> {
+        // The read state lives in the `read` bool custom column. When the
+        // column does not exist yet, no book has been marked read, so there
+        // is nothing to hide.
+        let hide_read_column = if query.hide_read {
+            custom_columns::find_by_label_and_kind(&mut self.conn, "read", &CustomColumnKind::Bool)?
+                .map(|column| column.id)
+        } else {
+            None
+        };
+
+        let filters = book_queries::BookPageFilters {
+            text: query
+                .text
+                .as_deref()
+                .map(str::trim)
+                .filter(|text| !text.is_empty()),
+            author_id: query.author_id,
+            series_id: query.series_id,
+            hide_read_column,
+        };
+
+        let total = book_queries::query_count(&mut self.conn, &filters)?;
+        let book_ids = book_queries::query_page(
+            &mut self.conn,
+            &filters,
+            query.sort,
+            query.limit,
+            query.offset,
+        )?;
+        let items = self.get_books_with_read_states(book_ids)?;
+
+        Ok(BookPage { items, total })
+    }
+
     pub fn search_books(&mut self, query: &str) -> Result<Vec<Book>, CalibreError> {
         let query = query.trim();
         if query.is_empty() {
             return Ok(vec![]);
         }
 
-        let book_ids = book_queries::search(&mut self.conn, query)?;
-        self.get_books_with_read_states(book_ids)
+        self.query_books(BookQuery {
+            text: Some(query.to_string()),
+            ..BookQuery::default()
+        })
+        .map(|page| page.items)
     }
 
     pub fn find_by_author(&mut self, author_id: AuthorId) -> Result<Vec<Book>, CalibreError> {
-        let book_ids = book_queries::find_by_author(&mut self.conn, author_id)?;
-        self.get_books_with_read_states(book_ids)
+        self.query_books(BookQuery {
+            author_id: Some(author_id),
+            ..BookQuery::default()
+        })
+        .map(|page| page.items)
     }
 
     fn get_books_with_read_states(

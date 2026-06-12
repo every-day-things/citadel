@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use libcalibre::mime_type::MIMETYPE;
+use serde::{Deserialize, Serialize};
 
 use crate::book::{ImportableBookMetadata, LibraryAuthor};
 use crate::calibre::book;
@@ -35,6 +36,84 @@ pub fn clb_query_search_books(
 
     let books = state.with_library(|lib| book::search(library_root, lib, &query))?;
     books.map_err(|e| e.to_string())
+}
+
+#[derive(Serialize, Deserialize, specta::Type, Clone, Copy, Debug)]
+pub enum BookSortOrder {
+    TitleAsc,
+    TitleDesc,
+    AuthorAsc,
+    AuthorDesc,
+}
+
+impl From<BookSortOrder> for libcalibre::BookSortOrder {
+    fn from(sort: BookSortOrder) -> Self {
+        match sort {
+            BookSortOrder::TitleAsc => libcalibre::BookSortOrder::TitleAsc,
+            BookSortOrder::TitleDesc => libcalibre::BookSortOrder::TitleDesc,
+            BookSortOrder::AuthorAsc => libcalibre::BookSortOrder::AuthorAsc,
+            BookSortOrder::AuthorDesc => libcalibre::BookSortOrder::AuthorDesc,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, specta::Type, Clone, Debug)]
+pub struct LibraryBookQuery {
+    /// Substring match across title, author names, and series names.
+    /// `None` or empty text matches all books.
+    pub text: Option<String>,
+    pub author_id: Option<String>,
+    pub series_id: Option<i32>,
+    pub hide_read: bool,
+    pub sort: BookSortOrder,
+    /// Page size. `None` returns all matches.
+    pub limit: Option<u32>,
+    pub offset: u32,
+}
+
+#[derive(Serialize, Deserialize, specta::Type, Clone)]
+pub struct LibraryBookPage {
+    pub items: Vec<LibraryBook>,
+    /// Total number of books matching the filters, ignoring limit/offset.
+    pub total: u32,
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn clb_query_books(
+    state: tauri::State<CitadelState>,
+    query: LibraryBookQuery,
+) -> Result<LibraryBookPage, String> {
+    let library_root = state
+        .get_library_path()
+        .ok_or("No library loaded".to_string())?;
+
+    let author_id = query
+        .author_id
+        .as_deref()
+        .map(|raw| {
+            raw.parse::<libcalibre::AuthorId>()
+                .map_err(|e| format!("Invalid author id '{raw}': {e}"))
+        })
+        .transpose()?;
+
+    let book_query = libcalibre::BookQuery {
+        text: query.text,
+        author_id,
+        series_id: query.series_id,
+        hide_read: query.hide_read,
+        sort: query.sort.into(),
+        limit: query.limit.map(i64::from),
+        offset: i64::from(query.offset),
+    };
+
+    let page = state.with_library(|lib| book::query_page(library_root, lib, book_query))?;
+    let (items, total) = page.map_err(|e| e.to_string())?;
+
+    Ok(LibraryBookPage {
+        items,
+        total: u32::try_from(total).unwrap_or(u32::MAX),
+    })
 }
 
 #[tauri::command]

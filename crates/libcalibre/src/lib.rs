@@ -19,7 +19,7 @@ pub use custom_columns::{CustomColumn, CustomColumnKind, CustomColumnSpec, Custo
 pub use error::CalibreError;
 pub use library::{
     Author as LibraryAuthor, AuthorAdd, AuthorUpdate, Book as LibraryBook, BookAdd, BookFileInfo,
-    BookIdentifier, BookUpdate, Library,
+    BookIdentifier, BookPage, BookQuery, BookSortOrder, BookUpdate, Library,
 };
 pub use types::{AuthorId, BookFileId, BookId};
 

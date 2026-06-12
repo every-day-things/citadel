@@ -4,9 +4,10 @@
 //! All functions use type-safe IDs and accept a mutable SQLite connection.
 
 use diesel::prelude::*;
-use diesel::sql_types::{Integer, Text};
+use diesel::sql_types::{BigInt, Integer, Text};
 use diesel::{sql_query, QueryDsl, QueryableByName, RunQueryDsl, SqliteConnection};
 
+use crate::library::BookSortOrder;
 use crate::types::AuthorId;
 use crate::{types::BookId, CalibreError};
 use crate::{BookRow, NewBook, UpdateBookData};
@@ -53,39 +54,161 @@ pub(crate) fn get_by_ids(
         .map_err(CalibreError::from)
 }
 
-pub(crate) fn search(
-    conn: &mut SqliteConnection,
-    query: &str,
-) -> Result<Vec<BookId>, CalibreError> {
-    #[derive(QueryableByName)]
-    struct MatchedBook {
-        #[diesel(sql_type = Integer)]
-        id: i32,
-    }
+// =============================================================================
+// Paged, sorted, filtered queries
+// =============================================================================
 
-    let escaped = query
+/// Filters shared by the paged id query and its COUNT twin. Both build their
+/// WHERE clause from [`filter_where_sql`] so the page and total cannot drift.
+pub(crate) struct BookPageFilters<'a> {
+    /// Case-insensitive substring match (LIKE wildcards escaped) across the
+    /// book title, linked author names, and linked series names.
+    pub text: Option<&'a str>,
+    pub author_id: Option<AuthorId>,
+    pub series_id: Option<i32>,
+    /// Id of the `read` bool custom column. When set, books marked read are
+    /// excluded.
+    pub hide_read_column: Option<i32>,
+}
+
+#[derive(QueryableByName)]
+struct IdRow {
+    #[diesel(sql_type = Integer)]
+    id: i32,
+}
+
+#[derive(QueryableByName)]
+struct CountRow {
+    #[diesel(sql_type = BigInt)]
+    total: i64,
+}
+
+fn like_pattern(text: &str) -> String {
+    let escaped = text
         .replace('\\', "\\\\")
         .replace('%', "\\%")
         .replace('_', "\\_");
-    let pattern = format!("%{escaped}%");
+    format!("%{escaped}%")
+}
 
-    let matches: Vec<MatchedBook> = sql_query(
-        "SELECT DISTINCT books.id FROM books \
-         LEFT JOIN books_authors_link ON books_authors_link.book = books.id \
-         LEFT JOIN authors ON authors.id = books_authors_link.author \
-         LEFT JOIN books_series_link ON books_series_link.book = books.id \
-         LEFT JOIN series ON series.id = books_series_link.series \
-         WHERE books.title LIKE ? ESCAPE '\\' \
-            OR authors.name LIKE ? ESCAPE '\\' \
-            OR series.name LIKE ? ESCAPE '\\'",
-    )
-    .bind::<Text, _>(&pattern)
-    .bind::<Text, _>(&pattern)
-    .bind::<Text, _>(&pattern)
-    .load(conn)
-    .map_err(CalibreError::from)?;
+/// WHERE clause shared by [`query_page`] and [`query_count`]. The text filter
+/// uses three `?` placeholders (title, author name, series name); all other
+/// filters interpolate plain integers.
+fn filter_where_sql(filters: &BookPageFilters) -> String {
+    let mut clauses: Vec<String> = vec!["1=1".to_string()];
 
-    Ok(matches.into_iter().map(|m| BookId(m.id)).collect())
+    if filters.text.is_some() {
+        clauses.push(
+            "(books.title LIKE ? ESCAPE '\\' \
+              OR EXISTS (SELECT 1 FROM books_authors_link bal \
+                         JOIN authors a ON a.id = bal.author \
+                         WHERE bal.book = books.id AND a.name LIKE ? ESCAPE '\\') \
+              OR EXISTS (SELECT 1 FROM books_series_link bsl \
+                         JOIN series s ON s.id = bsl.series \
+                         WHERE bsl.book = books.id AND s.name LIKE ? ESCAPE '\\'))"
+                .to_string(),
+        );
+    }
+
+    if let Some(author_id) = filters.author_id {
+        clauses.push(format!(
+            "EXISTS (SELECT 1 FROM books_authors_link bal2 \
+             WHERE bal2.book = books.id AND bal2.author = {})",
+            author_id.as_i32()
+        ));
+    }
+
+    if let Some(series_id) = filters.series_id {
+        clauses.push(format!(
+            "EXISTS (SELECT 1 FROM books_series_link bsl2 \
+             WHERE bsl2.book = books.id AND bsl2.series = {series_id})"
+        ));
+    }
+
+    if let Some(n) = filters.hide_read_column {
+        clauses.push(format!(
+            "NOT EXISTS (SELECT 1 FROM custom_column_{n} cc \
+             WHERE cc.book = books.id AND cc.value != 0)"
+        ));
+    }
+
+    clauses.join(" AND ")
+}
+
+/// ORDER BY clause for [`query_page`]. Uses Calibre's precomputed sort
+/// columns (`books.sort` for titles, the primary linked author's
+/// `authors.sort` for authors), with `books.id` as a stable tiebreak.
+fn order_by_sql(sort: BookSortOrder) -> String {
+    const AUTHOR_SORT: &str = "(SELECT a.sort FROM books_authors_link bal \
+         JOIN authors a ON a.id = bal.author \
+         WHERE bal.book = books.id ORDER BY bal.id LIMIT 1)";
+
+    match sort {
+        BookSortOrder::TitleAsc => "books.sort ASC, books.id ASC".to_string(),
+        BookSortOrder::TitleDesc => "books.sort DESC, books.id DESC".to_string(),
+        BookSortOrder::AuthorAsc => format!("{AUTHOR_SORT} ASC, books.id ASC"),
+        BookSortOrder::AuthorDesc => format!("{AUTHOR_SORT} DESC, books.id DESC"),
+    }
+}
+
+/// One page of matching book ids, in sorted order. `limit: None` returns all
+/// matches (after `offset`).
+pub(crate) fn query_page(
+    conn: &mut SqliteConnection,
+    filters: &BookPageFilters,
+    sort: BookSortOrder,
+    limit: Option<i64>,
+    offset: i64,
+) -> Result<Vec<BookId>, CalibreError> {
+    let where_sql = filter_where_sql(filters);
+    let order_sql = order_by_sql(sort);
+    // SQLite treats a negative LIMIT as "no limit"; OFFSET still applies.
+    let limit = limit.map(|l| l.max(0)).unwrap_or(-1);
+    let offset = offset.max(0);
+
+    let sql = format!(
+        "SELECT books.id FROM books WHERE {where_sql} \
+         ORDER BY {order_sql} LIMIT {limit} OFFSET {offset}"
+    );
+
+    let rows: Vec<IdRow> = match filters.text {
+        Some(text) => {
+            let pattern = like_pattern(text);
+            sql_query(sql)
+                .bind::<Text, _>(&pattern)
+                .bind::<Text, _>(&pattern)
+                .bind::<Text, _>(&pattern)
+                .load(conn)
+                .map_err(CalibreError::from)?
+        }
+        None => sql_query(sql).load(conn).map_err(CalibreError::from)?,
+    };
+
+    Ok(rows.into_iter().map(|row| BookId(row.id)).collect())
+}
+
+/// COUNT over the same WHERE as [`query_page`], ignoring limit/offset.
+pub(crate) fn query_count(
+    conn: &mut SqliteConnection,
+    filters: &BookPageFilters,
+) -> Result<i64, CalibreError> {
+    let where_sql = filter_where_sql(filters);
+    let sql = format!("SELECT COUNT(*) AS total FROM books WHERE {where_sql}");
+
+    let rows: Vec<CountRow> = match filters.text {
+        Some(text) => {
+            let pattern = like_pattern(text);
+            sql_query(sql)
+                .bind::<Text, _>(&pattern)
+                .bind::<Text, _>(&pattern)
+                .bind::<Text, _>(&pattern)
+                .load(conn)
+                .map_err(CalibreError::from)?
+        }
+        None => sql_query(sql).load(conn).map_err(CalibreError::from)?,
+    };
+
+    Ok(rows.first().map(|row| row.total).unwrap_or(0))
 }
 
 pub(crate) fn create(conn: &mut SqliteConnection, book: NewBook) -> Result<BookRow, CalibreError> {
@@ -138,18 +261,4 @@ pub(crate) fn find_authors(
         .map_err(CalibreError::from)?;
 
     Ok(author_ids)
-}
-
-pub(crate) fn find_by_author(
-    conn: &mut SqliteConnection,
-    author_id: AuthorId,
-) -> Result<Vec<BookId>, CalibreError> {
-    use crate::schema::books_authors_link::dsl::*;
-
-    books_authors_link
-        .filter(author.eq(author_id.as_i32()))
-        .select(book)
-        .load(conn)
-        .map(|ids: Vec<i32>| ids.into_iter().map(BookId).collect())
-        .map_err(CalibreError::from)
 }
