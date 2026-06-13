@@ -54,6 +54,43 @@ pub(crate) fn get_by_ids(
         .map_err(CalibreError::from)
 }
 
+/// `(id, path)` for every book with a cover, without any hydration. Selects
+/// only the `books` table — no authors/tags/series/files/read-state — so the
+/// cover-thumbnail warm path can read each cover's folder cheaply. A NULL
+/// `has_cover` is treated as false.
+pub(crate) fn cover_sources(
+    conn: &mut SqliteConnection,
+) -> Result<Vec<(BookId, String)>, CalibreError> {
+    use crate::schema::books::dsl::*;
+
+    books
+        .filter(has_cover.eq(true))
+        .select((id, path))
+        .load::<(i32, String)>(conn)
+        .map(|rows| rows.into_iter().map(|(i, p)| (BookId(i), p)).collect())
+        .map_err(CalibreError::from)
+}
+
+/// Like [`cover_sources`], but restricted to the given ids. Returns only the
+/// ids that exist AND have a cover (NULL `has_cover` treated as false), so the
+/// caller's per-id `has_cover` filter is preserved.
+pub(crate) fn cover_sources_for(
+    conn: &mut SqliteConnection,
+    book_ids: &[BookId],
+) -> Result<Vec<(BookId, String)>, CalibreError> {
+    use crate::schema::books::dsl::*;
+
+    let raw_ids: Vec<i32> = book_ids.iter().map(BookId::as_i32).collect();
+
+    books
+        .filter(id.eq_any(raw_ids))
+        .filter(has_cover.eq(true))
+        .select((id, path))
+        .load::<(i32, String)>(conn)
+        .map(|rows| rows.into_iter().map(|(i, p)| (BookId(i), p)).collect())
+        .map_err(CalibreError::from)
+}
+
 // =============================================================================
 // Paged, sorted, filtered queries
 // =============================================================================

@@ -67,6 +67,27 @@ const genLocalCalibreClient = async (
 
 			return results.data;
 		},
+		ensureCoverThumbnails: async (bookIds) => {
+			const results = await commands.clbCmdEnsureCoverThumbnails(bookIds);
+			if (results.status === "error") {
+				throw new Error(results.error);
+			}
+			return results.data;
+		},
+		listCoverThumbnails: async () => {
+			const results = await commands.clbQueryListCoverThumbnails();
+			if (results.status === "error") {
+				throw new Error(results.error);
+			}
+			return results.data;
+		},
+		warmCoverThumbnails: async () => {
+			const results = await commands.clbCmdWarmCoverThumbnails();
+			if (results.status === "error") {
+				throw new Error(results.error);
+			}
+			return results.data;
+		},
 		getBook: async (bookId) => {
 			const result = await commands.clbQueryGetBook(bookId);
 			if (result.status === "error") {
@@ -208,6 +229,15 @@ const genRemoteCalibreClient = async (
 		queryBooks() {
 			throw new Error("Not implemented");
 		},
+		// Remote thumbnails would come from the server; none exists yet, and an
+		// empty result just means the grid keeps its fallback rendering.
+		// The interface requires these functions are async.
+		// eslint-disable-next-line @typescript-eslint/require-await
+		ensureCoverThumbnails: async () => [],
+		// eslint-disable-next-line @typescript-eslint/require-await
+		listCoverThumbnails: async () => [],
+		// eslint-disable-next-line @typescript-eslint/require-await
+		warmCoverThumbnails: async () => [],
 		getBook() {
 			throw new Error("Not implemented");
 		},

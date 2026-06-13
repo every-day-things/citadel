@@ -1,6 +1,7 @@
 import type {
 	AuthorUpdate,
 	BookUpdate,
+	CoverThumbnail,
 	ImportableBookMetadata,
 	ImportableFile,
 	LibraryAuthor,
@@ -34,6 +35,26 @@ export interface Library {
 	 * no book has the given id.
 	 */
 	getBook(bookId: LibraryBook["id"]): Promise<LibraryBook>;
+	/**
+	 * Grid-sized cover thumbnails for the given
+	 * books, generating any that are missing or stale. Books without a
+	 * decodable cover are omitted from the result.
+	 */
+	ensureCoverThumbnails(
+		bookIds: LibraryBook["id"][],
+	): Promise<CoverThumbnail[]>;
+	/**
+	 * Every thumbnail already in the backend's index, without validating or
+	 * generating anything. Cheap; safe to call at library open to seed
+	 * placeholders for the whole library.
+	 */
+	listCoverThumbnails(): Promise<CoverThumbnail[]>;
+	/**
+	 * Generates any missing/stale thumbnails for the ENTIRE library and
+	 * resolves with the full set. First run on a big library is slow
+	 * (decodes every cover once) — call it fire-and-forget.
+	 */
+	warmCoverThumbnails(): Promise<CoverThumbnail[]>;
 	listAuthors(): Promise<LibraryAuthor[]>;
 	/** Every series with its book count; ids feed `LibraryBookQuery.series_id`. */
 	listSeries(): Promise<LibrarySeries[]>;

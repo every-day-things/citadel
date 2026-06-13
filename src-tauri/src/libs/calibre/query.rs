@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::book::{ImportableBookMetadata, LibraryAuthor};
 use crate::calibre::book;
+use crate::libs::cover_thumbs::{self, CoverThumbnail};
 use crate::libs::file_formats;
 use crate::{book::LibraryBook, state::CitadelState};
 
@@ -23,6 +24,32 @@ pub fn clb_query_search_books(
 
     let books = state.with_library(|lib| book::search(library_root, lib, &query))?;
     books.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn clb_query_list_cover_thumbnails(
+    handle: tauri::AppHandle,
+    state: tauri::State<CitadelState>,
+) -> Result<Vec<CoverThumbnail>, String> {
+    use tauri::Manager;
+
+    let library_root = state
+        .get_library_path()
+        .ok_or("No library loaded".to_string())?;
+    let app_cache_dir = handle
+        .path()
+        .app_cache_dir()
+        .map_err(|e| format!("No app cache dir: {}", e))?;
+
+    // The returned URLs are asset-protocol; make sure the scope covers them
+    // even if no ensure call has run yet this session.
+    handle
+        .asset_protocol_scope()
+        .allow_directory(app_cache_dir.join("cover-thumbs"), true)
+        .map_err(|e| format!("Failed to allow thumbnail dir: {}", e))?;
+
+    Ok(cover_thumbs::list_thumbnails(&app_cache_dir, &library_root))
 }
 
 #[derive(Serialize, Deserialize, specta::Type, Clone, Copy, Debug)]

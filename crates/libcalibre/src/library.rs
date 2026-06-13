@@ -416,6 +416,24 @@ impl Library {
         Ok(removed)
     }
 
+    /// `(id, book_dir_path)` for every book with a cover, read straight from
+    /// the `books` table with no hydration of authors/tags/series/files/
+    /// read-state. Feeds the cover-thumbnail warm path, where only the cover's
+    /// folder is needed. A NULL `has_cover` is treated as false.
+    pub fn cover_sources(&mut self) -> Result<Vec<(BookId, String)>, CalibreError> {
+        operations::books::cover_sources(&mut self.conn)
+    }
+
+    /// Like [`Library::cover_sources`], but restricted to `ids`. Returns only
+    /// the ids that exist AND have a cover, so callers keep the same
+    /// has-cover filtering they would get from per-book hydration.
+    pub fn cover_sources_for(
+        &mut self,
+        ids: &[BookId],
+    ) -> Result<Vec<(BookId, String)>, CalibreError> {
+        operations::books::cover_sources_for(&mut self.conn, ids)
+    }
+
     // =========================================================================
     // Assets (covers, book files)
     // =========================================================================

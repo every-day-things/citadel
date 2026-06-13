@@ -1,5 +1,5 @@
 import { type HTMLAttributes, useState } from "react";
-import type { LibraryBook } from "@/bindings";
+import type { CoverThumbnail, LibraryBook } from "@/bindings";
 import { formatAuthorList } from "@/lib/authors";
 import { resolveCoverLoad } from "@/lib/cover-load";
 import { selectByStringHash } from "@/lib/hash-string";
@@ -51,11 +51,13 @@ const BookCoverUsingImage = ({
 	book,
 	disableFade,
 	fluid,
+	thumb,
 	...props
 }: {
 	book: LibraryBookWithCoverImage;
 	disableFade: boolean;
 	fluid: boolean;
+	thumb?: CoverThumbnail;
 } & HTMLAttributes<HTMLDivElement>) => {
 	const [isHovering, setIsHovering] = useState(false);
 	// A cover can fail without an `error` event: an asset:// URL outside the
@@ -100,8 +102,16 @@ const BookCoverUsingImage = ({
 			}}
 		>
 			<img
-				src={book.cover_image.url}
+				src={thumb?.url ?? book.cover_image.url}
 				alt={book.title}
+				// Reserve the exact box from the thumbnail's known dimensions so
+				// the row height is right before the image decodes (no shelf
+				// shift on mount).
+				width={thumb?.width}
+				height={thumb?.height}
+				// Skip incremental paint: whole frames only (no half-decoded
+				// scanline strips during fast scroll).
+				decoding="async"
 				onError={() => {
 					setCoverFailed(true);
 				}}
@@ -260,6 +270,7 @@ export const BookCover = ({
 	book,
 	disableFade = false,
 	fluid = false,
+	thumb,
 	...props
 }: {
 	book: LibraryBook;
@@ -269,17 +280,24 @@ export const BookCover = ({
 	 * instead of the fixed 133px column used in the details drawer.
 	 */
 	fluid?: boolean;
+	/**
+	 * Grid-sized thumbnail for this book's cover. When set, the small image
+	 * is rendered instead of the full-resolution cover, and its dimensions
+	 * reserve the exact row height.
+	 */
+	thumb?: CoverThumbnail;
 } & HTMLAttributes<HTMLDivElement>) => {
 	if (book.cover_image?.url !== undefined) {
 		return (
 			<BookCoverUsingImage
 				// Remounting on URL change resets the failed-cover fallback state
-				// when a book gains a (new) cover.
-				key={book.cover_image.url}
+				// when a book gains a (new) cover or its thumbnail arrives.
+				key={thumb?.url ?? book.cover_image.url}
 				// @ts-expect-error `cover_image` obviously exists
 				book={book}
 				disableFade={disableFade}
 				fluid={fluid}
+				thumb={thumb}
 				{...props}
 			/>
 		);

@@ -1,6 +1,7 @@
 # Citadel Development Guide
 
 ## Commands
+- **Package manager**: bun (`bun.lockb` is the only lockfile). Never install with pnpm/npm — a foreign install rewrites node_modules and corrupts Vite's optimize cache.
 - **Production build**: `bun run build` (builds frontend then backend via Tauri)
 - **Dev mode**: `bun run dev` (starts Tauri app with hot reload)
 - **Format**: `bun format` (formats both frontend & backend). Always use this instead of `cargo fmt`, which only formats the root crate and misses workspace members like `libcalibre`.

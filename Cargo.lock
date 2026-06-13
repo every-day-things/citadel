@@ -646,6 +646,7 @@ dependencies = [
  "chrono",
  "diesel",
  "epub",
+ "image",
  "libcalibre",
  "log",
  "mobi",
@@ -2329,7 +2330,7 @@ dependencies = [
  "js-sys",
  "log",
  "wasm-bindgen",
- "windows-core 0.58.0",
+ "windows-core 0.61.2",
 ]
 
 [[package]]
