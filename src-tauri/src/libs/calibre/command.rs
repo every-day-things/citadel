@@ -175,24 +175,30 @@ pub async fn clb_cmd_ensure_cover_thumbnails(
 
     // Cheap DB lookups stay on this thread; only the decode/resize work
     // moves to the blocking pool.
+    // Parse the requested ids, then read just (id, folder) for the ones that
+    // exist and have a cover — no per-book hydration. cover_sources_for already
+    // applies the has_cover filter, so unparseable/missing/coverless ids drop
+    // out exactly as the old per-id path did.
+    let ids: Vec<libcalibre::BookId> = book_ids
+        .iter()
+        .filter_map(|id| id.parse::<i32>().ok())
+        .map(libcalibre::BookId::from)
+        .collect();
+
     let sources = state.with_library(|lib| {
-        book_ids
-            .iter()
-            .filter_map(|id| {
-                let id_int = id.parse::<i32>().ok()?;
-                let book = lib.get_book(libcalibre::BookId::from(id_int)).ok()?;
-                if !book.has_cover {
-                    return None;
-                }
-                Some(cover_thumbs::CoverSource {
-                    book_id: id.clone(),
-                    cover_path: std::path::PathBuf::from(&library_root)
-                        .join(&book.book_dir_path)
-                        .join("cover.jpg"),
-                })
+        lib.cover_sources_for(&ids)
+            .map(|rows| {
+                rows.into_iter()
+                    .map(|(id, book_dir_path)| cover_thumbs::CoverSource {
+                        book_id: id.as_i32().to_string(),
+                        cover_path: std::path::PathBuf::from(&library_root)
+                            .join(&book_dir_path)
+                            .join("cover.jpg"),
+                    })
+                    .collect::<Vec<_>>()
             })
-            .collect::<Vec<_>>()
-    })?;
+            .map_err(|e| e.to_string())
+    })??;
 
     let app_cache_dir = handle
         .path()
@@ -229,16 +235,16 @@ pub async fn clb_cmd_warm_cover_thumbnails(
         .get_library_path()
         .ok_or("No library initialized. Please load a library first.")?;
 
+    // Only (id, folder) per covered book — no author/tag/series/file/read-state
+    // hydration, which the freshness sweep never reads.
     let sources = state.with_library(|lib| {
-        lib.query_books(libcalibre::BookQuery::default())
-            .map(|page| {
-                page.items
-                    .iter()
-                    .filter(|book| book.has_cover)
-                    .map(|book| cover_thumbs::CoverSource {
-                        book_id: book.id.as_i32().to_string(),
+        lib.cover_sources()
+            .map(|rows| {
+                rows.into_iter()
+                    .map(|(id, book_dir_path)| cover_thumbs::CoverSource {
+                        book_id: id.as_i32().to_string(),
                         cover_path: std::path::PathBuf::from(&library_root)
-                            .join(&book.book_dir_path)
+                            .join(&book_dir_path)
                             .join("cover.jpg"),
                     })
                     .collect::<Vec<_>>()

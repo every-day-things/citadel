@@ -241,6 +241,21 @@ pub fn get_many(
     hydrate(conn, book_rows)
 }
 
+/// `(id, book_dir_path)` for every book with a cover, without hydration.
+/// Backs the cover-thumbnail warm path.
+pub fn cover_sources(conn: &mut SqliteConnection) -> Result<Vec<(BookId, String)>, CalibreError> {
+    books::cover_sources(conn)
+}
+
+/// `(id, book_dir_path)` for the given ids that exist and have a cover,
+/// without hydration. Backs the cover-thumbnail ensure path.
+pub fn cover_sources_for(
+    conn: &mut SqliteConnection,
+    book_ids: &[BookId],
+) -> Result<Vec<(BookId, String)>, CalibreError> {
+    books::cover_sources_for(conn, book_ids)
+}
+
 fn hydrate(
     conn: &mut SqliteConnection,
     book_rows: Vec<BookRow>,
