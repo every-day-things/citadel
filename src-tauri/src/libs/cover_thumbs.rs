@@ -171,8 +171,7 @@ pub fn ensure_thumbnails(
         };
         match snapshot.get(&source.book_id) {
             Some(meta)
-                if meta.cover_mtime_ms == mtime_ms
-                    && cache_dir.join(&meta.file_name).exists() =>
+                if meta.cover_mtime_ms == mtime_ms && cache_dir.join(&meta.file_name).exists() =>
             {
                 results.push(to_thumbnail(&source.book_id, &cache_dir, meta));
             }

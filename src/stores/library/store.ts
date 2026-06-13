@@ -181,8 +181,7 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 		if (!library) return;
 		const wanted = books
 			.filter(
-				(book) =>
-					book.cover_image !== null && !requestedThumbIds.has(book.id),
+				(book) => book.cover_image !== null && !requestedThumbIds.has(book.id),
 			)
 			.map((book) => book.id);
 		if (wanted.length === 0) return;

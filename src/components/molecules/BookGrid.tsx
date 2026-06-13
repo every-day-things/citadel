@@ -166,7 +166,9 @@ const BookGridPure = ({
 				const width =
 					thumb !== undefined ? cellWidth : Math.min(cellWidth, 150);
 				const ratio =
-					thumb !== undefined ? thumb.height / thumb.width : TYPICAL_COVER_RATIO;
+					thumb !== undefined
+						? thumb.height / thumb.width
+						: TYPICAL_COVER_RATIO;
 				tallest = Math.max(
 					tallest,
 					Math.min(width * ratio, ESTIMATED_ROW_HEIGHT),

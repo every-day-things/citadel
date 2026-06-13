@@ -266,9 +266,7 @@ pub async fn clb_cmd_warm_cover_thumbnails(
         // points instead of waiting behind the whole library.
         sources
             .chunks(64)
-            .flat_map(|chunk| {
-                cover_thumbs::ensure_thumbnails(&app_cache_dir, &library_root, chunk)
-            })
+            .flat_map(|chunk| cover_thumbs::ensure_thumbnails(&app_cache_dir, &library_root, chunk))
             .collect()
     })
     .await

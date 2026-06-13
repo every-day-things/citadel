@@ -37,7 +37,12 @@ export const BookCard = React.memo(function BookCard({
 					selected && classes.coverWrapSelected,
 				)}
 			>
-				<BookCover book={book} fluid thumb={thumb} onPointerDown={onCoverTouch} />
+				<BookCover
+					book={book}
+					fluid
+					thumb={thumb}
+					onPointerDown={onCoverTouch}
+				/>
 			</span>
 		</div>
 	);
