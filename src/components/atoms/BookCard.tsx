@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import React, { useCallback } from "react";
 import type { LibraryBook } from "@/bindings";
+import { useCoverThumb } from "@/stores/library/store";
 import classes from "./BookCard.module.css";
 import { BookCover } from "./BookCover";
 
@@ -24,6 +25,9 @@ export const BookCard = React.memo(function BookCard({
 	const onCoverTouch = useCallback(() => {
 		onViewBook(book.id);
 	}, [onViewBook, book]);
+	// Grid cells render the 300px thumbnail (with its thumbhash placeholder)
+	// instead of decoding the full-resolution cover.
+	const thumb = useCoverThumb(book.id);
 
 	return (
 		<div className={classes.cell} data-book-id={book.id}>
@@ -33,7 +37,7 @@ export const BookCard = React.memo(function BookCard({
 					selected && classes.coverWrapSelected,
 				)}
 			>
-				<BookCover book={book} fluid onPointerDown={onCoverTouch} />
+				<BookCover book={book} fluid thumb={thumb} onPointerDown={onCoverTouch} />
 			</span>
 		</div>
 	);

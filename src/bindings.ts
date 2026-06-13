@@ -113,6 +113,37 @@ async clbCmdSetBookCoverFromUrl(bookId: string, imageUrl: string) : Promise<Resu
     else return { status: "error", error: e  as any };
 }
 },
+async clbCmdEnsureCoverThumbnails(bookIds: string[]) : Promise<Result<CoverThumbnail[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clb_cmd_ensure_cover_thumbnails", { bookIds }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Generate thumbnails for the ENTIRE library in the background, so the grid
+ * can paint instantly at any scroll offset — not just visited pages. First
+ * run on a big library takes a while (decode every cover once); later runs
+ * are an mtime sweep. Returns the full thumbnail set when done; the caller
+ * merges it whenever it lands.
+ */
+async clbCmdWarmCoverThumbnails() : Promise<Result<CoverThumbnail[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clb_cmd_warm_cover_thumbnails") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async clbQueryListCoverThumbnails() : Promise<Result<CoverThumbnail[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clb_query_list_cover_thumbnails") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async clbQueryListCustomColumns() : Promise<Result<CustomColumnDef[], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("clb_query_list_custom_columns") };
@@ -247,37 +278,47 @@ export type BookUpdate = { author_id_list: string[] | null; tag_list: string[] |
 series: string | null; series_index: number | null }
 export type CalibreClientConfig = { library_path: string }
 /**
+ * What the frontend needs to render one grid cover: a small image URL, a
+ * thumbhash to paint while it loads, and the thumbnail's pixel dimensions
+ * (same aspect ratio as the source cover) to reserve layout up front.
+ */
+export type CoverThumbnail = { book_id: string; url: string; 
+/**
+ * Base64 (standard alphabet) thumbhash bytes.
+ */
+thumbhash: string; width: number; height: number }
+/**
  * A custom column definition, as exposed to the frontend.
  */
-export type CustomColumnDef = { column_id: number;
+export type CustomColumnDef = { column_id: number; 
 /**
  * Lookup name, e.g. `read` (Calibre exposes it as `#read`).
  */
-label: string;
+label: string; 
 /**
  * Human-readable heading, e.g. `Read`.
  */
-name: string;
+name: string; 
 /**
  * Raw Calibre datatype string, e.g. `bool`, `text`, `enumeration`.
  */
-datatype: string; is_multiple: boolean; editable: boolean;
+datatype: string; is_multiple: boolean; editable: boolean; 
 /**
  * Whether reading and writing values of this column is supported.
  */
-supported: boolean;
+supported: boolean; 
 /**
  * Allowed values for enumeration columns. Empty for other datatypes.
  */
 enum_values: string[] }
 /**
  * A custom-column value crossing the Tauri boundary.
- *
+ * 
  * Mirrors `libcalibre::CustomValue`, except datetimes travel as RFC3339
  * strings and integers as `i32` (specta cannot export `i64` without bigint
  * support).
  */
-export type CustomValueDto = { Bool: boolean } | { Int: number } | { Float: number } | { Text: string } | { TextMultiple: string[] } |
+export type CustomValueDto = { Bool: boolean } | { Int: number } | { Float: number } | { Text: string } | { TextMultiple: string[] } | 
 /**
  * RFC3339 datetime string, e.g. `2024-01-15T10:30:00+00:00`.
  */
@@ -312,7 +353,7 @@ path: string; publication_date: string | null;
 file_contains_cover: boolean }
 export type ImportableBookType = "Epub" | "Pdf" | "Mobi" | "Text"
 export type ImportableFile = { path: string }
-export type LibraryAuthor = { id: string; name: string; sortable_name: string;
+export type LibraryAuthor = { id: string; name: string; sortable_name: string; 
 /**
  * Number of books in the library linked to this author, from
  * `Library::author_book_counts` (one GROUP BY pass over
@@ -321,7 +362,7 @@ export type LibraryAuthor = { id: string; name: string; sortable_name: string;
  */
 book_count: number }
 export type LibraryBook = { id: string; uuid: string | null; title: string; author_list: LibraryAuthor[]; tag_list: string[]; sortable_title: string | null; file_list: BookFile[]; cover_image: LocalOrRemoteUrl | null; identifier_list: Identifier[]; description: string | null; is_read: boolean; series: string | null; series_index: number | null }
-export type LibraryBookPage = { items: LibraryBook[];
+export type LibraryBookPage = { items: LibraryBook[]; 
 /**
  * Total number of books matching the filters, ignoring limit/offset.
  */

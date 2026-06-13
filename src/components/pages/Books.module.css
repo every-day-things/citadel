@@ -41,6 +41,18 @@
 	overflow-y: auto;
 }
 
+/*
+ * Stale-while-revalidate dimming: the previous results stay visible while a
+ * new query is in flight, but a subtle opacity shift signals the transition
+ * without any layout disruption or spinner.
+ */
+.gridAreaSearching {
+	opacity: 0.5;
+	/* Smooth fade instead of a hard cut; slightly longer than the debounce so
+	 * fast typists never see it for short queries. */
+	transition: opacity 150ms ease-out;
+}
+
 /* Zero-result filters (e.g. a shelf whose query no longer matches). */
 .emptyState {
 	display: flex;

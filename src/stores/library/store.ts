@@ -3,17 +3,21 @@ import { create } from "zustand";
 import type {
 	AuthorUpdate,
 	BookUpdate,
+	CoverThumbnail,
 	ImportableBookMetadata,
 	LibraryAuthor,
+	LibraryBook,
 	LibrarySeries,
 	NewAuthor,
 } from "@/bindings";
 import { commands } from "@/bindings";
 import {
 	ALL_BOOKS_FILTER,
+	advanceSnapshot,
 	applyBookPage,
 	BOOK_PAGE_SIZE,
 	type BookGridFilter,
+	type BookSnapshot,
 	cacheForKey,
 	compareBySeriesIndex,
 	emptyBookCache,
@@ -97,6 +101,18 @@ interface LibraryStoreState {
 	bookFilter: BookGridFilter;
 	bookCache: PagedBookCache;
 	bookPagesError: string | null;
+	/**
+	 * Last successfully resolved query snapshot. Kept across key changes so the
+	 * grid can show stale results while the new query is in flight (stale-while-
+	 * revalidate), avoiding a blank flash on every debounced keystroke.
+	 */
+	staleBookSnapshot: BookSnapshot | null;
+	/**
+	 * Grid-sized cover thumbnails by book id, requested in the background as
+	 * each page of books lands. The grid renders these (with their thumbhash
+	 * as an instant placeholder) instead of decoding full-resolution covers.
+	 */
+	coverThumbs: ReadonlyMap<LibraryBook["id"], CoverThumbnail>;
 	/** Unfiltered library size (for "N of M books"); null until known. */
 	libraryTotal: number | null;
 
@@ -121,6 +137,8 @@ const initialState = {
 	bookFilter: ALL_BOOKS_FILTER,
 	bookCache: emptyBookCache(serializeBookFilter(ALL_BOOKS_FILTER), 0),
 	bookPagesError: null,
+	staleBookSnapshot: null as BookSnapshot | null,
+	coverThumbs: new Map<LibraryBook["id"], CoverThumbnail>(),
 	libraryTotal: null,
 	authors: [],
 	authorsLoading: false,
@@ -138,8 +156,64 @@ const localLibraryFromPath = (path: string): Options => ({
 
 // In-flight de-dupe (module scope: promises are not store state).
 const inFlightBookPages = new Map<string, Promise<void>>();
+// Book ids whose thumbnails have been requested (in flight or landed), so a
+// page refetch doesn't re-ask. Cleared on invalidation: re-asking is cheap
+// (the backend cache answers by cover mtime) and picks up replaced covers.
+const requestedThumbIds = new Set<string>();
 
 export const useLibraryStore = create<LibraryStoreState>((set, get) => {
+	const mergeCoverThumbs = (thumbs: CoverThumbnail[]): void => {
+		if (thumbs.length === 0) return;
+		set((state) => {
+			const next = new Map(state.coverThumbs);
+			for (const thumb of thumbs) next.set(thumb.book_id, thumb);
+			return { coverThumbs: next };
+		});
+	};
+
+	/**
+	 * Fire-and-forget thumbnail fetch for freshly landed page items. Failures
+	 * un-mark the ids so a later page fetch retries; the grid just keeps its
+	 * fallback rendering in the meantime.
+	 */
+	const ensureCoverThumbs = (books: LibraryBook[]): void => {
+		const { library } = get();
+		if (!library) return;
+		const wanted = books
+			.filter(
+				(book) =>
+					book.cover_image !== null && !requestedThumbIds.has(book.id),
+			)
+			.map((book) => book.id);
+		if (wanted.length === 0) return;
+		for (const id of wanted) requestedThumbIds.add(id);
+
+		void library
+			.ensureCoverThumbnails(wanted)
+			.then(mergeCoverThumbs)
+			.catch((error: unknown) => {
+				for (const id of wanted) requestedThumbIds.delete(id);
+				console.error("Failed to load cover thumbnails:", error);
+			});
+	};
+
+	/**
+	 * Instant-paint warm path, run once per library open: seed every already
+	 * known thumbnail (cheap index read), then generate the rest of the
+	 * library's thumbnails in the background. After this lands, ANY scroll
+	 * offset paints placeholders the frame its rows mount.
+	 */
+	const warmCoverThumbs = async (): Promise<void> => {
+		const { library } = get();
+		if (!library) return;
+		try {
+			mergeCoverThumbs(await library.listCoverThumbnails());
+			mergeCoverThumbs(await library.warmCoverThumbnails());
+		} catch (error) {
+			console.error("Failed to warm cover thumbnails:", error);
+		}
+	};
+
 	const fetchBookPage = (
 		library: Library,
 		filter: BookGridFilter,
@@ -161,16 +235,24 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 					filter.seriesId !== null
 						? [...page.items].sort(compareBySeriesIndex)
 						: page.items;
-				set((state) => ({
-					bookCache: applyBookPage(state.bookCache, {
+				set((state) => {
+					const nextCache = applyBookPage(state.bookCache, {
 						key,
 						generation,
 						pageIndex,
 						items,
 						total: page.total,
-					}),
-					bookPagesError: null,
-				}));
+					});
+					return {
+						bookCache: nextCache,
+						staleBookSnapshot: advanceSnapshot(
+							nextCache,
+							state.staleBookSnapshot,
+						),
+						bookPagesError: null,
+					};
+				});
+				ensureCoverThumbs(items);
 			} catch (error) {
 				set({
 					bookPagesError:
@@ -275,6 +357,10 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 			},
 
 			invalidateBooks: () => {
+				// Re-request thumbnails as pages refetch: unchanged covers answer
+				// from the backend's mtime-keyed cache, replaced covers regenerate.
+				// Existing map entries stay so covers don't flash placeholders.
+				requestedThumbIds.clear();
 				set((state) => ({
 					bookCache: invalidateBookCache(state.bookCache),
 				}));
@@ -284,6 +370,11 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 				void get().actions.loadSeries();
 				void get().actions.loadAuthors();
 				void refreshLibraryTotal();
+				// No full re-sweep here: visible pages refetch lazily and the
+				// prefetch padding covers normal scrolling. The open-time sweep
+				// guarantee degrades only for a scrollbar yank in the seconds
+				// right after an edit — not worth ~total/100 queries per
+				// mutation.
 			},
 
 			initialize: async (libraryPath: string) => {
@@ -292,6 +383,9 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 				// Retire any cached data from a previously open library. The
 				// paged cache keeps its key but moves to a new generation so
 				// in-flight fetches against the old library cannot land.
+				// Clear the stale snapshot and thumbnails too — they belong to the
+				// old library.
+				requestedThumbIds.clear();
 				set((state) => ({
 					libraryState: LibraryState.initializing,
 					libraryError: null,
@@ -299,6 +393,8 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 						state.bookCache.key,
 						state.bookCache.generation + 1,
 					),
+					staleBookSnapshot: null,
+					coverThumbs: new Map<LibraryBook["id"], CoverThumbnail>(),
 					libraryTotal: null,
 				}));
 
@@ -315,6 +411,13 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 					]);
 
 					set({ libraryState: LibraryState.ready });
+
+					// Background warm: every cover's thumbhash + thumbnail, so any
+					// row that mounts paints a placeholder immediately. Book pages
+					// themselves load lazily (viewport + one page of padding); a
+					// long-distance scroll jump into unvisited territory shows
+					// placeholder cells for one ~60ms page query.
+					void warmCoverThumbs();
 				} catch (error) {
 					console.error("Failed to initialize library:", error);
 					set({
@@ -326,6 +429,7 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 			},
 
 			reset: () => {
+				requestedThumbIds.clear();
 				set((state) => ({
 					...initialState,
 					// Keep the generation monotonic so fetches started before the
@@ -466,6 +570,12 @@ export const useLibraryError = () =>
 export const useBookCache = () => useLibraryStore((state) => state.bookCache);
 export const useBookPagesError = () =>
 	useLibraryStore((state) => state.bookPagesError);
+export const useStaleBookSnapshot = () =>
+	useLibraryStore((state) => state.staleBookSnapshot);
+export const useCoverThumb = (bookId: LibraryBook["id"]) =>
+	useLibraryStore((state) => state.coverThumbs.get(bookId));
+export const useCoverThumbsMap = () =>
+	useLibraryStore((state) => state.coverThumbs);
 export const useLibraryTotal = () =>
 	useLibraryStore((state) => state.libraryTotal);
 

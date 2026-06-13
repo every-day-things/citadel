@@ -3,6 +3,7 @@ use tauri::Manager;
 use crate::book::ImportableBookMetadata;
 use crate::book::LibraryAuthor;
 use crate::calibre::author::NewAuthor;
+use crate::libs::cover_thumbs::{self, CoverThumbnail};
 use crate::state::CitadelState;
 
 use super::custom_columns::CustomValueDto;
@@ -159,6 +160,113 @@ pub async fn clb_cmd_set_book_cover_from_url(
         lib.set_book_cover(libcalibre::BookId::from(book_id_int), bytes.to_vec())
             .map_err(|e| e.to_string())
     })?
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn clb_cmd_ensure_cover_thumbnails(
+    handle: tauri::AppHandle,
+    state: tauri::State<'_, CitadelState>,
+    book_ids: Vec<String>,
+) -> Result<Vec<CoverThumbnail>, String> {
+    let library_root = state
+        .get_library_path()
+        .ok_or("No library initialized. Please load a library first.")?;
+
+    // Cheap DB lookups stay on this thread; only the decode/resize work
+    // moves to the blocking pool.
+    let sources = state.with_library(|lib| {
+        book_ids
+            .iter()
+            .filter_map(|id| {
+                let id_int = id.parse::<i32>().ok()?;
+                let book = lib.get_book(libcalibre::BookId::from(id_int)).ok()?;
+                if !book.has_cover {
+                    return None;
+                }
+                Some(cover_thumbs::CoverSource {
+                    book_id: id.clone(),
+                    cover_path: std::path::PathBuf::from(&library_root)
+                        .join(&book.book_dir_path)
+                        .join("cover.jpg"),
+                })
+            })
+            .collect::<Vec<_>>()
+    })?;
+
+    let app_cache_dir = handle
+        .path()
+        .app_cache_dir()
+        .map_err(|e| format!("No app cache dir: {}", e))?;
+
+    // Thumbnails are served over the asset protocol like full covers; the
+    // cache dir is app-owned, so granting it once per call is safe and
+    // idempotent.
+    handle
+        .asset_protocol_scope()
+        .allow_directory(app_cache_dir.join("cover-thumbs"), true)
+        .map_err(|e| format!("Failed to allow thumbnail dir: {}", e))?;
+
+    tauri::async_runtime::spawn_blocking(move || {
+        cover_thumbs::ensure_thumbnails(&app_cache_dir, &library_root, &sources)
+    })
+    .await
+    .map_err(|e| format!("Thumbnail generation failed: {}", e))
+}
+
+/// Generate thumbnails for the ENTIRE library in the background, so the grid
+/// can paint instantly at any scroll offset — not just visited pages. First
+/// run on a big library takes a while (decode every cover once); later runs
+/// are an mtime sweep. Returns the full thumbnail set when done; the caller
+/// merges it whenever it lands.
+#[tauri::command]
+#[specta::specta]
+pub async fn clb_cmd_warm_cover_thumbnails(
+    handle: tauri::AppHandle,
+    state: tauri::State<'_, CitadelState>,
+) -> Result<Vec<CoverThumbnail>, String> {
+    let library_root = state
+        .get_library_path()
+        .ok_or("No library initialized. Please load a library first.")?;
+
+    let sources = state.with_library(|lib| {
+        lib.query_books(libcalibre::BookQuery::default())
+            .map(|page| {
+                page.items
+                    .iter()
+                    .filter(|book| book.has_cover)
+                    .map(|book| cover_thumbs::CoverSource {
+                        book_id: book.id.as_i32().to_string(),
+                        cover_path: std::path::PathBuf::from(&library_root)
+                            .join(&book.book_dir_path)
+                            .join("cover.jpg"),
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .map_err(|e| e.to_string())
+    })??;
+
+    let app_cache_dir = handle
+        .path()
+        .app_cache_dir()
+        .map_err(|e| format!("No app cache dir: {}", e))?;
+    handle
+        .asset_protocol_scope()
+        .allow_directory(app_cache_dir.join("cover-thumbs"), true)
+        .map_err(|e| format!("Failed to allow thumbnail dir: {}", e))?;
+
+    tauri::async_runtime::spawn_blocking(move || {
+        // Batched so visible-page ensure calls interleave at index-merge
+        // points instead of waiting behind the whole library.
+        sources
+            .chunks(64)
+            .flat_map(|chunk| {
+                cover_thumbs::ensure_thumbnails(&app_cache_dir, &library_root, chunk)
+            })
+            .collect()
+    })
+    .await
+    .map_err(|e| format!("Thumbnail warm failed: {}", e))
 }
 
 #[tauri::command]

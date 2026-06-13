@@ -179,6 +179,34 @@ export const applyBookPage = (
 };
 
 /**
+ * A frozen view of the last successfully resolved query: the flattened book
+ * list and the total it reported. Used for stale-while-revalidate rendering
+ * so the grid never blanks between keystrokes.
+ */
+export interface BookSnapshot {
+	/** Serialized filter key the snapshot belongs to. */
+	key: string;
+	items: (LibraryBook | undefined)[];
+	total: number;
+}
+
+/**
+ * Returns an updated snapshot if the cache has resolved data worth
+ * preserving (non-null total), otherwise returns the existing snapshot
+ * unchanged. Call this after every `applyBookPage`.
+ *
+ * When the cache has `total === null` (new key not yet fetched), the previous
+ * snapshot is returned as-is so the grid can keep showing stale results.
+ */
+export const advanceSnapshot = (
+	cache: PagedBookCache,
+	current: BookSnapshot | null,
+): BookSnapshot | null => {
+	if (cache.total === null) return current;
+	return { key: cache.key, items: sparseBookItems(cache), total: cache.total };
+};
+
+/**
  * The cache flattened to the grid's indexed-array shape: length `total`,
  * `undefined` holes where pages have not been fetched.
  */

@@ -1,8 +1,9 @@
 import { type HTMLAttributes, useState } from "react";
-import type { LibraryBook } from "@/bindings";
+import type { CoverThumbnail, LibraryBook } from "@/bindings";
 import { formatAuthorList } from "@/lib/authors";
 import { resolveCoverLoad } from "@/lib/cover-load";
 import { selectByStringHash } from "@/lib/hash-string";
+import { thumbhashToDataUrl } from "@/lib/thumbhash";
 import { shortenToChars } from "$lib/domain/book";
 
 import img1Url from "../../assets/1.jpg";
@@ -51,11 +52,13 @@ const BookCoverUsingImage = ({
 	book,
 	disableFade,
 	fluid,
+	thumb,
 	...props
 }: {
 	book: LibraryBookWithCoverImage;
 	disableFade: boolean;
 	fluid: boolean;
+	thumb?: CoverThumbnail;
 } & HTMLAttributes<HTMLDivElement>) => {
 	const [isHovering, setIsHovering] = useState(false);
 	// A cover can fail without an `error` event: an asset:// URL outside the
@@ -64,6 +67,10 @@ const BookCoverUsingImage = ({
 	// falls back to the same placeholder treatment as books with no cover,
 	// whose fixed aspect ratio keeps the cell dimensions stable.
 	const [coverFailed, setCoverFailed] = useState(false);
+
+	// Decoded once per distinct hash (module-level cache), so no useMemo.
+	const thumbhashUrl =
+		thumb !== undefined ? thumbhashToDataUrl(thumb.thumbhash) : undefined;
 
 	if (coverFailed) {
 		return (
@@ -99,9 +106,29 @@ const BookCoverUsingImage = ({
 				setIsHovering(false);
 			}}
 		>
+			{thumbhashUrl !== undefined && (
+				// Blurred stand-in painted the instant the cell mounts. The img
+				// covers it once decoded; its width/height attributes reserve the
+				// exact box (UA aspect-ratio) so the blur fills it pre-decode.
+				<div
+					aria-hidden="true"
+					style={{
+						position: "absolute",
+						inset: 0,
+						zIndex: 0,
+						backgroundImage: `url(${thumbhashUrl})`,
+						backgroundSize: "100% 100%",
+					}}
+				/>
+			)}
 			<img
-				src={book.cover_image.url}
+				src={thumb?.url ?? book.cover_image.url}
 				alt={book.title}
+				width={thumb?.width}
+				height={thumb?.height}
+				// Skip incremental paint: whole frames only (no half-decoded
+				// scanline strips during fast scroll).
+				decoding="async"
 				onError={() => {
 					setCoverFailed(true);
 				}}
@@ -123,6 +150,10 @@ const BookCoverUsingImage = ({
 							}
 						: { width: "133px", height: "auto" }),
 					display: "block",
+					// Above the thumbhash layer (positioned siblings with z-index
+					// would otherwise paint over a static img).
+					position: "relative",
+					zIndex: 0,
 				}}
 			/>
 			<div
@@ -260,6 +291,7 @@ export const BookCover = ({
 	book,
 	disableFade = false,
 	fluid = false,
+	thumb,
 	...props
 }: {
 	book: LibraryBook;
@@ -269,17 +301,24 @@ export const BookCover = ({
 	 * instead of the fixed 133px column used in the details drawer.
 	 */
 	fluid?: boolean;
+	/**
+	 * Grid-sized thumbnail + thumbhash for this book's cover. When set, the
+	 * small image is rendered instead of the full-resolution cover, with the
+	 * thumbhash blur painted underneath while it loads.
+	 */
+	thumb?: CoverThumbnail;
 } & HTMLAttributes<HTMLDivElement>) => {
 	if (book.cover_image?.url !== undefined) {
 		return (
 			<BookCoverUsingImage
 				// Remounting on URL change resets the failed-cover fallback state
-				// when a book gains a (new) cover.
-				key={book.cover_image.url}
+				// when a book gains a (new) cover or its thumbnail arrives.
+				key={thumb?.url ?? book.cover_image.url}
 				// @ts-expect-error `cover_image` obviously exists
 				book={book}
 				disableFade={disableFade}
 				fluid={fluid}
+				thumb={thumb}
 				{...props}
 			/>
 		);

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { LibraryBook } from "@/bindings";
 import {
+	advanceSnapshot,
 	applyBookPage,
 	BOOK_PAGE_SIZE,
 	type BookGridFilter,
@@ -261,6 +262,91 @@ describe("sparseBookItems", () => {
 		// Page size 2, but the series special case lands everything in page 0.
 		const items = sparseBookItems(cache, 2);
 		expect(items.map((item) => item?.id)).toEqual(["1", "2", "3"]);
+	});
+});
+
+describe("advanceSnapshot (stale-while-revalidate)", () => {
+	const loadedCache = () => {
+		const c = emptyBookCache("a", 1);
+		return applyBookPage(c, {
+			key: "a",
+			generation: 1,
+			pageIndex: 0,
+			items: [book("1"), book("2")],
+			total: 2,
+		});
+	};
+
+	it("returns null for an unresolved cache with no prior snapshot", () => {
+		expect(advanceSnapshot(emptyBookCache("a", 1), null)).toBeNull();
+	});
+
+	it("preserves an existing snapshot while a new key has no total yet", () => {
+		const snapshot = {
+			key: "a",
+			items: [book("1")],
+			total: 1,
+		};
+		const transitioning = emptyBookCache("b", 2); // new key, not yet resolved
+		const result = advanceSnapshot(transitioning, snapshot);
+		expect(result).toBe(snapshot); // unchanged
+	});
+
+	it("creates a snapshot once the cache resolves", () => {
+		const cache = loadedCache();
+		const snapshot = advanceSnapshot(cache, null);
+		expect(snapshot).not.toBeNull();
+		expect(snapshot?.key).toBe("a");
+		expect(snapshot?.total).toBe(2);
+		expect(snapshot?.items).toHaveLength(2);
+	});
+
+	it("refreshes the snapshot when the same key gets new pages", () => {
+		const first = advanceSnapshot(loadedCache(), null);
+		// Second page arrives for the same key
+		let cache = loadedCache();
+		cache = applyBookPage(cache, {
+			key: "a",
+			generation: 1,
+			pageIndex: 1,
+			items: [book("3")],
+			total: 3,
+		});
+		const second = advanceSnapshot(cache, first);
+		expect(second?.total).toBe(3);
+		expect(second?.items).toHaveLength(3);
+		expect(second?.key).toBe("a");
+	});
+
+	it("replaces an old-key snapshot when a new key resolves", () => {
+		const oldSnapshot = advanceSnapshot(loadedCache(), null);
+		// New key resolves immediately (e.g. first page arrives)
+		const newCache = applyBookPage(emptyBookCache("b", 2), {
+			key: "b",
+			generation: 2,
+			pageIndex: 0,
+			items: [book("x")],
+			total: 1,
+		});
+		const result = advanceSnapshot(newCache, oldSnapshot);
+		expect(result?.key).toBe("b");
+		expect(result?.total).toBe(1);
+	});
+
+	it("a key transition does not blank: snapshot from key A is held while key B is in flight", () => {
+		// Simulate: key A has data -> key changes to B (unresolved) -> snapshot stays at A
+		const cacheA = loadedCache();
+		const snapshotA = advanceSnapshot(cacheA, null);
+		expect(snapshotA).not.toBeNull();
+
+		// cacheForKey produces an empty cache for key B
+		const cacheB = cacheForKey(cacheA, "b");
+		expect(cacheB.total).toBeNull();
+
+		// advanceSnapshot keeps the A snapshot while B is unresolved
+		const snapshotDuring = advanceSnapshot(cacheB, snapshotA);
+		expect(snapshotDuring).toBe(snapshotA);
+		expect(snapshotDuring?.key).toBe("a");
 	});
 });
 

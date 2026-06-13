@@ -7,6 +7,8 @@
  * in the row) and pushes its cover to the bottom edge so every book base in
  * a row sits on one line, like books on a shelf.
  */
+/* The 190px cap is mirrored by MAX_CELL_WIDTH in BookGrid.tsx, which uses
+ * it to predict exact row heights for the virtualizer. */
 .cell {
 	display: flex;
 	flex-direction: column;
