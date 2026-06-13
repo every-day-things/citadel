@@ -1,17 +1,16 @@
-//! Grid-sized cover thumbnails with thumbhash placeholders.
+//! Grid-sized cover thumbnails.
 //!
 //! The library grid renders covers at ~150 CSS px (300 device px at 2×), but
 //! Calibre stores `cover.jpg` at full resolution — often 1200×1800+. Decoding
 //! those during scroll saturates the main thread and paints half-finished
 //! frames. This module maintains a per-library cache of 300px JPEG thumbnails
-//! plus a ~25-byte thumbhash per cover, so the grid can paint a blurred
-//! placeholder instantly and decode only small images.
+//! so the grid decodes only small images.
 //!
 //! Cache layout (inside the app cache dir):
 //! `cover-thumbs/<library-root-hash>/{book_id}-{cover_mtime_ms}.jpg`
-//! with a single `thumbs.json` index holding mtime/dimensions/thumbhash per
-//! book. The mtime in the file name doubles as cache busting for the
-//! webview's image cache when a cover is replaced.
+//! with a single `thumbs.json` index holding mtime/dimensions per book. The
+//! mtime in the file name doubles as cache busting for the webview's image
+//! cache when a cover is replaced.
 
 use std::collections::HashMap;
 use std::fs;
@@ -19,7 +18,6 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
-use base64::Engine;
 use image::imageops::FilterType;
 use serde::{Deserialize, Serialize};
 
@@ -31,18 +29,14 @@ const THUMB_WIDTH: u32 = 300;
 /// output; the grid letterboxes anything taller than 2:1 anyway.
 const THUMB_MAX_HEIGHT: u32 = 600;
 const THUMB_JPEG_QUALITY: u8 = 80;
-/// Thumbhash input must be ≤100×100 per the algorithm spec.
-const THUMBHASH_MAX_DIM: u32 = 100;
 
-/// What the frontend needs to render one grid cover: a small image URL, a
-/// thumbhash to paint while it loads, and the thumbnail's pixel dimensions
-/// (same aspect ratio as the source cover) to reserve layout up front.
+/// What the frontend needs to render one grid cover: a small image URL and the
+/// thumbnail's pixel dimensions (same aspect ratio as the source cover) to
+/// reserve exact row height up front.
 #[derive(Serialize, Clone, Debug, specta::Type)]
 pub struct CoverThumbnail {
     pub book_id: String,
     pub url: String,
-    /// Base64 (standard alphabet) thumbhash bytes.
-    pub thumbhash: String,
     pub width: u32,
     pub height: u32,
 }
@@ -52,7 +46,6 @@ pub struct CoverThumbnail {
 struct ThumbMeta {
     cover_mtime_ms: i64,
     file_name: String,
-    thumbhash: String,
     width: u32,
     height: u32,
 }
@@ -116,15 +109,14 @@ fn to_thumbnail(book_id: &str, cache_dir: &Path, meta: &ThumbMeta) -> CoverThumb
     CoverThumbnail {
         book_id: book_id.to_string(),
         url: util::path_to_asset_url(&cache_dir.join(&meta.file_name)),
-        thumbhash: meta.thumbhash.clone(),
         width: meta.width,
         height: meta.height,
     }
 }
 
-/// Decode + resize one cover, write its thumbnail JPEG, and compute its
-/// thumbhash. This is the expensive path — it only runs when the index has
-/// no fresh entry for the cover's mtime.
+/// Decode + resize one cover and write its thumbnail JPEG. This is the
+/// expensive path — it only runs when the index has no fresh entry for the
+/// cover's mtime.
 fn generate_one(
     cache_dir: &Path,
     book_id: &str,
@@ -143,18 +135,9 @@ fn generate_one(
     // must flatten before encoding.
     thumb.to_rgb8().write_with_encoder(encoder).ok()?;
 
-    let hash_input = thumb.resize(THUMBHASH_MAX_DIM, THUMBHASH_MAX_DIM, FilterType::Triangle);
-    let rgba = hash_input.to_rgba8();
-    let hash = thumbhash::rgba_to_thumb_hash(
-        rgba.width() as usize,
-        rgba.height() as usize,
-        rgba.as_raw(),
-    );
-
     Some(ThumbMeta {
         cover_mtime_ms: mtime_ms,
         file_name,
-        thumbhash: base64::engine::general_purpose::STANDARD.encode(hash),
         width: thumb.width(),
         height: thumb.height(),
     })
@@ -312,7 +295,6 @@ mod tests {
         assert_eq!(thumb.book_id, "1");
         assert_eq!(thumb.width, 300);
         assert_eq!(thumb.height, 450);
-        assert!(!thumb.thumbhash.is_empty());
         assert!(thumb.url.contains("asset"));
 
         let cache_dir = thumb_cache_dir(&dir, "/library");
@@ -345,7 +327,6 @@ mod tests {
 
         let second = ensure_thumbnails(&dir, "/library", &source());
         assert_eq!(second[0].url, first[0].url);
-        assert_eq!(second[0].thumbhash, first[0].thumbhash);
         let second_written = fs::metadata(&thumb_file).unwrap().modified().unwrap();
         assert_eq!(first_written, second_written, "thumbnail was regenerated");
         let _ = fs::remove_dir_all(&dir);
@@ -372,7 +353,6 @@ mod tests {
         assert_eq!(listed.len(), 1);
         assert_eq!(listed[0].book_id, "7");
         assert_eq!(listed[0].url, generated[0].url);
-        assert_eq!(listed[0].thumbhash, generated[0].thumbhash);
         let _ = fs::remove_dir_all(&dir);
     }
 

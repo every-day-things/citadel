@@ -36,7 +36,7 @@ export interface Library {
 	 */
 	getBook(bookId: LibraryBook["id"]): Promise<LibraryBook>;
 	/**
-	 * Grid-sized cover thumbnails (plus thumbhash placeholders) for the given
+	 * Grid-sized cover thumbnails for the given
 	 * books, generating any that are missing or stale. Books without a
 	 * decodable cover are omitted from the result.
 	 */

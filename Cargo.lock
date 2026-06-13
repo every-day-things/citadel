@@ -643,7 +643,6 @@ dependencies = [
 name = "citadel-rs"
 version = "0.5.0"
 dependencies = [
- "base64 0.22.1",
  "chrono",
  "diesel",
  "epub",
@@ -670,7 +669,6 @@ dependencies = [
  "tauri-plugin-updater",
  "tauri-plugin-webdriver-automation",
  "tauri-specta",
- "thumbhash",
  "urlencoding",
  "uuid",
  "zip 0.6.6",
@@ -5698,12 +5696,6 @@ dependencies = [
  "quote",
  "syn 2.0.117",
 ]
-
-[[package]]
-name = "thumbhash"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b7726e0245a7331bd0c9a1fb4fd99fd695bcd478ca569f0eda2ff2cb14e7a00"
 
 [[package]]
 name = "tiff"

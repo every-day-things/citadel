@@ -109,8 +109,8 @@ interface LibraryStoreState {
 	staleBookSnapshot: BookSnapshot | null;
 	/**
 	 * Grid-sized cover thumbnails by book id, requested in the background as
-	 * each page of books lands. The grid renders these (with their thumbhash
-	 * as an instant placeholder) instead of decoding full-resolution covers.
+	 * each page of books lands. The grid renders these instead of decoding
+	 * full-resolution covers.
 	 */
 	coverThumbs: ReadonlyMap<LibraryBook["id"], CoverThumbnail>;
 	/** Unfiltered library size (for "N of M books"); null until known. */
@@ -412,11 +412,11 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 
 					set({ libraryState: LibraryState.ready });
 
-					// Background warm: every cover's thumbhash + thumbnail, so any
-					// row that mounts paints a placeholder immediately. Book pages
-					// themselves load lazily (viewport + one page of padding); a
-					// long-distance scroll jump into unvisited territory shows
-					// placeholder cells for one ~60ms page query.
+					// Background warm: generate every cover's thumbnail so the grid
+					// decodes small images at any scroll offset, not just visited
+					// pages. Book pages themselves load lazily (viewport + one page
+					// of padding); a long-distance jump into unvisited territory
+					// shows placeholder cells for one ~60ms page query.
 					void warmCoverThumbs();
 				} catch (error) {
 					console.error("Failed to initialize library:", error);

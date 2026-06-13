@@ -14,5 +14,3 @@ opt-level = 3
 opt-level = 3
 [profile.dev.package.png]
 opt-level = 3
-[profile.dev.package.thumbhash]
-opt-level = 3

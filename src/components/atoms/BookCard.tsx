@@ -25,8 +25,8 @@ export const BookCard = React.memo(function BookCard({
 	const onCoverTouch = useCallback(() => {
 		onViewBook(book.id);
 	}, [onViewBook, book]);
-	// Grid cells render the 300px thumbnail (with its thumbhash placeholder)
-	// instead of decoding the full-resolution cover.
+	// Grid cells render the 300px thumbnail instead of decoding the
+	// full-resolution cover.
 	const thumb = useCoverThumb(book.id);
 
 	return (

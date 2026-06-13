@@ -14,32 +14,13 @@ a spinner on every keystroke.
 ## Decision
 
 Render the grid from a per-library cache of downscaled (300px) cover
-thumbnails, each carrying a [thumbhash](https://evanw.github.io/thumbhash/)
-placeholder and its exact pixel dimensions. A cell paints the thumbhash blur
-the instant its row mounts, swaps in the small thumbnail as it decodes, and
-uses the stored dimensions to size its row exactly (no measure-then-shift).
-Full-resolution covers are kept only for the detail and edit views. Book
-records page in lazily (the viewport plus one page of prefetch padding on each
-edge); a search keeps the previous results on screen while the next query
-loads (stale-while-revalidate) rather than blanking.
-
-## Why thumbhash, when covers are local files today
-
-On the local Calibre backend a 300px thumbnail is read from disk and decoded
-in milliseconds, so the blur placeholder it shows beneath is, on its own,
-marginal — it covers only the brief window where a burst of cells mount during
-a fast scroll before their images decode.
-
-The justification is architectural, not local. Citadel is built around one
-backend-agnostic `Library` interface with both a local and a (in-progress)
-remote implementation; the cover-render path does not know or care which
-backend produced a cover. Over a remote backend the cover image carries
-network latency while the ~25-byte thumbhash arrives with the row metadata —
-which is exactly the case thumbhash exists for. Building it into the local
-path now means the render path is already correct for remote: only the server
-side (generating and serving hashes, ideally on the book-query payload) is
-left to add. We are deliberately keeping the render path backend-agnostic
-rather than optimising it for the local-only case we ship today.
+thumbnails. Each thumbnail's pixel dimensions are stored alongside it and used
+to size its grid row exactly, so a row mounting during scroll measures to its
+estimate instead of shifting the shelf a frame. Full-resolution covers are
+kept only for the detail and edit views. Book records page in lazily (the
+viewport plus one page of prefetch padding on each edge); a search keeps the
+previous results on screen while the next query loads (stale-while-revalidate)
+rather than blanking.
 
 ## What we rejected
 
@@ -60,22 +41,33 @@ rather than optimising it for the local-only case we ship today.
   prefetch padding. **A maintainer who sees brief placeholder cells on a
   violent yank should not re-introduce this** — the trade was measured and
   rejected.
+- **Thumbhash blur-up placeholders.** Prototyped (a ~25-byte hash per cover,
+  decoded to a blurred stand-in painted under the loading image) and removed.
+  Measured on the local backend, the blur is never visible: a 300px thumbnail
+  on local disk decodes by the time its cell mounts, so covers arrive already
+  sharp, and the only residual gap is the cell-less frame while the virtualizer
+  mounts rows — which a blur living inside cells cannot fill. Thumbhash is a
+  network-latency tool: it earns its keep over a remote backend, where the
+  ~25-byte hash arrives with the row metadata while the cover image is still in
+  flight. Citadel is built around a backend-agnostic `Library` interface with a
+  local and an in-progress remote implementation, so this is a real future use
+  — but carrying a dormant blur subsystem for a backend that does not exist yet
+  is speculative complexity. **Add it back when the remote backend can serve
+  hashes on the book-query payload, not before.**
 
 ## Consequences
 
 - **Accepted: a 1–3 frame compositor flash on a violent scrollbar yank.**
   WKWebView scrolls asynchronously — the UI process moves the scroll offset
   independently of the web process rasterizing tiles — so a fast enough jump
-  can present unpainted background for ~10–30ms before tiles (and the thumbhash
-  blur beneath them) appear. This is inherent to native-webview scrolling and
-  cannot be closed from JavaScript. Thumbhash placeholders make recovery
-  near-instant. **Revisit if there is new evidence that we can avoid these
+  can present unpainted background for ~10–30ms before tiles appear. This is
+  inherent to native-webview scrolling and cannot be closed from JavaScript.
+  Once cells mount their thumbnails are already decoded, so recovery is a
+  frame or two. **Revisit if there is new evidence that we can avoid these
   empty paints.**
 - A per-library cover-thumbnail cache now lives in the app cache directory
-  (~80 MB at 5k books, OS-reclaimable), generated in the background on first
-  sight of each cover and kept fresh transparently.
-- The cover-render path (thumbhash blur + thumbnail swap) is backend-agnostic
-  and ready for the remote backend; the local path is its first consumer.
+  (tens of MB at 5k books, OS-reclaimable), generated in the background on
+  first sight of each cover and kept fresh transparently.
 - The grid depends on the thumbnail index loading at library open: the stored
-  cover dimensions feed exact row heights, so the same data that drives the
-  blur placeholders also removes scroll-measurement shift.
+  cover dimensions feed exact row heights, removing the measure-then-shift on
+  row mount.

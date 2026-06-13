@@ -278,15 +278,11 @@ export type BookUpdate = { author_id_list: string[] | null; tag_list: string[] |
 series: string | null; series_index: number | null }
 export type CalibreClientConfig = { library_path: string }
 /**
- * What the frontend needs to render one grid cover: a small image URL, a
- * thumbhash to paint while it loads, and the thumbnail's pixel dimensions
- * (same aspect ratio as the source cover) to reserve layout up front.
+ * What the frontend needs to render one grid cover: a small image URL and the
+ * thumbnail's pixel dimensions (same aspect ratio as the source cover) to
+ * reserve exact row height up front.
  */
-export type CoverThumbnail = { book_id: string; url: string; 
-/**
- * Base64 (standard alphabet) thumbhash bytes.
- */
-thumbhash: string; width: number; height: number }
+export type CoverThumbnail = { book_id: string; url: string; width: number; height: number }
 /**
  * A custom column definition, as exposed to the frontend.
  */

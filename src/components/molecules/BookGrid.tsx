@@ -47,8 +47,7 @@ const TYPICAL_COVER_RATIO = 1.5;
 // covers became 300px thumbnails with reserved boxes, so a deep overscan
 // (~1.5 viewports each way) buys fling-scroll headroom. Deep overscan taxes
 // update paths instead (every mounted card re-renders on a result-set swap),
-// so don't raise it past where fling tests stop improving — arbitrary jumps
-// are covered by the warm thumbhash index, not overscan.
+// so don't raise it past where fling tests stop improving.
 const OVERSCAN_ROWS = 10;
 
 /** Scrolls the shelf row containing the given flat book index into view. */
