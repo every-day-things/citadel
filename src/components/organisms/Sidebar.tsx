@@ -1,14 +1,13 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { isTauri } from "@tauri-apps/api/core";
 import clsx from "clsx";
-import { useCallback, useEffect, useState } from "react";
-import { commands } from "@/bindings";
+import { useEffect, useState } from "react";
 import { F7Gear } from "@/components/icons/F7Gear";
 import { F7Pencil } from "@/components/icons/F7Pencil";
 import { F7Trash } from "@/components/icons/F7Trash";
 import { AlertDialog, IconButton, TextInput } from "@/components/ui";
 import { safeAsyncEventHandler } from "@/lib/async";
 import { useAppUpdates } from "@/lib/hooks/use-app-updates";
+import { useOpenSettings } from "@/lib/hooks/use-open-settings";
 import type { SmartShelf } from "@/lib/platform/settings/types";
 import { LibraryState, useLibraryState } from "@/stores/library/store";
 import { useLibraryView } from "@/stores/library-view/store";
@@ -19,17 +18,7 @@ import styles from "./Sidebar.module.css";
 export const Sidebar = () => {
 	const state = useLibraryState();
 	const { location } = useRouterState();
-	const navigate = useNavigate();
-
-	// Settings live in their own window; the Rust command owns the window
-	// options and focuses the existing window if one is already open.
-	const openSettings = useCallback(() => {
-		if (isTauri()) {
-			void commands.clbCmdOpenSettings();
-		} else {
-			void navigate({ to: "/settings" });
-		}
-	}, [navigate]);
+	const openSettings = useOpenSettings();
 
 	const isUpdatePromptOpen = useAppUpdates((s) => s.isUpdatePromptOpen);
 	const isInstallingUpdate = useAppUpdates((s) => s.isInstallingUpdate);

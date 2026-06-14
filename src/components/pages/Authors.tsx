@@ -29,6 +29,7 @@ import {
 } from "@/stores/library/store";
 import { F7Pencil } from "../icons/F7Pencil";
 import { F7Trash } from "../icons/F7Trash";
+import { EmptyLibrary, EmptyState } from "../molecules/EmptyState";
 import styles from "./Authors.module.css";
 
 /**
@@ -131,6 +132,19 @@ export const Authors = () => {
 		return null;
 	}
 
+	// An empty library has no authors (they're created only when books are
+	// imported), so teach the two ways to populate it instead of an empty list.
+	if (authors.length === 0) {
+		return (
+			<div className={styles.page}>
+				<EmptyLibrary />
+			</div>
+		);
+	}
+
+	const searchTerm = filters.searchTerm.trim();
+	const noMatches = filteredAuthors.length === 0;
+
 	return (
 		<div className={styles.page}>
 			{authorToEdit && (
@@ -168,30 +182,51 @@ export const Authors = () => {
 				/>
 			</div>
 
-			<div className={styles.headerRow} style={AUTHOR_GRID}>
-				<span className={styles.columnLabel}>Name</span>
-				<span className={clsx(styles.columnLabel, styles.visibleFromMd)}>
-					Sort name
-				</span>
-				<span className={clsx(styles.columnLabel, styles.columnLabelRight)}>
-					Books
-				</span>
-				<span />
-			</div>
+			{noMatches ? (
+				searchTerm.length > 0 ? (
+					<EmptyState title={`No authors match “${searchTerm}”`}>
+						<Button variant="default" onClick={() => setSearchTerm("")}>
+							Clear search
+						</Button>
+					</EmptyState>
+				) : (
+					<EmptyState title="No authors match these filters.">
+						<Button
+							variant="default"
+							onClick={() => setShowOnlyAuthorsWithoutBooks(false)}
+						>
+							Show all authors
+						</Button>
+					</EmptyState>
+				)
+			) : (
+				<>
+					<div className={styles.headerRow} style={AUTHOR_GRID}>
+						<span className={styles.columnLabel}>Name</span>
+						<span className={clsx(styles.columnLabel, styles.visibleFromMd)}>
+							Sort name
+						</span>
+						<span className={clsx(styles.columnLabel, styles.columnLabelRight)}>
+							Books
+						</span>
+						<span />
+					</div>
 
-			<AuthorRows
-				authors={filteredAuthors}
-				onEditAuthor={onOpenEditAuthorSheet}
-				onDeleteAuthor={onOpenDeleteAuthorDialog}
-			/>
+					<AuthorRows
+						authors={filteredAuthors}
+						onEditAuthor={onOpenEditAuthorSheet}
+						onDeleteAuthor={onOpenDeleteAuthorDialog}
+					/>
 
-			<div className={styles.footer}>
-				<span className={styles.footerText}>
-					{filteredAuthors.length === authors.length
-						? `${authors.length} authors`
-						: `${filteredAuthors.length} of ${authors.length} authors`}
-				</span>
-			</div>
+					<div className={styles.footer}>
+						<span className={styles.footerText}>
+							{filteredAuthors.length === authors.length
+								? `${authors.length} authors`
+								: `${filteredAuthors.length} of ${authors.length} authors`}
+						</span>
+					</div>
+				</>
+			)}
 		</div>
 	);
 };

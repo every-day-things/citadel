@@ -53,22 +53,6 @@
 	transition: opacity 150ms ease-out;
 }
 
-/* Zero-result filters (e.g. a shelf whose query no longer matches). */
-.emptyState {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	gap: 12px;
-	height: 100%;
-	min-height: 240px;
-}
-
-.emptyText {
-	font-size: 14px;
-	color: var(--ctd-ink-soft);
-}
-
 /* Save-as-shelf sheet body. */
 .shelfForm {
 	display: flex;
