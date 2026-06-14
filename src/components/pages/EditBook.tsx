@@ -16,7 +16,6 @@ import {
 	type LibraryBook,
 	commands,
 } from "@/bindings";
-import { HardcoverLogo } from "@/components/icons/HardcoverLogo";
 import {
 	Button,
 	IconButton,
@@ -36,10 +35,11 @@ import {
 	editableCustomColumns,
 	emptyFieldValue,
 } from "@/lib/custom-columns";
-import { useHardcoverBookActions } from "@/lib/hooks/use-hardcover-book-actions";
+import { useMetadataBookActions } from "@/lib/hooks/use-metadata-book-actions";
+import { deepLinkForIdentifier } from "@/lib/metadata-providers/registry";
 import { formatSeriesIndex } from "@/lib/series";
 import { BookCover } from "../atoms/BookCover";
-import { HardcoverSearchModal } from "../molecules/HardcoverSearchModal";
+import { MetadataSearchModal } from "../molecules/MetadataSearchModal";
 import { RichTextEditor } from "../molecules/RichTextEditor";
 import styles from "./EditBook.module.css";
 
@@ -69,6 +69,46 @@ const FormRow = ({
 		<div className={styles.rowControl}>{children}</div>
 	</div>
 );
+
+/**
+ * A quiet strip of opt-in tag chips surfaced from a metadata lookup's subject
+ * headings. The library vouches; the user decides — nothing is auto-applied.
+ */
+const SubjectSuggestions = ({
+	subjects,
+	source,
+	onAdd,
+	onAddAll,
+}: {
+	subjects: string[];
+	source: string | null;
+	onAdd: (subject: string) => void;
+	onAddAll: () => void;
+}) => {
+	if (subjects.length === 0) return null;
+	return (
+		<div className={styles.subjectStrip}>
+			<span className={styles.subjectStripLabel}>
+				{source ? `From ${source}:` : "Suggested subjects:"}
+			</span>
+			{subjects.map((subject) => (
+				<Button
+					key={subject}
+					size="sm"
+					variant="subtle"
+					onClick={() => onAdd(subject)}
+				>
+					+ {subject}
+				</Button>
+			))}
+			{subjects.length > 1 && (
+				<Button size="sm" variant="subtle" onClick={onAddAll}>
+					Add all {subjects.length}
+				</Button>
+			)}
+		</div>
+	);
+};
 
 interface BookPageProps {
 	allAuthorList: LibraryAuthor[];
@@ -336,7 +376,7 @@ const EditBookForm = ({
 		setValues((current) => ({ ...current, [field]: value }));
 	}, []);
 
-	// Minimal FormSetter facade for the hardcover hook.
+	// Minimal FormSetter facade for the metadata hook.
 	const form = useMemo(() => ({ setFieldValue }), [setFieldValue]);
 
 	const allAuthorNames = useMemo(
@@ -460,7 +500,7 @@ const EditBookForm = ({
 		}
 	}, [book.id, customChanges, customColumns, customValues, loadCustomColumns]);
 
-	const hc = useHardcoverBookActions({
+	const meta = useMetadataBookActions({
 		book,
 		allAuthorNames,
 		form,
@@ -475,6 +515,19 @@ const EditBookForm = ({
 			customChanges.length > 0,
 		[values, baseline, customChanges],
 	);
+
+	// Library subjects from the last lookup, offered as opt-in tag chips and
+	// folded into the tag autocomplete. Only those not already applied show.
+	const tagSuggestions = useMemo(
+		() => [...new Set([...allTagList, ...meta.lastResolvedSubjects])],
+		[allTagList, meta.lastResolvedSubjects],
+	);
+	const suggestableSubjects = useMemo(() => {
+		const applied = new Set(values.tagList.map((tag) => tag.toLowerCase()));
+		return meta.lastResolvedSubjects.filter(
+			(subject) => !applied.has(subject.toLowerCase()),
+		);
+	}, [meta.lastResolvedSubjects, values.tagList]);
 
 	const handleAuthorsChange = (next: string[]) => {
 		// Authors typed in free-form that the library does not know yet get
@@ -551,20 +604,20 @@ const EditBookForm = ({
 					</Button>
 				</div>
 			</header>
-			{hc.hardcoverMessage && (
+			{meta.message && (
 				<div
 					role="alert"
 					className={`${styles.notice} ${
-						hc.hardcoverMessage.type === "success"
+						meta.message.type === "success"
 							? styles.noticeSuccess
 							: styles.noticeError
 					}`}
 				>
-					<span className={styles.noticeText}>{hc.hardcoverMessage.text}</span>
+					<span className={styles.noticeText}>{meta.message.text}</span>
 					<IconButton
 						aria-label="Dismiss"
 						className={styles.noticeClose}
-						onClick={() => hc.setHardcoverMessage(null)}
+						onClick={() => meta.setMessage(null)}
 					>
 						×
 					</IconButton>
@@ -643,14 +696,29 @@ const EditBookForm = ({
 							/>
 						</FormRow>
 						<FormRow label="Tags" alignTop htmlFor="edit-book-tags">
-							<TagsInput
-								id="edit-book-tags"
-								aria-label="Tags"
-								placeholder="Search or add tag"
-								suggestions={allTagList}
-								value={values.tagList}
-								onChange={(next) => setFieldValue("tagList", next)}
-							/>
+							<div className={styles.tagsField}>
+								<TagsInput
+									id="edit-book-tags"
+									aria-label="Tags"
+									placeholder="Search or add tag"
+									suggestions={tagSuggestions}
+									value={values.tagList}
+									onChange={(next) => setFieldValue("tagList", next)}
+								/>
+								<SubjectSuggestions
+									subjects={suggestableSubjects}
+									source={meta.lastSubjectsSource}
+									onAdd={(subject) =>
+										setFieldValue("tagList", [...values.tagList, subject])
+									}
+									onAddAll={() =>
+										setFieldValue("tagList", [
+											...values.tagList,
+											...suggestableSubjects,
+										])
+									}
+								/>
+							</div>
 						</FormRow>
 					</section>
 					<section className={styles.section}>
@@ -685,26 +753,25 @@ const EditBookForm = ({
 												).catch(console.error);
 											}}
 										/>
-										{hc.hardcoverApiKey && label.toLowerCase() === "isbn" && (
-											<Tooltip label="Look up metadata">
+										{meta.anySourceEnabled &&
+											label.toLowerCase() === "isbn" && (
+												<Tooltip label="Look up metadata">
+													<IconButton
+														aria-label="Look up metadata"
+														disabled={meta.isFetching}
+														onClick={() => void meta.fetchFromIsbn()}
+													>
+														{meta.isFetching ? <Spinner size={12} /> : "↓"}
+													</IconButton>
+												</Tooltip>
+											)}
+										{deepLinkForIdentifier(label, value) && (
+											<Tooltip label="Open record in browser">
 												<IconButton
-													aria-label="Look up metadata"
-													disabled={hc.isFetchingFromHardcover}
-													onClick={() => void hc.fetchFromHardcover()}
-												>
-													{hc.isFetchingFromHardcover ? (
-														<Spinner size={12} />
-													) : (
-														"↓"
-													)}
-												</IconButton>
-											</Tooltip>
-										)}
-										{label.toLowerCase() === "hardcover" && (
-											<Tooltip label="View on Hardcover">
-												<IconButton
-													aria-label="View on Hardcover"
-													onClick={() => void hc.openInHardcover()}
+													aria-label="Open record in browser"
+													onClick={() =>
+														void meta.openIdentifierLink(label, value)
+													}
 												>
 													↗
 												</IconButton>
@@ -808,27 +875,14 @@ const EditBookForm = ({
 							</div>
 						</section>
 					)}
-					{hc.hardcoverApiKey && (
+					{meta.anySourceEnabled && (
 						<section className={styles.section}>
-							<FormRow label="Hardcover">
+							<FormRow label="Book details">
 								<Button
 									variant="default"
-									onClick={() => {
-										const query = values.title || "";
-										hc.setSearchQuery(query);
-										hc.setIsSearchModalOpen(true);
-										if (query) {
-											void hc.searchHardcover(query);
-										}
-									}}
+									onClick={() => meta.openSearch(values.title || "")}
 								>
-									<HardcoverLogo
-										width={14}
-										height={14}
-										aria-hidden="true"
-										focusable="false"
-									/>
-									Find on Hardcover…
+									Find book details…
 								</Button>
 							</FormRow>
 						</section>
@@ -875,21 +929,19 @@ const EditBookForm = ({
 				</div>
 			</div>
 
-			{/* Hardcover search sheet */}
-			<HardcoverSearchModal
-				open={hc.isSearchModalOpen}
-				onOpenChange={hc.setIsSearchModalOpen}
-				query={hc.searchQuery}
-				onQueryChange={hc.setSearchQuery}
-				onSearch={() => void hc.searchHardcover()}
-				isSearching={hc.isSearching}
-				results={hc.searchResults}
-				onSelect={(result) => void hc.selectSearchResult(result)}
-				error={
-					hc.hardcoverMessage?.type === "error"
-						? hc.hardcoverMessage.text
-						: null
-				}
+			{/* Unified metadata search sheet */}
+			<MetadataSearchModal
+				open={meta.isSearchModalOpen}
+				onOpenChange={meta.setIsSearchModalOpen}
+				query={meta.searchQuery}
+				onQueryChange={meta.setSearchQuery}
+				onSearch={meta.search}
+				isSearching={meta.isSearching}
+				results={meta.results}
+				pendingProviderNames={meta.pendingProviderNames}
+				onSelect={(result) => void meta.selectResult(result)}
+				onStop={meta.stopSearch}
+				error={meta.message?.type === "error" ? meta.message.text : null}
 			/>
 		</form>
 	);

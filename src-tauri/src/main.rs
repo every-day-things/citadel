@@ -15,8 +15,8 @@ pub mod libs {
     mod util;
 }
 mod book;
-mod hardcover;
 mod menu;
+mod metadata;
 mod state;
 
 fn run_tauri_backend() -> std::io::Result<()> {
@@ -54,11 +54,10 @@ fn run_tauri_backend() -> std::io::Result<()> {
         calibre::command::clb_cmd_create_authors,
         calibre::command::clb_cmd_update_author,
         calibre::command::clb_cmd_delete_author,
-        // Hardcover integration commands
-        hardcover::test_hardcover_connection,
-        hardcover::fetch_hardcover_metadata_by_isbn,
-        hardcover::fetch_hardcover_metadata_by_book_id,
-        hardcover::search_hardcover_books,
+        // Metadata-provider commands (Hardcover, LoC, DNB, Open Library)
+        metadata::commands::clb_cmd_test_metadata_provider,
+        metadata::commands::clb_query_metadata_search,
+        metadata::commands::clb_query_metadata_by_isbn,
         app_updates::clb_cmd_check_for_updates,
         app_updates::clb_cmd_install_update_if_available,
         // Window commands

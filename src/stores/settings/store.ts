@@ -1,9 +1,12 @@
 import { create } from "zustand";
+import type { MetadataProvider } from "@/bindings";
 import type { Option } from "@/lib/option";
 import { none, some } from "@/lib/option";
+import { migrateSettings } from "@/lib/platform/settings/migrate";
 import {
 	defaultSettings,
 	type LibraryPath,
+	type ProviderConfig,
 	type SettingsKey,
 	type SettingsManager,
 	type SettingsSchema,
@@ -27,8 +30,12 @@ interface SettingsStore extends SettingsSchema {
 	setActiveLibrary: (libraryId: string) => Promise<void>;
 	createLibrary: (absolutePath: string) => Promise<string>;
 	getActiveLibrary: () => Option<LibraryPath>;
-	setHardcoverApiKey: (apiKey: string) => Promise<void>;
-	setHardcoverAutoLookup: (enabled: boolean) => Promise<void>;
+	setProviderConfig: (
+		id: MetadataProvider,
+		patch: Partial<ProviderConfig>,
+	) => Promise<void>;
+	setProviderEnabled: (id: MetadataProvider, enabled: boolean) => Promise<void>;
+	setAutoLookupOnImport: (enabled: boolean) => Promise<void>;
 	setLastNotifiedUpdateVersion: (version: string | null) => Promise<void>;
 	createSmartShelf: (
 		name: string,
@@ -94,7 +101,22 @@ export const useSettings = create<SettingsStore>((set, get) => ({
 				setSetting(initialSettings, key, value);
 			}
 
-			set({ ...initialSettings, hydrated: true });
+			// One-time schema migration (e.g. flat Hardcover keys -> provider
+			// block). Persist only when the version actually advanced.
+			const migrated = migrateSettings(initialSettings);
+			set({ ...migrated, hydrated: true });
+			if (
+				migrated.settingsSchemaVersion !== initialSettings.settingsSchemaVersion
+			) {
+				await settingsManager.set(
+					"metadataProviders",
+					migrated.metadataProviders,
+				);
+				await settingsManager.set(
+					"settingsSchemaVersion",
+					migrated.settingsSchemaVersion,
+				);
+			}
 
 			// Mirror changes persisted by other windows (e.g. the Settings
 			// window changing theme or the active library) into this window's
@@ -164,12 +186,25 @@ export const useSettings = create<SettingsStore>((set, get) => ({
 		return some(activeLibrary);
 	},
 
-	setHardcoverApiKey: async (apiKey) => {
-		await persistSetting(set, get, "hardcoverApiKey", apiKey);
+	setProviderConfig: async (id, patch) => {
+		const current = get().metadataProviders;
+		const existing = current.configs[id] ?? { enabled: false, apiKey: "" };
+		await persistSetting(set, get, "metadataProviders", {
+			...current,
+			configs: { ...current.configs, [id]: { ...existing, ...patch } },
+		});
 	},
 
-	setHardcoverAutoLookup: async (enabled) => {
-		await persistSetting(set, get, "hardcoverAutoLookup", enabled);
+	setProviderEnabled: async (id, enabled) => {
+		await get().setProviderConfig(id, { enabled });
+	},
+
+	setAutoLookupOnImport: async (enabled) => {
+		const current = get().metadataProviders;
+		await persistSetting(set, get, "metadataProviders", {
+			...current,
+			autoLookupOnImport: enabled,
+		});
 	},
 
 	setLastNotifiedUpdateVersion: async (version) => {

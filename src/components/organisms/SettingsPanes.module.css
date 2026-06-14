@@ -87,7 +87,12 @@
 .panel {
 	flex: 1;
 	min-height: 0;
-	overflow-y: auto;
+	/* Always lay out the scrollbar track (not `auto`) so the centered content
+	   never shifts sideways when overflow appears, e.g. when a provider row
+	   expands. `scrollbar-gutter: stable` is recognised but not effective in
+	   this WebView, so we force the track instead. */
+	overflow-y: scroll;
+	scrollbar-gutter: stable;
 	padding: 1.25rem;
 }
 
@@ -210,4 +215,57 @@
 	margin: 0;
 	font-size: 0.8125rem;
 	color: var(--ctd-ink-soft);
+}
+
+/* A metadata-source row: header (name + status + switch) over an optional
+   expandable body. */
+.providerRow {
+	display: flex;
+	flex-direction: column;
+}
+
+.providerHeader {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	min-height: 2.375rem;
+	padding: 0.4375rem 0.875rem;
+}
+
+/* Let the name/status column grow so the switch sits flush right, aligned
+   across every provider row (System Settings style). */
+.providerHeader .rowLabels {
+	flex: 1;
+}
+
+.providerDisclosure {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.25rem;
+	height: 1.25rem;
+	padding: 0;
+	border: none;
+	background: none;
+	cursor: pointer;
+	color: var(--ctd-ink-soft);
+	flex-shrink: 0;
+}
+
+.providerChevron {
+	display: inline-block;
+	font-size: 1rem;
+	line-height: 1;
+	transition: transform 150ms ease;
+}
+
+.providerChevron[data-open="true"] {
+	transform: rotate(90deg);
+}
+
+.providerBody {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	padding: 0 0.875rem 0.75rem 2.625rem;
 }
