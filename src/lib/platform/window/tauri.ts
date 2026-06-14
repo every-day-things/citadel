@@ -7,5 +7,6 @@ export const createTauriWindow = (): WindowAdapter => ({
 		);
 		const appWindow = getCurrentWebviewWindow();
 		await appWindow.show();
+		await appWindow.setFocus();
 	},
 });
