@@ -296,3 +296,23 @@
 .descriptionHtml li {
 	margin-bottom: 0.25em;
 }
+
+/* Tags field plus its opt-in subject-suggestion strip. */
+.tagsField {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.subjectStrip {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+}
+
+.subjectStripLabel {
+	font-size: 12px;
+	color: var(--ctd-ink-soft);
+	margin-right: 2px;
+}

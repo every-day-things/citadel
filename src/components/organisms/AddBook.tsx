@@ -9,9 +9,9 @@ import {
 } from "@/components/molecules/AddBookForm";
 import { Button, Sheet } from "@/components/ui";
 import {
-	applyHardcoverMetadataToBook,
-	type PendingHardcoverMetadata,
-} from "@/lib/hardcover-import";
+	applyMetadataToBook,
+	type PendingMetadata,
+} from "@/lib/metadata-import";
 import { usePlatform } from "@/lib/platform/context";
 import {
 	LibraryState,
@@ -28,10 +28,10 @@ export const AddBookButton = () => {
 
 	const [metadata, setMetadata] = useState<ImportableBookMetadata | null>();
 	const addBookButtonRef = useRef<HTMLButtonElement>(null);
-	// Incremented per picked file so AddBookForm (and its Hardcover lookup
+	// Incremented per picked file so AddBookForm (and its metadata lookup
 	// state) remounts fresh for each import.
 	const [importSession, setImportSession] = useState(0);
-	const pendingHardcoverRef = useRef<PendingHardcoverMetadata | null>(null);
+	const pendingMetadataRef = useRef<PendingMetadata | null>(null);
 	// Set as soon as addBook succeeds so a retry after a failed metadata apply
 	// reuses the created book instead of creating a duplicate.
 	const createdBookIdRef = useRef<string | null>(null);
@@ -40,7 +40,7 @@ export const AddBookButton = () => {
 	const closeModal = useCallback(() => setIsModalOpen(false), []);
 
 	const closeAddBookModal = useCallback(() => {
-		pendingHardcoverRef.current = null;
+		pendingMetadataRef.current = null;
 		closeModal();
 	}, [closeModal]);
 
@@ -74,7 +74,7 @@ export const AddBookButton = () => {
 				const importableMetadata =
 					await actions.getImportableBookMetadata(filePath);
 				if (importableMetadata) {
-					pendingHardcoverRef.current = null;
+					pendingMetadataRef.current = null;
 					createdBookIdRef.current = null;
 					setImportSession((session) => session + 1);
 					setMetadata(importableMetadata);
@@ -100,13 +100,13 @@ export const AddBookButton = () => {
 
 	const addBookByMetadataWithEffects = async (form: AddBookForm) => {
 		if (!metadata || state !== LibraryState.ready) return;
-		const pendingHardcover = pendingHardcoverRef.current;
+		const pendingMetadata = pendingMetadataRef.current;
 		const editedMetadata: ImportableBookMetadata = {
 			...metadata,
 			title: form.title,
 			author_names: form.authorList,
-			// The normalized ISBN from Hardcover wins over the file's identifier.
-			identifier: pendingHardcover?.isbn ?? metadata.identifier,
+			// The normalized ISBN from a provider wins over the file's identifier.
+			identifier: pendingMetadata?.isbn ?? metadata.identifier,
 		};
 		try {
 			// If a previous attempt created the book but failed while applying
@@ -116,8 +116,8 @@ export const AddBookButton = () => {
 				bookId = (await actions.addBook(editedMetadata)) ?? null;
 				createdBookIdRef.current = bookId;
 			}
-			if (bookId && pendingHardcover) {
-				await applyHardcoverMetadataToBook(bookId, pendingHardcover, {
+			if (bookId && pendingMetadata) {
+				await applyMetadataToBook(bookId, pendingMetadata, {
 					upsertBookIdentifier: actions.upsertBookIdentifier,
 					updateBook: actions.updateBook,
 					setBookCoverFromUrl: async (id, imageUrl) => {
@@ -132,7 +132,7 @@ export const AddBookButton = () => {
 				});
 				// addBook/upsertBookIdentifier/updateBook already invalidate the
 				// book caches; only a cover change happens outside those.
-				if (pendingHardcover.image_url) {
+				if (pendingMetadata.image_url) {
 					actions.invalidateBooks();
 				}
 			}
@@ -185,8 +185,8 @@ export const AddBookButton = () => {
 						onCreateAuthor={onCreateAuthor}
 						onSubmit={addBookByMetadataWithEffects}
 						onCancel={closeAddBookModal}
-						onPendingHardcoverChange={(pending) => {
-							pendingHardcoverRef.current = pending;
+						onPendingMetadataChange={(pending) => {
+							pendingMetadataRef.current = pending;
 						}}
 					/>
 				</Sheet>

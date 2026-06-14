@@ -200,33 +200,34 @@ async clbCmdDeleteAuthor(authorId: string) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async testHardcoverConnection(apiKey: string) : Promise<Result<HardcoverApiStatus, string>> {
+/**
+ * Test that a provider is reachable / its credentials are valid.
+ */
+async clbCmdTestMetadataProvider(provider: string, apiKey: string) : Promise<Result<ProviderStatus, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("test_hardcover_connection", { apiKey }) };
+    return { status: "ok", data: await TAURI_INVOKE("clb_cmd_test_metadata_provider", { provider, apiKey }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
 },
-async fetchHardcoverMetadataByIsbn(apiKey: string, isbn: string) : Promise<Result<HardcoverBookMetadata, string>> {
+/**
+ * Free-text search a provider. A clean "no results" is `Ok(vec![])`, not an error.
+ */
+async clbQueryMetadataSearch(provider: string, query: string, apiKey: string) : Promise<Result<BookMetadata[], string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("fetch_hardcover_metadata_by_isbn", { apiKey, isbn }) };
+    return { status: "ok", data: await TAURI_INVOKE("clb_query_metadata_search", { provider, query, apiKey }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
 },
-async fetchHardcoverMetadataByBookId(apiKey: string, hardcoverId: number) : Promise<Result<HardcoverBookMetadata, string>> {
+/**
+ * Look a provider up by ISBN. A clean "no match" is `Ok(vec![])`, not an error.
+ */
+async clbQueryMetadataByIsbn(provider: string, isbn: string, apiKey: string) : Promise<Result<BookMetadata[], string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("fetch_hardcover_metadata_by_book_id", { apiKey, hardcoverId }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async searchHardcoverBooks(apiKey: string, query: string) : Promise<Result<HardcoverSearchResult[], string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("search_hardcover_books", { apiKey, query }) };
+    return { status: "ok", data: await TAURI_INVOKE("clb_query_metadata_by_isbn", { provider, isbn, apiKey }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -269,6 +270,29 @@ export type AuthorUpdate = { full_name: string | null; sortable_name: string | n
  */
 export type BookCustomValue = { column_id: number; value: CustomValueDto }
 export type BookFile = { Local: LocalFile } | { Remote: RemoteFile }
+/**
+ * A book record from a provider. Providers return these fully populated from a
+ * single search call — there is no separate resolve step, so the cover-less
+ * MARC sources' subjects/publisher/language survive into the applied record.
+ */
+export type BookMetadata = { provider: MetadataProvider; 
+/**
+ * Provider-native id: hardcover id (stringified), LCCN, DNB control
+ * number, or Open Library OLID.
+ */
+provider_id: string; identifier_label: string; title: string; subtitle: string | null; authors: string[]; isbn: string | null; release_year: number | null; description: string | null; image_url: string | null; publisher: string | null; 
+/**
+ * Subject headings, mapped to tag suggestions on the frontend.
+ */
+subjects: string[]; 
+/**
+ * MARC 3-letter language code. Parsed now; applied once CDL-2 lands.
+ */
+language_code: string | null; 
+/**
+ * Hardcover deep-link slug; `None` for other providers.
+ */
+slug: string | null }
 export type BookSortOrder = "TitleAsc" | "TitleDesc" | "AuthorAsc" | "AuthorDesc"
 export type BookUpdate = { author_id_list: string[] | null; tag_list: string[] | null; title: string | null; timestamp: string | null; publication_date: string | null; is_read: boolean | null; description: string | null; 
 /**
@@ -319,9 +343,6 @@ export type CustomValueDto = { Bool: boolean } | { Int: number } | { Float: numb
  * RFC3339 datetime string, e.g. `2024-01-15T10:30:00+00:00`.
  */
 { Datetime: string } | { Enumeration: string }
-export type HardcoverApiStatus = { is_valid: boolean; message: string }
-export type HardcoverBookMetadata = { title: string; description: string | null; image_url: string | null; isbn: string | null; release_year: number | null; hardcover_id: number | null; slug: string | null }
-export type HardcoverSearchResult = { title: string; description: string | null; image_url: string | null; isbn: string | null; release_year: number | null; hardcover_id: number; slug: string | null; authors: string[] }
 /**
  * Book identifiers, such as ISBN, DOI, Google Books ID, etc.
  */
@@ -393,7 +414,14 @@ path: string;
 mime_type: string }
 export type LocalOrRemote = "Local" | "Remote"
 export type LocalOrRemoteUrl = { kind: LocalOrRemote; url: string; local_path: string | null }
+/**
+ * The metadata sources Citadel can look books up against. The serialized
+ * short form is the single id used across the Rust enum, the TS string union,
+ * and the frontend registry keys.
+ */
+export type MetadataProvider = "hardcover" | "loc" | "dnb" | "k10plus" | "openlibrary"
 export type NewAuthor = { name: string; sortable_name: string | null }
+export type ProviderStatus = { provider: MetadataProvider; is_valid: boolean; message: string }
 export type RemoteFile = { url: string }
 export type UpdateCheckResult = { has_update: boolean; version: string | null }
 
