@@ -299,7 +299,13 @@ export type BookUpdate = { author_id_list: string[] | null; tag_list: string[] |
  * An empty (or whitespace) name unlinks the book from its series;
  * `None` leaves it unchanged.
  */
-series: string | null; series_index: number | null }
+series: string | null; series_index: number | null; 
+/**
+ * Language codes to write through to `books_languages_link` (canonicalized
+ * to Calibre's ISO 639-2/3 form). An empty list clears the book's
+ * languages; `None` leaves them unchanged.
+ */
+language_list: string[] | null }
 export type CalibreClientConfig = { library_path: string }
 /**
  * What the frontend needs to render one grid cover: a small image URL and the
@@ -378,7 +384,12 @@ export type LibraryAuthor = { id: string; name: string; sortable_name: string;
  * instead of deriving counts from the whole book list.
  */
 book_count: number }
-export type LibraryBook = { id: string; uuid: string | null; title: string; author_list: LibraryAuthor[]; tag_list: string[]; sortable_title: string | null; file_list: BookFile[]; cover_image: LocalOrRemoteUrl | null; identifier_list: Identifier[]; description: string | null; is_read: boolean; series: string | null; series_index: number | null }
+export type LibraryBook = { id: string; uuid: string | null; title: string; author_list: LibraryAuthor[]; tag_list: string[]; sortable_title: string | null; file_list: BookFile[]; cover_image: LocalOrRemoteUrl | null; identifier_list: Identifier[]; description: string | null; is_read: boolean; series: string | null; series_index: number | null; 
+/**
+ * Canonical Calibre language codes (ISO 639-2/3, e.g. `eng`, `fra`),
+ * ordered. Empty when the book has no language metadata.
+ */
+language_list: string[] }
 export type LibraryBookPage = { items: LibraryBook[]; 
 /**
  * Total number of books matching the filters, ignoring limit/offset.

@@ -136,6 +136,7 @@ mod tests {
             series: None,
             series_index: None,
             description: None,
+            language_codes: vec![],
             identifiers: vec![],
             has_cover,
             is_read: false,

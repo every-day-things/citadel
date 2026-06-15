@@ -56,6 +56,10 @@ pub struct LibraryBook {
 
     pub series: Option<String>,
     pub series_index: Option<f32>,
+
+    /// Canonical Calibre language codes (ISO 639-2/3, e.g. `eng`, `fra`),
+    /// ordered. Empty when the book has no language metadata.
+    pub language_list: Vec<String>,
 }
 
 impl LibraryBook {
@@ -80,6 +84,7 @@ impl LibraryBook {
             is_read: book.is_read,
             series: book.series.clone(),
             series_index: book.series_index,
+            language_list: book.language_codes.clone(),
             cover_image: None,
             file_list: book
                 .files
@@ -167,6 +172,7 @@ impl ImportableBookMetadata {
             publication_date: self.publication_date,
             rating: None,
             comments: None,
+            language: self.language.clone(),
             identifiers: self
                 .identifier
                 .as_ref()

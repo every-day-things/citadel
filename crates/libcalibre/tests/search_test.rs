@@ -19,6 +19,7 @@ fn book_with_authors(title: &str, author_names: &[&str]) -> BookAdd {
         rating: None,
         comments: None,
         identifiers: HashMap::new(),
+        language: None,
         file_paths: vec![],
     }
 }
