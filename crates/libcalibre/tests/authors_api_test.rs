@@ -142,6 +142,7 @@ fn test_delete_author_with_books_fails() {
         rating: None,
         comments: None,
         identifiers: HashMap::new(),
+        language: None,
         file_paths: vec![],
     })
     .unwrap();
@@ -186,6 +187,7 @@ fn test_author_book_counts_groups_links_per_author() {
         rating: None,
         comments: None,
         identifiers: HashMap::new(),
+        language: None,
         file_paths: vec![],
     };
 

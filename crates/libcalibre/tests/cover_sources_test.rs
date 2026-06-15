@@ -17,6 +17,7 @@ fn empty_book(title: &str) -> BookAdd {
         rating: None,
         comments: None,
         identifiers: HashMap::new(),
+        language: None,
         file_paths: vec![],
     }
 }

@@ -47,6 +47,7 @@ pub fn standard_test_book() -> BookAdd {
         rating: None,
         comments: None,
         identifiers: HashMap::new(),
+        language: None,
         file_paths: vec![],
     }
 }

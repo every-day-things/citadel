@@ -488,6 +488,7 @@ describe("applyHardcoverMetadataToBook", () => {
 			description: "A war across the stars.",
 			series: null,
 			series_index: null,
+			language_list: null,
 		});
 	});
 

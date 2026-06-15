@@ -48,6 +48,10 @@ pub struct BookUpdate {
     /// `None` leaves it unchanged.
     pub series: Option<String>,
     pub series_index: Option<f32>,
+    /// Language codes to write through to `books_languages_link` (canonicalized
+    /// to Calibre's ISO 639-2/3 form). An empty list clears the book's
+    /// languages; `None` leaves them unchanged.
+    pub language_list: Option<Vec<String>>,
 }
 
 impl BookUpdate {
@@ -67,6 +71,7 @@ impl BookUpdate {
             tags: self.tag_list.clone(),
             series: self.series.clone(),
             series_index: self.series_index,
+            language_codes: self.language_list.clone(),
             publisher: None,
             rating: None,
             comments: None,

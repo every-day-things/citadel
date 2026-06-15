@@ -24,6 +24,7 @@ fn test_books_insert_trigger_generates_sort_and_uuid() {
             rating: None,
             comments: None,
             identifiers: HashMap::new(),
+            language: None,
             file_paths: vec![],
         })
         .unwrap();
@@ -53,6 +54,7 @@ fn test_books_update_trigger_updates_sort() {
             rating: None,
             comments: None,
             identifiers: HashMap::new(),
+            language: None,
             file_paths: vec![],
         })
         .unwrap();
@@ -73,6 +75,7 @@ fn test_books_update_trigger_updates_sort() {
                 tags: None,
                 series: None,
                 series_index: None,
+                language_codes: None,
                 publisher: None,
                 publication_date: None,
                 rating: None,
@@ -106,6 +109,7 @@ fn test_insert_trigger_calls_title_sort() {
             rating: None,
             comments: None,
             identifiers: HashMap::new(),
+            language: None,
             file_paths: vec![],
         })
         .unwrap();

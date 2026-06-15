@@ -37,6 +37,11 @@ import {
 	emptyFieldValue,
 } from "@/lib/custom-columns";
 import { useHardcoverBookActions } from "@/lib/hooks/use-hardcover-book-actions";
+import {
+	KNOWN_LANGUAGE_NAMES,
+	codeForLanguageName,
+	languageNameForCode,
+} from "@/lib/languages";
 import { formatSeriesIndex } from "@/lib/series";
 import { BookCover } from "../atoms/BookCover";
 import { HardcoverSearchModal } from "../molecules/HardcoverSearchModal";
@@ -168,6 +173,8 @@ interface EditBookFormValues {
 	seriesIndex: string;
 	authorList: string[];
 	tagList: string[];
+	/** Language display names (mapped to codes on save). */
+	languageList: string[];
 	identifierList: LibraryBook["identifier_list"];
 	description: string;
 	isRead: boolean;
@@ -286,6 +293,7 @@ const formValuesFromBook = (book: LibraryBook): EditBookFormValues => ({
 		book.series_index !== null ? formatSeriesIndex(book.series_index) : "",
 	authorList: book.author_list.map((author) => author.name),
 	tagList: book.tag_list,
+	languageList: book.language_list.map(languageNameForCode),
 	identifierList: book.identifier_list,
 	description: book.description ?? "",
 	isRead: book.is_read,
@@ -516,6 +524,7 @@ const EditBookForm = ({
 				series_index: Number.isFinite(parsedSeriesIndex)
 					? parsedSeriesIndex
 					: null,
+				language_list: values.languageList.map(codeForLanguageName),
 			};
 
 			await onSave(bookUpdate);
@@ -650,6 +659,16 @@ const EditBookForm = ({
 								suggestions={allTagList}
 								value={values.tagList}
 								onChange={(next) => setFieldValue("tagList", next)}
+							/>
+						</FormRow>
+						<FormRow label="Languages" alignTop htmlFor="edit-book-languages">
+							<TagsInput
+								id="edit-book-languages"
+								aria-label="Languages"
+								placeholder="Search or add language"
+								suggestions={KNOWN_LANGUAGE_NAMES}
+								value={values.languageList}
+								onChange={(next) => setFieldValue("languageList", next)}
 							/>
 						</FormRow>
 					</section>
