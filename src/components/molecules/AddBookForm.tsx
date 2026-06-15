@@ -1,6 +1,5 @@
 import { type ReactNode, useEffect, useState } from "react";
-import { HardcoverLogo } from "@/components/icons/HardcoverLogo";
-import { HardcoverSearchModal } from "@/components/molecules/HardcoverSearchModal";
+import { MetadataSearchModal } from "@/components/molecules/MetadataSearchModal";
 import {
 	Button,
 	IconButton,
@@ -9,11 +8,8 @@ import {
 	Tooltip,
 } from "@/components/ui";
 import { safeAsyncEventHandler } from "@/lib/async";
-import {
-	buildSearchQuery,
-	type PendingHardcoverMetadata,
-} from "@/lib/hardcover-import";
-import { useHardcoverImportLookup } from "@/lib/hooks/use-hardcover-import-lookup";
+import { useMetadataImportLookup } from "@/lib/hooks/use-metadata-import-lookup";
+import { buildSearchQuery, type PendingMetadata } from "@/lib/metadata-import";
 import styles from "./AddBookForm.module.css";
 
 export interface AddBookForm {
@@ -31,7 +27,7 @@ export interface AddBookFormProps {
 	hideTitle?: boolean;
 	/** The imported file's embedded identifier (e.g. an ISBN from an EPUB). */
 	fileIdentifier?: string | null;
-	onPendingHardcoverChange?: (pending: PendingHardcoverMetadata | null) => void;
+	onPendingMetadataChange?: (pending: PendingMetadata | null) => void;
 }
 
 export const title = "Add Book";
@@ -108,32 +104,32 @@ export const AddBookForm = ({
 	onCreateAuthor,
 	hideTitle = false,
 	fileIdentifier = null,
-	onPendingHardcoverChange,
+	onPendingMetadataChange,
 }: AddBookFormProps) => {
 	const [bookTitle, setBookTitle] = useState(initial.title);
 	const [bookAuthors, setBookAuthors] = useState<string[]>(initial.authorList);
 	// Track which fields the user has touched so the automatic on-mount
-	// Hardcover lookup never clobbers their edits.
+	// metadata lookup never clobbers their edits.
 	const [titleEdited, setTitleEdited] = useState(false);
 	const [authorsEdited, setAuthorsEdited] = useState(false);
 
-	const hc = useHardcoverImportLookup({ fileIdentifier });
+	const meta = useMetadataImportLookup({ fileIdentifier });
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: only react to pending changing; onPendingHardcoverChange's identity is not stable.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: only react to pending changing; onPendingMetadataChange's identity is not stable.
 	useEffect(() => {
-		if (hc.pending) {
+		if (meta.pending) {
 			// The automatic on-mount lookup must not clobber fields the user has
 			// already edited; explicit lookups/selections always win.
-			const isAuto = hc.pendingSource === "auto";
-			if (hc.pending.title && !(isAuto && titleEdited)) {
-				setBookTitle(hc.pending.title);
+			const isAuto = meta.pendingSource === "auto";
+			if (meta.pending.title && !(isAuto && titleEdited)) {
+				setBookTitle(meta.pending.title);
 			}
-			if (hc.pending.authors.length > 0 && !(isAuto && authorsEdited)) {
-				setBookAuthors(hc.pending.authors);
+			if (meta.pending.authors.length > 0 && !(isAuto && authorsEdited)) {
+				setBookAuthors(meta.pending.authors);
 			}
 		}
-		onPendingHardcoverChange?.(hc.pending);
-	}, [hc.pending, hc.pendingSource]);
+		onPendingMetadataChange?.(meta.pending);
+	}, [meta.pending, meta.pendingSource]);
 
 	const handleAuthorsChange = (next: string[]) => {
 		// Mirror the old creatable multiselect: committing a token that is not
@@ -187,25 +183,25 @@ export const AddBookForm = ({
 						onChange={handleAuthorsChange}
 					/>
 				</FormRow>
-				{hc.hardcoverApiKey && (
-					<FormRow label="Hardcover">
-						<Button
-							variant="default"
-							onClick={() =>
-								hc.openSearch(buildSearchQuery(bookTitle, bookAuthors))
-							}
-						>
-							<HardcoverLogo
-								width={14}
-								height={14}
-								aria-hidden="true"
-								focusable="false"
-							/>
-							Find on Hardcover…
-						</Button>
-					</FormRow>
+				{meta.anySourceEnabled && (
+					// No label: the button is self-describing, and a "Book details"
+					// label clips in this modal's narrow gutter. It shares the control
+					// column with the match note below it.
+					<div className={styles.formRow}>
+						<span aria-hidden="true" />
+						<div className={styles.rowControl}>
+							<Button
+								variant="default"
+								onClick={() =>
+									meta.openSearch(buildSearchQuery(bookTitle, bookAuthors))
+								}
+							>
+								Find book details…
+							</Button>
+						</div>
+					</div>
 				)}
-				{hc.pending ? (
+				{meta.pending ? (
 					<div className={styles.formRow}>
 						<span aria-hidden="true" />
 						<div
@@ -215,15 +211,15 @@ export const AddBookForm = ({
 							<span className={styles.hardcoverNoteText}>
 								Matched{" "}
 								<span className={styles.hardcoverNoteTitle}>
-									“{hc.pending.title}”
+									“{meta.pending.title}”
 								</span>
-								. Cover and description will be added on import.
+								. Details will be added on import.
 							</span>
 							<Tooltip label="Remove match">
 								<IconButton
 									className={styles.hardcoverNoteDismiss}
-									aria-label="Remove Hardcover match"
-									onClick={hc.clearPending}
+									aria-label="Remove match"
+									onClick={meta.clearPending}
 								>
 									<DismissGlyph />
 								</IconButton>
@@ -231,7 +227,7 @@ export const AddBookForm = ({
 						</div>
 					</div>
 				) : (
-					hc.message && (
+					meta.message && (
 						<div className={styles.formRow}>
 							<span aria-hidden="true" />
 							<div
@@ -240,13 +236,13 @@ export const AddBookForm = ({
 								role="status"
 							>
 								<span className={styles.hardcoverNoteText}>
-									{hc.message.text}
+									{meta.message.text}
 								</span>
 								<Tooltip label="Dismiss">
 									<IconButton
 										className={styles.hardcoverNoteDismiss}
 										aria-label="Dismiss message"
-										onClick={hc.clearMessage}
+										onClick={meta.clearMessage}
 									>
 										<DismissGlyph />
 									</IconButton>
@@ -266,19 +262,20 @@ export const AddBookForm = ({
 					Add Book
 				</Button>
 			</div>
-			<HardcoverSearchModal
-				open={hc.isSearchModalOpen}
+			<MetadataSearchModal
+				open={meta.isSearchModalOpen}
 				onOpenChange={(open) => {
-					if (!open) hc.closeSearchModal();
+					if (!open) meta.closeSearchModal();
 				}}
-				query={hc.searchQuery}
-				onQueryChange={hc.setSearchQuery}
-				onSearch={() => void hc.searchHardcover()}
-				isSearching={hc.isSearching}
-				results={hc.searchResults}
-				isbnMatchId={hc.isbnMatchId}
-				onSelect={(result) => void hc.selectSearchResult(result)}
-				error={hc.message?.type === "error" ? hc.message.text : null}
+				query={meta.searchQuery}
+				onQueryChange={meta.setSearchQuery}
+				onSearch={meta.search}
+				isSearching={meta.isSearching}
+				results={meta.results}
+				pendingProviderNames={meta.pendingProviderNames}
+				onSelect={(result) => meta.selectSearchResult(result)}
+				onStop={meta.stopSearch}
+				error={meta.message?.type === "error" ? meta.message.text : null}
 				width={640}
 			/>
 		</form>

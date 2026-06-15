@@ -45,33 +45,6 @@ const genLocalCalibreClient = async (
 			}
 			return results.data;
 		},
-		listBooks: async () => {
-			const results = await commands.clbQueryListAllBooks();
-			if (results.status === "error") {
-				throw new Error(results.error);
-			}
-			const books = results.data;
-
-			for (const book of books) {
-				bookCoverCache.set(book.id.toString(), {
-					localPath: book.cover_image?.local_path ?? "",
-					url: book.cover_image?.url ?? "",
-				});
-				if (book.file_list[0] === undefined) {
-					return [];
-				}
-
-				const primaryFile = book.file_list[0];
-				if ("Local" in primaryFile) {
-					bookFilePath.set(book.id.toString(), {
-						localPath: primaryFile.Local.path,
-						url: undefined,
-					});
-				}
-			}
-
-			return books;
-		},
 		queryBooks: async (query: LibraryBookQuery) => {
 			const results = await commands.clbQueryBooks(query);
 			if (results.status === "error") {
@@ -94,6 +67,48 @@ const genLocalCalibreClient = async (
 
 			return results.data;
 		},
+		ensureCoverThumbnails: async (bookIds) => {
+			const results = await commands.clbCmdEnsureCoverThumbnails(bookIds);
+			if (results.status === "error") {
+				throw new Error(results.error);
+			}
+			return results.data;
+		},
+		listCoverThumbnails: async () => {
+			const results = await commands.clbQueryListCoverThumbnails();
+			if (results.status === "error") {
+				throw new Error(results.error);
+			}
+			return results.data;
+		},
+		warmCoverThumbnails: async () => {
+			const results = await commands.clbCmdWarmCoverThumbnails();
+			if (results.status === "error") {
+				throw new Error(results.error);
+			}
+			return results.data;
+		},
+		getBook: async (bookId) => {
+			const result = await commands.clbQueryGetBook(bookId);
+			if (result.status === "error") {
+				throw new Error(result.error);
+			}
+
+			const book = result.data;
+			bookCoverCache.set(book.id.toString(), {
+				localPath: book.cover_image?.local_path ?? "",
+				url: book.cover_image?.url ?? "",
+			});
+			const primaryFile = book.file_list[0];
+			if (primaryFile !== undefined && "Local" in primaryFile) {
+				bookFilePath.set(book.id.toString(), {
+					localPath: primaryFile.Local.path,
+					url: undefined,
+				});
+			}
+
+			return book;
+		},
 		listAuthors: async () => {
 			const results = await commands.clbQueryListAllAuthors();
 			if (results.status === "error") {
@@ -103,6 +118,13 @@ const genLocalCalibreClient = async (
 		},
 		listSeries: async () => {
 			const results = await commands.clbQueryListSeries();
+			if (results.status === "error") {
+				throw new Error(results.error);
+			}
+			return results.data;
+		},
+		listTags: async () => {
+			const results = await commands.clbQueryListTags();
 			if (results.status === "error") {
 				throw new Error(results.error);
 			}
@@ -188,41 +210,44 @@ const genLocalCalibreClient = async (
 };
 
 const genRemoteCalibreClient = async (
-	options: RemoteConnectionOptions,
+	_options: RemoteConnectionOptions,
 	// The interface requires this function to be async.
 	// eslint-disable-next-line @typescript-eslint/require-await
 ): Promise<Library> => {
 	// All remote clients are really Citadel clients... but for a certain kind of
 	// library. In this case, Calibre.
-	const baseUrl = options.url;
+	// `_options.url` will be the base URL once any remote method is implemented.
 
+	// Nothing populates this yet (the whole-library fetch is gone); remote
+	// cover/file lookups return undefined until a remote book fetch exists.
 	const bookCache = new Map<LibraryBook["id"], LibraryBook>();
 
 	return {
 		createAuthors() {
 			throw new Error("Not implemented");
 		},
-		listBooks: async () => {
-			const res = await fetch(`${baseUrl}/books`)
-				.then((res) => res.json() as unknown as { items: LibraryBook[] })
-				.then((res) => res.items)
-				.then((res) => {
-					return res;
-				});
-
-			for (const book of res) {
-				bookCache.set(book.id, book);
-			}
-
-			return res;
-		},
 		queryBooks() {
+			throw new Error("Not implemented");
+		},
+		// Remote thumbnails would come from the server; none exists yet, and an
+		// empty result just means the grid keeps its fallback rendering.
+		// The interface requires these functions are async.
+		// eslint-disable-next-line @typescript-eslint/require-await
+		ensureCoverThumbnails: async () => [],
+		// eslint-disable-next-line @typescript-eslint/require-await
+		listCoverThumbnails: async () => [],
+		// eslint-disable-next-line @typescript-eslint/require-await
+		warmCoverThumbnails: async () => [],
+		getBook() {
 			throw new Error("Not implemented");
 		},
 		listAuthors() {
 			throw new Error("Not implemented");
 		},
 		listSeries() {
+			throw new Error("Not implemented");
+		},
+		listTags() {
 			throw new Error("Not implemented");
 		},
 		sendToDevice: () => {

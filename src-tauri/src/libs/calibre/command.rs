@@ -3,6 +3,7 @@ use tauri::Manager;
 use crate::book::ImportableBookMetadata;
 use crate::book::LibraryAuthor;
 use crate::calibre::author::NewAuthor;
+use crate::libs::cover_thumbs::{self, CoverThumbnail};
 use crate::state::CitadelState;
 
 use super::custom_columns::CustomValueDto;
@@ -163,6 +164,117 @@ pub async fn clb_cmd_set_book_cover_from_url(
 
 #[tauri::command]
 #[specta::specta]
+pub async fn clb_cmd_ensure_cover_thumbnails(
+    handle: tauri::AppHandle,
+    state: tauri::State<'_, CitadelState>,
+    book_ids: Vec<String>,
+) -> Result<Vec<CoverThumbnail>, String> {
+    let library_root = state
+        .get_library_path()
+        .ok_or("No library initialized. Please load a library first.")?;
+
+    // Cheap DB lookups stay on this thread; only the decode/resize work
+    // moves to the blocking pool.
+    // Parse the requested ids, then read just (id, folder) for the ones that
+    // exist and have a cover — no per-book hydration. cover_sources_for already
+    // applies the has_cover filter, so unparseable/missing/coverless ids drop
+    // out exactly as the old per-id path did.
+    let ids: Vec<libcalibre::BookId> = book_ids
+        .iter()
+        .filter_map(|id| id.parse::<i32>().ok())
+        .map(libcalibre::BookId::from)
+        .collect();
+
+    let sources = state.with_library(|lib| {
+        lib.cover_sources_for(&ids)
+            .map(|rows| {
+                rows.into_iter()
+                    .map(|(id, book_dir_path)| cover_thumbs::CoverSource {
+                        book_id: id.as_i32().to_string(),
+                        cover_path: std::path::PathBuf::from(&library_root)
+                            .join(&book_dir_path)
+                            .join("cover.jpg"),
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .map_err(|e| e.to_string())
+    })??;
+
+    let app_cache_dir = handle
+        .path()
+        .app_cache_dir()
+        .map_err(|e| format!("No app cache dir: {}", e))?;
+
+    // Thumbnails are served over the asset protocol like full covers; the
+    // cache dir is app-owned, so granting it once per call is safe and
+    // idempotent.
+    handle
+        .asset_protocol_scope()
+        .allow_directory(app_cache_dir.join("cover-thumbs"), true)
+        .map_err(|e| format!("Failed to allow thumbnail dir: {}", e))?;
+
+    tauri::async_runtime::spawn_blocking(move || {
+        cover_thumbs::ensure_thumbnails(&app_cache_dir, &library_root, &sources)
+    })
+    .await
+    .map_err(|e| format!("Thumbnail generation failed: {}", e))
+}
+
+/// Generate thumbnails for the ENTIRE library in the background, so the grid
+/// can paint instantly at any scroll offset — not just visited pages. First
+/// run on a big library takes a while (decode every cover once); later runs
+/// are an mtime sweep. Returns the full thumbnail set when done; the caller
+/// merges it whenever it lands.
+#[tauri::command]
+#[specta::specta]
+pub async fn clb_cmd_warm_cover_thumbnails(
+    handle: tauri::AppHandle,
+    state: tauri::State<'_, CitadelState>,
+) -> Result<Vec<CoverThumbnail>, String> {
+    let library_root = state
+        .get_library_path()
+        .ok_or("No library initialized. Please load a library first.")?;
+
+    // Only (id, folder) per covered book — no author/tag/series/file/read-state
+    // hydration, which the freshness sweep never reads.
+    let sources = state.with_library(|lib| {
+        lib.cover_sources()
+            .map(|rows| {
+                rows.into_iter()
+                    .map(|(id, book_dir_path)| cover_thumbs::CoverSource {
+                        book_id: id.as_i32().to_string(),
+                        cover_path: std::path::PathBuf::from(&library_root)
+                            .join(&book_dir_path)
+                            .join("cover.jpg"),
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .map_err(|e| e.to_string())
+    })??;
+
+    let app_cache_dir = handle
+        .path()
+        .app_cache_dir()
+        .map_err(|e| format!("No app cache dir: {}", e))?;
+    handle
+        .asset_protocol_scope()
+        .allow_directory(app_cache_dir.join("cover-thumbs"), true)
+        .map_err(|e| format!("Failed to allow thumbnail dir: {}", e))?;
+
+    tauri::async_runtime::spawn_blocking(move || {
+        // Batched so visible-page ensure calls interleave at index-merge
+        // points instead of waiting behind the whole library.
+        sources
+            .chunks(64)
+            .flat_map(|chunk| cover_thumbs::ensure_thumbnails(&app_cache_dir, &library_root, chunk))
+            .collect()
+    })
+    .await
+    .map_err(|e| format!("Thumbnail warm failed: {}", e))
+}
+
+#[tauri::command]
+#[specta::specta]
 pub fn clb_cmd_update_author(
     state: tauri::State<CitadelState>,
     author_id: String,
@@ -200,6 +312,9 @@ pub fn clb_cmd_create_authors(
     new_authors: Vec<NewAuthor>,
 ) -> Result<Vec<LibraryAuthor>, String> {
     state.with_library(|lib| {
+        // Freshly created authors have no linked books yet, so an empty
+        // counts map is exact (from_author defaults missing entries to 0).
+        let no_book_counts = std::collections::HashMap::new();
         let mut created = Vec::new();
         for author in &new_authors {
             let author_add = libcalibre::AuthorAdd {
@@ -209,7 +324,7 @@ pub fn clb_cmd_create_authors(
             };
             let author_id = lib.add_author(author_add).map_err(|e| e.to_string())?;
             let library_author = lib.get_author(author_id).map_err(|e| e.to_string())?;
-            created.push(LibraryAuthor::from(&library_author));
+            created.push(LibraryAuthor::from_author(&library_author, &no_book_counts));
         }
         Ok(created)
     })?

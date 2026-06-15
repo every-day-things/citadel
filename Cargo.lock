@@ -646,9 +646,11 @@ dependencies = [
  "chrono",
  "diesel",
  "epub",
+ "image",
  "libcalibre",
  "log",
  "mobi",
+ "quick-xml 0.38.4",
  "regex",
  "reqwest 0.12.28",
  "serde",
@@ -2329,7 +2331,7 @@ dependencies = [
  "js-sys",
  "log",
  "wasm-bindgen",
- "windows-core 0.58.0",
+ "windows-core 0.61.2",
 ]
 
 [[package]]
@@ -2477,6 +2479,8 @@ dependencies = [
  "num-traits",
  "png 0.18.1",
  "tiff",
+ "zune-core",
+ "zune-jpeg",
 ]
 
 [[package]]
@@ -2728,6 +2732,8 @@ dependencies = [
  "diesel",
  "diesel_migrations",
  "epub",
+ "fastrand",
+ "image",
  "insta",
  "mobi",
  "proptest",

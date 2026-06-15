@@ -26,11 +26,13 @@ const AUTHORS: LibraryAuthor[] = [
 		name: "Robert Pattison",
 		sortable_name: "Pattison, Robert",
 		id: "gid/author/1234",
+		book_count: 2,
 	},
 	{
 		name: "Frank Herbert",
 		sortable_name: "Herbert, Frank",
 		id: "gid/author/4321",
+		book_count: 6,
 	},
 ];
 
@@ -63,12 +65,18 @@ export const Primary: Story = {
 	},
 };
 
-/** Same form with a Hardcover API key present, so the lookup row renders. */
-export const WithHardcover: Story = {
+/** Same form with a metadata source enabled, so the lookup row renders. */
+export const WithMetadataSource: Story = {
 	...Primary,
 	decorators: [
 		(Story) => {
-			useSettings.setState({ hardcoverApiKey: "storybook-key" });
+			useSettings.setState({
+				metadataProviders: {
+					preferenceOrder: ["loc", "dnb", "openlibrary", "hardcover"],
+					configs: { loc: { enabled: true, apiKey: "" } },
+					autoLookupOnImport: false,
+				},
+			});
 			return <Story />;
 		},
 	],

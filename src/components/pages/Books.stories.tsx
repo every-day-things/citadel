@@ -13,11 +13,13 @@ const Bugliacci: LibraryAuthor = {
 	id: "0000004JFG0DKZV4DGR66BKW9D",
 	name: "Bugliacci",
 	sortable_name: "Bugliacci",
+	book_count: 1,
 };
 const Gregor_Samsa: LibraryAuthor = {
 	id: "0000004JFGJFYH5BDPJSENX6C8",
 	name: "Gregor Samsa",
 	sortable_name: "Samsa, Gregor",
+	book_count: 1,
 };
 
 const MOCK_BOOK: LibraryBook = {

@@ -1,9 +1,9 @@
-import { useEffect } from "react";
 import { create } from "zustand";
 
 import type {
 	AuthorUpdate,
 	BookUpdate,
+	CoverThumbnail,
 	ImportableBookMetadata,
 	LibraryAuthor,
 	LibraryBook,
@@ -13,9 +13,11 @@ import type {
 import { commands } from "@/bindings";
 import {
 	ALL_BOOKS_FILTER,
+	advanceSnapshot,
 	applyBookPage,
 	BOOK_PAGE_SIZE,
 	type BookGridFilter,
+	type BookSnapshot,
 	cacheForKey,
 	compareBySeriesIndex,
 	emptyBookCache,
@@ -38,18 +40,6 @@ export enum LibraryState {
 
 interface LibraryActions {
 	// Core actions
-	/**
-	 * Loads the ENTIRE library into `books` via clb_query_list_all_books.
-	 *
-	 * Kept (and loaded lazily, see `useAllBooks`) for the consumers that
-	 * genuinely need whole-library data and have no targeted query:
-	 * - the Authors page: per-author book counts and the "authors without
-	 *   books" filter need every book↔author link;
-	 * - the book detail route: the tag autocomplete needs the full tag
-	 *   vocabulary (and there is no fetch-one-book command).
-	 * The cover grid does NOT use this; it pages via `ensureBookRange`.
-	 */
-	loadBooks: () => Promise<void>;
 	loadAuthors: () => Promise<void>;
 	loadSeries: () => Promise<void>;
 	initialize: (libraryPath: string) => Promise<void>;
@@ -107,18 +97,22 @@ interface LibraryStoreState {
 	libraryState: LibraryState;
 	libraryError: Error | null;
 
-	// Whole-library book list (lazy; see LibraryActions.loadBooks)
-	books: LibraryBook[];
-	booksLoading: boolean;
-	booksError: string | null;
-	/** Bumped by invalidateBooks; the full list is fresh iff it matches. */
-	allBooksGeneration: number;
-	allBooksLoadedGeneration: number;
-
 	// Paged book grid state
 	bookFilter: BookGridFilter;
 	bookCache: PagedBookCache;
 	bookPagesError: string | null;
+	/**
+	 * Last successfully resolved query snapshot. Kept across key changes so the
+	 * grid can show stale results while the new query is in flight (stale-while-
+	 * revalidate), avoiding a blank flash on every debounced keystroke.
+	 */
+	staleBookSnapshot: BookSnapshot | null;
+	/**
+	 * Grid-sized cover thumbnails by book id, requested in the background as
+	 * each page of books lands. The grid renders these instead of decoding
+	 * full-resolution covers.
+	 */
+	coverThumbs: ReadonlyMap<LibraryBook["id"], CoverThumbnail>;
 	/** Unfiltered library size (for "N of M books"); null until known. */
 	libraryTotal: number | null;
 
@@ -140,14 +134,11 @@ const initialState = {
 	library: null,
 	libraryState: LibraryState.uninitialized,
 	libraryError: null,
-	books: [],
-	booksLoading: false,
-	booksError: null,
-	allBooksGeneration: 0,
-	allBooksLoadedGeneration: -1,
 	bookFilter: ALL_BOOKS_FILTER,
 	bookCache: emptyBookCache(serializeBookFilter(ALL_BOOKS_FILTER), 0),
 	bookPagesError: null,
+	staleBookSnapshot: null as BookSnapshot | null,
+	coverThumbs: new Map<LibraryBook["id"], CoverThumbnail>(),
 	libraryTotal: null,
 	authors: [],
 	authorsLoading: false,
@@ -165,9 +156,63 @@ const localLibraryFromPath = (path: string): Options => ({
 
 // In-flight de-dupe (module scope: promises are not store state).
 const inFlightBookPages = new Map<string, Promise<void>>();
-let inFlightAllBooks: Promise<void> | null = null;
+// Book ids whose thumbnails have been requested (in flight or landed), so a
+// page refetch doesn't re-ask. Cleared on invalidation: re-asking is cheap
+// (the backend cache answers by cover mtime) and picks up replaced covers.
+const requestedThumbIds = new Set<string>();
 
 export const useLibraryStore = create<LibraryStoreState>((set, get) => {
+	const mergeCoverThumbs = (thumbs: CoverThumbnail[]): void => {
+		if (thumbs.length === 0) return;
+		set((state) => {
+			const next = new Map(state.coverThumbs);
+			for (const thumb of thumbs) next.set(thumb.book_id, thumb);
+			return { coverThumbs: next };
+		});
+	};
+
+	/**
+	 * Fire-and-forget thumbnail fetch for freshly landed page items. Failures
+	 * un-mark the ids so a later page fetch retries; the grid just keeps its
+	 * fallback rendering in the meantime.
+	 */
+	const ensureCoverThumbs = (books: LibraryBook[]): void => {
+		const { library } = get();
+		if (!library) return;
+		const wanted = books
+			.filter(
+				(book) => book.cover_image !== null && !requestedThumbIds.has(book.id),
+			)
+			.map((book) => book.id);
+		if (wanted.length === 0) return;
+		for (const id of wanted) requestedThumbIds.add(id);
+
+		void library
+			.ensureCoverThumbnails(wanted)
+			.then(mergeCoverThumbs)
+			.catch((error: unknown) => {
+				for (const id of wanted) requestedThumbIds.delete(id);
+				console.error("Failed to load cover thumbnails:", error);
+			});
+	};
+
+	/**
+	 * Instant-paint warm path, run once per library open: seed every already
+	 * known thumbnail (cheap index read), then generate the rest of the
+	 * library's thumbnails in the background. After this lands, ANY scroll
+	 * offset paints placeholders the frame its rows mount.
+	 */
+	const warmCoverThumbs = async (): Promise<void> => {
+		const { library } = get();
+		if (!library) return;
+		try {
+			mergeCoverThumbs(await library.listCoverThumbnails());
+			mergeCoverThumbs(await library.warmCoverThumbnails());
+		} catch (error) {
+			console.error("Failed to warm cover thumbnails:", error);
+		}
+	};
+
 	const fetchBookPage = (
 		library: Library,
 		filter: BookGridFilter,
@@ -189,16 +234,24 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 					filter.seriesId !== null
 						? [...page.items].sort(compareBySeriesIndex)
 						: page.items;
-				set((state) => ({
-					bookCache: applyBookPage(state.bookCache, {
+				set((state) => {
+					const nextCache = applyBookPage(state.bookCache, {
 						key,
 						generation,
 						pageIndex,
 						items,
 						total: page.total,
-					}),
-					bookPagesError: null,
-				}));
+					});
+					return {
+						bookCache: nextCache,
+						staleBookSnapshot: advanceSnapshot(
+							nextCache,
+							state.staleBookSnapshot,
+						),
+						bookPagesError: null,
+					};
+				});
+				ensureCoverThumbs(items);
 			} catch (error) {
 				set({
 					bookPagesError:
@@ -232,34 +285,6 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 
 		// Stable actions object - ALL actions go here, created once and never change
 		actions: {
-			loadBooks: async () => {
-				const { library } = get();
-				if (!library) return;
-				if (inFlightAllBooks) return inFlightAllBooks;
-
-				const generation = get().allBooksGeneration;
-				set({ booksLoading: true, booksError: null });
-				inFlightAllBooks = (async () => {
-					try {
-						const books = await library.listBooks();
-						set({
-							books,
-							booksLoading: false,
-							allBooksLoadedGeneration: generation,
-						});
-					} catch (error) {
-						set({
-							booksError:
-								error instanceof Error ? error.message : "Failed to load books",
-							booksLoading: false,
-						});
-					} finally {
-						inFlightAllBooks = null;
-					}
-				})();
-				return inFlightAllBooks;
-			},
-
 			loadAuthors: async () => {
 				const { library } = get();
 				if (!library) return;
@@ -331,14 +356,24 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 			},
 
 			invalidateBooks: () => {
+				// Re-request thumbnails as pages refetch: unchanged covers answer
+				// from the backend's mtime-keyed cache, replaced covers regenerate.
+				// Existing map entries stay so covers don't flash placeholders.
+				requestedThumbIds.clear();
 				set((state) => ({
 					bookCache: invalidateBookCache(state.bookCache),
-					allBooksGeneration: state.allBooksGeneration + 1,
 				}));
-				// Mutations can rename/create series and change the library
-				// size; refresh both in the background.
+				// Mutations can rename/create series, change the library size,
+				// and change per-author book counts (which ride on the authors
+				// payload); refresh all three in the background.
 				void get().actions.loadSeries();
+				void get().actions.loadAuthors();
 				void refreshLibraryTotal();
+				// No full re-sweep here: visible pages refetch lazily and the
+				// prefetch padding covers normal scrolling. The open-time sweep
+				// guarantee degrades only for a scrollbar yank in the seconds
+				// right after an edit — not worth ~total/100 queries per
+				// mutation.
 			},
 
 			initialize: async (libraryPath: string) => {
@@ -347,15 +382,18 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 				// Retire any cached data from a previously open library. The
 				// paged cache keeps its key but moves to a new generation so
 				// in-flight fetches against the old library cannot land.
+				// Clear the stale snapshot and thumbnails too — they belong to the
+				// old library.
+				requestedThumbIds.clear();
 				set((state) => ({
 					libraryState: LibraryState.initializing,
 					libraryError: null,
-					books: [],
-					allBooksLoadedGeneration: -1,
 					bookCache: emptyBookCache(
 						state.bookCache.key,
 						state.bookCache.generation + 1,
 					),
+					staleBookSnapshot: null,
+					coverThumbs: new Map<LibraryBook["id"], CoverThumbnail>(),
 					libraryTotal: null,
 				}));
 
@@ -372,6 +410,13 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 					]);
 
 					set({ libraryState: LibraryState.ready });
+
+					// Background warm: generate every cover's thumbnail so the grid
+					// decodes small images at any scroll offset, not just visited
+					// pages. Book pages themselves load lazily (viewport + one page
+					// of padding); a long-distance jump into unvisited territory
+					// shows placeholder cells for one ~60ms page query.
+					void warmCoverThumbs();
 				} catch (error) {
 					console.error("Failed to initialize library:", error);
 					set({
@@ -383,6 +428,7 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 			},
 
 			reset: () => {
+				requestedThumbIds.clear();
 				set((state) => ({
 					...initialState,
 					// Keep the generation monotonic so fetches started before the
@@ -523,35 +569,14 @@ export const useLibraryError = () =>
 export const useBookCache = () => useLibraryStore((state) => state.bookCache);
 export const useBookPagesError = () =>
 	useLibraryStore((state) => state.bookPagesError);
+export const useStaleBookSnapshot = () =>
+	useLibraryStore((state) => state.staleBookSnapshot);
+export const useCoverThumb = (bookId: LibraryBook["id"]) =>
+	useLibraryStore((state) => state.coverThumbs.get(bookId));
+export const useCoverThumbsMap = () =>
+	useLibraryStore((state) => state.coverThumbs);
 export const useLibraryTotal = () =>
 	useLibraryStore((state) => state.libraryTotal);
-
-/**
- * The whole-library book list, loaded lazily on first use and reloaded
- * after mutations mark it stale. Only for consumers that genuinely need
- * every book (see LibraryActions.loadBooks); the cover grid pages instead.
- */
-export const useAllBooks = (): { books: LibraryBook[]; loading: boolean } => {
-	const books = useLibraryStore((state) => state.books);
-	const loading = useLibraryStore((state) => state.booksLoading);
-	// Both generations (not a derived boolean) so the effect re-fires when a
-	// load lands but a newer invalidation already superseded it.
-	const generation = useLibraryStore((state) => state.allBooksGeneration);
-	const loadedGeneration = useLibraryStore(
-		(state) => state.allBooksLoadedGeneration,
-	);
-	const ready = useLibraryReady();
-	const actions = useLibraryActions();
-
-	const stale = loadedGeneration !== generation;
-	useEffect(() => {
-		if (ready && loadedGeneration !== generation) {
-			void actions.loadBooks();
-		}
-	}, [ready, generation, loadedGeneration, actions]);
-
-	return { books, loading: loading || (stale && books.length === 0) };
-};
 
 // Selectors for authors
 export const useAuthors = () => useLibraryStore((state) => state.authors);

@@ -183,6 +183,14 @@ pub struct SeriesSummary {
     pub book_count: i64,
 }
 
+/// One tag in the library. Returned by [`Library::list_tags`]; the full
+/// vocabulary feeds tag autocomplete in clients.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TagSummary {
+    pub id: i32,
+    pub name: String,
+}
+
 impl Library {
     pub fn new(db_path: ValidDbPath) -> Result<Self, CalibreError> {
         let conn = establish_connection(&db_path.database_path)
@@ -408,6 +416,24 @@ impl Library {
         Ok(removed)
     }
 
+    /// `(id, book_dir_path)` for every book with a cover, read straight from
+    /// the `books` table with no hydration of authors/tags/series/files/
+    /// read-state. Feeds the cover-thumbnail warm path, where only the cover's
+    /// folder is needed. A NULL `has_cover` is treated as false.
+    pub fn cover_sources(&mut self) -> Result<Vec<(BookId, String)>, CalibreError> {
+        operations::books::cover_sources(&mut self.conn)
+    }
+
+    /// Like [`Library::cover_sources`], but restricted to `ids`. Returns only
+    /// the ids that exist AND have a cover, so callers keep the same
+    /// has-cover filtering they would get from per-book hydration.
+    pub fn cover_sources_for(
+        &mut self,
+        ids: &[BookId],
+    ) -> Result<Vec<(BookId, String)>, CalibreError> {
+        operations::books::cover_sources_for(&mut self.conn, ids)
+    }
+
     // =========================================================================
     // Assets (covers, book files)
     // =========================================================================
@@ -509,6 +535,13 @@ impl Library {
 
     pub fn authors(&mut self) -> Result<Vec<Author>, CalibreError> {
         operations::authors::all(&mut self.conn)
+    }
+
+    /// Linked-book count per author, computed in one GROUP BY pass over
+    /// `books_authors_link` (no per-author scans). Authors with no linked
+    /// books are absent from the map — treat a missing entry as 0.
+    pub fn author_book_counts(&mut self) -> Result<HashMap<AuthorId, i64>, CalibreError> {
+        author_queries::book_counts(&mut self.conn)
     }
 
     pub fn get_author(&mut self, author_id: AuthorId) -> Result<Author, CalibreError> {
@@ -771,6 +804,12 @@ impl Library {
     /// by name. The returned ids feed [`BookQuery::series_id`].
     pub fn list_series(&mut self) -> Result<Vec<SeriesSummary>, CalibreError> {
         crate::queries::series::list_with_book_counts(&mut self.conn)
+    }
+
+    /// List every tag in the library (the whole vocabulary, including tags
+    /// no longer linked to any book), sorted case-insensitively by name.
+    pub fn list_tags(&mut self) -> Result<Vec<TagSummary>, CalibreError> {
+        crate::queries::tags::list_all(&mut self.conn)
     }
 
     pub fn search_books(&mut self, query: &str) -> Result<Vec<Book>, CalibreError> {

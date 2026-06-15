@@ -1,3 +1,16 @@
 [workspace]
 resolver = "2"
 members = ["crates/libcalibre", "src-tauri"]
+
+# Cover thumbnail generation decodes/resizes JPEGs through these crates;
+# unoptimized they run 20-50x slower, turning the background thumbnail warm
+# from seconds into minutes in dev builds. Optimizing just these packages
+# keeps dev compile times intact.
+[profile.dev.package.image]
+opt-level = 3
+[profile.dev.package.zune-jpeg]
+opt-level = 3
+[profile.dev.package.fdeflate]
+opt-level = 3
+[profile.dev.package.png]
+opt-level = 3

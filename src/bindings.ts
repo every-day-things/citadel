@@ -24,14 +24,6 @@ async clbCmdCreateLibrary(libraryRoot: string) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async clbQueryListAllBooks() : Promise<Result<LibraryBook[], string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("clb_query_list_all_books") };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
 async clbQuerySearchBooks(query: string) : Promise<Result<LibraryBook[], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("clb_query_search_books", { query }) };
@@ -43,6 +35,14 @@ async clbQuerySearchBooks(query: string) : Promise<Result<LibraryBook[], string>
 async clbQueryBooks(query: LibraryBookQuery) : Promise<Result<LibraryBookPage, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("clb_query_books", { query }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async clbQueryGetBook(bookId: string) : Promise<Result<LibraryBook, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clb_query_get_book", { bookId }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -60,6 +60,14 @@ async clbQueryListAllFiletypes() : Promise<([string, string])[]> {
 async clbQueryListSeries() : Promise<Result<LibrarySeries[], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("clb_query_list_series") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async clbQueryListTags() : Promise<Result<LibraryTag[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clb_query_list_tags") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -100,6 +108,37 @@ async clbCmdDeleteBookIdentifier(bookId: string, identifierId: number) : Promise
 async clbCmdSetBookCoverFromUrl(bookId: string, imageUrl: string) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("clb_cmd_set_book_cover_from_url", { bookId, imageUrl }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async clbCmdEnsureCoverThumbnails(bookIds: string[]) : Promise<Result<CoverThumbnail[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clb_cmd_ensure_cover_thumbnails", { bookIds }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
+ * Generate thumbnails for the ENTIRE library in the background, so the grid
+ * can paint instantly at any scroll offset — not just visited pages. First
+ * run on a big library takes a while (decode every cover once); later runs
+ * are an mtime sweep. Returns the full thumbnail set when done; the caller
+ * merges it whenever it lands.
+ */
+async clbCmdWarmCoverThumbnails() : Promise<Result<CoverThumbnail[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clb_cmd_warm_cover_thumbnails") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async clbQueryListCoverThumbnails() : Promise<Result<CoverThumbnail[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clb_query_list_cover_thumbnails") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -161,33 +200,34 @@ async clbCmdDeleteAuthor(authorId: string) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async testHardcoverConnection(apiKey: string) : Promise<Result<HardcoverApiStatus, string>> {
+/**
+ * Test that a provider is reachable / its credentials are valid.
+ */
+async clbCmdTestMetadataProvider(provider: string, apiKey: string) : Promise<Result<ProviderStatus, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("test_hardcover_connection", { apiKey }) };
+    return { status: "ok", data: await TAURI_INVOKE("clb_cmd_test_metadata_provider", { provider, apiKey }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
 },
-async fetchHardcoverMetadataByIsbn(apiKey: string, isbn: string) : Promise<Result<HardcoverBookMetadata, string>> {
+/**
+ * Free-text search a provider. A clean "no results" is `Ok(vec![])`, not an error.
+ */
+async clbQueryMetadataSearch(provider: string, query: string, apiKey: string) : Promise<Result<BookMetadata[], string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("fetch_hardcover_metadata_by_isbn", { apiKey, isbn }) };
+    return { status: "ok", data: await TAURI_INVOKE("clb_query_metadata_search", { provider, query, apiKey }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
 },
-async fetchHardcoverMetadataByBookId(apiKey: string, hardcoverId: number) : Promise<Result<HardcoverBookMetadata, string>> {
+/**
+ * Look a provider up by ISBN. A clean "no match" is `Ok(vec![])`, not an error.
+ */
+async clbQueryMetadataByIsbn(provider: string, isbn: string, apiKey: string) : Promise<Result<BookMetadata[], string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("fetch_hardcover_metadata_by_book_id", { apiKey, hardcoverId }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async searchHardcoverBooks(apiKey: string, query: string) : Promise<Result<HardcoverSearchResult[], string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("search_hardcover_books", { apiKey, query }) };
+    return { status: "ok", data: await TAURI_INVOKE("clb_query_metadata_by_isbn", { provider, isbn, apiKey }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -230,6 +270,29 @@ export type AuthorUpdate = { full_name: string | null; sortable_name: string | n
  */
 export type BookCustomValue = { column_id: number; value: CustomValueDto }
 export type BookFile = { Local: LocalFile } | { Remote: RemoteFile }
+/**
+ * A book record from a provider. Providers return these fully populated from a
+ * single search call — there is no separate resolve step, so the cover-less
+ * MARC sources' subjects/publisher/language survive into the applied record.
+ */
+export type BookMetadata = { provider: MetadataProvider; 
+/**
+ * Provider-native id: hardcover id (stringified), LCCN, DNB control
+ * number, or Open Library OLID.
+ */
+provider_id: string; identifier_label: string; title: string; subtitle: string | null; authors: string[]; isbn: string | null; release_year: number | null; description: string | null; image_url: string | null; publisher: string | null; 
+/**
+ * Subject headings, mapped to tag suggestions on the frontend.
+ */
+subjects: string[]; 
+/**
+ * MARC 3-letter language code. Parsed now; applied once CDL-2 lands.
+ */
+language_code: string | null; 
+/**
+ * Hardcover deep-link slug; `None` for other providers.
+ */
+slug: string | null }
 export type BookSortOrder = "TitleAsc" | "TitleDesc" | "AuthorAsc" | "AuthorDesc"
 export type BookUpdate = { author_id_list: string[] | null; tag_list: string[] | null; title: string | null; timestamp: string | null; publication_date: string | null; is_read: boolean | null; description: string | null; 
 /**
@@ -239,44 +302,47 @@ export type BookUpdate = { author_id_list: string[] | null; tag_list: string[] |
 series: string | null; series_index: number | null }
 export type CalibreClientConfig = { library_path: string }
 /**
+ * What the frontend needs to render one grid cover: a small image URL and the
+ * thumbnail's pixel dimensions (same aspect ratio as the source cover) to
+ * reserve exact row height up front.
+ */
+export type CoverThumbnail = { book_id: string; url: string; width: number; height: number }
+/**
  * A custom column definition, as exposed to the frontend.
  */
-export type CustomColumnDef = { column_id: number;
+export type CustomColumnDef = { column_id: number; 
 /**
  * Lookup name, e.g. `read` (Calibre exposes it as `#read`).
  */
-label: string;
+label: string; 
 /**
  * Human-readable heading, e.g. `Read`.
  */
-name: string;
+name: string; 
 /**
  * Raw Calibre datatype string, e.g. `bool`, `text`, `enumeration`.
  */
-datatype: string; is_multiple: boolean; editable: boolean;
+datatype: string; is_multiple: boolean; editable: boolean; 
 /**
  * Whether reading and writing values of this column is supported.
  */
-supported: boolean;
+supported: boolean; 
 /**
  * Allowed values for enumeration columns. Empty for other datatypes.
  */
 enum_values: string[] }
 /**
  * A custom-column value crossing the Tauri boundary.
- *
+ * 
  * Mirrors `libcalibre::CustomValue`, except datetimes travel as RFC3339
  * strings and integers as `i32` (specta cannot export `i64` without bigint
  * support).
  */
-export type CustomValueDto = { Bool: boolean } | { Int: number } | { Float: number } | { Text: string } | { TextMultiple: string[] } |
+export type CustomValueDto = { Bool: boolean } | { Int: number } | { Float: number } | { Text: string } | { TextMultiple: string[] } | 
 /**
  * RFC3339 datetime string, e.g. `2024-01-15T10:30:00+00:00`.
  */
 { Datetime: string } | { Enumeration: string }
-export type HardcoverApiStatus = { is_valid: boolean; message: string }
-export type HardcoverBookMetadata = { title: string; description: string | null; image_url: string | null; isbn: string | null; release_year: number | null; hardcover_id: number | null; slug: string | null }
-export type HardcoverSearchResult = { title: string; description: string | null; image_url: string | null; isbn: string | null; release_year: number | null; hardcover_id: number; slug: string | null; authors: string[] }
 /**
  * Book identifiers, such as ISBN, DOI, Google Books ID, etc.
  */
@@ -304,9 +370,16 @@ path: string; publication_date: string | null;
 file_contains_cover: boolean }
 export type ImportableBookType = "Epub" | "Pdf" | "Mobi" | "Text"
 export type ImportableFile = { path: string }
-export type LibraryAuthor = { id: string; name: string; sortable_name: string }
+export type LibraryAuthor = { id: string; name: string; sortable_name: string; 
+/**
+ * Number of books in the library linked to this author, from
+ * `Library::author_book_counts` (one GROUP BY pass over
+ * `books_authors_link`). The Authors page renders this directly
+ * instead of deriving counts from the whole book list.
+ */
+book_count: number }
 export type LibraryBook = { id: string; uuid: string | null; title: string; author_list: LibraryAuthor[]; tag_list: string[]; sortable_title: string | null; file_list: BookFile[]; cover_image: LocalOrRemoteUrl | null; identifier_list: Identifier[]; description: string | null; is_read: boolean; series: string | null; series_index: number | null }
-export type LibraryBookPage = { items: LibraryBook[];
+export type LibraryBookPage = { items: LibraryBook[]; 
 /**
  * Total number of books matching the filters, ignoring limit/offset.
  */
@@ -326,6 +399,10 @@ limit: number | null; offset: number }
  * filters on; the frontend otherwise only ever sees series names.
  */
 export type LibrarySeries = { id: number; name: string; book_count: number }
+/**
+ * One tag in the library; `name` is what the tag autocomplete suggests.
+ */
+export type LibraryTag = { id: number; name: string }
 export type LocalFile = { 
 /**
  * The absolute path to the file, including extension.
@@ -337,7 +414,14 @@ path: string;
 mime_type: string }
 export type LocalOrRemote = "Local" | "Remote"
 export type LocalOrRemoteUrl = { kind: LocalOrRemote; url: string; local_path: string | null }
+/**
+ * The metadata sources Citadel can look books up against. The serialized
+ * short form is the single id used across the Rust enum, the TS string union,
+ * and the frontend registry keys.
+ */
+export type MetadataProvider = "hardcover" | "loc" | "dnb" | "k10plus" | "openlibrary"
 export type NewAuthor = { name: string; sortable_name: string | null }
+export type ProviderStatus = { provider: MetadataProvider; is_valid: boolean; message: string }
 export type RemoteFile = { url: string }
 export type UpdateCheckResult = { has_update: boolean; version: string | null }
 

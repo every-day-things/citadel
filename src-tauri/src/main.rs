@@ -10,12 +10,13 @@ use tauri_specta::{collect_commands, Builder};
 mod app_updates;
 pub mod libs {
     pub mod calibre;
+    pub mod cover_thumbs;
     pub mod file_formats;
     mod util;
 }
 mod book;
-mod hardcover;
 mod menu;
+mod metadata;
 mod state;
 
 fn run_tauri_backend() -> std::io::Result<()> {
@@ -25,20 +26,25 @@ fn run_tauri_backend() -> std::io::Result<()> {
         calibre::query::clb_query_is_path_valid_library,
         calibre::command::clb_cmd_create_library,
         // Book query commands
-        calibre::query::clb_query_list_all_books,
         calibre::query::clb_query_search_books,
         calibre::query::clb_query_books,
+        calibre::query::clb_query_get_book,
         calibre::query::clb_query_is_file_importable,
         calibre::query::clb_query_importable_file_metadata,
         calibre::query::clb_query_list_all_filetypes,
         // Series query commands
         calibre::query::clb_query_list_series,
+        // Tag query commands
+        calibre::query::clb_query_list_tags,
         // Book manipulation commands
         calibre::command::clb_cmd_create_book,
         calibre::command::clb_cmd_update_book,
         calibre::command::clb_cmd_upsert_book_identifier,
         calibre::command::clb_cmd_delete_book_identifier,
         calibre::command::clb_cmd_set_book_cover_from_url,
+        calibre::command::clb_cmd_ensure_cover_thumbnails,
+        calibre::command::clb_cmd_warm_cover_thumbnails,
+        calibre::query::clb_query_list_cover_thumbnails,
         // Custom column commands
         calibre::query::clb_query_list_custom_columns,
         calibre::query::clb_query_get_custom_values_for_book,
@@ -48,11 +54,10 @@ fn run_tauri_backend() -> std::io::Result<()> {
         calibre::command::clb_cmd_create_authors,
         calibre::command::clb_cmd_update_author,
         calibre::command::clb_cmd_delete_author,
-        // Hardcover integration commands
-        hardcover::test_hardcover_connection,
-        hardcover::fetch_hardcover_metadata_by_isbn,
-        hardcover::fetch_hardcover_metadata_by_book_id,
-        hardcover::search_hardcover_books,
+        // Metadata-provider commands (Hardcover, LoC, DNB, Open Library)
+        metadata::commands::clb_cmd_test_metadata_provider,
+        metadata::commands::clb_query_metadata_search,
+        metadata::commands::clb_query_metadata_by_isbn,
         app_updates::clb_cmd_check_for_updates,
         app_updates::clb_cmd_install_update_if_available,
         // Window commands

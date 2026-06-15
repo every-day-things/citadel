@@ -1,15 +1,17 @@
 import { Link } from "@tanstack/react-router";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import clsx from "clsx";
 import {
 	type CSSProperties,
 	type FormEvent,
 	useCallback,
 	useEffect,
+	useLayoutEffect,
 	useRef,
 	useState,
 } from "react";
 
-import type { AuthorUpdate, LibraryAuthor, LibraryBook } from "@/bindings";
+import type { AuthorUpdate, LibraryAuthor } from "@/bindings";
 import { AuthorFilterControls } from "@/components/organisms/AuthorFilterControls";
 import {
 	AlertDialog,
@@ -21,13 +23,13 @@ import {
 } from "@/components/ui";
 import { useAuthorFilters } from "@/lib/hooks/use-author-filters";
 import {
-	useAllBooks,
 	useAuthors,
 	useAuthorsLoading,
 	useLibraryActions,
 } from "@/stores/library/store";
 import { F7Pencil } from "../icons/F7Pencil";
 import { F7Trash } from "../icons/F7Trash";
+import { EmptyLibrary, EmptyState } from "../molecules/EmptyState";
 import styles from "./Authors.module.css";
 
 /**
@@ -41,13 +43,26 @@ const AUTHOR_GRID: CSSProperties = {
 	columnGap: 16,
 };
 
+/** Single-line row: 40px min-height (.ctd-author-row) + 1px bottom border. */
+const ESTIMATED_ROW_HEIGHT = 41;
+const OVERSCAN_ROWS = 10;
+
+/**
+ * Nearest scrollable ancestor — the app's shared scroll region
+ * (root.module.css .content), which the sticky header/footer rows already
+ * pin to. The virtualizer windows author rows against it.
+ */
+const findScrollParent = (element: HTMLElement): HTMLElement | null => {
+	for (let node = element.parentElement; node; node = node.parentElement) {
+		const { overflowY } = getComputedStyle(node);
+		if (overflowY === "auto" || overflowY === "scroll") return node;
+	}
+	return null;
+};
+
 export const Authors = () => {
 	const authors = useAuthors();
 	const loadingAuthors = useAuthorsLoading();
-	// Whole-library list (lazy): per-author book counts and the
-	// "authors without books" filter need every book↔author link, and no
-	// targeted per-author count query exists. See LibraryActions.loadBooks.
-	const { books, loading: loadingBooks } = useAllBooks();
 	const actions = useLibraryActions();
 
 	const {
@@ -56,7 +71,7 @@ export const Authors = () => {
 		setSortOrder,
 		setShowOnlyAuthorsWithoutBooks,
 		filteredAuthors,
-	} = useAuthorFilters(authors, books);
+	} = useAuthorFilters(authors);
 
 	const [editSheetOpened, setEditSheetOpened] = useState(false);
 	const [deleteDialogOpened, setDeleteDialogOpened] = useState(false);
@@ -113,9 +128,22 @@ export const Authors = () => {
 		}
 	}, [actions, authorToDelete]);
 
-	if (loadingAuthors || loadingBooks) {
+	if (loadingAuthors) {
 		return null;
 	}
+
+	// An empty library has no authors (they're created only when books are
+	// imported), so teach the two ways to populate it instead of an empty list.
+	if (authors.length === 0) {
+		return (
+			<div className={styles.page}>
+				<EmptyLibrary />
+			</div>
+		);
+	}
+
+	const searchTerm = filters.searchTerm.trim();
+	const noMatches = filteredAuthors.length === 0;
 
 	return (
 		<div className={styles.page}>
@@ -154,36 +182,51 @@ export const Authors = () => {
 				/>
 			</div>
 
-			<div className={styles.headerRow} style={AUTHOR_GRID}>
-				<span className={styles.columnLabel}>Name</span>
-				<span className={clsx(styles.columnLabel, styles.visibleFromMd)}>
-					Sort name
-				</span>
-				<span className={clsx(styles.columnLabel, styles.columnLabelRight)}>
-					Books
-				</span>
-				<span />
-			</div>
+			{noMatches ? (
+				searchTerm.length > 0 ? (
+					<EmptyState title={`No authors match “${searchTerm}”`}>
+						<Button variant="default" onClick={() => setSearchTerm("")}>
+							Clear search
+						</Button>
+					</EmptyState>
+				) : (
+					<EmptyState title="No authors match these filters.">
+						<Button
+							variant="default"
+							onClick={() => setShowOnlyAuthorsWithoutBooks(false)}
+						>
+							Show all authors
+						</Button>
+					</EmptyState>
+				)
+			) : (
+				<>
+					<div className={styles.headerRow} style={AUTHOR_GRID}>
+						<span className={styles.columnLabel}>Name</span>
+						<span className={clsx(styles.columnLabel, styles.visibleFromMd)}>
+							Sort name
+						</span>
+						<span className={clsx(styles.columnLabel, styles.columnLabelRight)}>
+							Books
+						</span>
+						<span />
+					</div>
 
-			<div className={styles.rows}>
-				{filteredAuthors?.map((author) => (
-					<AuthorRow
-						author={author}
-						books={books}
-						key={author.id}
+					<AuthorRows
+						authors={filteredAuthors}
 						onEditAuthor={onOpenEditAuthorSheet}
 						onDeleteAuthor={onOpenDeleteAuthorDialog}
 					/>
-				))}
-			</div>
 
-			<div className={styles.footer}>
-				<span className={styles.footerText}>
-					{filteredAuthors.length === authors.length
-						? `${authors.length} authors`
-						: `${filteredAuthors.length} of ${authors.length} authors`}
-				</span>
-			</div>
+					<div className={styles.footer}>
+						<span className={styles.footerText}>
+							{filteredAuthors.length === authors.length
+								? `${authors.length} authors`
+								: `${filteredAuthors.length} of ${authors.length} authors`}
+						</span>
+					</div>
+				</>
+			)}
 		</div>
 	);
 };
@@ -286,21 +329,98 @@ const EditAuthorSheet = ({
 	);
 };
 
+/**
+ * The author list, windowed with @tanstack/react-virtual (same pattern as
+ * BookGrid): only rows near the viewport mount. The page itself does not
+ * scroll — rows window against the app's shared scroll region, so the
+ * sticky header/footer keep pinning exactly as before.
+ */
+const AuthorRows = ({
+	authors,
+	onEditAuthor,
+	onDeleteAuthor,
+}: {
+	authors: LibraryAuthor[];
+	onEditAuthor: (authorId: string) => void;
+	onDeleteAuthor: (authorId: string) => void;
+}) => {
+	const rowsRef = useRef<HTMLDivElement>(null);
+	const [scrollElement, setScrollElement] = useState<HTMLElement | null>(null);
+	// Distance from the scroll region's content top to the first row (the
+	// filter bar + sticky column header above the list).
+	const [scrollMargin, setScrollMargin] = useState(0);
+
+	useLayoutEffect(() => {
+		const rows = rowsRef.current;
+		if (!rows) return;
+		const scrollParent = findScrollParent(rows);
+		setScrollElement(scrollParent);
+		if (!scrollParent) return;
+
+		const measure = () => {
+			setScrollMargin(
+				rows.getBoundingClientRect().top -
+					scrollParent.getBoundingClientRect().top +
+					scrollParent.scrollTop,
+			);
+		};
+		measure();
+		const observer = new ResizeObserver(measure);
+		observer.observe(scrollParent);
+		return () => observer.disconnect();
+	}, []);
+
+	const virtualizer = useVirtualizer({
+		count: authors.length,
+		getScrollElement: () => scrollElement,
+		estimateSize: () => ESTIMATED_ROW_HEIGHT,
+		overscan: OVERSCAN_ROWS,
+		scrollMargin,
+	});
+
+	return (
+		<div
+			ref={rowsRef}
+			className={styles.rows}
+			style={{ position: "relative", height: virtualizer.getTotalSize() }}
+		>
+			{virtualizer.getVirtualItems().map((virtualRow) => {
+				const author = authors[virtualRow.index];
+				if (author === undefined) return null;
+				return (
+					<div
+						key={author.id}
+						ref={virtualizer.measureElement}
+						data-index={virtualRow.index}
+						style={{
+							position: "absolute",
+							top: 0,
+							left: 0,
+							width: "100%",
+							transform: `translateY(${virtualRow.start - scrollMargin}px)`,
+						}}
+					>
+						<AuthorRow
+							author={author}
+							onEditAuthor={onEditAuthor}
+							onDeleteAuthor={onDeleteAuthor}
+						/>
+					</div>
+				);
+			})}
+		</div>
+	);
+};
+
 const AuthorRow = ({
 	author,
-	books,
 	onEditAuthor,
 	onDeleteAuthor,
 }: {
 	author: LibraryAuthor;
-	books: LibraryBook[];
 	onEditAuthor: (authorId: string) => void;
 	onDeleteAuthor: (authorId: string) => void;
 }) => {
-	const numBooksByAuthor = books.filter((book) =>
-		new Set(book.author_list.map((a) => a.id)).has(author.id),
-	).length;
-
 	return (
 		// The whole row links to the library filtered by this author. The hover
 		// background, 40px min-height, and the overlay-link positioning live in
@@ -338,7 +458,7 @@ const AuthorRow = ({
 				search={{ author_id: author.id }}
 				className={styles.countLink}
 			>
-				{numBooksByAuthor}
+				{author.book_count}
 			</Link>
 
 			<div className={styles.actions}>
@@ -349,7 +469,7 @@ const AuthorRow = ({
 				>
 					<F7Pencil />
 				</IconButton>
-				{numBooksByAuthor === 0 ? (
+				{author.book_count === 0 ? (
 					<IconButton
 						className={clsx(styles.actionIcon, styles.dangerIcon)}
 						aria-label={`Delete ${author.name}`}

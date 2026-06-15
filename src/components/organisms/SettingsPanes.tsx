@@ -8,10 +8,13 @@ import { SwitchLibraryForm } from "@/components/molecules/SwitchLibraryForm";
 import classes from "@/components/organisms/SettingsPanes.module.css";
 import { Button, SegmentedControl, Switch, TextInput } from "@/components/ui";
 import { useAppUpdates } from "@/lib/hooks/use-app-updates";
+import { getDescriptor } from "@/lib/metadata-providers/registry";
+import type { ProviderId } from "@/lib/metadata-providers/types";
 import { none, some } from "@/lib/option";
 import { usePlatform } from "@/lib/platform/context";
 import { applyColorScheme } from "@/lib/theme-manager";
 import { createLibrary, setActiveLibrary } from "@/stores/settings/actions";
+import { useAnySourceEnabled } from "@/stores/settings/metadata-providers";
 import { useSettings } from "@/stores/settings/store";
 
 const SETTINGS_TABS = ["general", "library", "integrations"] as const;
@@ -30,7 +33,7 @@ const TAB_META: Record<
 		icon: (className) => <FluentLibraryFilled className={className} />,
 	},
 	integrations: {
-		label: "Integrations",
+		label: "Metadata",
 		icon: (className) => <F7BookFill className={className} />,
 	},
 };
@@ -328,37 +331,46 @@ const LibraryTab = ({ closeSettings }: LibraryTabProps) => {
 	);
 };
 
-const IntegrationsTab = () => {
-	const hardcoverApiKey = useSettings((state) => state.hardcoverApiKey);
-	const setHardcoverApiKey = useSettings((state) => state.setHardcoverApiKey);
-	const hardcoverAutoLookup = useSettings((state) => state.hardcoverAutoLookup);
-	const setHardcoverAutoLookup = useSettings(
-		(state) => state.setHardcoverAutoLookup,
-	);
-	const autoLookupSwitchId = useId();
+interface TestResult {
+	success: boolean;
+	message: string;
+}
 
-	const [apiKeyInput, setApiKeyInput] = useState(hardcoverApiKey);
+const ProviderRow = ({ id }: { id: ProviderId }) => {
+	const descriptor = getDescriptor(id);
+	const config = useSettings((state) => state.metadataProviders.configs[id]);
+	const setProviderEnabled = useSettings((state) => state.setProviderEnabled);
+	const setProviderConfig = useSettings((state) => state.setProviderConfig);
+	const switchId = useId();
+
+	const enabled = config?.enabled ?? false;
+	const requiresKey = descriptor.capabilities.requiresKey;
+	const savedKey = config?.apiKey ?? "";
+	const hasKey = savedKey.trim().length > 0;
+
+	const [expanded, setExpanded] = useState(false);
+	const [apiKeyInput, setApiKeyInput] = useState(savedKey);
 	const [isTesting, setIsTesting] = useState(false);
-	const [testResult, setTestResult] = useState<{
-		success: boolean;
-		message: string;
-	} | null>(null);
+	const [testResult, setTestResult] = useState<TestResult | null>(null);
 
-	const handleSave = useCallback(async () => {
-		await setHardcoverApiKey(apiKeyInput);
-		setTestResult(null);
-	}, [apiKeyInput, setHardcoverApiKey]);
+	const status = requiresKey
+		? hasKey
+			? "Key saved"
+			: "Add a key"
+		: "No key needed";
 
 	const handleTest = useCallback(async () => {
 		setIsTesting(true);
 		setTestResult(null);
-
 		try {
-			const result = await commands.testHardcoverConnection(apiKeyInput);
+			const result = await commands.clbCmdTestMetadataProvider(
+				id,
+				requiresKey ? apiKeyInput : "",
+			);
 			if (result.status === "ok") {
 				setTestResult({
 					success: result.data.is_valid,
-					message: result.data.message,
+					message: result.data.is_valid ? "Reachable." : result.data.message,
 				});
 			} else {
 				setTestResult({ success: false, message: result.error });
@@ -373,90 +385,163 @@ const IntegrationsTab = () => {
 		} finally {
 			setIsTesting(false);
 		}
-	}, [apiKeyInput]);
+	}, [id, requiresKey, apiKeyInput]);
 
-	const handleClear = useCallback(async () => {
-		setApiKeyInput("");
-		await setHardcoverApiKey("");
+	const handleSaveKey = useCallback(async () => {
+		await setProviderConfig(id, {
+			apiKey: apiKeyInput,
+			enabled: apiKeyInput.trim().length > 0 ? true : enabled,
+		});
 		setTestResult(null);
-	}, [setHardcoverApiKey]);
+	}, [id, apiKeyInput, enabled, setProviderConfig]);
+
+	const handleClearKey = useCallback(async () => {
+		setApiKeyInput("");
+		await setProviderConfig(id, { apiKey: "", enabled: false });
+		setTestResult(null);
+	}, [id, setProviderConfig]);
 
 	return (
-		<div className={classes.groups}>
-			<div>
-				<h4 className={classes.groupTitle}>Hardcover</h4>
-				<div className={classes.group}>
-					<SettingsRow
-						label="API key"
-						description="Found in your Hardcover account settings."
-						control={
+		<div className={classes.providerRow}>
+			<div className={classes.providerHeader}>
+				<button
+					type="button"
+					className={classes.providerDisclosure}
+					aria-expanded={expanded}
+					aria-label={`${expanded ? "Collapse" : "Expand"} ${descriptor.displayName}`}
+					onClick={() => setExpanded((open) => !open)}
+				>
+					<span className={classes.providerChevron} data-open={expanded}>
+						›
+					</span>
+				</button>
+				<div className={classes.rowLabels}>
+					<span className={classes.rowLabel}>{descriptor.displayName}</span>
+					<span className={classes.rowDescription}>{status}</span>
+				</div>
+				<Switch
+					id={switchId}
+					checked={enabled}
+					aria-label={`Enable ${descriptor.displayName}`}
+					onCheckedChange={(checked) => void setProviderEnabled(id, checked)}
+				/>
+			</div>
+			{expanded && (
+				<div className={classes.providerBody}>
+					<p className={classes.rowDescription}>{descriptor.blurb}</p>
+					{requiresKey ? (
+						<>
 							<TextInput
 								className={classes.keyInput}
 								type="password"
 								placeholder="API key"
-								aria-label="Hardcover API key"
+								aria-label={`${descriptor.displayName} API key`}
 								value={apiKeyInput}
 								onChange={(event) => setApiKeyInput(event.currentTarget.value)}
 							/>
-						}
-					/>
-					<div className={classes.row}>
+							<div className={classes.rowActions}>
+								<Button
+									size="sm"
+									variant="default"
+									disabled={!apiKeyInput || isTesting}
+									onClick={() => void handleClearKey()}
+								>
+									Clear
+								</Button>
+								<Button
+									size="sm"
+									variant="default"
+									disabled={!apiKeyInput || isTesting}
+									onClick={() => void handleTest()}
+								>
+									{isTesting ? "Testing…" : "Test"}
+								</Button>
+								<Button
+									size="sm"
+									variant="primary"
+									disabled={!apiKeyInput || isTesting}
+									onClick={() => void handleSaveKey()}
+								>
+									Save
+								</Button>
+							</div>
+						</>
+					) : (
 						<div className={classes.rowActions}>
 							<Button
 								size="sm"
 								variant="default"
-								disabled={!apiKeyInput || isTesting}
-								onClick={() => void handleClear()}
-							>
-								Clear
-							</Button>
-							<Button
-								size="sm"
-								variant="default"
-								disabled={!apiKeyInput || isTesting}
+								disabled={isTesting}
 								onClick={() => void handleTest()}
 							>
-								{isTesting ? "Testing…" : "Test Connection"}
-							</Button>
-							<Button
-								size="sm"
-								variant="primary"
-								disabled={!apiKeyInput || isTesting}
-								onClick={() => void handleSave()}
-							>
-								Save
+								{isTesting ? "Testing…" : "Test"}
 							</Button>
 						</div>
-					</div>
+					)}
+					{testResult && (
+						<p
+							className={classes.inlineNote}
+							data-tone={testResult.success ? "ok" : "error"}
+							role="status"
+						>
+							{testResult.message}
+						</p>
+					)}
+				</div>
+			)}
+		</div>
+	);
+};
+
+const IntegrationsTab = () => {
+	const preferenceOrder = useSettings(
+		(state) => state.metadataProviders.preferenceOrder,
+	);
+	const autoLookup = useSettings(
+		(state) => state.metadataProviders.autoLookupOnImport,
+	);
+	const setAutoLookupOnImport = useSettings(
+		(state) => state.setAutoLookupOnImport,
+	);
+	const anySourceEnabled = useAnySourceEnabled();
+	const autoLookupSwitchId = useId();
+
+	return (
+		<div className={classes.groups}>
+			<div>
+				<h4 className={classes.groupTitle}>Metadata sources</h4>
+				<p className={classes.paneNote}>
+					Citadel looks up book details — titles, authors, and subjects — from
+					these sources.
+				</p>
+				<div className={classes.group}>
+					{preferenceOrder.map((id) => (
+						<ProviderRow key={id} id={id} />
+					))}
+				</div>
+			</div>
+			<div>
+				<div className={classes.group}>
 					<SettingsRow
 						label="Look up metadata when importing"
 						htmlFor={autoLookupSwitchId}
 						description={
-							hardcoverApiKey
-								? "When an imported file has an ISBN, search Hardcover automatically."
-								: "When an imported file has an ISBN, search Hardcover automatically. Requires a saved Hardcover API key."
+							anySourceEnabled
+								? "When an imported file has an ISBN, search your enabled sources automatically."
+								: "Turn on a source above to enable automatic lookups."
 						}
 						control={
 							<Switch
 								id={autoLookupSwitchId}
-								checked={hardcoverAutoLookup}
-								disabled={!hardcoverApiKey}
+								checked={autoLookup}
+								disabled={!anySourceEnabled}
 								onCheckedChange={(checked) =>
-									void setHardcoverAutoLookup(checked)
+									void setAutoLookupOnImport(checked)
 								}
 							/>
 						}
 					/>
 				</div>
-				{testResult && (
-					<p
-						className={classes.inlineNote}
-						data-tone={testResult.success ? "ok" : "error"}
-						role="status"
-					>
-						{testResult.message}
-					</p>
-				)}
 			</div>
 		</div>
 	);

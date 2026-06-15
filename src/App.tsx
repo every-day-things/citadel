@@ -1,6 +1,11 @@
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { Toaster, TooltipProvider, toast } from "@/components/ui";
+import {
+	LoadingOverlay,
+	Toaster,
+	TooltipProvider,
+	toast,
+} from "@/components/ui";
 import { IS_DEV } from "@/lib/env";
 import { useInitializeLibraryStore } from "@/lib/hooks/use-initialize-library-store";
 import { usePlatform } from "@/lib/platform/context";
@@ -11,8 +16,33 @@ import { FirstTimeSetup } from "./components/pages/firstTimeSetup";
 import { routeTree } from "./routeTree.gen";
 import { useActiveLibraryPath, useSettings } from "./stores/settings/store";
 
+/**
+ * Full-window pending fallback for routes that suspend past `defaultPendingMs`
+ * (none of today's routes define a loader, but a slow future loader should
+ * show a spinner rather than a frozen blank window).
+ */
+const RoutePending = () => (
+	<div style={{ position: "relative", height: "100vh" }}>
+		<LoadingOverlay visible />
+	</div>
+);
+
 const router = createRouter({
 	routeTree,
+	// `pendingMs` = how long a match must stay pending before the pending
+	// component appears. The library store is ready ~145ms after webview load,
+	// so 150ms means the pending UI never flashes on the normal startup path
+	// but still surfaces within a frame or two of a genuinely slow load.
+	defaultPendingMs: 150,
+	// `pendingMinMs` = minimum time the pending UI stays once shown
+	// (anti-flash). It must be 0 here: in @tanstack/react-router 1.29.2 every
+	// match renders once in "pending" status during the initial load, which
+	// arms a `minPendingPromise` timer the commit then awaits — so ANY nonzero
+	// value puts that many ms of dead time between data-ready and first paint
+	// on every startup (the default 500 was measured to hold first grid paint
+	// at ~620-690ms when data was ready at ~145ms).
+	defaultPendingMinMs: 0,
+	defaultPendingComponent: RoutePending,
 });
 
 declare module "@tanstack/react-router" {

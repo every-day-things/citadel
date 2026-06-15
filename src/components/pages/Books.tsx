@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
+import clsx from "clsx";
 import DOMPurify from "dompurify";
 import {
 	Fragment,
@@ -21,7 +22,11 @@ import {
 	Tooltip,
 } from "@/components/ui";
 import { safeAsyncEventHandler } from "@/lib/async";
-import { type BookGridFilter, sparseBookItems } from "@/lib/book-page-cache";
+import {
+	BOOK_PAGE_SIZE,
+	type BookGridFilter,
+	sparseBookItems,
+} from "@/lib/book-page-cache";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useLibraryKeymap } from "@/lib/hooks/use-library-keymap";
 import { usePlatform } from "@/lib/platform/context";
@@ -33,6 +38,7 @@ import {
 	useLibraryReady,
 	useLibraryTotal,
 	useSeriesList,
+	useStaleBookSnapshot,
 } from "@/stores/library/store";
 import {
 	LibraryBookSortOrder,
@@ -45,6 +51,7 @@ import { F7Bookmark } from "../icons/F7Bookmark";
 import { F7Pencil } from "../icons/F7Pencil";
 import { TablerCopy } from "../icons/TablerCopy";
 import { BookGrid, type ScrollToBookIndex } from "../molecules/BookGrid";
+import { EmptyLibrary, EmptyState } from "../molecules/EmptyState";
 import styles from "./Books.module.css";
 
 interface BookSearchOptions {
@@ -88,6 +95,7 @@ export const Books = ({ author_id, series_id }: BookSearchOptions) => {
 	const actions = useLibraryActions();
 	const libraryReady = useLibraryReady();
 	const cache = useBookCache();
+	const staleSnapshot = useStaleBookSnapshot();
 	const libraryTotal = useLibraryTotal();
 	const authors = useAuthors();
 	const seriesList = useSeriesList();
@@ -109,6 +117,19 @@ export const Books = ({ author_id, series_id }: BookSearchOptions) => {
 		actions.setBookFilter(filter);
 	}, [libraryReady, filter, actions]);
 
+	// Fetch one page beyond each edge of the rendered window so fast scrolling
+	// lands on loaded rows instead of placeholder covers. pagesCoveringRange
+	// clamps to the real bounds, so over-asking at the edges is free.
+	const ensureRangePadded = useCallback(
+		(start: number, end: number) => {
+			void actions.ensureBookRange(
+				start - BOOK_PAGE_SIZE,
+				end + BOOK_PAGE_SIZE,
+			);
+		},
+		[actions],
+	);
+
 	// The grid's last reported viewport; pages covering it are (re)fetched
 	// whenever the cache key or generation moves (filter change, mutation).
 	const lastRangeRef = useRef({ start: 0, end: 0 });
@@ -116,20 +137,33 @@ export const Books = ({ author_id, series_id }: BookSearchOptions) => {
 	useEffect(() => {
 		if (!libraryReady) return;
 		const { start, end } = lastRangeRef.current;
-		void actions.ensureBookRange(start, end);
-	}, [libraryReady, cache.key, cache.generation, actions]);
+		ensureRangePadded(start, end);
+	}, [libraryReady, cache.key, cache.generation, ensureRangePadded]);
 
 	const onVisibleRangeChange = useCallback(
 		(start: number, end: number) => {
 			lastRangeRef.current = { start, end };
-			void actions.ensureBookRange(start, end);
+			ensureRangePadded(start, end);
 		},
-		[actions],
+		[ensureRangePadded],
 	);
 
-	const books = useMemo(() => sparseBookItems(cache), [cache]);
-	const total = cache.total ?? 0;
-	const loading = !libraryReady || cache.total === null;
+	// Stale-while-revalidate: while the new query's first page is in flight
+	// (cache.total === null), show the previous snapshot so the grid never
+	// blanks. Once the new query resolves, live cache takes over.
+	const queryResolved = cache.total !== null;
+	const activeBooks = useMemo(() => sparseBookItems(cache), [cache]);
+	const books = queryResolved
+		? activeBooks
+		: (staleSnapshot?.items ?? activeBooks);
+	const total = queryResolved ? cache.total : (staleSnapshot?.total ?? 0);
+
+	// True loading = no resolved data at all (fresh library open, no stale
+	// snapshot to show). During a search transition we are "searching", not
+	// "loading" — the stale grid stays visible.
+	const loading = !libraryReady || (!queryResolved && staleSnapshot === null);
+	// Dimming hint shown over the stale grid while the new query fetches.
+	const isSearching = libraryReady && !queryResolved && staleSnapshot !== null;
 
 	const navigate = useNavigate();
 	const onClearDeepLinkFilter = useCallback(() => {
@@ -167,6 +201,16 @@ export const Books = ({ author_id, series_id }: BookSearchOptions) => {
 	// rows into view even when their cards are not mounted.
 	const scrollToBookIndexRef = useRef<ScrollToBookIndex | null>(null);
 
+	// Reset scroll to top whenever the filter key changes (new search).
+	// Generation bumps from same-key invalidations share the key, so they
+	// correctly do NOT reset scroll.
+	// biome-ignore lint/correctness/useExhaustiveDependencies: cache.key is the only trigger; gridContainerRef is a stable ref whose .current we imperatively update.
+	useEffect(() => {
+		if (gridContainerRef.current) {
+			gridContainerRef.current.scrollTop = 0;
+		}
+	}, [cache.key]);
+
 	const { selectedBookId } = useLibraryKeymap({
 		books,
 		resetToken: cache.key,
@@ -178,7 +222,15 @@ export const Books = ({ author_id, series_id }: BookSearchOptions) => {
 		onClearSearch: () => setQuery(""),
 	});
 
-	const noMatches = !loading && total === 0 && (libraryTotal ?? 0) > 0;
+	// A genuinely empty library (including first-run with the bundled library)
+	// teaches the two ways to populate it; an empty result against a non-empty
+	// library is a zero-result filter.
+	const emptyLibrary = !loading && (libraryTotal ?? 0) === 0;
+	// Only show the zero-result state once the active query has resolved to 0
+	// results — never transiently while a new search is still in flight.
+	const noMatches =
+		!loading && queryResolved && total === 0 && (libraryTotal ?? 0) > 0;
+	const trimmedQuery = query.trim();
 
 	const searchTokens = [
 		...(authorTokenName !== undefined
@@ -248,23 +300,33 @@ export const Books = ({ author_id, series_id }: BookSearchOptions) => {
 				ref={gridContainerRef}
 				tabIndex={-1}
 				style={{ outline: "none" }}
-				className={styles.gridArea}
+				className={clsx(
+					styles.gridArea,
+					isSearching && styles.gridAreaSearching,
+				)}
 			>
-				{noMatches ? (
-					<div className={styles.emptyState}>
-						<span className={styles.emptyText}>
-							No books match these filters.
-						</span>
-						<Button
-							variant="subtle"
-							onClick={() => {
-								resetToAllBooks();
-								onClearDeepLinkFilter();
-							}}
-						>
-							Show all books
-						</Button>
-					</div>
+				{emptyLibrary ? (
+					<EmptyLibrary />
+				) : noMatches ? (
+					trimmedQuery.length > 0 ? (
+						<EmptyState title={`No books match “${trimmedQuery}”`}>
+							<Button variant="default" onClick={() => setQuery("")}>
+								Clear search
+							</Button>
+						</EmptyState>
+					) : (
+						<EmptyState title="No books match these filters.">
+							<Button
+								variant="default"
+								onClick={() => {
+									resetToAllBooks();
+									onClearDeepLinkFilter();
+								}}
+							>
+								Show all books
+							</Button>
+						</EmptyState>
+					)
 				) : (
 					<BookGrid
 						bookList={books}

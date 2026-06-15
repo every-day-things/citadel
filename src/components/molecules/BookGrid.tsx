@@ -3,6 +3,7 @@ import {
 	createContext,
 	type MutableRefObject,
 	type RefObject,
+	useCallback,
 	useContext,
 	useEffect,
 	useLayoutEffect,
@@ -13,6 +14,7 @@ import {
 import type { BookView } from "@/BookView";
 import type { LibraryBook } from "@/bindings";
 import { LoadingOverlay } from "@/components/ui";
+import { useCoverThumbsMap } from "@/stores/library/store";
 import {
 	computeColumnCount,
 	computeRowCount,
@@ -33,7 +35,20 @@ const ROW_GAP = 32;
 const PADDING = { top: 20, x: 24, bottom: 24 } as const;
 /** Cover height cap (BookCover FLUID_MAX_HEIGHT_PX); rows self-measure after mount. */
 const ESTIMATED_ROW_HEIGHT = 230;
-const OVERSCAN_ROWS = 4;
+/** Mirrors `.cell { max-width }` in BookCard.module.css. */
+const MAX_CELL_WIDTH = 190;
+/**
+ * Height/width fallback for covers whose thumbnail (and so real aspect
+ * ratio) isn't known yet: classic 2:3 book proportions, matching the
+ * unfetched-slot placeholder's `aspect-ratio: 2 / 3`.
+ */
+const TYPICAL_COVER_RATIO = 1.5;
+// Rows pre-mounted beyond the viewport on each side. Cells are cheap since
+// covers became 300px thumbnails with reserved boxes, so a deep overscan
+// (~1.5 viewports each way) buys fling-scroll headroom. Deep overscan taxes
+// update paths instead (every mounted card re-renders on a result-set swap),
+// so don't raise it past where fling tests stop improving.
+const OVERSCAN_ROWS = 10;
 
 /** Scrolls the shelf row containing the given flat book index into view. */
 export type ScrollToBookIndex = (index: number) => void;
@@ -104,6 +119,7 @@ const BookGridPure = ({
 
 	const wrapperRef = useRef<HTMLDivElement>(null);
 	const [columns, setColumns] = useState(1);
+	const [cellWidth, setCellWidth] = useState<number | null>(null);
 
 	// Cards per row come from the container width (auto-fill exists only in
 	// layout, so recompute it whenever the panel resizes).
@@ -111,12 +127,18 @@ const BookGridPure = ({
 		const wrapper = wrapperRef.current;
 		if (!wrapper) return;
 		const update = () => {
-			setColumns(
-				computeColumnCount({
-					availableWidth: wrapper.clientWidth - PADDING.x * 2,
-					minColumnWidth: MIN_COLUMN_WIDTH,
-					columnGap: COLUMN_GAP,
-				}),
+			const availableWidth = wrapper.clientWidth - PADDING.x * 2;
+			const nextColumns = computeColumnCount({
+				availableWidth,
+				minColumnWidth: MIN_COLUMN_WIDTH,
+				columnGap: COLUMN_GAP,
+			});
+			setColumns(nextColumns);
+			setCellWidth(
+				Math.min(
+					(availableWidth - (nextColumns - 1) * COLUMN_GAP) / nextColumns,
+					MAX_CELL_WIDTH,
+				),
 			);
 		};
 		update();
@@ -125,10 +147,42 @@ const BookGridPure = ({
 		return () => observer.disconnect();
 	}, []);
 
+	// Exact row heights up front: a row is as tall as its tallest cover, and
+	// cover aspect ratios are known before mount (the thumbnail index loads
+	// at library open). A wrong estimate isn't cosmetic — when a row mounts
+	// above the viewport during upward scrolling, the measure-then-correct
+	// delta shifts the whole shelf for a frame.
+	const coverThumbs = useCoverThumbsMap();
+	const estimateRowHeight = useCallback(
+		(rowIndex: number) => {
+			if (cellWidth === null) return ESTIMATED_ROW_HEIGHT;
+			const { start, end } = rowSlice(rowIndex, columns, books.length);
+			let tallest = 0;
+			for (let index = start; index < end; index++) {
+				const book = books[index];
+				const thumb = book !== undefined ? coverThumbs.get(book.id) : undefined;
+				// Unknown ratio = a placeholder (unfetched slot or placeholder
+				// art), which also caps its width at ~150px (.coverPlaceholder).
+				const width =
+					thumb !== undefined ? cellWidth : Math.min(cellWidth, 150);
+				const ratio =
+					thumb !== undefined
+						? thumb.height / thumb.width
+						: TYPICAL_COVER_RATIO;
+				tallest = Math.max(
+					tallest,
+					Math.min(width * ratio, ESTIMATED_ROW_HEIGHT),
+				);
+			}
+			return tallest > 0 ? Math.round(tallest) : ESTIMATED_ROW_HEIGHT;
+		},
+		[cellWidth, columns, books, coverThumbs],
+	);
+
 	const virtualizer = useVirtualizer({
 		count: computeRowCount(books.length, columns),
 		getScrollElement: () => scrollElementRef.current,
-		estimateSize: () => ESTIMATED_ROW_HEIGHT,
+		estimateSize: estimateRowHeight,
 		gap: ROW_GAP,
 		overscan: OVERSCAN_ROWS,
 		// Rows start below the wrapper's top padding inside the scroll region.

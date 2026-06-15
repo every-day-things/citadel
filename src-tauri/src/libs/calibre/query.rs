@@ -5,24 +5,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::book::{ImportableBookMetadata, LibraryAuthor};
 use crate::calibre::book;
+use crate::libs::cover_thumbs::{self, CoverThumbnail};
 use crate::libs::file_formats;
 use crate::{book::LibraryBook, state::CitadelState};
 
 use super::custom_columns::{BookCustomValue, CustomColumnDef, CustomValueDto};
 use super::ImportableFile;
-
-#[tauri::command]
-#[specta::specta]
-pub fn clb_query_list_all_books(
-    state: tauri::State<CitadelState>,
-) -> Result<Vec<LibraryBook>, String> {
-    let library_root = state
-        .get_library_path()
-        .ok_or("No library loaded".to_string())?;
-
-    let books = state.with_library(|lib| book::list_all(library_root, lib))?;
-    books.map_err(|e| e.to_string())
-}
 
 #[tauri::command]
 #[specta::specta]
@@ -36,6 +24,32 @@ pub fn clb_query_search_books(
 
     let books = state.with_library(|lib| book::search(library_root, lib, &query))?;
     books.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn clb_query_list_cover_thumbnails(
+    handle: tauri::AppHandle,
+    state: tauri::State<CitadelState>,
+) -> Result<Vec<CoverThumbnail>, String> {
+    use tauri::Manager;
+
+    let library_root = state
+        .get_library_path()
+        .ok_or("No library loaded".to_string())?;
+    let app_cache_dir = handle
+        .path()
+        .app_cache_dir()
+        .map_err(|e| format!("No app cache dir: {}", e))?;
+
+    // The returned URLs are asset-protocol; make sure the scope covers them
+    // even if no ensure call has run yet this session.
+    handle
+        .asset_protocol_scope()
+        .allow_directory(app_cache_dir.join("cover-thumbs"), true)
+        .map_err(|e| format!("Failed to allow thumbnail dir: {}", e))?;
+
+    Ok(cover_thumbs::list_thumbnails(&app_cache_dir, &library_root))
 }
 
 #[derive(Serialize, Deserialize, specta::Type, Clone, Copy, Debug)]
@@ -116,6 +130,26 @@ pub fn clb_query_books(
     })
 }
 
+#[tauri::command]
+#[specta::specta]
+pub fn clb_query_get_book(
+    state: tauri::State<CitadelState>,
+    book_id: String,
+) -> Result<LibraryBook, String> {
+    let library_root = state
+        .get_library_path()
+        .ok_or("No library loaded".to_string())?;
+
+    let book_id_int = book_id
+        .parse::<i32>()
+        .map_err(|e| format!("Invalid book id '{book_id}': {e}"))?;
+
+    let book = state.with_library(|lib| {
+        book::get_one(library_root, lib, libcalibre::BookId::from(book_id_int))
+    })?;
+    book.map_err(|e| e.to_string())
+}
+
 /// One series in the library. `id` is what [`LibraryBookQuery::series_id`]
 /// filters on; the frontend otherwise only ever sees series names.
 #[derive(Serialize, Deserialize, specta::Type, Clone)]
@@ -144,6 +178,29 @@ pub fn clb_query_list_series(
         .collect())
 }
 
+/// One tag in the library; `name` is what the tag autocomplete suggests.
+#[derive(Serialize, Deserialize, specta::Type, Clone)]
+pub struct LibraryTag {
+    pub id: i32,
+    pub name: String,
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn clb_query_list_tags(state: tauri::State<CitadelState>) -> Result<Vec<LibraryTag>, String> {
+    let tags = state
+        .with_library(|lib| lib.list_tags())?
+        .map_err(|e| e.to_string())?;
+
+    Ok(tags
+        .into_iter()
+        .map(|tag| LibraryTag {
+            id: tag.id,
+            name: tag.name,
+        })
+        .collect())
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn clb_query_list_all_authors(
@@ -151,8 +208,13 @@ pub fn clb_query_list_all_authors(
 ) -> Result<Vec<LibraryAuthor>, String> {
     state
         .with_library(|lib| {
-            lib.authors()
-                .map(|author_list| author_list.iter().map(LibraryAuthor::from).collect())
+            let book_counts = lib.author_book_counts()?;
+            lib.authors().map(|author_list| {
+                author_list
+                    .iter()
+                    .map(|author| LibraryAuthor::from_author(author, &book_counts))
+                    .collect()
+            })
         })
         .and_then(|result| result.map_err(|e| format!("Failed to list authors: {}", e)))
 }
