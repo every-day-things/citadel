@@ -141,13 +141,20 @@ pub fn open_settings_window<R: Runtime>(app: &AppHandle<R>) {
 
     // In dev, join the Vite dev server URL explicitly; WebviewUrl::App's
     // dev-url resolution proved unreliable for secondary windows (the webview
-    // came up blank). In release, App URLs serve the bundled assets.
-    let url = match app.config().build.dev_url.clone() {
-        Some(dev_url) => match dev_url.join("settings") {
-            Ok(joined) => WebviewUrl::External(joined),
-            Err(_) => WebviewUrl::App("/settings".into()),
-        },
-        None => WebviewUrl::App("/settings".into()),
+    // came up blank). Gate on is_dev(), not dev_url presence: the bundled
+    // config still carries devUrl in release, and routing production to the
+    // (nonexistent) Vite server left the settings window permanently blank
+    // (CDL-15). In release, App URLs serve the bundled assets.
+    let url = if tauri::is_dev() {
+        match app.config().build.dev_url.clone() {
+            Some(dev_url) => match dev_url.join("settings") {
+                Ok(joined) => WebviewUrl::External(joined),
+                Err(_) => WebviewUrl::App("/settings".into()),
+            },
+            None => WebviewUrl::App("/settings".into()),
+        }
+    } else {
+        WebviewUrl::App("/settings".into())
     };
 
     // Match the webview backing to the app theme (`--ctd-bg` in styles.css)

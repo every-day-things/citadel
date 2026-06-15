@@ -1,4 +1,8 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+    time::UNIX_EPOCH,
+};
 
 use libcalibre::{AuthorId, Library};
 
@@ -20,6 +24,7 @@ use crate::{
 fn book_cover_image(
     library_root: &str,
     book: &libcalibre::library::Book,
+    cache_bust: bool,
 ) -> Option<LocalOrRemoteUrl> {
     if !book.has_cover {
         return None;
@@ -27,7 +32,18 @@ fn book_cover_image(
 
     let cover_relative_path = format!("{}/cover.jpg", &book.book_dir_path);
     let cover_image_path = PathBuf::from(library_root).join(&cover_relative_path);
-    let url = util::path_to_asset_url(&cover_image_path);
+    let mut url = util::path_to_asset_url(&cover_image_path);
+
+    // The cover path is stable (`…/cover.jpg`), so the webview caches it by URL
+    // and keeps showing a replaced cover (e.g. after a metadata lookup). Tag the
+    // URL with the cover's mtime so it re-fetches. Only the single-book path does
+    // this — the list paths stay stat-free, which matters at thousands of books
+    // (and the grid already cache-busts via per-mtime thumbnail file names).
+    if cache_bust {
+        if let Some(mtime_ms) = cover_mtime_ms(&cover_image_path) {
+            url = format!("{url}?v={mtime_ms}");
+        }
+    }
 
     Some(LocalOrRemoteUrl {
         kind: LocalOrRemote::Local,
@@ -36,13 +52,22 @@ fn book_cover_image(
     })
 }
 
+/// The cover file's modification time in epoch milliseconds, used as a
+/// cache-busting token. `None` if the file is missing or unreadable.
+fn cover_mtime_ms(path: &Path) -> Option<i64> {
+    let modified = std::fs::metadata(path).ok()?.modified().ok()?;
+    let since = modified.duration_since(UNIX_EPOCH).ok()?;
+    Some(since.as_millis() as i64)
+}
+
 fn to_library_book(
     library_root: &str,
     book: &libcalibre::library::Book,
     author_book_counts: &HashMap<AuthorId, i64>,
+    cache_bust_cover: bool,
 ) -> LibraryBook {
     let mut library_book = LibraryBook::from_library_book(book, library_root, author_book_counts);
-    library_book.cover_image = book_cover_image(library_root, book);
+    library_book.cover_image = book_cover_image(library_root, book, cache_bust_cover);
     library_book
 }
 
@@ -55,7 +80,14 @@ pub fn get_one(
 ) -> Result<LibraryBook, libcalibre::CalibreError> {
     let book = lib.get_book(book_id)?;
     let author_book_counts = lib.author_book_counts()?;
-    Ok(to_library_book(&library_root, &book, &author_book_counts))
+    // Single book (e.g. the Edit page): cache-bust the cover so a freshly
+    // applied cover is shown instead of the webview's cached copy.
+    Ok(to_library_book(
+        &library_root,
+        &book,
+        &author_book_counts,
+        true,
+    ))
 }
 
 pub fn search(
@@ -68,7 +100,7 @@ pub fn search(
 
     Ok(results
         .iter()
-        .map(|book| to_library_book(&library_root, book, &author_book_counts))
+        .map(|book| to_library_book(&library_root, book, &author_book_counts, false))
         .collect())
 }
 
@@ -83,7 +115,7 @@ pub fn query_page(
     Ok((
         page.items
             .iter()
-            .map(|book| to_library_book(&library_root, book, &author_book_counts))
+            .map(|book| to_library_book(&library_root, book, &author_book_counts, false))
             .collect(),
         page.total,
     ))
@@ -117,7 +149,7 @@ mod tests {
 
     #[test]
     fn no_cover_flag_yields_no_cover_url() {
-        assert!(book_cover_image("/library", &test_book(false)).is_none());
+        assert!(book_cover_image("/library", &test_book(false), false).is_none());
     }
 
     /// `has_cover` is trusted without statting cover.jpg (the per-book
@@ -125,7 +157,9 @@ mod tests {
     /// yields a dangling URL, which the frontend's onerror fallback absorbs.
     #[test]
     fn has_cover_flag_trusted_without_filesystem_check() {
-        let cover = book_cover_image("/definitely/not/a/real/library", &test_book(true))
+        // cache_bust=true also exercises the graceful path when the cover file
+        // is absent: no mtime, so the URL is returned without a `?v=` token.
+        let cover = book_cover_image("/definitely/not/a/real/library", &test_book(true), true)
             .expect("has_cover implies a cover URL");
         assert!(matches!(cover.kind, LocalOrRemote::Local));
         let path = cover.local_path.expect("local cover keeps its path");

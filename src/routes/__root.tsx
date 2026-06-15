@@ -6,7 +6,7 @@ import {
 import clsx from "clsx";
 import { useState } from "react";
 import { F7SidebarLeft } from "@/components/icons/F7SidebarLeft";
-import { AddBookButton } from "@/components/organisms/AddBook";
+import { AddBookButton, AddBookProvider } from "@/components/organisms/AddBook";
 import { Sidebar } from "@/components/organisms/Sidebar";
 import { IconButton } from "@/components/ui";
 import { useAppKeymap } from "@/lib/hooks/use-app-keymap";
@@ -29,43 +29,45 @@ const Root = () => {
 	}
 
 	return (
-		<div
-			className={classes.shell}
-			data-sidebar-open={desktopOpened || undefined}
-			data-mobile-sidebar-open={mobileOpened || undefined}
-		>
-			<header className={classes.header} data-tauri-drag-region>
-				<div className={classes.headerControls} data-tauri-drag-region>
-					<IconButton
-						aria-label="Toggle sidebar"
-						className={clsx(classes.sidebarToggle, classes.mobileOnly)}
-						onClick={() => setMobileOpened((open) => !open)}
-					>
-						<F7SidebarLeft title="Toggle sidebar" />
-					</IconButton>
-					<IconButton
-						aria-label="Toggle sidebar"
-						className={clsx(classes.sidebarToggle, classes.desktopOnly)}
-						onClick={() => setDesktopOpened((open) => !open)}
-					>
-						<F7SidebarLeft title="Toggle sidebar" />
-					</IconButton>
-					<AddBookButton />
-				</div>
-			</header>
-
-			<div className={classes.body}>
-				<nav className={classes.nav}>
-					<Sidebar />
-				</nav>
-
-				<main className={classes.main}>
-					<div className={classes.content}>
-						<Outlet />
+		<AddBookProvider>
+			<div
+				className={classes.shell}
+				data-sidebar-open={desktopOpened || undefined}
+				data-mobile-sidebar-open={mobileOpened || undefined}
+			>
+				<header className={classes.header} data-tauri-drag-region>
+					<div className={classes.headerControls} data-tauri-drag-region>
+						<IconButton
+							aria-label="Toggle sidebar"
+							className={clsx(classes.sidebarToggle, classes.mobileOnly)}
+							onClick={() => setMobileOpened((open) => !open)}
+						>
+							<F7SidebarLeft title="Toggle sidebar" />
+						</IconButton>
+						<IconButton
+							aria-label="Toggle sidebar"
+							className={clsx(classes.sidebarToggle, classes.desktopOnly)}
+							onClick={() => setDesktopOpened((open) => !open)}
+						>
+							<F7SidebarLeft title="Toggle sidebar" />
+						</IconButton>
+						<AddBookButton />
 					</div>
-				</main>
+				</header>
+
+				<div className={classes.body}>
+					<nav className={classes.nav}>
+						<Sidebar />
+					</nav>
+
+					<main className={classes.main}>
+						<div className={classes.content}>
+							<Outlet />
+						</div>
+					</main>
+				</div>
 			</div>
-		</div>
+		</AddBookProvider>
 	);
 };
 

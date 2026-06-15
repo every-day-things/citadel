@@ -65,12 +65,18 @@ export const Primary: Story = {
 	},
 };
 
-/** Same form with a Hardcover API key present, so the lookup row renders. */
-export const WithHardcover: Story = {
+/** Same form with a metadata source enabled, so the lookup row renders. */
+export const WithMetadataSource: Story = {
 	...Primary,
 	decorators: [
 		(Story) => {
-			useSettings.setState({ hardcoverApiKey: "storybook-key" });
+			useSettings.setState({
+				metadataProviders: {
+					preferenceOrder: ["loc", "dnb", "openlibrary", "hardcover"],
+					configs: { loc: { enabled: true, apiKey: "" } },
+					autoLookupOnImport: false,
+				},
+			});
 			return <Story />;
 		},
 	],

@@ -1,3 +1,5 @@
+import type { MetadataProvider } from "@/bindings";
+
 // Owned here (not in the library-view store) so the platform settings layer
 // never depends on the stores layer; the store re-exports it.
 export type LibraryBookSortOrderKey =
@@ -24,6 +26,20 @@ export interface SmartShelf {
 	filter: SmartShelfFilter;
 }
 
+/** Per-provider configuration. `apiKey` is unused by the keyless providers. */
+export interface ProviderConfig {
+	enabled: boolean;
+	apiKey: string;
+}
+
+export interface MetadataProvidersSettings {
+	/** Providers in the user's preference order (winner-takes-all on dedupe). */
+	preferenceOrder: MetadataProvider[];
+	configs: Partial<Record<MetadataProvider, ProviderConfig>>;
+	/** Auto-look-up metadata when importing a file that carries an ISBN. */
+	autoLookupOnImport: boolean;
+}
+
 // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 export interface SettingsSchema {
 	theme: "dark" | "light" | "auto";
@@ -32,10 +48,15 @@ export interface SettingsSchema {
 	hasCompletedFirstLaunch: boolean;
 	activeLibraryId: string;
 	libraryPaths: LibraryPath[];
+	/** @deprecated Read once at migration into `metadataProviders`; not written. */
 	hardcoverApiKey: string;
+	/** @deprecated Read once at migration into `metadataProviders`; not written. */
 	hardcoverAutoLookup: boolean;
 	lastNotifiedUpdateVersion: string | null;
 	smartShelves: SmartShelf[];
+	/** Bumped when the settings shape changes; gates one-time migrations. */
+	settingsSchemaVersion: number;
+	metadataProviders: MetadataProvidersSettings;
 }
 
 export const defaultSettings: SettingsSchema = {
@@ -55,6 +76,20 @@ export const defaultSettings: SettingsSchema = {
 			filter: { query: "", sortOrder: "authorAz", hideRead: true },
 		},
 	],
+	// Starts at 0 (the unmigrated sentinel) so the one-time migration runs once
+	// on every existing install; new installs migrate harmlessly from defaults.
+	settingsSchemaVersion: 0,
+	metadataProviders: {
+		preferenceOrder: ["loc", "dnb", "k10plus", "openlibrary", "hardcover"],
+		configs: {
+			loc: { enabled: true, apiKey: "" },
+			dnb: { enabled: true, apiKey: "" },
+			k10plus: { enabled: true, apiKey: "" },
+			openlibrary: { enabled: true, apiKey: "" },
+			hardcover: { enabled: false, apiKey: "" },
+		},
+		autoLookupOnImport: false,
+	},
 };
 
 export type SettingsKey = keyof SettingsSchema;

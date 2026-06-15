@@ -51,6 +51,7 @@ import { F7Bookmark } from "../icons/F7Bookmark";
 import { F7Pencil } from "../icons/F7Pencil";
 import { TablerCopy } from "../icons/TablerCopy";
 import { BookGrid, type ScrollToBookIndex } from "../molecules/BookGrid";
+import { EmptyLibrary, EmptyState } from "../molecules/EmptyState";
 import styles from "./Books.module.css";
 
 interface BookSearchOptions {
@@ -221,10 +222,15 @@ export const Books = ({ author_id, series_id }: BookSearchOptions) => {
 		onClearSearch: () => setQuery(""),
 	});
 
-	// Only show the empty state once the active query has resolved to 0 results —
-	// never transiently while a new search is still in flight.
+	// A genuinely empty library (including first-run with the bundled library)
+	// teaches the two ways to populate it; an empty result against a non-empty
+	// library is a zero-result filter.
+	const emptyLibrary = !loading && (libraryTotal ?? 0) === 0;
+	// Only show the zero-result state once the active query has resolved to 0
+	// results — never transiently while a new search is still in flight.
 	const noMatches =
 		!loading && queryResolved && total === 0 && (libraryTotal ?? 0) > 0;
+	const trimmedQuery = query.trim();
 
 	const searchTokens = [
 		...(authorTokenName !== undefined
@@ -299,21 +305,28 @@ export const Books = ({ author_id, series_id }: BookSearchOptions) => {
 					isSearching && styles.gridAreaSearching,
 				)}
 			>
-				{noMatches ? (
-					<div className={styles.emptyState}>
-						<span className={styles.emptyText}>
-							No books match these filters.
-						</span>
-						<Button
-							variant="subtle"
-							onClick={() => {
-								resetToAllBooks();
-								onClearDeepLinkFilter();
-							}}
-						>
-							Show all books
-						</Button>
-					</div>
+				{emptyLibrary ? (
+					<EmptyLibrary />
+				) : noMatches ? (
+					trimmedQuery.length > 0 ? (
+						<EmptyState title={`No books match “${trimmedQuery}”`}>
+							<Button variant="default" onClick={() => setQuery("")}>
+								Clear search
+							</Button>
+						</EmptyState>
+					) : (
+						<EmptyState title="No books match these filters.">
+							<Button
+								variant="default"
+								onClick={() => {
+									resetToAllBooks();
+									onClearDeepLinkFilter();
+								}}
+							>
+								Show all books
+							</Button>
+						</EmptyState>
+					)
 				) : (
 					<BookGrid
 						bookList={books}
