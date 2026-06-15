@@ -5,7 +5,9 @@ use diesel::{Connection, SqliteConnection};
 
 use crate::{
     library::{Book, BookFileInfo, BookIdentifier, BookUpdate},
-    queries::{authors, book_descriptions, book_files, book_identifiers, books, series, tags},
+    queries::{
+        authors, book_descriptions, book_files, book_identifiers, books, languages, series, tags,
+    },
     types::{AuthorId, BookId},
     BookRow, CalibreError, UpdateBookData,
 };
@@ -50,6 +52,10 @@ pub fn update_book(
                 let book_series = series::create_if_not_exists(conn, series_name)?;
                 series::set_book_series(conn, book_series.id, book_id)?;
             }
+        }
+
+        if let Some(codes) = update.language_codes {
+            languages::set_for_book(conn, book_id, &codes)?;
         }
 
         if let Some(description) = update.description {
@@ -172,6 +178,7 @@ pub fn get_book(conn: &mut SqliteConnection, book_id: BookId) -> Result<Book, Ca
     let author_models = authors::get_many(conn, author_ids)?;
     let tags = tags::find_for_book(conn, book_id)?;
     let series_name = series::find_series_name_for_book(conn, book_id)?;
+    let language_codes = languages::find_codes_for_book(conn, book_id)?;
     let identifier_models = book_identifiers::get(conn, book_id)?;
     let file_models = book_files::find_by_book_id(conn, book_id)?;
 
@@ -209,6 +216,7 @@ pub fn get_book(conn: &mut SqliteConnection, book_id: BookId) -> Result<Book, Ca
         series: series_name,
         identifiers,
         description: book_desc,
+        language_codes,
         has_cover: book.has_cover.unwrap_or(false),
         is_read: false, // Populated by Library via read state queries
         files,
@@ -267,6 +275,7 @@ fn hydrate(
     let identifiers_map = book_identifiers::find_many_by_book_ids(conn, book_ids.clone())?;
     let tags_map = tags::find_tag_names_by_book_ids(conn, book_ids.clone())?;
     let series_map = series::find_series_names_by_book_ids(conn, book_ids.clone())?;
+    let languages_map = languages::find_codes_by_book_ids(conn, book_ids.clone())?;
     let files_map = book_files::find_many_by_book_ids(conn, book_ids)?;
 
     let unique_author_ids: Vec<AuthorId> = author_ids_by_book
@@ -295,6 +304,7 @@ fn hydrate(
         let book_description = descriptions_map.get(&book_id).cloned();
         let book_tags = tags_map.get(&book_id).cloned().unwrap_or_default();
         let book_series = series_map.get(&book_id).cloned();
+        let book_languages = languages_map.get(&book_id).cloned().unwrap_or_default();
         let raw_files = files_map.get(&book_id).cloned().unwrap_or_default();
 
         let book_identifiers = identifiers_map
@@ -333,6 +343,7 @@ fn hydrate(
             series: book_series,
             identifiers: book_identifiers,
             description: book_description,
+            language_codes: book_languages,
             has_cover: book_row.has_cover.unwrap_or(false),
             is_read: false, // Populated by Library via read state queries
             files,

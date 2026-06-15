@@ -42,6 +42,7 @@ const MOCK_BOOK: LibraryBook = {
 	is_read: false,
 	series: "The Bug Chronicles",
 	series_index: 1.5,
+	language_list: ["eng"],
 	identifier_list: [
 		{
 			id: 123,

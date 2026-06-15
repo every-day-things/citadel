@@ -29,6 +29,7 @@ const book = (id: string, extra: Partial<LibraryBook> = {}): LibraryBook => ({
 	is_read: false,
 	series: null,
 	series_index: null,
+	language_list: [],
 	...extra,
 });
 

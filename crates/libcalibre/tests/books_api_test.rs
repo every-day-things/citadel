@@ -20,6 +20,7 @@ fn empty_book(title: &str) -> BookAdd {
         rating: None,
         comments: None,
         identifiers: HashMap::new(),
+        language: None,
         file_paths: vec![],
     }
 }
@@ -34,6 +35,7 @@ fn empty_update() -> BookUpdate {
         tags: None,
         series: None,
         series_index: None,
+        language_codes: None,
         publisher: None,
         publication_date: None,
         rating: None,
@@ -52,6 +54,116 @@ fn test_add_book() {
     let book = result.unwrap();
     assert_eq!(book.title, "Test Book");
     assert!(!book.uuid.is_empty());
+}
+
+#[test]
+fn test_add_book_canonicalizes_and_persists_language() {
+    let (_temp, mut lib) = setup_with_library();
+
+    let book = lib
+        .add_book(BookAdd {
+            language: Some("fr".to_string()),
+            ..empty_book("Le Petit Prince")
+        })
+        .unwrap();
+
+    // ISO 639-1 "fr" is canonicalized to Calibre's 639-3 "fra".
+    assert_eq!(book.language_codes, vec!["fra".to_string()]);
+
+    // Re-reading from the DB yields the same code (hydration, not just add).
+    let reloaded = lib.get_book(book.id).unwrap();
+    assert_eq!(reloaded.language_codes, vec!["fra".to_string()]);
+}
+
+#[test]
+fn test_update_book_language_replace_clear_and_untouched() {
+    let (_temp, mut lib) = setup_with_library();
+
+    let book = lib
+        .add_book(BookAdd {
+            language: Some("en".to_string()),
+            ..empty_book("Babel")
+        })
+        .unwrap();
+    assert_eq!(book.language_codes, vec!["eng".to_string()]);
+
+    // Replace with two languages, canonicalized and order-preserved.
+    let updated = lib
+        .update_book(
+            book.id,
+            BookUpdate {
+                language_codes: Some(vec!["fr".to_string(), "de".to_string()]),
+                ..empty_update()
+            },
+        )
+        .unwrap();
+    assert_eq!(
+        updated.language_codes,
+        vec!["fra".to_string(), "deu".to_string()]
+    );
+
+    // None leaves the languages untouched.
+    let untouched = lib
+        .update_book(
+            book.id,
+            BookUpdate {
+                title: Some("Babel: A Novel".to_string()),
+                ..empty_update()
+            },
+        )
+        .unwrap();
+    assert_eq!(
+        untouched.language_codes,
+        vec!["fra".to_string(), "deu".to_string()]
+    );
+
+    // An empty list clears all language links.
+    let cleared = lib
+        .update_book(
+            book.id,
+            BookUpdate {
+                language_codes: Some(vec![]),
+                ..empty_update()
+            },
+        )
+        .unwrap();
+    assert!(cleared.language_codes.is_empty());
+}
+
+#[test]
+fn test_metadata_opf_emits_language_codes() {
+    let (_temp, mut lib) = setup_with_library();
+    let library_path = lib.library_path().to_string();
+
+    let book = lib
+        .add_book(BookAdd {
+            language: Some("es".to_string()),
+            ..empty_book("Cien años de soledad")
+        })
+        .unwrap();
+
+    let opf_path = std::path::Path::new(&library_path)
+        .join(&book.book_dir_path)
+        .join("metadata.opf");
+    let opf = std::fs::read_to_string(&opf_path).expect("metadata.opf written on add");
+    assert!(
+        opf.contains("<dc:language>spa</dc:language>"),
+        "OPF should emit the actual language code, got:\n{opf}"
+    );
+    assert!(!opf.contains("<dc:language>en</dc:language>"));
+
+    // Editing the language regenerates the OPF from DB state.
+    lib.update_book(
+        book.id,
+        BookUpdate {
+            language_codes: Some(vec!["ja".to_string()]),
+            ..empty_update()
+        },
+    )
+    .unwrap();
+    let opf = std::fs::read_to_string(&opf_path).expect("metadata.opf rewritten on update");
+    assert!(opf.contains("<dc:language>jpn</dc:language>"));
+    assert!(!opf.contains("<dc:language>spa</dc:language>"));
 }
 
 #[test]
@@ -329,6 +441,7 @@ fn test_add_book_with_authors() {
             rating: None,
             comments: None,
             identifiers: HashMap::new(),
+            language: None,
             file_paths: vec![],
         })
         .unwrap();
@@ -353,6 +466,7 @@ fn test_add_book_with_tags() {
             rating: None,
             comments: None,
             identifiers: HashMap::new(),
+            language: None,
             file_paths: vec![],
         })
         .unwrap();
@@ -376,6 +490,7 @@ fn test_update_book_tags_replaces_existing_tags() {
             rating: None,
             comments: None,
             identifiers: HashMap::new(),
+            language: None,
             file_paths: vec![],
         })
         .unwrap();
@@ -412,6 +527,7 @@ fn test_update_book_tags_can_clear_all_tags() {
             rating: None,
             comments: None,
             identifiers: HashMap::new(),
+            language: None,
             file_paths: vec![],
         })
         .unwrap();
@@ -445,6 +561,7 @@ fn test_tag_creation_reuses_case_insensitive_matches() {
             rating: None,
             comments: None,
             identifiers: HashMap::new(),
+            language: None,
             file_paths: vec![],
         })
         .unwrap();
@@ -461,6 +578,7 @@ fn test_tag_creation_reuses_case_insensitive_matches() {
             rating: None,
             comments: None,
             identifiers: HashMap::new(),
+            language: None,
             file_paths: vec![],
         })
         .unwrap();

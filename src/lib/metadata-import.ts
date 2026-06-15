@@ -60,6 +60,7 @@ export const applyMetadataToBook = async (
 			description: pending.description,
 			series: null,
 			series_index: null,
+			language_list: null,
 		});
 	}
 
