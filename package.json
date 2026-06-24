@@ -5,7 +5,7 @@
   "scripts": {
     "build": "bun run build:app",
     "build:app": "tauri build",
-    "build:web": "tsc && vite build",
+    "build:web": "tsgo && vite build",
     "dev": "bun run dev:app",
     "dev:app": "tauri dev --config src-tauri/tauri.dev.conf.json",
     "dev:web": "vite dev",
@@ -20,13 +20,15 @@
     "preview:web": "vite preview",
     "test": "vitest",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "typecheck": "tsgo"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.1",
     "@chromatic-com/storybook": "^5.2.1",
     "@faker-js/faker": "^10.5.0",
     "@iconify-json/f7": "^1.2.2",
+    "@storybook/addon-docs": "^10.4.6",
     "@storybook/addon-links": "^10.4.6",
     "@storybook/react": "^10.4.6",
     "@storybook/react-vite": "^10.4.6",
@@ -35,6 +37,7 @@
     "@tauri-apps/cli": "^2.11.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
+    "@typescript/native-preview": "^7.0.0-dev.20260624.1",
     "@vitejs/plugin-react-swc": "^4.3.1",
     "autoprefixer": "^10.5.1",
     "postcss": "^8.5.15",
@@ -45,8 +48,7 @@
     "typescript": "^6.0.3",
     "unplugin-icons": "^23.0.1",
     "vite": "^8.1.0",
-    "vitest": "^4.1.9",
-    "@storybook/addon-docs": "^10.4.6"
+    "vitest": "^4.1.9"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.17",
