@@ -1,4 +1,4 @@
-import { addons } from "@storybook/preview-api";
+import { addons } from "storybook/preview-api";
 import type { Preview } from "@storybook/react";
 import React, { type PropsWithChildren, useEffect, useCallback } from "react";
 import { DARK_MODE_EVENT_NAME } from "storybook-dark-mode";
