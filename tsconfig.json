@@ -19,10 +19,9 @@
     "noFallthroughCasesInSwitch": true,
     "strictNullChecks": true,
     "noUncheckedIndexedAccess": true,
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "$lib/*": ["src/lib/*"]
+      "@/*": ["./src/*"],
+      "$lib/*": ["./src/lib/*"]
     }
   },
   "include": ["src"],
