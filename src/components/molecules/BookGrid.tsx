@@ -1,7 +1,6 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
 	createContext,
-	type MutableRefObject,
 	type RefObject,
 	useCallback,
 	useContext,
@@ -58,12 +57,12 @@ export type VisibleRangeChange = (startIndex: number, endIndex: number) => void;
 
 interface BookGridProps extends BookView {
 	/** The page-owned scroll region the virtualizer windows against. */
-	scrollElementRef: RefObject<HTMLElement>;
+	scrollElementRef: RefObject<HTMLElement | null>;
 	/**
 	 * Receives the grid's scroll-to-index function so keyboard selection can
 	 * reach rows that are not currently mounted (use-library-keymap).
 	 */
-	scrollToBookIndexRef?: MutableRefObject<ScrollToBookIndex | null>;
+	scrollToBookIndexRef?: RefObject<ScrollToBookIndex | null>;
 	/**
 	 * Fires when the rendered (viewport + overscan) flat-index range moves,
 	 * so the owner can page the covered books in (ensureBookRange).
@@ -111,8 +110,8 @@ const BookGridPure = ({
 	loading: boolean;
 	bookList: (LibraryBook | undefined)[];
 	selectedBookId?: LibraryBook["id"] | null;
-	scrollElementRef: RefObject<HTMLElement>;
-	scrollToBookIndexRef?: MutableRefObject<ScrollToBookIndex | null>;
+	scrollElementRef: RefObject<HTMLElement | null>;
+	scrollToBookIndexRef?: RefObject<ScrollToBookIndex | null>;
 	onVisibleRangeChange?: VisibleRangeChange;
 }) => {
 	const actions = useContext(bookActionsContext);
