@@ -23,9 +23,9 @@
     "build-storybook": "storybook build"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.16",
+    "@biomejs/biome": "2.5.1",
     "@chromatic-com/storybook": "^5.2.1",
-    "@faker-js/faker": "^8.4.1",
+    "@faker-js/faker": "^10.5.0",
     "@fontsource/fira-mono": "^4.5.10",
     "@iconify-json/f7": "^1.2.2",
     "@melt-ui/pp": "^0.3.2",
