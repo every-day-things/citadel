@@ -20,8 +20,8 @@ interface LibraryKeymapOptions {
 	 */
 	resetToken?: string;
 	drawerOpened: boolean;
-	searchInputRef: RefObject<HTMLInputElement>;
-	gridContainerRef: RefObject<HTMLElement>;
+	searchInputRef: RefObject<HTMLInputElement | null>;
+	gridContainerRef: RefObject<HTMLElement | null>;
 	/**
 	 * The virtualized grid's scroll-to-index function (BookGrid). Selection
 	 * can land on a row that is not mounted; this brings the row into view so
