@@ -653,6 +653,7 @@ dependencies = [
  "libcalibre",
  "log",
  "mobi",
+ "quick-xml 0.38.4",
  "regex",
  "reqwest 0.12.28",
  "serde",

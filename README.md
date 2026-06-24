@@ -47,7 +47,7 @@ xattr -d com.apple.quarantine /Applications/Citadel.app/
 
 ## Developing
 
-As a prerequisite, you'll need to install [Bun](https://bun.sh), Node[^1], and [Rust](https://www.rust-lang.org/tools/install).
+As a prerequisite, you'll need to install [Bun](https://bun.sh) and [Rust](https://www.rust-lang.org/tools/install).
 
 Then, you can install the packages.
 
@@ -109,5 +109,3 @@ excellent
 [Calibre redesign Figma prototype](https://old.reddit.com/r/Calibre/comments/udzumn/testing_a_new_interface_for_calibre/),
 from which Citadel takes inspiration.
 Thank you, Kemie!
-
-[^1]: https://github.com/every-day-things/citadel/issues/9

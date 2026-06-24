@@ -242,6 +242,9 @@ describe("useSettings smart shelves", () => {
 		const manager = createFakeSettingsManager();
 		const setSpy = vi.spyOn(manager, "set");
 		const useSettings = await importStore(manager);
+		// init persists a one-time settings migration; ignore those writes and
+		// assert only on what the delete itself does.
+		setSpy.mockClear();
 
 		await useSettings.getState().deleteSmartShelf("no-such-shelf");
 

@@ -37,6 +37,10 @@ pub struct Book {
     /// Position within the series; `Some` iff the book is linked to a series.
     pub series_index: Option<f32>,
     pub description: Option<String>,
+    /// Canonical Calibre language codes (ISO 639-2/3, e.g. `eng`, `fra`),
+    /// ordered by `books_languages_link.item_order`. Empty when the book has
+    /// no language metadata.
+    pub language_codes: Vec<String>,
     pub identifiers: Vec<BookIdentifier>,
     pub has_cover: bool,
     pub is_read: bool,
@@ -75,6 +79,9 @@ pub struct BookAdd {
     pub rating: Option<i32>,
     pub comments: Option<String>,
     pub identifiers: HashMap<String, String>,
+    /// Language code for the book (any ISO 639-1/2/3 form; canonicalized on
+    /// write). `None` adds the book with no language metadata.
+    pub language: Option<String>,
     pub file_paths: Vec<PathBuf>,
 }
 
@@ -101,6 +108,10 @@ pub struct BookUpdate {
     /// name unlinks the book from its series. `None` leaves it unchanged.
     pub series: Option<String>,
     pub series_index: Option<f32>,
+    /// If provided, replaces the book's language links with the given codes
+    /// (canonicalized to Calibre's ISO 639-2/3 form, deduped, order preserved).
+    /// An empty list clears all language links; `None` leaves them unchanged.
+    pub language_codes: Option<Vec<String>>,
     pub publisher: Option<String>,
     pub publication_date: Option<NaiveDate>,
     pub rating: Option<i32>,
@@ -271,6 +282,14 @@ impl Library {
             crate::queries::series::link_book(&mut self.conn, series.id, BookId(book_row.id))?;
         }
 
+        if let Some(language) = &book.language {
+            crate::queries::languages::set_for_book(
+                &mut self.conn,
+                BookId(book_row.id),
+                std::slice::from_ref(language),
+            )?;
+        }
+
         // 4. Create directories
         let primary_author = created_authors
             .first()
@@ -352,14 +371,8 @@ impl Library {
             }
         }
 
-        // 7. Generate metadata.opf
-        let book_row_final = book_queries::get(&mut self.conn, BookId(book_row.id))?
-            .ok_or(CalibreError::BookNotFound(BookId(book_row.id)))?;
-        let metadata_opf = format_metadata_opf(&book_row_final, &created_authors);
-        if let Ok(contents) = metadata_opf {
-            let opf_path = library_root.join(&book_dir_relative).join("metadata.opf");
-            let _ = std::fs::write(&opf_path, contents.as_bytes());
-        }
+        // 7. Generate metadata.opf from the freshly written DB state.
+        let _ = self.regenerate_metadata_opf(BookId(book_row.id));
 
         self.get_book(BookId(book_row.id))
     }
@@ -397,7 +410,33 @@ impl Library {
             self.set_book_read_state(book_id, is_read)?;
         }
 
+        // Keep the on-disk metadata.opf faithful to the DB. Best-effort: a
+        // metadata write failure must not fail the (already committed) update.
+        let _ = self.regenerate_metadata_opf(book_id);
+
         self.get_book(book_id)
+    }
+
+    /// Rewrite a book's `metadata.opf` from current DB state (title, authors,
+    /// language codes, …). Called after both add and update so the derived
+    /// file never drifts from the database. Missing files/dirs are surfaced as
+    /// `Err`, but callers treat OPF writes as best-effort.
+    fn regenerate_metadata_opf(&mut self, book_id: BookId) -> Result<(), CalibreError> {
+        let book_row = book_queries::get(&mut self.conn, book_id)?
+            .ok_or(CalibreError::BookNotFound(book_id))?;
+        let author_ids = book_queries::find_authors(&mut self.conn, book_id)?;
+        let authors = author_queries::get_many(&mut self.conn, author_ids)?;
+        let language_codes =
+            crate::queries::languages::find_codes_for_book(&mut self.conn, book_id)?;
+
+        let contents = format_metadata_opf(&book_row, &authors, &language_codes)
+            .map_err(|_| CalibreError::DatabaseIntegrity("Failed to render metadata.opf".into()))?;
+
+        let opf_path = Path::new(&self.db_path.library_path)
+            .join(&book_row.path)
+            .join("metadata.opf");
+        std::fs::write(&opf_path, contents.as_bytes())
+            .map_err(|e| CalibreError::FileSystem(e.to_string()))
     }
 
     pub fn remove_books(&mut self, book_ids: Vec<BookId>) -> Result<Vec<BookId>, CalibreError> {
@@ -856,6 +895,7 @@ impl Library {
 fn format_metadata_opf(
     book: &crate::entities::book_row::BookRow,
     authors: &[crate::entities::author::Author],
+    language_codes: &[String],
 ) -> Result<String, ()> {
     let author_sort = book.author_sort.clone().unwrap_or_else(|| {
         authors
@@ -876,6 +916,17 @@ fn format_metadata_opf(
         })
         .collect();
 
+    // Calibre emits one <dc:language> per linked language code, falling back to
+    // "und" (undetermined) when the book has none.
+    let languages_string: String = if language_codes.is_empty() {
+        "<dc:language>und</dc:language>".to_string()
+    } else {
+        language_codes
+            .iter()
+            .map(|code| format!("<dc:language>{code}</dc:language>"))
+            .collect()
+    };
+
     Ok(format!(
         r#"<?xml version='1.0' encoding='utf-8'?>
 <package xmlns="http://www.idpf.org/2007/opf" unique-identifier="uuid_id" version="2.0">
@@ -886,7 +937,7 @@ fn format_metadata_opf(
     {authors}
     <dc:contributor opf:file-as="calibre" opf:role="bkp">citadel (1.0.0) [https://github.com/every-day-things/citadel]</dc:contributor>
     <dc:date>{pub_date}</dc:date>
-    <dc:language>en</dc:language>
+    {languages}
     <meta name="calibre:timestamp" content="{now}"/>
     <meta name="calibre:title_sort" content="{book_title_sortable}"/>
   </metadata>
@@ -898,6 +949,7 @@ fn format_metadata_opf(
         calibre_uuid = book.uuid.as_deref().unwrap_or(""),
         book_title = book.title,
         authors = authors_string,
+        languages = languages_string,
         pub_date = book
             .pubdate
             .unwrap_or(chrono::DateTime::UNIX_EPOCH.naive_utc())

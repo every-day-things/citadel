@@ -710,6 +710,7 @@ fn run() -> Result<(), String> {
             rating: None,
             comments: None,
             identifiers: HashMap::new(),
+            language: Some("eng".to_string()),
             file_paths: vec![stub_path.clone()],
         };
 

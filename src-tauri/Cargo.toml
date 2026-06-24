@@ -1,6 +1,6 @@
 [package]
 name = "citadel-rs"
-version = "0.5.0"
+version = "0.6.0"
 description = "Backend for Citadel, embedded into the Tauri app or run stand-alone."
 authors = ["Phil Denhoff"]
 license = "MIT"
@@ -21,6 +21,7 @@ epub = "2.1.1"
 mobi = "0.8.0"
 libcalibre = { path = "../crates/libcalibre" }
 log = "0.4"
+quick-xml = "0.38"
 regex = "1.10.2"
 reqwest = { version = "0.12", features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
