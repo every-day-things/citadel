@@ -3,119 +3,7 @@ use std::{collections::HashMap, path::PathBuf};
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, specta::Type, Deserialize, Clone)]
-pub enum LocalOrRemote {
-    Local,
-    Remote,
-}
-
-#[derive(Serialize, specta::Type, Deserialize, Clone)]
-pub struct LocalOrRemoteUrl {
-    pub kind: LocalOrRemote,
-    pub url: String,
-    pub local_path: Option<PathBuf>,
-}
-#[derive(Serialize, specta::Type, Deserialize, Clone, Debug)]
-pub struct LocalFile {
-    /// The absolute path to the file, including extension.
-    pub path: PathBuf,
-    /// The MIME type of the file. Common values are `application/pdf` and `application/epub+zip`.
-    pub mime_type: String,
-}
-
-#[derive(Serialize, specta::Type, Deserialize, Clone, Debug)]
-pub struct RemoteFile {
-    pub url: String,
-}
-
-#[derive(Serialize, specta::Type, Deserialize, Clone, Debug)]
-pub enum BookFile {
-    Local(LocalFile),
-    Remote(RemoteFile),
-}
-
-#[derive(Serialize, specta::Type, Deserialize, Clone)]
-pub struct LibraryBook {
-    pub id: String,
-    pub uuid: Option<String>,
-    pub title: String,
-    pub author_list: Vec<LibraryAuthor>,
-    pub tag_list: Vec<String>,
-
-    pub sortable_title: Option<String>,
-
-    pub file_list: Vec<BookFile>,
-
-    pub cover_image: Option<LocalOrRemoteUrl>,
-
-    pub identifier_list: Vec<Identifier>,
-
-    pub description: Option<String>,
-
-    pub is_read: bool,
-
-    pub series: Option<String>,
-    pub series_index: Option<f32>,
-
-    /// Canonical Calibre language codes (ISO 639-2/3, e.g. `eng`, `fra`),
-    /// ordered. Empty when the book has no language metadata.
-    pub language_list: Vec<String>,
-}
-
-impl LibraryBook {
-    pub fn from_library_book(
-        book: &libcalibre::library::Book,
-        library_path: &str,
-        author_book_counts: &HashMap<libcalibre::AuthorId, i64>,
-    ) -> Self {
-        Self {
-            id: book.id.as_i32().to_string(),
-            uuid: Some(book.uuid.clone()),
-            title: book.title.clone(),
-            author_list: book
-                .authors
-                .iter()
-                .map(|author| LibraryAuthor::from_author(author, author_book_counts))
-                .collect(),
-            tag_list: book.tags.clone(),
-            sortable_title: book.sortable_title.clone(),
-            identifier_list: book.identifiers.iter().map(Identifier::from).collect(),
-            description: book.description.clone(),
-            is_read: book.is_read,
-            series: book.series.clone(),
-            series_index: book.series_index,
-            language_list: book.language_codes.clone(),
-            cover_image: None,
-            file_list: book
-                .files
-                .iter()
-                .map(|file| {
-                    let file_name_with_ext =
-                        format!("{}.{}", file.name, file.format.to_lowercase());
-
-                    BookFile::Local(LocalFile {
-                        path: PathBuf::from(library_path)
-                            .join(&book.book_dir_path)
-                            .join(file_name_with_ext),
-                        mime_type: file.format.clone(),
-                    })
-                })
-                .collect(),
-        }
-    }
-}
-
-#[derive(Serialize, specta::Type, Deserialize, Clone)]
-pub struct LibraryAuthor {
-    pub id: String,
-    pub name: String,
-    pub sortable_name: String,
-    /// Number of books in the library linked to this author, from
-    /// `Library::author_book_counts` (one GROUP BY pass over
-    /// `books_authors_link`). The Authors page renders this directly
-    /// instead of deriving counts from the whole book list.
-    pub book_count: u32,
-}
+pub use citadel_core::{LibraryAuthor, LibraryBook};
 
 #[derive(Serialize, Deserialize, specta::Type)]
 pub enum ImportableBookType {
@@ -183,24 +71,6 @@ impl ImportableBookMetadata {
                 })
                 .unwrap_or_default(),
             file_paths: vec![self.path.clone()],
-        }
-    }
-}
-
-/// Book identifiers, such as ISBN, DOI, Google Books ID, etc.
-#[derive(Serialize, Deserialize, Clone, specta::Type)]
-pub struct Identifier {
-    pub id: i32,
-    pub label: String,
-    pub value: String,
-}
-
-impl From<&libcalibre::BookIdentifier> for Identifier {
-    fn from(identifier: &libcalibre::BookIdentifier) -> Self {
-        Identifier {
-            id: identifier.id,
-            label: identifier.label.clone(),
-            value: identifier.value.clone(),
         }
     }
 }
