@@ -12,7 +12,6 @@ pub mod libs {
     pub mod calibre;
     pub mod cover_thumbs;
     pub mod file_formats;
-    mod util;
 }
 mod book;
 mod menu;

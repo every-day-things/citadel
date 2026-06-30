@@ -643,10 +643,22 @@ dependencies = [
 ]
 
 [[package]]
-name = "citadel-rs"
-version = "0.6.0"
+name = "citadel-core"
+version = "0.1.0"
 dependencies = [
  "chrono",
+ "libcalibre",
+ "serde",
+ "specta",
+ "urlencoding",
+]
+
+[[package]]
+name = "citadel-rs"
+version = "0.6.1"
+dependencies = [
+ "chrono",
+ "citadel-core",
  "diesel",
  "epub",
  "image",

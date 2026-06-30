@@ -18,10 +18,9 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
+use citadel_core::path_to_asset_url;
 use image::imageops::FilterType;
 use serde::{Deserialize, Serialize};
-
-use crate::libs::util;
 
 /// Thumbnail width in device pixels: 2× the grid's ~150 CSS px cells.
 const THUMB_WIDTH: u32 = 300;
@@ -108,7 +107,7 @@ fn cover_mtime_ms(cover_path: &Path) -> Option<i64> {
 fn to_thumbnail(book_id: &str, cache_dir: &Path, meta: &ThumbMeta) -> CoverThumbnail {
     CoverThumbnail {
         book_id: book_id.to_string(),
-        url: util::path_to_asset_url(&cache_dir.join(&meta.file_name)),
+        url: path_to_asset_url(&cache_dir.join(&meta.file_name)),
         width: meta.width,
         height: meta.height,
     }
