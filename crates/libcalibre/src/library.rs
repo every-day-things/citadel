@@ -204,8 +204,7 @@ pub struct TagSummary {
 
 impl Library {
     pub fn new(db_path: ValidDbPath) -> Result<Self, CalibreError> {
-        let conn = establish_connection(&db_path.database_path)
-            .map_err(|_| CalibreError::LibraryNotInitialized)?;
+        let conn = establish_connection(&db_path.database_path)?;
 
         Ok(Self { db_path, conn })
     }
