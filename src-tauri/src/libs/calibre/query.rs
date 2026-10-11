@@ -79,6 +79,8 @@ pub struct LibraryBookQuery {
     pub text: Option<String>,
     pub author_id: Option<String>,
     pub series_id: Option<i32>,
+    pub tag_id: Option<i32>,
+    pub publisher_id: Option<i32>,
     pub hide_read: bool,
     pub sort: BookSortOrder,
     /// Page size. `None` returns all matches.
@@ -116,6 +118,8 @@ pub fn clb_query_books(
         text: query.text,
         author_id,
         series_id: query.series_id,
+        tag_id: query.tag_id,
+        publisher_id: query.publisher_id,
         genre_id: None,
         hide_read: query.hide_read,
         sort: query.sort.into(),
@@ -199,6 +203,62 @@ pub fn clb_query_list_tags(state: tauri::State<CitadelState>) -> Result<Vec<Libr
         .map(|tag| LibraryTag {
             id: tag.id,
             name: tag.name,
+        })
+        .collect())
+}
+
+/// One tag in the library with its linked-book count. `id` is what
+/// [`LibraryBookQuery::tag_id`] filters on.
+#[derive(Serialize, Deserialize, specta::Type, Clone)]
+pub struct LibraryTagSummary {
+    pub id: i32,
+    pub name: String,
+    pub book_count: u32,
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn clb_query_list_tag_summaries(
+    state: tauri::State<CitadelState>,
+) -> Result<Vec<LibraryTagSummary>, String> {
+    let tags = state
+        .with_library(|lib| lib.list_tags_with_book_counts())?
+        .map_err(|e| e.to_string())?;
+
+    Ok(tags
+        .into_iter()
+        .map(|tag| LibraryTagSummary {
+            id: tag.id,
+            name: tag.name,
+            book_count: u32::try_from(tag.book_count).unwrap_or(u32::MAX),
+        })
+        .collect())
+}
+
+/// One publisher in the library with its linked-book count. `id` is what
+/// [`LibraryBookQuery::publisher_id`] filters on.
+#[derive(Serialize, Deserialize, specta::Type, Clone)]
+pub struct LibraryPublisher {
+    pub id: i32,
+    pub name: String,
+    pub book_count: u32,
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn clb_query_list_publishers(
+    state: tauri::State<CitadelState>,
+) -> Result<Vec<LibraryPublisher>, String> {
+    let publishers = state
+        .with_library(|lib| lib.list_publishers())?
+        .map_err(|e| e.to_string())?;
+
+    Ok(publishers
+        .into_iter()
+        .map(|publisher| LibraryPublisher {
+            id: publisher.id,
+            name: publisher.name,
+            book_count: u32::try_from(publisher.book_count).unwrap_or(u32::MAX),
         })
         .collect())
 }

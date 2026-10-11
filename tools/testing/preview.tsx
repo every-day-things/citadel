@@ -7,13 +7,20 @@ import {
 } from "@tanstack/react-router";
 import { createRoot } from "react-dom/client";
 import { Authors } from "../../src/components/pages/Authors";
+import { Publishers } from "../../src/components/pages/Publishers";
 import { Series } from "../../src/components/pages/Series";
+import { Tags } from "../../src/components/pages/Tags";
 import { TooltipProvider } from "../../src/components/ui";
 import shell from "../../src/routes/root.module.css";
 import { getListScenario } from "../../src/test/list-scenarios";
 import "../../src/styles.css";
 
-const pages = { series: Series, authors: Authors };
+const pages = {
+	series: Series,
+	tags: Tags,
+	publishers: Publishers,
+	authors: Authors,
+};
 const parameters = new URLSearchParams(location.search);
 const name = parameters.get("scenario") ?? "series";
 if (!Object.hasOwn(pages, name)) {

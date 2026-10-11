@@ -113,6 +113,22 @@ async clbQueryListTags() : Promise<Result<LibraryTag[], string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async clbQueryListTagSummaries() : Promise<Result<LibraryTagSummary[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clb_query_list_tag_summaries") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async clbQueryListPublishers() : Promise<Result<LibraryPublisher[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clb_query_list_publishers") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async clbCmdCreateBook(md: ImportableBookMetadata) : Promise<Result<string, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("clb_cmd_create_book", { md }) };
@@ -553,11 +569,16 @@ export type LibraryBookQuery = {
  * Substring match across title, author names, and series names.
  * `None` or empty text matches all books.
  */
-text: string | null; author_id: string | null; series_id: number | null; hide_read: boolean; sort: BookSortOrder; 
+text: string | null; author_id: string | null; series_id: number | null; tag_id: number | null; publisher_id: number | null; hide_read: boolean; sort: BookSortOrder; 
 /**
  * Page size. `None` returns all matches.
  */
 limit: number | null; offset: number }
+/**
+ * One publisher in the library with its linked-book count. `id` is what
+ * [`LibraryBookQuery::publisher_id`] filters on.
+ */
+export type LibraryPublisher = { id: number; name: string; book_count: number }
 /**
  * One series in the library. `id` is what [`LibraryBookQuery::series_id`]
  * filters on; the frontend otherwise only ever sees series names.
@@ -572,6 +593,11 @@ export type LibraryStats = { book_count: number; author_count: number }
  * One tag in the library; `name` is what the tag autocomplete suggests.
  */
 export type LibraryTag = { id: number; name: string }
+/**
+ * One tag in the library with its linked-book count. `id` is what
+ * [`LibraryBookQuery::tag_id`] filters on.
+ */
+export type LibraryTagSummary = { id: number; name: string; book_count: number }
 export type LocalFile = { 
 /**
  * The absolute path to the file, including extension.

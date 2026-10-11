@@ -115,6 +115,20 @@ const SidebarPure = ({ currentPathname, openSettings }: SidebarPureProps) => {
 					>
 						Series
 					</Link>
+					<Link
+						to="/tags"
+						className={clsx("ctd-nav-link", styles.navLink)}
+						data-active={currentPathname === "/tags" || undefined}
+					>
+						Tags
+					</Link>
+					<Link
+						to="/publishers"
+						className={clsx("ctd-nav-link", styles.navLink)}
+						data-active={currentPathname === "/publishers" || undefined}
+					>
+						Publishers
+					</Link>
 				</div>
 				{smartShelves.length > 0 && (
 					<div className={styles.section}>

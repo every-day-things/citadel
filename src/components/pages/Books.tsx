@@ -38,8 +38,10 @@ import {
 	useLibraryActions,
 	useLibraryReady,
 	useLibraryTotal,
+	usePublishers,
 	useSeriesList,
 	useStaleBookSnapshot,
+	useTagSummaries,
 } from "@/stores/library/store";
 import {
 	LibraryBookSortOrder,
@@ -60,6 +62,10 @@ interface BookSearchOptions {
 	author_id?: string;
 	/** Deep-link: only books in this series (LibrarySeries id). */
 	series_id?: number;
+	/** Deep-link: only books with this tag (LibraryTagSummary id). */
+	tag_id?: number;
+	/** Deep-link: only books from this publisher (LibraryPublisher id). */
+	publisher_id?: number;
 }
 
 const SORT_LABELS: Record<LibraryBookSortOrderKey, string> = {
@@ -76,7 +82,12 @@ const SORT_LABELS: Record<LibraryBookSortOrderKey, string> = {
  */
 const QUERY_DEBOUNCE_MS = 200;
 
-export const Books = ({ author_id, series_id }: BookSearchOptions) => {
+export const Books = ({
+	author_id,
+	series_id,
+	tag_id,
+	publisher_id,
+}: BookSearchOptions) => {
 	const query = useLibraryView((s) => s.query);
 	const sortOrder = useLibraryView((s) => s.sortOrder);
 	const hideRead = useLibraryView((s) => s.hideRead);
@@ -85,13 +96,19 @@ export const Books = ({ author_id, series_id }: BookSearchOptions) => {
 	const setHideRead = useLibraryView((s) => s.setHideRead);
 	const resetToAllBooks = useLibraryView((s) => s.resetToAllBooks);
 
-	// An author or series link promises "those books in one click", so a
-	// text query from before the click must not keep filtering the results.
+	// An author, series, tag or publisher link promises "those books in one
+	// click", so a text query from before the click must not keep filtering
+	// the results.
 	useEffect(() => {
-		if (author_id !== undefined || series_id !== undefined) {
+		if (
+			author_id !== undefined ||
+			series_id !== undefined ||
+			tag_id !== undefined ||
+			publisher_id !== undefined
+		) {
 			setQuery("");
 		}
-	}, [author_id, series_id, setQuery]);
+	}, [author_id, series_id, tag_id, publisher_id, setQuery]);
 
 	const actions = useLibraryActions();
 	const libraryReady = useLibraryReady();
@@ -100,6 +117,8 @@ export const Books = ({ author_id, series_id }: BookSearchOptions) => {
 	const libraryTotal = useLibraryTotal();
 	const authors = useAuthors();
 	const seriesList = useSeriesList();
+	const tagSummaries = useTagSummaries();
+	const publishers = usePublishers();
 
 	const debouncedQuery = useDebouncedValue(query, QUERY_DEBOUNCE_MS);
 	const filter = useMemo<BookGridFilter>(
@@ -107,10 +126,20 @@ export const Books = ({ author_id, series_id }: BookSearchOptions) => {
 			text: debouncedQuery,
 			authorId: author_id ?? null,
 			seriesId: series_id ?? null,
+			tagId: tag_id ?? null,
+			publisherId: publisher_id ?? null,
 			hideRead,
 			sortOrder,
 		}),
-		[debouncedQuery, author_id, series_id, hideRead, sortOrder],
+		[
+			debouncedQuery,
+			author_id,
+			series_id,
+			tag_id,
+			publisher_id,
+			hideRead,
+			sortOrder,
+		],
 	);
 
 	useEffect(() => {
@@ -179,6 +208,27 @@ export const Books = ({ author_id, series_id }: BookSearchOptions) => {
 		series_id !== undefined
 			? (seriesList.find((series) => series.id === series_id)?.name ?? "Series")
 			: undefined;
+	const tagTokenName =
+		tag_id !== undefined
+			? (tagSummaries?.find((tag) => tag.id === tag_id)?.name ?? "Tag")
+			: undefined;
+	const publisherTokenName =
+		publisher_id !== undefined
+			? (publishers?.find((publisher) => publisher.id === publisher_id)?.name ??
+				"Publisher")
+			: undefined;
+
+	// Tag and publisher lists load lazily; a deep link straight into a
+	// filtered view still needs the name for its token.
+	useEffect(() => {
+		if (!libraryReady) return;
+		if (tag_id !== undefined && tagSummaries === null) {
+			void actions.loadTagSummaries();
+		}
+		if (publisher_id !== undefined && publishers === null) {
+			void actions.loadPublishers();
+		}
+	}, [libraryReady, tag_id, publisher_id, tagSummaries, publishers, actions]);
 
 	const [isBookSidebarOpen, setIsBookSidebarOpen] = useState(false);
 
@@ -265,6 +315,24 @@ export const Books = ({ author_id, series_id }: BookSearchOptions) => {
 						onRemove: onClearDeepLinkFilter,
 						title:
 							"Books are sorted in series order while this filter is active",
+					},
+				]
+			: []),
+		...(tagTokenName !== undefined
+			? [
+					{
+						label: `Tag: ${tagTokenName}`,
+						onRemove: onClearDeepLinkFilter,
+						title: "Showing only books with this tag",
+					},
+				]
+			: []),
+		...(publisherTokenName !== undefined
+			? [
+					{
+						label: `Publisher: ${publisherTokenName}`,
+						onRemove: onClearDeepLinkFilter,
+						title: "Showing only books from this publisher",
 					},
 				]
 			: []),
