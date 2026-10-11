@@ -208,15 +208,6 @@ pub struct SeriesSummary {
 pub struct TagSummary {
     pub id: i32,
     pub name: String,
-}
-
-/// One tag in the library, with its linked-book count. Returned by
-/// [`Library::list_tags_with_book_counts`]; tag ids are what
-/// [`BookQuery::tag_id`] filters on.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct TagCountSummary {
-    pub id: i32,
-    pub name: String,
     pub book_count: i64,
 }
 
@@ -1012,12 +1003,6 @@ impl Library {
     /// no longer linked to any book), sorted case-insensitively by name.
     pub fn list_tags(&mut self) -> Result<Vec<TagSummary>, CalibreError> {
         crate::queries::tags::list_all(&mut self.conn)
-    }
-
-    /// List every tag with its linked-book count, sorted by name. The
-    /// returned ids feed [`BookQuery::tag_id`].
-    pub fn list_tags_with_book_counts(&mut self) -> Result<Vec<TagCountSummary>, CalibreError> {
-        crate::queries::tags::list_with_book_counts(&mut self.conn)
     }
 
     /// List every publisher with its linked-book count, sorted by name. The

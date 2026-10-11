@@ -41,7 +41,7 @@ import {
 	usePublishers,
 	useSeriesList,
 	useStaleBookSnapshot,
-	useTagSummaries,
+	useTags,
 } from "@/stores/library/store";
 import {
 	LibraryBookSortOrder,
@@ -62,7 +62,7 @@ interface BookSearchOptions {
 	author_id?: string;
 	/** Deep-link: only books in this series (LibrarySeries id). */
 	series_id?: number;
-	/** Deep-link: only books with this tag (LibraryTagSummary id). */
+	/** Deep-link: only books with this tag (LibraryTag id). */
 	tag_id?: number;
 	/** Deep-link: only books from this publisher (LibraryPublisher id). */
 	publisher_id?: number;
@@ -117,7 +117,7 @@ export const Books = ({
 	const libraryTotal = useLibraryTotal();
 	const authors = useAuthors();
 	const seriesList = useSeriesList();
-	const tagSummaries = useTagSummaries();
+	const tags = useTags();
 	const publishers = usePublishers();
 
 	const debouncedQuery = useDebouncedValue(query, QUERY_DEBOUNCE_MS);
@@ -210,7 +210,7 @@ export const Books = ({
 			: undefined;
 	const tagTokenName =
 		tag_id !== undefined
-			? (tagSummaries?.find((tag) => tag.id === tag_id)?.name ?? "Tag")
+			? (tags?.find((tag) => tag.id === tag_id)?.name ?? "Tag")
 			: undefined;
 	const publisherTokenName =
 		publisher_id !== undefined
@@ -222,13 +222,13 @@ export const Books = ({
 	// filtered view still needs the name for its token.
 	useEffect(() => {
 		if (!libraryReady) return;
-		if (tag_id !== undefined && tagSummaries === null) {
-			void actions.loadTagSummaries();
+		if (tag_id !== undefined && tags === null) {
+			void actions.loadTags();
 		}
 		if (publisher_id !== undefined && publishers === null) {
 			void actions.loadPublishers();
 		}
-	}, [libraryReady, tag_id, publisher_id, tagSummaries, publishers, actions]);
+	}, [libraryReady, tag_id, publisher_id, tags, publishers, actions]);
 
 	const [isBookSidebarOpen, setIsBookSidebarOpen] = useState(false);
 

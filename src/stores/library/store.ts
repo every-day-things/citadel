@@ -9,7 +9,7 @@ import type {
 	LibraryBook,
 	LibraryPublisher,
 	LibrarySeries,
-	LibraryTagSummary,
+	LibraryTag,
 	NewAuthor,
 } from "@/bindings";
 import { commands } from "@/bindings";
@@ -45,7 +45,7 @@ interface LibraryActions {
 	loadAuthors: () => Promise<void>;
 	loadSeries: () => Promise<void>;
 	/** Loads tags with book counts. Lazy: only the Tags page needs them. */
-	loadTagSummaries: () => Promise<void>;
+	loadTags: () => Promise<void>;
 	/** Loads publishers with book counts. Lazy: only the Publishers page needs them. */
 	loadPublishers: () => Promise<void>;
 	initialize: (libraryPath: string) => Promise<void>;
@@ -147,8 +147,8 @@ interface LibraryStoreState {
 
 	// Tag and publisher lists with book counts. `null` until first loaded;
 	// loaded on demand by their pages rather than at library open.
-	tagSummaries: LibraryTagSummary[] | null;
-	tagSummariesLoading: boolean;
+	tags: LibraryTag[] | null;
+	tagsLoading: boolean;
 	publishers: LibraryPublisher[] | null;
 	publishersLoading: boolean;
 
@@ -174,8 +174,8 @@ const initialState = {
 	series: [],
 	seriesLoading: false,
 	seriesError: null,
-	tagSummaries: null as LibraryTagSummary[] | null,
-	tagSummariesLoading: false,
+	tags: null as LibraryTag[] | null,
+	tagsLoading: false,
 	publishers: null as LibraryPublisher[] | null,
 	publishersLoading: false,
 };
@@ -483,22 +483,22 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 				}
 			},
 
-			loadTagSummaries: async () => {
+			loadTags: async () => {
 				const { library } = get();
 				if (!library) return;
 				if (isBackendDiverted()) return;
 				const generation = get().bookCache.generation;
 
-				set({ tagSummariesLoading: true });
+				set({ tagsLoading: true });
 				try {
-					const tagSummaries = await library.listTagSummaries();
+					const tags = await library.listTags();
 					if (!canCommitActive(generation)) return;
-					set({ tagSummaries, tagSummariesLoading: false });
+					set({ tags, tagsLoading: false });
 				} catch (error) {
 					console.error("Failed to load tags", error);
 					if (!canCommitActive(generation)) return;
 					// An empty list (not null) so the page does not retry in a loop.
-					set({ tagSummaries: [], tagSummariesLoading: false });
+					set({ tags: [], tagsLoading: false });
 				}
 			},
 
@@ -576,7 +576,7 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 				void get().actions.loadSeries();
 				void get().actions.loadAuthors();
 				// Tag and publisher lists are lazy; refresh only once loaded.
-				if (get().tagSummaries !== null) void get().actions.loadTagSummaries();
+				if (get().tags !== null) void get().actions.loadTags();
 				if (get().publishers !== null) void get().actions.loadPublishers();
 				void refreshLibraryTotal();
 				// No full re-sweep here: visible pages refetch lazily and the
@@ -702,8 +702,8 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 						seriesLoading: false,
 						seriesError: series.error,
 						// Lazy lists belong to the old library; their pages reload.
-						tagSummaries: null,
-						tagSummariesLoading: false,
+						tags: null,
+						tagsLoading: false,
 						publishers: null,
 						publishersLoading: false,
 						bookPagesError: firstPage.error,
@@ -745,7 +745,7 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 						libraryError: normalizedError,
 						authorsLoading: false,
 						seriesLoading: false,
-						tagSummariesLoading: false,
+						tagsLoading: false,
 						publishersLoading: false,
 					});
 				}
@@ -927,10 +927,9 @@ export const useSeriesLoading = () =>
 	useLibraryStore((state) => state.seriesLoading);
 
 // Selectors for tags and publishers (lazy; `null` until first loaded)
-export const useTagSummaries = () =>
-	useLibraryStore((state) => state.tagSummaries);
-export const useTagSummariesLoading = () =>
-	useLibraryStore((state) => state.tagSummariesLoading);
+export const useTags = () => useLibraryStore((state) => state.tags);
+export const useTagsLoading = () =>
+	useLibraryStore((state) => state.tagsLoading);
 export const usePublishers = () => useLibraryStore((state) => state.publishers);
 export const usePublishersLoading = () =>
 	useLibraryStore((state) => state.publishersLoading);

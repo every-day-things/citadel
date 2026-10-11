@@ -21,7 +21,7 @@ pub use error::CalibreError;
 pub use library::{
     Author as LibraryAuthor, AuthorAdd, AuthorUpdate, Book as LibraryBook, BookAdd, BookFileInfo,
     BookIdentifier, BookPage, BookQuery, BookSortOrder, BookUpdate, GenreSummary, Library,
-    PublisherSummary, ResolvedBookAsset, SeriesSummary, TagCountSummary, TagSummary,
+    PublisherSummary, ResolvedBookAsset, SeriesSummary, TagSummary,
 };
 pub use stats::{library_stats, LibraryStats};
 pub use types::{AuthorId, BookFileId, BookId};

@@ -11,7 +11,6 @@ import type {
 	LibraryPublisher,
 	LibrarySeries,
 	LibraryTag,
-	LibraryTagSummary,
 	NewAuthor,
 } from "@/bindings";
 
@@ -60,10 +59,11 @@ export interface Library {
 	listAuthors(): Promise<LibraryAuthor[]>;
 	/** Every series with its book count; ids feed `LibraryBookQuery.series_id`. */
 	listSeries(): Promise<LibrarySeries[]>;
-	/** The library's full tag vocabulary (feeds tag autocomplete). */
+	/**
+	 * The library's full tag vocabulary with book counts (feeds tag
+	 * autocomplete and the Tags page); ids feed `LibraryBookQuery.tag_id`.
+	 */
 	listTags(): Promise<LibraryTag[]>;
-	/** Every tag with its book count; ids feed `LibraryBookQuery.tag_id`. */
-	listTagSummaries(): Promise<LibraryTagSummary[]>;
 	/** Every publisher with its book count; ids feed `LibraryBookQuery.publisher_id`. */
 	listPublishers(): Promise<LibraryPublisher[]>;
 	sendToDevice(

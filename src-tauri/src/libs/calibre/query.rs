@@ -184,11 +184,14 @@ pub fn clb_query_list_series(
         .collect())
 }
 
-/// One tag in the library; `name` is what the tag autocomplete suggests.
+/// One tag in the library with its linked-book count. `name` is what the
+/// tag autocomplete suggests; `id` is what [`LibraryBookQuery::tag_id`]
+/// filters on.
 #[derive(Serialize, Deserialize, specta::Type, Clone)]
 pub struct LibraryTag {
     pub id: i32,
     pub name: String,
+    pub book_count: u32,
 }
 
 #[tauri::command]
@@ -201,33 +204,6 @@ pub fn clb_query_list_tags(state: tauri::State<CitadelState>) -> Result<Vec<Libr
     Ok(tags
         .into_iter()
         .map(|tag| LibraryTag {
-            id: tag.id,
-            name: tag.name,
-        })
-        .collect())
-}
-
-/// One tag in the library with its linked-book count. `id` is what
-/// [`LibraryBookQuery::tag_id`] filters on.
-#[derive(Serialize, Deserialize, specta::Type, Clone)]
-pub struct LibraryTagSummary {
-    pub id: i32,
-    pub name: String,
-    pub book_count: u32,
-}
-
-#[tauri::command]
-#[specta::specta]
-pub fn clb_query_list_tag_summaries(
-    state: tauri::State<CitadelState>,
-) -> Result<Vec<LibraryTagSummary>, String> {
-    let tags = state
-        .with_library(|lib| lib.list_tags_with_book_counts())?
-        .map_err(|e| e.to_string())?;
-
-    Ok(tags
-        .into_iter()
-        .map(|tag| LibraryTagSummary {
             id: tag.id,
             name: tag.name,
             book_count: u32::try_from(tag.book_count).unwrap_or(u32::MAX),

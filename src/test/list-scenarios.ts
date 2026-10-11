@@ -2,7 +2,7 @@ import type {
 	LibraryAuthor,
 	LibraryPublisher,
 	LibrarySeries,
-	LibraryTagSummary,
+	LibraryTag,
 } from "@/bindings";
 import { useLibraryStore } from "@/stores/library/store";
 
@@ -39,7 +39,7 @@ const createSeries = (index: number, longName: boolean): LibrarySeries => ({
 	book_count: index % 7,
 });
 
-const createTag = (index: number, longName: boolean): LibraryTagSummary => ({
+const createTag = (index: number, longName: boolean): LibraryTag => ({
 	id: index + 1,
 	name: itemName("Tag", index, longName),
 	book_count: index % 7,
@@ -100,15 +100,14 @@ export const listScenarios = {
 		search: 'input[placeholder="Search tags"]',
 		createItem: createTag,
 		install: (count, longName) => {
-			const { tagSummaries, tagSummariesLoading } = useLibraryStore.getState();
+			const { tags, tagsLoading } = useLibraryStore.getState();
 			useLibraryStore.setState({
-				tagSummaries: Array.from({ length: count }, (_, index) =>
+				tags: Array.from({ length: count }, (_, index) =>
 					createTag(index, longName && index === count - 1),
 				),
-				tagSummariesLoading: false,
+				tagsLoading: false,
 			});
-			return () =>
-				useLibraryStore.setState({ tagSummaries, tagSummariesLoading });
+			return () => useLibraryStore.setState({ tags, tagsLoading });
 		},
 	},
 	publishers: {

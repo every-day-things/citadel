@@ -113,14 +113,6 @@ async clbQueryListTags() : Promise<Result<LibraryTag[], string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async clbQueryListTagSummaries() : Promise<Result<LibraryTagSummary[], string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("clb_query_list_tag_summaries") };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
 async clbQueryListPublishers() : Promise<Result<LibraryPublisher[], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("clb_query_list_publishers") };
@@ -590,14 +582,11 @@ export type LibrarySeries = { id: number; name: string; book_count: number }
  */
 export type LibraryStats = { book_count: number; author_count: number }
 /**
- * One tag in the library; `name` is what the tag autocomplete suggests.
+ * One tag in the library with its linked-book count. `name` is what the
+ * tag autocomplete suggests; `id` is what [`LibraryBookQuery::tag_id`]
+ * filters on.
  */
-export type LibraryTag = { id: number; name: string }
-/**
- * One tag in the library with its linked-book count. `id` is what
- * [`LibraryBookQuery::tag_id`] filters on.
- */
-export type LibraryTagSummary = { id: number; name: string; book_count: number }
+export type LibraryTag = { id: number; name: string; book_count: number }
 export type LocalFile = { 
 /**
  * The absolute path to the file, including extension.

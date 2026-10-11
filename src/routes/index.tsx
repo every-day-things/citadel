@@ -6,7 +6,7 @@ interface BookSearch {
 	author_id?: string;
 	/** Only books in this series (LibrarySeries id). */
 	series_id?: number;
-	/** Only books with this tag (LibraryTagSummary id). */
+	/** Only books with this tag (LibraryTag id). */
 	tag_id?: number;
 	/** Only books from this publisher (LibraryPublisher id). */
 	publisher_id?: number;

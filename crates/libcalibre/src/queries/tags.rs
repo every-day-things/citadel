@@ -6,35 +6,13 @@ use diesel::sql_types::{BigInt, Integer, Text};
 use diesel::{QueryDsl, RunQueryDsl, SqliteConnection};
 
 use crate::entities::tag::NewTag;
-use crate::library::{TagCountSummary, TagSummary};
+use crate::library::TagSummary;
 use crate::types::BookId;
 use crate::{CalibreError, Tag};
 
 /// Every tag in the library, sorted case-insensitively by name (with the
 /// raw name as a stable tiebreak, matching [`find_for_book`]).
 pub(crate) fn list_all(conn: &mut SqliteConnection) -> Result<Vec<TagSummary>, CalibreError> {
-    use crate::schema::tags::dsl::*;
-
-    tags.select(Tag::as_select())
-        .order_by(diesel::dsl::sql::<Text>("LOWER(name), name"))
-        .load(conn)
-        .map(|rows: Vec<Tag>| {
-            rows.into_iter()
-                .map(|tag| TagSummary {
-                    id: tag.id,
-                    name: tag.name,
-                })
-                .collect()
-        })
-        .map_err(CalibreError::from)
-}
-
-/// Every tag with its linked-book count, sorted case-insensitively by name.
-/// Includes tags no longer linked to any book (count 0), matching
-/// [`super::series::list_with_book_counts`].
-pub(crate) fn list_with_book_counts(
-    conn: &mut SqliteConnection,
-) -> Result<Vec<TagCountSummary>, CalibreError> {
     #[derive(QueryableByName)]
     struct TagCountRow {
         #[diesel(sql_type = Integer)]
@@ -50,14 +28,14 @@ pub(crate) fn list_with_book_counts(
          FROM tags t
          LEFT JOIN books_tags_link btl ON btl.tag = t.id
          GROUP BY t.id, t.name
-         ORDER BY t.name COLLATE NOCASE, t.id",
+         ORDER BY t.name COLLATE NOCASE, t.name, t.id",
     )
     .load(conn)
     .map_err(CalibreError::from)?;
 
     Ok(rows
         .into_iter()
-        .map(|row| TagCountSummary {
+        .map(|row| TagSummary {
             id: row.id,
             name: row.name,
             book_count: row.book_count,

@@ -130,13 +130,6 @@ const genLocalCalibreClient = async (
 			}
 			return results.data;
 		},
-		listTagSummaries: async () => {
-			const results = await commands.clbQueryListTagSummaries();
-			if (results.status === "error") {
-				throw new Error(results.error);
-			}
-			return results.data;
-		},
 		listPublishers: async () => {
 			const results = await commands.clbQueryListPublishers();
 			if (results.status === "error") {
@@ -262,9 +255,6 @@ const genRemoteCalibreClient = async (
 			throw new Error("Not implemented");
 		},
 		listTags() {
-			throw new Error("Not implemented");
-		},
-		listTagSummaries() {
 			throw new Error("Not implemented");
 		},
 		listPublishers() {

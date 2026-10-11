@@ -712,7 +712,7 @@ fn link_publisher(lib: &mut Library, book_id: BookId, name: &str) {
 }
 
 #[test]
-fn test_list_tags_with_book_counts_sorted_by_name() {
+fn test_list_tags_returns_book_counts() {
     let (_temp, mut lib) = setup_with_library();
 
     lib.add_book(BookAdd {
@@ -727,17 +727,12 @@ fn test_list_tags_with_book_counts_sorted_by_name() {
     .unwrap();
     lib.add_book(book("Untagged", &["Nobody"])).unwrap();
 
-    let tags = lib.list_tags_with_book_counts().unwrap();
+    let tags = lib.list_tags().unwrap();
     let summary: Vec<(&str, i64)> = tags
         .iter()
         .map(|t| (t.name.as_str(), t.book_count))
         .collect();
     assert_eq!(summary, [("Adventure", 1), ("fantasy", 2)]);
-
-    // Same ids as the plain vocabulary listing.
-    let plain_ids: Vec<i32> = lib.list_tags().unwrap().iter().map(|t| t.id).collect();
-    let counted_ids: Vec<i32> = tags.iter().map(|t| t.id).collect();
-    assert_eq!(plain_ids, counted_ids);
 }
 
 #[test]
@@ -760,7 +755,7 @@ fn test_tag_id_filter() {
     })
     .unwrap();
 
-    let tags = lib.list_tags_with_book_counts().unwrap();
+    let tags = lib.list_tags().unwrap();
     let fantasy = tags.iter().find(|t| t.name == "fantasy").unwrap();
 
     let page = query(
