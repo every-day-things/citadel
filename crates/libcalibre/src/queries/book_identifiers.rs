@@ -24,15 +24,6 @@ pub(crate) fn get(
         .map_err(CalibreError::from)
 }
 
-pub(crate) fn delete_all(conn: &mut SqliteConnection, book_id: BookId) -> Result<(), CalibreError> {
-    use crate::schema::identifiers::dsl::*;
-
-    diesel::delete(identifiers.filter(book.eq(book_id.as_i32())))
-        .execute(conn)
-        .map(|_| ())
-        .map_err(CalibreError::from)
-}
-
 // =============================================================================
 // Relationships
 // =============================================================================

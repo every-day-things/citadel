@@ -4,6 +4,7 @@ import type {
 	AuthorUpdate,
 	BookUpdate,
 	CoverThumbnail,
+	DeleteBooksOutcome,
 	ImportableBookMetadata,
 	LibraryAuthor,
 	LibraryBook,
@@ -81,6 +82,8 @@ interface LibraryActions {
 	updateAuthor: (authorId: string, updates: AuthorUpdate) => Promise<void>;
 	createAuthors: (newAuthors: NewAuthor[]) => Promise<void>;
 	deleteAuthor: (authorId: string) => Promise<void>;
+	/** Deletes books and moves their folders to the trash; see the service. */
+	deleteBooks: (bookIds: LibraryBook["id"][]) => Promise<DeleteBooksOutcome>;
 	deleteBookIdentifier: (bookId: string, identifierId: number) => Promise<void>;
 	upsertBookIdentifier: (
 		bookId: string,
@@ -782,6 +785,22 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 				if (!library) throw new Error("Library not initialized");
 				await library.deleteAuthor(authorId);
 				await get().actions.loadAuthors();
+			},
+
+			deleteBooks: async (
+				bookIds: LibraryBook["id"][],
+			): Promise<DeleteBooksOutcome> => {
+				if (isBackendDiverted()) throw new Error(SWITCH_IN_PROGRESS_ERROR);
+				const { library } = get();
+				if (!library) throw new Error("Library not initialized");
+				const outcome = await library.deleteBooks(bookIds);
+				set((state) => {
+					const coverThumbs = new Map(state.coverThumbs);
+					for (const id of bookIds) coverThumbs.delete(id);
+					return { coverThumbs };
+				});
+				get().actions.invalidateBooks();
+				return outcome;
 			},
 
 			deleteBookIdentifier: async (

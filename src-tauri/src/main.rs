@@ -65,6 +65,7 @@ fn run_tauri_backend() -> std::io::Result<()> {
         calibre::command::clb_cmd_create_authors,
         calibre::command::clb_cmd_update_author,
         calibre::command::clb_cmd_delete_author,
+        calibre::command::clb_cmd_delete_books,
         // Metadata-provider commands (Hardcover, LoC, DNB, Open Library)
         metadata::commands::clb_cmd_test_metadata_provider,
         metadata::commands::clb_query_metadata_search,

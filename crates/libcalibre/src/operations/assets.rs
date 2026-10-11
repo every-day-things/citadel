@@ -1,10 +1,15 @@
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
+use diesel::prelude::*;
+use diesel::sql_query;
+use diesel::sql_types::{Integer, Text};
 use diesel::{Connection, SqliteConnection};
 
 use crate::{
     assets::{self, COVER_FILENAME},
-    queries::{authors, book_descriptions, book_files, book_identifiers, books},
+    custom_columns,
+    queries::{book_files, books},
     types::BookId,
     CalibreError, UpdateBookData,
 };
@@ -275,25 +280,83 @@ pub fn remove_book_file(
     })
 }
 
+/// Tables keyed by `book` that Calibre clears when a book is deleted. Most
+/// are also covered by `books_delete_trg`, but that trigger is not
+/// guaranteed to exist (or to be complete) in every library, so they are
+/// cleared explicitly. Tables missing from older libraries are skipped.
+const BOOK_LINKED_TABLES: &[&str] = &[
+    "books_authors_link",
+    "books_publishers_link",
+    "books_ratings_link",
+    "books_series_link",
+    "books_tags_link",
+    "books_languages_link",
+    "data",
+    "comments",
+    "conversion_options",
+    "books_plugin_data",
+    "identifiers",
+    "annotations",
+    "last_read_positions",
+];
+
+/// Delete every database row belonging to `book_id`: the `books` row, its
+/// links and per-book data, and its custom-column values. Leaves the book's
+/// directory on disk alone. Callers should run this inside a transaction.
+pub(crate) fn delete_book_records(
+    conn: &mut SqliteConnection,
+    book_id: BookId,
+) -> Result<(), CalibreError> {
+    #[derive(QueryableByName)]
+    struct TableName {
+        #[diesel(sql_type = Text)]
+        name: String,
+    }
+
+    let existing: HashSet<String> =
+        sql_query("SELECT name FROM sqlite_master WHERE type = 'table'")
+            .load::<TableName>(conn)?
+            .into_iter()
+            .map(|row| row.name)
+            .collect();
+
+    // Custom-column values: normalized columns keep the per-book rows in a
+    // link table, the rest directly in their value table. Calibre deletes
+    // these itself rather than via triggers.
+    let custom_tables = custom_columns::list(conn)?.into_iter().map(|column| {
+        if column.normalized {
+            format!("books_custom_column_{}_link", column.id)
+        } else {
+            format!("custom_column_{}", column.id)
+        }
+    });
+
+    let tables = BOOK_LINKED_TABLES
+        .iter()
+        .map(|table| (*table).to_string())
+        .chain(custom_tables)
+        .filter(|table| existing.contains(table));
+    for table in tables {
+        sql_query(format!("DELETE FROM {table} WHERE book = ?"))
+            .bind::<Integer, _>(book_id.as_i32())
+            .execute(conn)?;
+    }
+
+    if !books::delete(conn, book_id)? {
+        return Err(CalibreError::BookNotFound(book_id));
+    }
+    books::touch_catalog(conn)?;
+
+    Ok(())
+}
+
 pub(crate) fn delete_entire_book(
     library_root: &str,
     conn: &mut SqliteConnection,
     book_id: BookId,
     book_path: &str,
 ) -> Result<(), CalibreError> {
-    book_files::delete_all(conn, book_id)?;
-
-    book_descriptions::delete(conn, book_id)?;
-
-    book_identifiers::delete_all(conn, book_id)?;
-
-    let author_ids = books::find_authors(conn, book_id)?;
-    for author_id in author_ids {
-        authors::unlink_book(conn, author_id, book_id)?;
-    }
-
-    books::delete(conn, book_id)?;
-    books::touch_catalog(conn)?;
+    delete_book_records(conn, book_id)?;
 
     let book_dir = std::path::Path::new(library_root).join(book_path);
     match std::fs::remove_dir_all(&book_dir) {

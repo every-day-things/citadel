@@ -137,6 +137,16 @@
 	width: 100%;
 }
 
+.detailsSecondaryActions {
+	display: flex;
+	justify-content: flex-end;
+	width: 100%;
+}
+
+.dangerIcon {
+	color: var(--ctd-danger-bg);
+}
+
 .divider {
 	width: 100%;
 	margin: 0;

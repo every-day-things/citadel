@@ -249,6 +249,21 @@ async clbCmdDeleteAuthor(authorId: string) : Promise<Result<null, string>> {
 }
 },
 /**
+ * Delete books from the library. The database rows go first, in one
+ * transaction (nothing is deleted if any id is unknown); each book's folder
+ * is then moved to the system trash rather than erased, so it can be
+ * recovered. An author folder left empty by the move is removed, as
+ * Calibre does.
+ */
+async clbCmdDeleteBooks(bookIds: string[]) : Promise<Result<DeleteBooksOutcome, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clb_cmd_delete_books", { bookIds }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+/**
  * Test that a provider is reachable / its credentials are valid.
  */
 async clbCmdTestMetadataProvider(provider: string, apiKey: string) : Promise<Result<ProviderStatus, string>> {
@@ -474,6 +489,12 @@ export type CustomValueDto = { Bool: boolean } | { Int: number } | { Float: numb
  * RFC3339 datetime string, e.g. `2024-01-15T10:30:00+00:00`.
  */
 { Datetime: string } | { Enumeration: string }
+/**
+ * Result of [`clb_cmd_delete_books`]. The books are gone from the library
+ * either way; `trash_failures` lists book folders that could not be moved
+ * to the system trash and are still on disk.
+ */
+export type DeleteBooksOutcome = { deleted: number; trash_failures: string[] }
 export type DetectedLibrary = { path: string; source: DetectionSource }
 /**
  * Where [`detect_calibre_library`] found its hit.

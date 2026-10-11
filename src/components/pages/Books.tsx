@@ -11,6 +11,7 @@ import {
 } from "react";
 import type { Identifier, LibraryBook, LocalFile } from "@/bindings";
 import {
+	AlertDialog,
 	Button,
 	Checkbox,
 	Drawer,
@@ -49,7 +50,9 @@ import {
 import { createSmartShelf } from "@/stores/settings/actions";
 import { BookCover } from "../atoms/BookCover";
 import { F7Bookmark } from "../icons/F7Bookmark";
+import { toast } from "@/components/ui/toast";
 import { F7Pencil } from "../icons/F7Pencil";
+import { F7Trash } from "../icons/F7Trash";
 import { TablerCopy } from "../icons/TablerCopy";
 import { BookGrid, type ScrollToBookIndex } from "../molecules/BookGrid";
 import { EmptyLibrary, EmptyState } from "../molecules/EmptyState";
@@ -524,6 +527,30 @@ const BookDetails = ({
 	// refreshed on mutations). An unresolvable name (shouldn't happen)
 	// degrades to plain text.
 	const seriesList = useSeriesList();
+	const { deleteBooks } = useLibraryActions();
+	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+	const onConfirmDelete = async () => {
+		setIsDeleteDialogOpen(false);
+		try {
+			const outcome = await deleteBooks([book.id]);
+			onClose();
+			if (outcome.trash_failures.length > 0) {
+				toast.show({
+					id: `delete-book-${book.id}`,
+					title: "Book deleted, files left in place",
+					message: `“${book.title}” was removed from the library, but its folder could not be moved to the Trash: ${outcome.trash_failures.join(", ")}`,
+					duration: 10000,
+				});
+			}
+		} catch (error) {
+			toast.show({
+				id: `delete-book-${book.id}`,
+				title: "Could not delete book",
+				message: error instanceof Error ? error.message : String(error),
+				duration: 7000,
+			});
+		}
+	};
 	const seriesId =
 		book.series !== null
 			? seriesList.find((series) => series.name === book.series)?.id
@@ -602,6 +629,26 @@ const BookDetails = ({
 							Edit
 						</Button>
 					</div>
+					<div className={styles.detailsSecondaryActions}>
+						<Tooltip label="Delete book…">
+							<IconButton
+								className={styles.dangerIcon}
+								aria-label="Delete book"
+								onClick={() => setIsDeleteDialogOpen(true)}
+							>
+								<F7Trash />
+							</IconButton>
+						</Tooltip>
+					</div>
+					<AlertDialog
+						open={isDeleteDialogOpen}
+						onOpenChange={setIsDeleteDialogOpen}
+						title={`Delete “${book.title}”?`}
+						description="The book is removed from the library and its folder, including all its files, is moved to the Trash."
+						confirmLabel="Delete"
+						destructive
+						onConfirm={() => void onConfirmDelete()}
+					/>
 				</div>
 			</div>
 			{book.description !== null && book.description.length > 0 && (

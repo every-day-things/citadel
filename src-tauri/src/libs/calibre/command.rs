@@ -340,6 +340,94 @@ pub fn clb_cmd_delete_author(
     })?
 }
 
+/// Result of [`clb_cmd_delete_books`]. The books are gone from the library
+/// either way; `trash_failures` lists book folders that could not be moved
+/// to the system trash and are still on disk.
+#[derive(serde::Serialize, specta::Type)]
+pub struct DeleteBooksOutcome {
+    pub deleted: u32,
+    pub trash_failures: Vec<String>,
+}
+
+/// Delete books from the library. The database rows go first, in one
+/// transaction (nothing is deleted if any id is unknown); each book's folder
+/// is then moved to the system trash rather than erased, so it can be
+/// recovered. An author folder left empty by the move is removed, as
+/// Calibre does.
+#[tauri::command]
+#[specta::specta]
+pub fn clb_cmd_delete_books(
+    state: tauri::State<CitadelState>,
+    book_ids: Vec<String>,
+) -> Result<DeleteBooksOutcome, String> {
+    let ids = book_ids
+        .iter()
+        .map(|raw| {
+            raw.parse::<i32>()
+                .map(libcalibre::BookId::from)
+                .map_err(|e| format!("Invalid book id '{raw}': {e}"))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    let library_root = state
+        .get_library_path()
+        .ok_or("No library loaded".to_string())?;
+
+    let dirs = state
+        .with_library(|lib| lib.delete_books(&ids))?
+        .map_err(|e| e.to_string())?;
+
+    let library_root = std::path::Path::new(&library_root);
+    let trash_failures = dirs
+        .iter()
+        .filter(|dir| dir.exists())
+        .filter_map(|dir| match move_to_trash(dir) {
+            Ok(()) => {
+                remove_empty_author_dir(library_root, dir);
+                None
+            }
+            Err(e) => {
+                log::warn!("Failed to move {} to the trash: {e}", dir.display());
+                Some(dir.display().to_string())
+            }
+        })
+        .collect();
+
+    Ok(DeleteBooksOutcome {
+        deleted: u32::try_from(dirs.len()).unwrap_or(u32::MAX),
+        trash_failures,
+    })
+}
+
+/// Moves `path` to the system trash. On macOS this uses `NSFileManager`
+/// rather than the crate's default Finder/AppleScript route, which would
+/// prompt for Automation permission and play the Finder sound.
+fn move_to_trash(path: &std::path::Path) -> Result<(), trash::Error> {
+    #[cfg(target_os = "macos")]
+    {
+        use trash::macos::{DeleteMethod, TrashContextExtMacos};
+        let mut context = trash::TrashContext::default();
+        context.set_delete_method(DeleteMethod::NsFileManager);
+        context.delete(path)
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        trash::delete(path)
+    }
+}
+
+/// Removes `book_dir`'s parent (the author folder) if it is now empty and
+/// sits inside the library. `remove_dir` refuses non-empty directories, so
+/// this never deletes anything but an empty folder.
+fn remove_empty_author_dir(library_root: &std::path::Path, book_dir: &std::path::Path) {
+    let Some(author_dir) = book_dir.parent() else {
+        return;
+    };
+    if author_dir == library_root || !author_dir.starts_with(library_root) {
+        return;
+    }
+    let _ = std::fs::remove_dir(author_dir);
+}
+
 #[tauri::command]
 #[specta::specta]
 pub fn clb_cmd_create_authors(

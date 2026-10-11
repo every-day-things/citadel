@@ -2,6 +2,7 @@ import type {
 	AuthorUpdate,
 	BookUpdate,
 	CoverThumbnail,
+	DeleteBooksOutcome,
 	ImportableBookMetadata,
 	ImportableFile,
 	LibraryAuthor,
@@ -72,6 +73,11 @@ export interface Library {
 	updateBook(bookId: string, updates: BookUpdate): Promise<void>;
 	updateAuthor(bookId: string, updates: AuthorUpdate): Promise<void>;
 	deleteAuthor(authorId: string): Promise<void>;
+	/**
+	 * Deletes books from the library (all-or-nothing) and moves their folders
+	 * to the system trash. Folders that could not be trashed are reported.
+	 */
+	deleteBooks(bookIds: string[]): Promise<DeleteBooksOutcome>;
 	deleteBookIdentifier(bookId: string, identifierId: number): Promise<void>;
 	upsertBookIdentifier(
 		bookId: string,
