@@ -77,7 +77,10 @@ jobs:
           echo "Coverage: $COVERAGE%"
 
       - name: Comment coverage on PR
-        if: github.event_name == 'pull_request'
+        # Fork PR tokens cannot write comments, even with pull-requests: write.
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository
         uses: actions/github-script@v7
         with:
           script: |
