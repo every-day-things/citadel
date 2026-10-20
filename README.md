@@ -110,3 +110,7 @@ Citadel can check for app updates and install them on request. Automatic update 
 This project would not be possible without the north star created by Kovid Goyal, [Calibre](https://github.com/kovidgoyal/calibre). Without his hard work building such an extensive and powerful tool, Citadel would not exist.
 
 Huge thanks to [Kemie Guaida](https://kemielikes.design/), who created an excellent [Calibre redesign Figma prototype](https://old.reddit.com/r/Calibre/comments/udzumn/testing_a_new_interface_for_calibre/), from which Citadel takes inspiration. Thank you, Kemie!
+
+### OPDS
+
+Share the active library with OPDS 1.x readers using [Settings → Sharing](docs/opds-sharing.md), or run the [headless server](docs/headless-server.md) without the desktop application. The catalog supports navigation, search and book downloads.

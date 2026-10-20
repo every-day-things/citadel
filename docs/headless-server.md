@@ -39,3 +39,18 @@ Citadel serves plain HTTP. For access beyond a trusted local network, place it
 behind an externally managed TLS reverse proxy and firewall. Service
 supervision, certificates, public-exposure controls, and container or operating
 system packages are not provided by this initial server.
+
+## Validation and deployment
+
+Build the host with `cargo build --release -p citadel-server`. This selects the headless package and does not build Tauri. Its configuration uses `sharing.target = "localNetworks"` or `"allInterfaces"`, or the explicit-address table shown above; do not combine those forms.
+
+The Unix process test exercises authentication, catalog navigation, acquisition, and SIGTERM shutdown. The non-Unix Ctrl-C handler requires platform validation; it is not covered by that test. OPDS request limits are described in [Sharing](opds-sharing.md).
+
+To generate a disposable validation library, provide an EPUB you can use for testing:
+
+```sh
+cargo run -p libcalibre --example create_opds_validation_library -- \
+  /absolute/empty/output-directory /absolute/path/to/example.epub
+```
+
+The fixture includes 105 downloadable books, multiple pages, Unicode/XML metadata, assigned genres, missing covers, a large file and a fileless book. It is intended for smoke tests, not for an existing library.
