@@ -17,6 +17,7 @@ import {
 	commands,
 } from "@/bindings";
 import {
+	AlertDialog,
 	Button,
 	IconButton,
 	Select,
@@ -27,7 +28,9 @@ import {
 	TextInput,
 	Tooltip,
 } from "@/components/ui";
+import { useDeleteBookConfirmation } from "@/lib/hooks/use-delete-book-confirmation";
 import { safeAsyncEventHandler } from "@/lib/async";
+import { deleteBookDialogTitle } from "@/lib/delete-book-title";
 import {
 	type CustomFieldValue,
 	buildCustomFieldValues,
@@ -124,6 +127,7 @@ interface BookPageProps {
 	onCreateAuthor: (authorName: string) => Promise<void>;
 	onSave: (bookUpdate: BookUpdate) => Promise<void>;
 	onDeleteIdentifier: (bookId: string, identifierId: number) => Promise<void>;
+	onDelete?: () => Promise<void>;
 	onReloadBooks: () => Promise<void>;
 	onUpsertIdentifier: (
 		bookId: string,
@@ -142,18 +146,59 @@ export const BookPage = ({
 	onUpsertIdentifier,
 	onDeleteIdentifier,
 	onReloadBooks,
+	onDelete,
 }: BookPageProps) => {
 	return (
-		<EditBookForm
-			allAuthorList={allAuthorList}
-			allTagList={allTagList}
-			onCreateAuthor={onCreateAuthor}
-			book={book}
-			onSave={onSave}
-			onDeleteIdentifier={onDeleteIdentifier}
-			onReloadBooks={onReloadBooks}
-			onUpsertIdentifier={onUpsertIdentifier}
-		/>
+		<>
+			<EditBookForm
+				allAuthorList={allAuthorList}
+				allTagList={allTagList}
+				onCreateAuthor={onCreateAuthor}
+				book={book}
+				onSave={onSave}
+				onDeleteIdentifier={onDeleteIdentifier}
+				onReloadBooks={onReloadBooks}
+				onUpsertIdentifier={onUpsertIdentifier}
+			/>
+			{onDelete && <DeleteBookSection title={book.title} onDelete={onDelete} />}
+		</>
+	);
+};
+
+const DeleteBookSection = ({
+	title,
+	onDelete,
+}: {
+	title: string;
+	onDelete: () => Promise<void>;
+}) => {
+	const confirmation = useDeleteBookConfirmation(onDelete);
+	return (
+		<section className={styles.deleteSection} aria-label="Delete book">
+			{confirmation.error && (
+				<p role="alert" className={styles.deleteError}>
+					{confirmation.error}
+				</p>
+			)}
+			<Button
+				type="button"
+				className={styles.deleteButton}
+				disabled={confirmation.pending}
+				onClick={() => confirmation.setOpen(true)}
+			>
+				{confirmation.pending ? "Deleting…" : "Delete Book…"}
+			</Button>
+			<AlertDialog
+				open={confirmation.open}
+				onOpenChange={confirmation.setOpen}
+				title={deleteBookDialogTitle(title)}
+				textAlign="left"
+				description="This book will be removed from Citadel and its files moved to the Trash. You can recover the files, then re-import the book."
+				confirmLabel="Move to Trash"
+				destructive
+				onConfirm={() => void confirmation.confirm()}
+			/>
+		</section>
 	);
 };
 

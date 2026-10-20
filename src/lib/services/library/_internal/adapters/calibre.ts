@@ -158,6 +158,13 @@ const genLocalCalibreClient = async (
 				throw new Error(result.error);
 			}
 		},
+		deleteBooks: async (bookIds) => {
+			const result = await commands.clbCmdDeleteBooks(bookIds);
+			if (result.status === "error") {
+				throw new Error(result.error);
+			}
+			return result.data;
+		},
 		upsertBookIdentifier: async (bookId, identifierId, label, value) => {
 			const result = await commands.clbCmdUpsertBookIdentifier(
 				bookId,
@@ -270,6 +277,9 @@ const genRemoteCalibreClient = async (
 			throw new Error("Not implemented");
 		},
 		deleteAuthor: () => {
+			throw new Error("Not implemented");
+		},
+		deleteBooks: () => {
 			throw new Error("Not implemented");
 		},
 		upsertBookIdentifier: () => {

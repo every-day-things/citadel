@@ -4,6 +4,51 @@
 	min-height: 100%;
 }
 
+.deleteSection {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	flex-wrap: wrap;
+	gap: 16px;
+	margin: 0 24px 24px;
+	padding: 20px 0 0;
+	border-top: 1px solid var(--ctd-border);
+}
+
+.deleteSection .deleteButton {
+	border: 2px solid
+		color-mix(in srgb, var(--ctd-danger-bg) 55%, var(--ctd-content-bg));
+	color: color-mix(in srgb, var(--ctd-danger-bg) 80%, var(--ctd-ink));
+	background: transparent;
+	box-shadow: none;
+	transition: background-color 120ms ease-out;
+}
+
+.deleteSection .deleteButton:hover:not(:disabled) {
+	background: color-mix(
+		in srgb,
+		var(--ctd-danger-bg) 10%,
+		var(--ctd-content-bg)
+	);
+}
+
+.deleteSection .deleteButton:active:not(:disabled) {
+	background: color-mix(
+		in srgb,
+		var(--ctd-danger-bg) 18%,
+		var(--ctd-content-bg)
+	);
+}
+
+.deleteSection .deleteButton:focus-visible {
+	box-shadow: var(--ctd-focus-shadow);
+}
+
+.deleteError {
+	color: var(--ctd-danger-bg);
+	margin-right: auto;
+}
+
 .pageHeader {
 	position: sticky;
 	top: 0;

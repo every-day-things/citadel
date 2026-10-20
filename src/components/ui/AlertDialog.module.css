@@ -42,8 +42,13 @@
 	outline: none;
 }
 
+.content[data-text-align="left"] {
+	text-align: left;
+}
+
 .title {
 	margin: 0;
+	overflow-wrap: anywhere;
 	font-size: 13px;
 	font-weight: 600;
 	color: var(--ctd-ink);

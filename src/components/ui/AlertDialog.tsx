@@ -9,6 +9,7 @@ export interface AlertDialogProps {
 	title: string;
 	/** Smaller informative text below the title. */
 	description?: string;
+	textAlign?: "left" | "center";
 	confirmLabel: string;
 	cancelLabel?: string;
 	/** Style the confirm button as destructive (red). */
@@ -25,6 +26,7 @@ export const AlertDialog = ({
 	onOpenChange,
 	title,
 	description,
+	textAlign = "center",
 	confirmLabel,
 	cancelLabel = "Cancel",
 	destructive = false,
@@ -33,7 +35,10 @@ export const AlertDialog = ({
 	<RadixAlertDialog.Root open={open} onOpenChange={onOpenChange}>
 		<RadixAlertDialog.Portal>
 			<RadixAlertDialog.Overlay className={styles.overlay} />
-			<RadixAlertDialog.Content className={styles.content}>
+			<RadixAlertDialog.Content
+				className={styles.content}
+				data-text-align={textAlign}
+			>
 				<RadixAlertDialog.Title className={styles.title}>
 					{title}
 				</RadixAlertDialog.Title>

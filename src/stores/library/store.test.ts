@@ -43,6 +43,10 @@ const fakeLibrary = () => {
 		warmCoverThumbnails: vi.fn(async () => []),
 		ensureCoverThumbnails: vi.fn(async () => []),
 		updateBook: vi.fn(async () => undefined),
+		deleteBooks: vi.fn(async (ids: string[]) => ({
+			deleted: ids.length,
+			trash_failures: [] as string[],
+		})),
 	};
 	return { fake, library: fake as unknown as Library };
 };
@@ -129,5 +133,60 @@ describe("library switch backend restore", () => {
 
 		await actions.updateBook("1", {} as never);
 		expect(a.fake.updateBook).toHaveBeenCalledOnce();
+	});
+});
+
+describe("deleteBooks", () => {
+	beforeEach(() => {
+		initClient.mockReset();
+	});
+
+	it("preserves the visible book cache when deletion is rejected", async () => {
+		const { useLibraryStore, a } = await bootOnA();
+		const before = useLibraryStore.getState();
+		a.fake.deleteBooks.mockRejectedValueOnce(
+			new Error("Unsafe book folder path"),
+		);
+		await expect(before.actions.deleteBooks(["1"])).rejects.toThrow(
+			"Unsafe book folder path",
+		);
+		expect(useLibraryStore.getState().bookCache).toBe(before.bookCache);
+		expect(useLibraryStore.getState().coverThumbs).toBe(before.coverThumbs);
+	});
+
+	it("refreshes removed records and returns file failures for the warning screen", async () => {
+		const { useLibraryStore, a } = await bootOnA();
+		const failure = "/library/Author/Book: Permission denied";
+		a.fake.deleteBooks.mockResolvedValueOnce({
+			deleted: 1,
+			trash_failures: [failure],
+		});
+		const before = useLibraryStore.getState().bookCache.generation;
+		const result = await useLibraryStore.getState().actions.deleteBooks(["1"]);
+		expect(result).toEqual({ deleted: 1, trash_failures: [failure] });
+		expect(useLibraryStore.getState().bookCache.generation).toBeGreaterThan(
+			before,
+		);
+	});
+
+	it("deletes through the library, drops cover thumbs and invalidates the cache", async () => {
+		const { useLibraryStore, a } = await bootOnA();
+		const thumb = { book_id: "1" } as never;
+		useLibraryStore.setState({
+			coverThumbs: new Map([
+				["1", thumb],
+				["2", thumb],
+			]),
+		});
+		const generationBefore = useLibraryStore.getState().bookCache.generation;
+
+		const outcome = await useLibraryStore.getState().actions.deleteBooks(["1"]);
+
+		expect(a.fake.deleteBooks).toHaveBeenCalledWith(["1"]);
+		expect(outcome).toEqual({ deleted: 1, trash_failures: [] });
+		expect([...useLibraryStore.getState().coverThumbs.keys()]).toEqual(["2"]);
+		expect(useLibraryStore.getState().bookCache.generation).toBeGreaterThan(
+			generationBefore,
+		);
 	});
 });

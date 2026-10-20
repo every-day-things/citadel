@@ -516,6 +516,34 @@ impl Library {
         Ok(removed)
     }
 
+    /// Delete books from the library database, all-or-nothing in one
+    /// transaction: each `books` row, its links, per-book data and
+    /// custom-column values. Files on disk are NOT touched; the returned
+    /// absolute directories (one per deleted book, in input order) are left
+    /// for the caller to dispose of, e.g. by moving them to the system
+    /// trash. Fails with [`CalibreError::BookNotFound`] if any id is missing,
+    /// in which case nothing is deleted. Every folder is validated before
+    /// records are removed: paths must be relative author/book directories
+    /// within the library, without symlinks or inaccessible ancestors.
+    pub fn delete_books(&mut self, book_ids: &[BookId]) -> Result<Vec<PathBuf>, CalibreError> {
+        let library_root = PathBuf::from(&self.db_path.library_path);
+        self.conn.transaction(|conn| {
+            let mut dirs = Vec::with_capacity(book_ids.len());
+            for &book_id in book_ids {
+                let book =
+                    book_queries::get(conn, book_id)?.ok_or(CalibreError::BookNotFound(book_id))?;
+                dirs.push(operations::assets::validated_book_delete_dir(
+                    &library_root,
+                    &book.path,
+                )?);
+            }
+            for &book_id in book_ids {
+                operations::assets::delete_book_records(conn, book_id)?;
+            }
+            Ok(dirs)
+        })
+    }
+
     /// `(id, book_dir_path)` for every book with a cover, read straight from
     /// the `books` table with no hydration of authors/tags/series/files/
     /// read-state. Feeds the cover-thumbnail warm path, where only the cover's
