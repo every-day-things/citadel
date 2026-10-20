@@ -20,6 +20,15 @@ Pre-reveal credential files fail to parse and are treated as no credentials; use
 
 Reveal is a read, not a rotation. The reader UI can show and copy the password at any time; "only shown once" disappears from the product.
 
-A same-user attacker who can read the 0600 credential file gets the plaintext — but that attacker can already read every book in the library, and citadel-server has always held this credential in plaintext TOML, so the stack has accepted reversible storage at rest from the start. Hashing would add cost without moving any real boundary. The one boundary that did change is the webview: `clb_query_opds_credential_secret` hands the plaintext to app JS, so a theoretical XSS now reaches the secret where a verifier used to be the ceiling. The app renders no untrusted HTML today; if that changes, this decision must be revisited alongside a Content-Security-Policy. Users may also type their own (possibly reused) password instead of generating one — the plaintext cost of that choice is theirs; the UI nudges toward generation. ADR 0003's machine-local placement is unchanged: the secret still never travels with a library.
+A same-user attacker who can read the 0600 credential file gets the plaintext — but that attacker can already read every book in the library, so desktop sharing accepts reversible storage at rest to support password reveal. Hashing would add cost without moving any real boundary. The one boundary that did change is the webview: `clb_query_opds_credential_secret` hands the plaintext to app JS, so a theoretical XSS now reaches the secret where a verifier used to be the ceiling. The app renders no untrusted HTML today; if that changes, this decision must be revisited alongside a Content-Security-Policy. Users may also type their own (possibly reused) password instead of generating one — the plaintext cost of that choice is theirs; the UI nudges toward generation. ADR 0003's machine-local placement is unchanged: the secret still never travels with a library.
 
 Libraries and credential files from nightly builds with verifier-format files need one regeneration after updating.
+
+## Headless hosting
+
+The persistence policy above applies to the desktop host. The headless server
+reads a JSON list of `USER:PASSWORD` pairs from `CITADEL_OPDS_USERS` once at
+startup and supplies them through the runtime's ephemeral-credential constructor.
+It never reads or writes credential files. Every configured user receives the
+same read access; restarting is required to change the list. Its optional state
+directory defaults to XDG state storage on Unix and currently contains no files.
