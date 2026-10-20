@@ -20,6 +20,7 @@ use super::{
     auth::{require_basic_auth, OpdsBasicAuth},
 };
 use crate::identity::{book_identity, navigation_identity};
+use crate::limits::{self, run_work, Limits, WorkUnavailable};
 
 const PAGE_SIZE: u64 = 50;
 const MAX_SEARCH_LENGTH: usize = 200;
@@ -118,6 +119,7 @@ pub trait CatalogSource: Send + Sync + 'static {
 
 #[derive(Clone)]
 struct CatalogState {
+    limits: Limits,
     source: Arc<dyn CatalogSource>,
 }
 
@@ -155,6 +157,7 @@ pub(crate) struct FeedEntry {
 }
 
 pub fn router(source: Arc<dyn CatalogSource>, auth: OpdsBasicAuth) -> Router {
+    let limits = auth.limits();
     let feeds = Router::new()
         .route("/opds", get(root_feed))
         .route("/opds/all", get(all_books_feed))
@@ -172,6 +175,7 @@ pub fn router(source: Arc<dyn CatalogSource>, auth: OpdsBasicAuth) -> Router {
         .route("/opds/opensearch.xml", get(opensearch_description))
         .with_state(CatalogState {
             source: source.clone(),
+            limits: limits.clone(),
         });
     let assets = Router::new()
         .route(
@@ -182,13 +186,20 @@ pub fn router(source: Arc<dyn CatalogSource>, auth: OpdsBasicAuth) -> Router {
             "/opds/books/{book_id}/cover",
             get(book_cover).head(book_cover_head),
         )
-        .with_state(CatalogState { source });
+        .with_state(CatalogState {
+            source,
+            limits: limits.clone(),
+        });
     Router::new()
         .merge(feeds)
         .merge(assets)
         .layer(axum::middleware::from_fn_with_state(
             auth,
             require_basic_auth,
+        ))
+        .layer(axum::middleware::from_fn_with_state(
+            limits,
+            limits::enforce,
         ))
 }
 
@@ -197,10 +208,10 @@ async fn root_feed(state: State<CatalogState>, query: Query<PageQuery>) -> Respo
         return public_error(StatusCode::NOT_FOUND, "Page not found");
     }
     let source = state.source.clone();
-    let library_uuid = match tokio::task::spawn_blocking(move || source.active_library_id()).await {
+    let library_uuid = match run_work(&state.limits, move || source.active_library_id()).await {
         Ok(Ok(uuid)) => uuid,
         Ok(Err(error)) => return calibre_error(error),
-        Err(_) => return public_error(StatusCode::INTERNAL_SERVER_ERROR, "Catalog unavailable"),
+        Err(response) => return response.into_response(),
     };
     match root_navigation_feed(&library_uuid) {
         Ok(xml) => xml_response(NAVIGATION_CONTENT_TYPE, xml),
@@ -365,11 +376,11 @@ async fn acquisition_handler(
 ) -> Response {
     let (page_number, offset) = match page_params(&query) {
         Ok(params) => params,
-        Err(response) => return response,
+        Err(response) => return response.into_response(),
     };
 
     let source = state.source.clone();
-    let result = tokio::task::spawn_blocking(move || {
+    let result = run_work(&state.limits, move || {
         source.book_page(CatalogBookQuery {
             filter,
             sort,
@@ -381,7 +392,7 @@ async fn acquisition_handler(
     let (library_uuid, updated_at, page) = match result {
         Ok(Ok(page)) => page,
         Ok(Err(error)) => return calibre_error(error),
-        Err(_) => return public_error(StatusCode::INTERNAL_SERVER_ERROR, "Catalog unavailable"),
+        Err(response) => return response.into_response(),
     };
 
     let last_page = page_count(page.total).max(1);
@@ -448,7 +459,7 @@ async fn facet_handler(
         return public_error(StatusCode::BAD_REQUEST, "Invalid page");
     }
     let source = state.source.clone();
-    let result = tokio::task::spawn_blocking(move || {
+    let result = run_work(&state.limits, move || {
         let library_uuid = source.active_library_id()?;
         let facets = match kind {
             CatalogFacetKind::Authors => source.authors()?,
@@ -462,7 +473,7 @@ async fn facet_handler(
     let (library_uuid, facets) = match result {
         Ok(Ok(result)) => result,
         Ok(Err(error)) => return calibre_error(error),
-        Err(_) => return public_error(StatusCode::INTERNAL_SERVER_ERROR, "Catalog unavailable"),
+        Err(response) => return response.into_response(),
     };
     let last_page = page_count(u64::try_from(facets.len()).unwrap_or(0)).max(1);
     if page_number > last_page {
@@ -567,19 +578,20 @@ async fn asset_response(
         .and_then(|value| value.to_str().ok())
         .map(str::to_owned);
 
-    let asset = match resolve_asset(state.source.clone(), book_id, format).await {
+    let asset = match resolve_asset(&state, book_id, format).await {
         Ok(Ok(asset)) => asset,
         Ok(Err(error)) => return calibre_error(error),
-        Err(_) => return public_error(StatusCode::INTERNAL_SERVER_ERROR, "Asset unavailable"),
+        Err(response) => return response.into_response(),
     };
 
-    let prepared =
-        tokio::task::spawn_blocking(move || assets::prepare(&asset, method, range.as_deref()))
-            .await;
+    let prepared = run_work(&state.limits, move || {
+        assets::prepare(&asset, method, range.as_deref())
+    })
+    .await;
     let prepared = match prepared {
         Ok(Ok(response)) => response,
         Ok(Err(error)) => return asset_error_response(error),
-        Err(_) => return public_error(StatusCode::INTERNAL_SERVER_ERROR, "Asset unavailable"),
+        Err(response) => return response.into_response(),
     };
 
     let mut builder = Response::builder()
@@ -596,7 +608,10 @@ async fn asset_response(
     }
 
     let body = match prepared.body {
-        Some(reader) => stream_body(reader),
+        Some(reader) => match stream_body(reader, &state.limits) {
+            Ok(body) => body,
+            Err(response) => return response.into_response(),
+        },
         None => Body::empty(),
     };
     builder
@@ -605,11 +620,12 @@ async fn asset_response(
 }
 
 async fn resolve_asset(
-    source: Arc<dyn CatalogSource>,
+    state: &CatalogState,
     book_id: BookId,
     format: Option<String>,
-) -> Result<Result<ResolvedBookAsset, CalibreError>, tokio::task::JoinError> {
-    tokio::task::spawn_blocking(move || match format {
+) -> Result<Result<ResolvedBookAsset, CalibreError>, WorkUnavailable> {
+    let source = state.source.clone();
+    run_work(&state.limits, move || match format {
         Some(format) => source.book_file(book_id, &format),
         None => source.book_cover(book_id),
     })
@@ -633,9 +649,11 @@ fn asset_error_response(error: AssetResponseError) -> Response {
     response
 }
 
-fn stream_body(reader: assets::AssetBody) -> Body {
+fn stream_body(reader: assets::AssetBody, limits: &Limits) -> Result<Body, WorkUnavailable> {
+    let permit = limits.work_permit()?;
     let (sender, receiver) = tokio::sync::mpsc::channel(2);
     tokio::task::spawn_blocking(move || {
+        let _permit = permit;
         let mut reader = reader;
         loop {
             let mut buffer = vec![0_u8; 64 * 1024];
@@ -657,10 +675,10 @@ fn stream_body(reader: assets::AssetBody) -> Body {
             }
         }
     });
-    Body::from_stream(futures_util::stream::unfold(
+    Ok(Body::from_stream(futures_util::stream::unfold(
         receiver,
         |mut receiver| async move { receiver.recv().await.map(|item| (item, receiver)) },
-    ))
+    )))
 }
 
 fn acquisition_feed(
@@ -2088,5 +2106,51 @@ mod tests {
             identity("/opds/search?q=two", 1)
         );
         assert!(identity("/opds/all", 1).starts_with("urn:citadel:feed:"));
+    }
+
+    #[tokio::test]
+    async fn book_file_formats_can_never_traverse_paths() {
+        let (directory, mut library) = test_library();
+        let source_path = directory.path().join("book.epub");
+        std::fs::write(&source_path, b"book").unwrap();
+        let added = library
+            .add_book(BookAdd {
+                title: "Traversal Target".to_string(),
+                author_names: vec!["Author".to_string()],
+                tags: None,
+                series: None,
+                series_index: None,
+                publisher: None,
+                publication_date: None,
+                rating: None,
+                comments: None,
+                identifiers: HashMap::new(),
+                language: None,
+                file_paths: vec![source_path],
+            })
+            .unwrap();
+        let (base, server) = loopback(Arc::new(LibrarySource {
+            library: Mutex::new(library),
+        }))
+        .await;
+        let client = reqwest::Client::new();
+        for format in ["..%2f", "%2e%2e%2f%2e%2e%2fmetadata.db"] {
+            let response = client
+                .get(format!(
+                    "{base}/opds/books/{}/files/{format}/book.epub",
+                    added.id.as_i32()
+                ))
+                .send()
+                .await
+                .unwrap();
+            assert_eq!(
+                response.status(),
+                StatusCode::BAD_REQUEST,
+                "format {format} must be rejected"
+            );
+            assert_eq!(response.text().await.unwrap(), "Invalid asset request");
+        }
+        server.abort();
+        drop(directory);
     }
 }

@@ -54,6 +54,7 @@ pub enum OpdsErrorCode {
     ConfigurationConflict,
     InterfaceUnavailable,
     PortUnavailable,
+    PermissionDenied,
     ListenerFailed,
     Unexpected,
 }
@@ -228,18 +229,21 @@ impl Drop for Listeners {
 #[derive(Clone, Debug, Eq, PartialEq)]
 enum BindFailureClass {
     Persistent,
+    PermissionDenied,
     Transient,
 }
 
 fn classify_bind_error(error: &io::Error) -> BindFailureClass {
     match error.kind() {
-        io::ErrorKind::AddrInUse | io::ErrorKind::PermissionDenied => BindFailureClass::Persistent,
+        io::ErrorKind::AddrInUse => BindFailureClass::Persistent,
+        io::ErrorKind::PermissionDenied => BindFailureClass::PermissionDenied,
         _ => BindFailureClass::Transient,
     }
 }
 
 fn bind_failure_error(address: SocketAddr, class: BindFailureClass) -> OpdsStatusError {
     match class {
+        BindFailureClass::PermissionDenied => OpdsStatusError { code: OpdsErrorCode::PermissionDenied, message: format!("The operating system denied access to {address}. Check listener and network permissions.") },
         BindFailureClass::Persistent => OpdsStatusError {
             code: OpdsErrorCode::PortUnavailable,
             message: format!("Network address {address} is not available; please pick a new port."),
@@ -970,6 +974,14 @@ mod tests {
         fn drop(&mut self) {
             self.active.lock().unwrap().remove(&self.address);
         }
+    }
+
+    #[test]
+    fn permission_denial_has_an_actionable_error() {
+        let class = classify_bind_error(&io::Error::from(io::ErrorKind::PermissionDenied));
+        let error = bind_failure_error("127.0.0.1:8080".parse().unwrap(), class);
+        assert_eq!(error.code, OpdsErrorCode::PermissionDenied);
+        assert!(error.message.contains("permissions"));
     }
 
     struct TestSource {
