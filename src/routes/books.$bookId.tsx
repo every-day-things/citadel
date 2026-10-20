@@ -6,6 +6,7 @@ import {
 import { type CSSProperties, useCallback } from "react";
 import type { BookUpdate, NewAuthor } from "@/bindings";
 import { BookPage } from "@/components/pages/EditBook";
+import { toast } from "@/components/ui/toast";
 import { Spinner } from "@/components/ui";
 import { tagListChanged } from "@/lib/domain/tag";
 import { useEditBookData } from "@/lib/hooks/use-edit-book-data";
@@ -114,6 +115,18 @@ const EditBookRoute = () => {
 		await Promise.all([refreshBook(), refreshTags()]);
 	}, [actions, refreshBook, refreshTags]);
 
+	const onDelete = useCallback(async () => {
+		const outcome = await actions.deleteBooks([bookId]);
+		if (outcome.trash_failures.length > 0) {
+			toast.show({
+				title: "Book deleted, files left in place",
+				message: outcome.trash_failures.join(", "),
+				duration: 10000,
+			});
+		}
+		await navigate({ to: "/", replace: true });
+	}, [actions, bookId, navigate]);
+
 	// Spinner only for the initial fetch; refreshes after edits keep the
 	// (stale-for-a-moment) form on screen instead of flashing.
 	if (state !== LibraryState.ready || loading) {
@@ -140,6 +153,7 @@ const EditBookRoute = () => {
 			book={book}
 			onCreateAuthor={onCreateAuthor}
 			onSave={onSave}
+			onDelete={onDelete}
 			onUpsertIdentifier={onUpsertIdentifier}
 			onDeleteIdentifier={onDeleteIdentifier}
 			onReloadBooks={onReloadBooks}
