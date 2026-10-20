@@ -1,4 +1,9 @@
-import type { LibraryAuthor, LibrarySeries } from "@/bindings";
+import type {
+	LibraryAuthor,
+	LibraryPublisher,
+	LibrarySeries,
+	LibraryTag,
+} from "@/bindings";
 import { useLibraryStore } from "@/stores/library/store";
 
 interface ExpectedListItem {
@@ -31,6 +36,21 @@ const itemName = (prefix: string, index: number, longName: boolean) =>
 const createSeries = (index: number, longName: boolean): LibrarySeries => ({
 	id: index + 1,
 	name: itemName("Series", index, longName),
+	book_count: index % 7,
+});
+
+const createTag = (index: number, longName: boolean): LibraryTag => ({
+	id: index + 1,
+	name: itemName("Tag", index, longName),
+	book_count: index % 7,
+});
+
+const createPublisher = (
+	index: number,
+	longName: boolean,
+): LibraryPublisher => ({
+	id: index + 1,
+	name: itemName("Publisher", index, longName),
 	book_count: index % 7,
 });
 
@@ -70,6 +90,42 @@ export const listScenarios = {
 				seriesLoading: false,
 			});
 			return () => useLibraryStore.setState({ series, seriesLoading });
+		},
+	},
+	tags: {
+		...shared,
+		label: "tags",
+		route: "/tags",
+		queryKey: "tag_id",
+		search: 'input[placeholder="Search tags"]',
+		createItem: createTag,
+		install: (count, longName) => {
+			const { tags, tagsLoading } = useLibraryStore.getState();
+			useLibraryStore.setState({
+				tags: Array.from({ length: count }, (_, index) =>
+					createTag(index, longName && index === count - 1),
+				),
+				tagsLoading: false,
+			});
+			return () => useLibraryStore.setState({ tags, tagsLoading });
+		},
+	},
+	publishers: {
+		...shared,
+		label: "publishers",
+		route: "/publishers",
+		queryKey: "publisher_id",
+		search: 'input[placeholder="Search publishers"]',
+		createItem: createPublisher,
+		install: (count, longName) => {
+			const { publishers, publishersLoading } = useLibraryStore.getState();
+			useLibraryStore.setState({
+				publishers: Array.from({ length: count }, (_, index) =>
+					createPublisher(index, longName && index === count - 1),
+				),
+				publishersLoading: false,
+			});
+			return () => useLibraryStore.setState({ publishers, publishersLoading });
 		},
 	},
 	authors: {

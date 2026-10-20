@@ -37,6 +37,8 @@ const filter = (overrides: Partial<BookGridFilter> = {}): BookGridFilter => ({
 	text: "",
 	authorId: null,
 	seriesId: null,
+	tagId: null,
+	publisherId: null,
 	hideRead: false,
 	sortOrder: "authorAz",
 	...overrides,
@@ -60,6 +62,8 @@ describe("serializeBookFilter", () => {
 		expect(serializeBookFilter(filter({ text: "dune" }))).not.toBe(base);
 		expect(serializeBookFilter(filter({ authorId: "7" }))).not.toBe(base);
 		expect(serializeBookFilter(filter({ seriesId: 3 }))).not.toBe(base);
+		expect(serializeBookFilter(filter({ tagId: 4 }))).not.toBe(base);
+		expect(serializeBookFilter(filter({ publisherId: 5 }))).not.toBe(base);
 		expect(serializeBookFilter(filter({ hideRead: true }))).not.toBe(base);
 		expect(serializeBookFilter(filter({ sortOrder: "nameZa" }))).not.toBe(base);
 	});
@@ -94,6 +98,14 @@ describe("toBookQuery", () => {
 	it("nullifies blank text and passes trimmed text through", () => {
 		expect(toBookQuery(filter({ text: "  " }), 0).text).toBeNull();
 		expect(toBookQuery(filter({ text: " dune " }), 0).text).toBe("dune");
+	});
+
+	it("passes tag and publisher filters through, paged as usual", () => {
+		const query = toBookQuery(filter({ tagId: 4, publisherId: 5 }), 2, 50);
+		expect(query.tag_id).toBe(4);
+		expect(query.publisher_id).toBe(5);
+		expect(query.limit).toBe(50);
+		expect(query.offset).toBe(100);
 	});
 
 	it("fetches a whole series as one unbounded page", () => {

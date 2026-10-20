@@ -7,7 +7,9 @@ import type {
 	ImportableBookMetadata,
 	LibraryAuthor,
 	LibraryBook,
+	LibraryPublisher,
 	LibrarySeries,
+	LibraryTag,
 	NewAuthor,
 } from "@/bindings";
 import { commands } from "@/bindings";
@@ -42,6 +44,10 @@ interface LibraryActions {
 	// Core actions
 	loadAuthors: () => Promise<void>;
 	loadSeries: () => Promise<void>;
+	/** Loads tags with book counts. Lazy: only the Tags page needs them. */
+	loadTags: () => Promise<void>;
+	/** Loads publishers with book counts. Lazy: only the Publishers page needs them. */
+	loadPublishers: () => Promise<void>;
 	initialize: (libraryPath: string) => Promise<void>;
 	reset: () => void;
 
@@ -139,6 +145,13 @@ interface LibraryStoreState {
 	seriesLoading: boolean;
 	seriesError: string | null;
 
+	// Tag and publisher lists with book counts. `null` until first loaded;
+	// loaded on demand by their pages rather than at library open.
+	tags: LibraryTag[] | null;
+	tagsLoading: boolean;
+	publishers: LibraryPublisher[] | null;
+	publishersLoading: boolean;
+
 	// Stable actions object containing ALL actions
 	actions: LibraryActions;
 }
@@ -161,6 +174,10 @@ const initialState = {
 	series: [],
 	seriesLoading: false,
 	seriesError: null,
+	tags: null as LibraryTag[] | null,
+	tagsLoading: false,
+	publishers: null as LibraryPublisher[] | null,
+	publishersLoading: false,
 };
 
 const localLibraryFromPath = (path: string): Options => ({
@@ -466,6 +483,44 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 				}
 			},
 
+			loadTags: async () => {
+				const { library } = get();
+				if (!library) return;
+				if (isBackendDiverted()) return;
+				const generation = get().bookCache.generation;
+
+				set({ tagsLoading: true });
+				try {
+					const tags = await library.listTags();
+					if (!canCommitActive(generation)) return;
+					set({ tags, tagsLoading: false });
+				} catch (error) {
+					console.error("Failed to load tags", error);
+					if (!canCommitActive(generation)) return;
+					// An empty list (not null) so the page does not retry in a loop.
+					set({ tags: [], tagsLoading: false });
+				}
+			},
+
+			loadPublishers: async () => {
+				const { library } = get();
+				if (!library) return;
+				if (isBackendDiverted()) return;
+				const generation = get().bookCache.generation;
+
+				set({ publishersLoading: true });
+				try {
+					const publishers = await library.listPublishers();
+					if (!canCommitActive(generation)) return;
+					set({ publishers, publishersLoading: false });
+				} catch (error) {
+					console.error("Failed to load publishers", error);
+					if (!canCommitActive(generation)) return;
+					// An empty list (not null) so the page does not retry in a loop.
+					set({ publishers: [], publishersLoading: false });
+				}
+			},
+
 			setBookFilter: (filter: BookGridFilter) => {
 				const key = serializeBookFilter(filter);
 				const cache = cacheForKey(get().bookCache, key);
@@ -520,6 +575,9 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 				// payload); refresh all three in the background.
 				void get().actions.loadSeries();
 				void get().actions.loadAuthors();
+				// Tag and publisher lists are lazy; refresh only once loaded.
+				if (get().tags !== null) void get().actions.loadTags();
+				if (get().publishers !== null) void get().actions.loadPublishers();
 				void refreshLibraryTotal();
 				// No full re-sweep here: visible pages refetch lazily and the
 				// prefetch padding covers normal scrolling. The open-time sweep
@@ -643,6 +701,11 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 						series: series.value ?? [],
 						seriesLoading: false,
 						seriesError: series.error,
+						// Lazy lists belong to the old library; their pages reload.
+						tags: null,
+						tagsLoading: false,
+						publishers: null,
+						publishersLoading: false,
 						bookPagesError: firstPage.error,
 					});
 					pendingSwitch = null;
@@ -682,6 +745,8 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 						libraryError: normalizedError,
 						authorsLoading: false,
 						seriesLoading: false,
+						tagsLoading: false,
+						publishersLoading: false,
 					});
 				}
 			},
@@ -860,6 +925,14 @@ export const useAuthorsError = () =>
 export const useSeriesList = () => useLibraryStore((state) => state.series);
 export const useSeriesLoading = () =>
 	useLibraryStore((state) => state.seriesLoading);
+
+// Selectors for tags and publishers (lazy; `null` until first loaded)
+export const useTags = () => useLibraryStore((state) => state.tags);
+export const useTagsLoading = () =>
+	useLibraryStore((state) => state.tagsLoading);
+export const usePublishers = () => useLibraryStore((state) => state.publishers);
+export const usePublishersLoading = () =>
+	useLibraryStore((state) => state.publishersLoading);
 
 // Selector for stable actions object
 export const useLibraryActions = () =>

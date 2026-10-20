@@ -13,7 +13,7 @@ from driver import Driver
 TOOLS = Path(__file__).resolve().parent
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--port", type=int, required=True)
-parser.add_argument("--scenario", default="series", help="Registered scenario name (series or authors)")
+parser.add_argument("--scenario", default="series", help="Registered scenario name (series, tags, publishers or authors)")
 parser.add_argument("--count", type=int, default=100_000)
 parser.add_argument("--output", type=Path)
 parser.add_argument("--baseline", action="store_true", help="Capture initial layout without regression assertions")

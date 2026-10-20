@@ -166,6 +166,10 @@ pub struct BookQuery {
     pub author_id: Option<AuthorId>,
     /// Only books linked to this series.
     pub series_id: Option<i32>,
+    /// Only books linked to this tag.
+    pub tag_id: Option<i32>,
+    /// Only books linked to this publisher.
+    pub publisher_id: Option<i32>,
     /// Only books linked to this resolved Citadel genre value.
     pub genre_id: Option<i32>,
     /// Exclude books marked read (filtered in SQL, so paging and totals stay
@@ -204,6 +208,17 @@ pub struct SeriesSummary {
 pub struct TagSummary {
     pub id: i32,
     pub name: String,
+    pub book_count: i64,
+}
+
+/// One publisher in the library, with its linked-book count. Returned by
+/// [`Library::list_publishers`]; publisher ids are what
+/// [`BookQuery::publisher_id`] filters on.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PublisherSummary {
+    pub id: i32,
+    pub name: String,
+    pub book_count: i64,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -907,6 +922,8 @@ impl Library {
                 .filter(|text| !text.is_empty()),
             author_id: query.author_id,
             series_id: query.series_id,
+            tag_id: query.tag_id,
+            publisher_id: query.publisher_id,
             genre_column,
             hide_read_column,
         };
@@ -986,6 +1003,12 @@ impl Library {
     /// no longer linked to any book), sorted case-insensitively by name.
     pub fn list_tags(&mut self) -> Result<Vec<TagSummary>, CalibreError> {
         crate::queries::tags::list_all(&mut self.conn)
+    }
+
+    /// List every publisher with its linked-book count, sorted by name. The
+    /// returned ids feed [`BookQuery::publisher_id`].
+    pub fn list_publishers(&mut self) -> Result<Vec<PublisherSummary>, CalibreError> {
+        crate::queries::publishers::list_with_book_counts(&mut self.conn)
     }
 
     pub fn list_genres(&mut self) -> Result<Vec<GenreSummary>, CalibreError> {

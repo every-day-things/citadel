@@ -1,8 +1,9 @@
 /*
- * Series page chrome, mirroring the Authors page. The shared column grid
- * (SERIES_GRID) stays inline in Series.tsx so the header row and body rows
- * cannot drift apart; the whole-row hover/overlay behavior lives in
- * styles.css (.ctd-author-row / .ctd-author-row-link).
+ * Chrome for the Series, Tags and Publishers pages, mirroring the Authors
+ * page. The shared column grid (ROW_GRID) stays inline in NamedCountList.tsx
+ * so the header row and body rows cannot drift apart; the whole-row
+ * hover/overlay behavior lives in styles.css (.ctd-author-row /
+ * .ctd-author-row-link).
  */
 .page {
 	display: flex;
