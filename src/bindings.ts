@@ -638,7 +638,7 @@ export type OpdsBindTarget = "localNetworks" | "allInterfaces" | { addresses: { 
  */
 export type OpdsCredentialSecret = { username: string; password: string }
 export type OpdsCredentialStatus = { configured: boolean; username: string | null }
-export type OpdsErrorCode = "invalidPort" | "libraryNotReady" | "authRequired" | "configurationConflict" | "interfaceUnavailable" | "portUnavailable" | "listenerFailed" | "unexpected"
+export type OpdsErrorCode = "invalidPort" | "libraryNotReady" | "authRequired" | "configurationConflict" | "interfaceUnavailable" | "portUnavailable" | "permissionDenied" | "listenerFailed" | "unexpected"
 export type OpdsLifecycleState = "stopped" | "starting" | "running" | "waitingForInterface" | "error"
 export type OpdsServiceStatus = { state: OpdsLifecycleState; activeLibraryId: string | null; urls: string[]; error: OpdsStatusError | null; 
 /**
