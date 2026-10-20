@@ -313,6 +313,25 @@ pub(crate) fn delete_book_records(
         name: String,
     }
 
+    #[derive(QueryableByName)]
+    struct EntityId {
+        #[diesel(sql_type = Integer)]
+        id: i32,
+    }
+
+    let mut cleanup = Vec::new();
+    for (entity, links, column) in [
+        ("authors", "books_authors_link", "author"),
+        ("tags", "books_tags_link", "tag"),
+        ("series", "books_series_link", "series"),
+        ("publishers", "books_publishers_link", "publisher"),
+    ] {
+        let ids = sql_query(format!("SELECT {column} AS id FROM {links} WHERE book = ?"))
+            .bind::<Integer, _>(book_id.as_i32())
+            .load::<EntityId>(conn)?;
+        cleanup.push((entity, links, column, ids));
+    }
+
     let existing: HashSet<String> =
         sql_query("SELECT name FROM sqlite_master WHERE type = 'table'")
             .load::<TableName>(conn)?
@@ -344,6 +363,16 @@ pub(crate) fn delete_book_records(
 
     if !books::delete(conn, book_id)? {
         return Err(CalibreError::BookNotFound(book_id));
+    }
+    for (entity, links, column, ids) in cleanup {
+        for row in ids {
+            sql_query(format!(
+                "DELETE FROM {entity} WHERE id = ? AND NOT EXISTS \
+                 (SELECT 1 FROM {links} WHERE {column} = {entity}.id)"
+            ))
+            .bind::<Integer, _>(row.id)
+            .execute(conn)?;
+        }
     }
     books::touch_catalog(conn)?;
 

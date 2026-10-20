@@ -144,3 +144,96 @@ fn test_delete_books_multiple() {
     let titles: Vec<String> = lib.books().unwrap().into_iter().map(|b| b.title).collect();
     assert_eq!(titles, ["Third"]);
 }
+
+#[test]
+fn test_delete_cleans_only_newly_orphaned_entities_and_rolls_back_cleanup() {
+    use diesel::sql_types::Text;
+    #[derive(QueryableByName)]
+    struct NameRow {
+        #[diesel(sql_type = Text)]
+        name: String,
+    }
+    let (_temp, mut lib) = setup_with_library();
+    let mut doomed = book("Doomed");
+    doomed.author_names = vec!["Shared Author".into(), "Only Doomed Author".into()];
+    doomed.tags = Some(vec!["Shared Tag".into(), "Only Doomed Tag".into()]);
+    doomed.series = Some("Only Doomed Series".into());
+    let doomed = lib.add_book(doomed).unwrap();
+    let mut kept = book("Kept");
+    kept.author_names = vec!["Shared Author".into()];
+    kept.tags = Some(vec!["Shared Tag".into()]);
+    kept.series = Some("Kept Series".into());
+    let kept = lib.add_book(kept).unwrap();
+    let mut second_doomed = book("Doomed2");
+    second_doomed.series = Some("Kept Series".into());
+    let second_doomed = lib.add_book(second_doomed).unwrap();
+    let mut conn = libcalibre::persistence::establish_connection(lib.database_path()).unwrap();
+    for (name, id) in [
+        ("Shared Publisher", doomed.id),
+        ("Only Doomed Publisher", second_doomed.id),
+    ] {
+        sql_query("INSERT INTO publishers(name) VALUES (?)")
+            .bind::<Text, _>(name)
+            .execute(&mut conn)
+            .unwrap();
+        sql_query("INSERT INTO books_publishers_link(book,publisher) SELECT ?,id FROM publishers WHERE name=?")
+            .bind::<Integer,_>(id.as_i32()).bind::<Text,_>(name).execute(&mut conn).unwrap();
+    }
+    sql_query("INSERT INTO books_publishers_link(book,publisher) SELECT ?,id FROM publishers WHERE name='Shared Publisher'")
+        .bind::<Integer,_>(kept.id.as_i32()).execute(&mut conn).unwrap();
+    for table in ["authors", "tags", "series", "publishers"] {
+        sql_query(format!(
+            "INSERT INTO {table}(name) VALUES ('Previously unused')"
+        ))
+        .execute(&mut conn)
+        .unwrap();
+    }
+    assert!(lib
+        .delete_books(&[doomed.id, second_doomed.id, BookId::from(999999)])
+        .is_err());
+    for (table, name) in [
+        ("authors", "Only Doomed Author"),
+        ("tags", "Only Doomed Tag"),
+        ("series", "Only Doomed Series"),
+        ("publishers", "Only Doomed Publisher"),
+    ] {
+        let names = sql_query(format!("SELECT name FROM {table}"))
+            .load::<NameRow>(&mut conn)
+            .unwrap();
+        assert!(
+            names.iter().any(|row| row.name == name),
+            "rollback: {table}"
+        );
+    }
+    lib.delete_books(&[doomed.id, second_doomed.id]).unwrap();
+    for (table, shared, removed) in [
+        ("authors", "Shared Author", "Only Doomed Author"),
+        ("tags", "Shared Tag", "Only Doomed Tag"),
+        ("series", "Kept Series", "Only Doomed Series"),
+        ("publishers", "Shared Publisher", "Only Doomed Publisher"),
+    ] {
+        let names = sql_query(format!("SELECT name FROM {table}"))
+            .load::<NameRow>(&mut conn)
+            .unwrap();
+        assert!(
+            names.iter().any(|row| row.name == shared),
+            "shared: {table}"
+        );
+        assert!(
+            !names.iter().any(|row| row.name == removed),
+            "orphan: {table}"
+        );
+        assert!(
+            names.iter().any(|row| row.name == "Previously unused"),
+            "unrelated: {table}"
+        );
+    }
+    lib.delete_books(&[kept.id]).unwrap();
+    for table in ["authors", "tags", "series", "publishers"] {
+        let names = sql_query(format!("SELECT name FROM {table}"))
+            .load::<NameRow>(&mut conn)
+            .unwrap();
+        assert_eq!(names.len(), 1, "last book: {table}");
+        assert_eq!(names[0].name, "Previously unused");
+    }
+}
