@@ -141,6 +141,34 @@ describe("deleteBooks", () => {
 		initClient.mockReset();
 	});
 
+	it("preserves the visible book cache when deletion is rejected", async () => {
+		const { useLibraryStore, a } = await bootOnA();
+		const before = useLibraryStore.getState();
+		a.fake.deleteBooks.mockRejectedValueOnce(
+			new Error("Unsafe book folder path"),
+		);
+		await expect(before.actions.deleteBooks(["1"])).rejects.toThrow(
+			"Unsafe book folder path",
+		);
+		expect(useLibraryStore.getState().bookCache).toBe(before.bookCache);
+		expect(useLibraryStore.getState().coverThumbs).toBe(before.coverThumbs);
+	});
+
+	it("refreshes removed records and returns file failures for the warning screen", async () => {
+		const { useLibraryStore, a } = await bootOnA();
+		const failure = "/library/Author/Book: Permission denied";
+		a.fake.deleteBooks.mockResolvedValueOnce({
+			deleted: 1,
+			trash_failures: [failure],
+		});
+		const before = useLibraryStore.getState().bookCache.generation;
+		const result = await useLibraryStore.getState().actions.deleteBooks(["1"]);
+		expect(result).toEqual({ deleted: 1, trash_failures: [failure] });
+		expect(useLibraryStore.getState().bookCache.generation).toBeGreaterThan(
+			before,
+		);
+	});
+
 	it("deletes through the library, drops cover thumbs and invalidates the cache", async () => {
 		const { useLibraryStore, a } = await bootOnA();
 		const thumb = { book_id: "1" } as never;

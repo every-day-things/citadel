@@ -3,11 +3,10 @@ import {
 	useNavigate,
 	useParams,
 } from "@tanstack/react-router";
-import { type CSSProperties, useCallback } from "react";
+import { type CSSProperties, useCallback, useState } from "react";
 import type { BookUpdate, NewAuthor } from "@/bindings";
 import { BookPage } from "@/components/pages/EditBook";
-import { toast } from "@/components/ui/toast";
-import { Spinner } from "@/components/ui";
+import { Button, Spinner } from "@/components/ui";
 import { tagListChanged } from "@/lib/domain/tag";
 import { useEditBookData } from "@/lib/hooks/use-edit-book-data";
 import { useOnLibraryFlip } from "@/lib/hooks/use-on-library-flip";
@@ -30,6 +29,7 @@ const EditBookRoute = () => {
 	const state = useLibraryState();
 	const actions = useLibraryActions();
 	const navigate = useNavigate();
+	const [deleteFailures, setDeleteFailures] = useState<string[]>([]);
 
 	// A library flip invalidates the bookId this route was opened with: the
 	// id belongs to the outgoing library, so the incoming fetch lands null
@@ -118,14 +118,34 @@ const EditBookRoute = () => {
 	const onDelete = useCallback(async () => {
 		const outcome = await actions.deleteBooks([bookId]);
 		if (outcome.trash_failures.length > 0) {
-			toast.show({
-				title: "Book deleted, files left in place",
-				message: outcome.trash_failures.join(", "),
-				duration: 10000,
-			});
+			setDeleteFailures(outcome.trash_failures);
+			return;
 		}
 		await navigate({ to: "/", replace: true });
 	}, [actions, bookId, navigate]);
+
+	if (deleteFailures.length > 0) {
+		return (
+			<div style={{ padding: 24, maxWidth: 640 }}>
+				<div role="alert">
+					<h2>Book removed, files not moved to Trash</h2>
+					<p>
+						The book was removed from your library, but its files could not be
+						moved to the Trash. The files remain at the locations below. You can
+						move them manually or re-import them.
+					</p>
+					<ul style={{ overflowWrap: "anywhere" }}>
+						{deleteFailures.map((failure, index) => (
+							<li key={`${index}-${failure}`}>{failure}</li>
+						))}
+					</ul>
+				</div>
+				<Button onClick={() => void navigate({ to: "/", replace: true })}>
+					Back to library
+				</Button>
+			</div>
+		);
+	}
 
 	// Spinner only for the initial fetch; refreshes after edits keep the
 	// (stale-for-a-moment) form on screen instead of flashing.
