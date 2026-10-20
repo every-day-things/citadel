@@ -135,8 +135,8 @@ const EditBookRoute = () => {
 						move them manually or re-import them.
 					</p>
 					<ul style={{ overflowWrap: "anywhere" }}>
-						{deleteFailures.map((failure, index) => (
-							<li key={`${index}-${failure}`}>{failure}</li>
+						{deleteFailures.map((failure) => (
+							<li key={failure}>{failure}</li>
 						))}
 					</ul>
 				</div>
