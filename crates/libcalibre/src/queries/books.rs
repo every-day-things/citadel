@@ -135,19 +135,6 @@ pub(crate) struct AcquisitionCandidate {
     pub name: String,
 }
 
-pub(crate) fn acquisition_candidates(
-    conn: &mut SqliteConnection,
-) -> Result<Vec<AcquisitionCandidate>, CalibreError> {
-    sql_query(
-        "SELECT books.id AS book_id, books.path AS book_path, \
-         data.format AS format, data.name AS name \
-         FROM books JOIN data ON data.book = books.id \
-         ORDER BY books.sort ASC, books.id ASC, data.id ASC",
-    )
-    .load(conn)
-    .map_err(CalibreError::from)
-}
-
 fn like_pattern(text: &str) -> String {
     let escaped = text
         .replace('\\', "\\\\")
@@ -234,6 +221,11 @@ fn order_by_sql(sort: BookSortOrder) -> String {
         BookSortOrder::TitleDesc => "books.sort DESC, books.id DESC".to_string(),
         BookSortOrder::AuthorAsc => format!("{AUTHOR_SORT} ASC, books.id ASC"),
         BookSortOrder::AuthorDesc => format!("{AUTHOR_SORT} DESC, books.id DESC"),
+        BookSortOrder::UpdatedDesc => "books.last_modified DESC, books.id DESC".to_string(),
+        BookSortOrder::SeriesIndexAsc => {
+            "books.series_index IS NULL ASC, books.series_index ASC, books.sort ASC, books.id ASC"
+                .to_string()
+        }
     }
 }
 
@@ -411,4 +403,32 @@ pub(crate) fn find_authors(
         .map_err(CalibreError::from)?;
 
     Ok(author_ids)
+}
+
+pub(crate) fn acquisition_candidates(
+    conn: &mut SqliteConnection,
+    filters: &BookPageFilters,
+    sort: BookSortOrder,
+) -> Result<Vec<AcquisitionCandidate>, CalibreError> {
+    let where_sql = filter_where_sql(filters);
+    let order_sql = order_by_sql(sort);
+    let sql = format!(
+        "SELECT books.id AS book_id, books.path AS book_path, \
+         data.format AS format, data.name AS name \
+         FROM books JOIN data ON data.book = books.id \
+         WHERE {where_sql} ORDER BY {order_sql}, data.id ASC"
+    );
+
+    match filters.text {
+        Some(text) => {
+            let pattern = like_pattern(text);
+            sql_query(sql)
+                .bind::<Text, _>(&pattern)
+                .bind::<Text, _>(&pattern)
+                .bind::<Text, _>(&pattern)
+                .load(conn)
+                .map_err(CalibreError::from)
+        }
+        None => sql_query(sql).load(conn).map_err(CalibreError::from),
+    }
 }

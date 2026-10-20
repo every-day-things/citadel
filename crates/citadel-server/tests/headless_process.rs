@@ -146,7 +146,13 @@ passwordEnvironment = "CITADEL_TEST_OPDS_PASSWORD"
         .send()
         .unwrap();
     assert!(feed.status().is_success());
-    assert!(feed.text().unwrap().contains("Headless Citadel"));
+    assert!(feed.text().unwrap().contains("All Books"));
+    let all = client
+        .get(format!("{catalog_url}/all"))
+        .basic_auth("reader", Some("secret"))
+        .send()
+        .unwrap();
+    assert!(all.text().unwrap().contains("Headless Citadel"));
 
     let origin = catalog_url.strip_suffix("/opds").unwrap();
     let asset_url = format!(

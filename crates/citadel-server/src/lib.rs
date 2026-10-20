@@ -7,7 +7,8 @@ use std::{
 
 use chrono::NaiveDateTime;
 use citadel_opds::{
-    CatalogSource, OpdsLifecycleState, OpdsService, OpdsServiceStatus, OpdsStartConfig,
+    CatalogBookQuery, CatalogFacet, CatalogSource, OpdsLifecycleState, OpdsService,
+    OpdsServiceStatus, OpdsStartConfig,
 };
 use libcalibre::{BookId, BookPage, CalibreError, Library, ResolvedBookAsset};
 use serde::Deserialize;
@@ -59,14 +60,77 @@ impl CatalogSource for CalibreCatalogSource {
 
     fn book_page(
         &self,
-        limit: i64,
-        offset: i64,
+        query: CatalogBookQuery,
     ) -> Result<(String, Option<NaiveDateTime>, BookPage), CalibreError> {
         let mut library = self.library.lock().expect("server library mutex poisoned");
         let library_id = library.library_uuid()?;
         let updated_at = library.catalog_updated_at()?;
-        let page = library.query_acquirable_books(limit, offset)?;
+        let page = library.query_acquirable_books_with(query.into_calibre())?;
         Ok((library_id, updated_at, page))
+    }
+
+    fn authors(&self) -> Result<Vec<CatalogFacet>, CalibreError> {
+        let mut library = self.library.lock().unwrap();
+        library
+            .catalog_facets(libcalibre::CatalogFacetKind::Authors)
+            .map(|items| {
+                items
+                    .into_iter()
+                    .map(|item| CatalogFacet {
+                        id: item.id,
+                        title: item.name,
+                        book_count: Some(item.book_count),
+                    })
+                    .collect()
+            })
+    }
+
+    fn series(&self) -> Result<Vec<CatalogFacet>, CalibreError> {
+        let mut library = self.library.lock().unwrap();
+        library
+            .catalog_facets(libcalibre::CatalogFacetKind::Series)
+            .map(|items| {
+                items
+                    .into_iter()
+                    .map(|item| CatalogFacet {
+                        id: item.id,
+                        title: item.name,
+                        book_count: Some(item.book_count),
+                    })
+                    .collect()
+            })
+    }
+
+    fn tags(&self) -> Result<Vec<CatalogFacet>, CalibreError> {
+        let mut library = self.library.lock().unwrap();
+        library
+            .catalog_facets(libcalibre::CatalogFacetKind::Tags)
+            .map(|items| {
+                items
+                    .into_iter()
+                    .map(|item| CatalogFacet {
+                        id: item.id,
+                        title: item.name,
+                        book_count: Some(item.book_count),
+                    })
+                    .collect()
+            })
+    }
+
+    fn genres(&self) -> Result<Vec<CatalogFacet>, CalibreError> {
+        let mut library = self.library.lock().unwrap();
+        library
+            .catalog_facets(libcalibre::CatalogFacetKind::Genres)
+            .map(|items| {
+                items
+                    .into_iter()
+                    .map(|item| CatalogFacet {
+                        id: item.id,
+                        title: item.name,
+                        book_count: Some(item.book_count),
+                    })
+                    .collect()
+            })
     }
 
     fn book_file(&self, book_id: BookId, format: &str) -> Result<ResolvedBookAsset, CalibreError> {

@@ -987,8 +987,7 @@ mod tests {
 
         fn book_page(
             &self,
-            _limit: i64,
-            _offset: i64,
+            _query: crate::catalog::CatalogBookQuery,
         ) -> Result<(String, Option<NaiveDateTime>, libcalibre::BookPage), libcalibre::CalibreError>
         {
             Ok((

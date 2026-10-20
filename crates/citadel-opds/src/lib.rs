@@ -11,7 +11,7 @@ pub mod service;
 mod words;
 mod xml;
 
-pub use catalog::{router, CatalogSource};
+pub use catalog::{router, CatalogBookQuery, CatalogFacet, CatalogSource};
 pub use service::{
     OpdsBindTarget, OpdsErrorCode, OpdsLifecycleState, OpdsService, OpdsServiceStatus,
     OpdsStartConfig, OpdsStatusError,
