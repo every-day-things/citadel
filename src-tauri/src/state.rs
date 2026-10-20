@@ -6,7 +6,7 @@ use std::sync::{
 use chrono::NaiveDateTime;
 use libcalibre::{BookId, BookPage, CalibreError, Library, ResolvedBookAsset};
 
-use citadel_opds::CatalogSource;
+use citadel_opds::{CatalogBookQuery, CatalogFacet, CatalogSource};
 
 #[derive(Clone)]
 pub struct CitadelState {
@@ -140,8 +140,7 @@ impl CitadelState {
 
     pub fn opds_book_page(
         &self,
-        limit: i64,
-        offset: i64,
+        query: CatalogBookQuery,
     ) -> Result<(String, Option<NaiveDateTime>, BookPage), CalibreError> {
         let mut library = self.inner.library.lock().expect("Library mutex poisoned");
         if self.is_library_transitioning() {
@@ -152,8 +151,23 @@ impl CitadelState {
             .ok_or(CalibreError::LibraryNotInitialized)?;
         let library_uuid = library.library_uuid()?;
         let updated_at = library.catalog_updated_at()?;
-        let page = library.query_acquirable_books(limit, offset)?;
+        let page = library.query_acquirable_books_with(query.into_calibre())?;
         Ok((library_uuid, updated_at, page))
+    }
+
+    fn with_opds_library<T>(
+        &self,
+        operation: impl FnOnce(&mut Library) -> Result<T, CalibreError>,
+    ) -> Result<T, CalibreError> {
+        let mut library = self.inner.library.lock().expect("Library mutex poisoned");
+        if self.is_library_transitioning() {
+            return Err(CalibreError::LibraryNotInitialized);
+        }
+        operation(
+            library
+                .as_mut()
+                .ok_or(CalibreError::LibraryNotInitialized)?,
+        )
     }
 }
 
@@ -164,10 +178,77 @@ impl CatalogSource for CitadelState {
 
     fn book_page(
         &self,
-        limit: i64,
-        offset: i64,
+        query: CatalogBookQuery,
     ) -> Result<(String, Option<NaiveDateTime>, BookPage), CalibreError> {
-        self.opds_book_page(limit, offset)
+        self.opds_book_page(query)
+    }
+
+    fn authors(&self) -> Result<Vec<CatalogFacet>, CalibreError> {
+        self.with_opds_library(|library| {
+            library
+                .catalog_facets(libcalibre::CatalogFacetKind::Authors)
+                .map(|items| {
+                    items
+                        .into_iter()
+                        .map(|item| CatalogFacet {
+                            id: item.id,
+                            title: item.name,
+                            book_count: Some(item.book_count),
+                        })
+                        .collect()
+                })
+        })
+    }
+
+    fn series(&self) -> Result<Vec<CatalogFacet>, CalibreError> {
+        self.with_opds_library(|library| {
+            library
+                .catalog_facets(libcalibre::CatalogFacetKind::Series)
+                .map(|items| {
+                    items
+                        .into_iter()
+                        .map(|item| CatalogFacet {
+                            id: item.id,
+                            title: item.name,
+                            book_count: Some(item.book_count),
+                        })
+                        .collect()
+                })
+        })
+    }
+
+    fn tags(&self) -> Result<Vec<CatalogFacet>, CalibreError> {
+        self.with_opds_library(|library| {
+            library
+                .catalog_facets(libcalibre::CatalogFacetKind::Tags)
+                .map(|items| {
+                    items
+                        .into_iter()
+                        .map(|item| CatalogFacet {
+                            id: item.id,
+                            title: item.name,
+                            book_count: Some(item.book_count),
+                        })
+                        .collect()
+                })
+        })
+    }
+
+    fn genres(&self) -> Result<Vec<CatalogFacet>, CalibreError> {
+        self.with_opds_library(|library| {
+            library
+                .catalog_facets(libcalibre::CatalogFacetKind::Genres)
+                .map(|items| {
+                    items
+                        .into_iter()
+                        .map(|item| CatalogFacet {
+                            id: item.id,
+                            title: item.name,
+                            book_count: Some(item.book_count),
+                        })
+                        .collect()
+                })
+        })
     }
 
     fn book_file(&self, book_id: BookId, format: &str) -> Result<ResolvedBookAsset, CalibreError> {
