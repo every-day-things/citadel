@@ -14,6 +14,49 @@ use crate::{
     CalibreError, UpdateBookData,
 };
 
+pub(crate) fn validated_book_delete_dir(
+    library_root: &Path,
+    book_path: &str,
+) -> Result<PathBuf, CalibreError> {
+    use std::path::Component;
+
+    let relative = Path::new(book_path);
+    let components: Vec<_> = relative.components().collect();
+    if components.len() < 2
+        || components
+            .iter()
+            .any(|part| !matches!(part, Component::Normal(_)))
+    {
+        return Err(CalibreError::DatabaseIntegrity(format!(
+            "Unsafe book folder path: {book_path:?}"
+        )));
+    }
+
+    let root = library_root.canonicalize()?;
+    let target = root.join(relative);
+    let mut current = root.clone();
+    for component in components {
+        current.push(component.as_os_str());
+        match std::fs::symlink_metadata(&current) {
+            Ok(metadata) => {
+                if metadata.file_type().is_symlink() || !metadata.is_dir() {
+                    return Err(CalibreError::DatabaseIntegrity(format!(
+                        "Book folder must contain only real directories: {}",
+                        current.display()
+                    )));
+                }
+                let canonical = current.canonicalize()?;
+                if canonical == root || !canonical.starts_with(&root) {
+                    return Err(CalibreError::AssetOutsideLibrary);
+                }
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => break,
+            Err(error) => return Err(error.into()),
+        }
+    }
+    Ok(target)
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ResolvedBookAsset {
     canonical_path: PathBuf,

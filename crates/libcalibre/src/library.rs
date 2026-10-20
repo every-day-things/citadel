@@ -522,7 +522,9 @@ impl Library {
     /// absolute directories (one per deleted book, in input order) are left
     /// for the caller to dispose of, e.g. by moving them to the system
     /// trash. Fails with [`CalibreError::BookNotFound`] if any id is missing,
-    /// in which case nothing is deleted.
+    /// in which case nothing is deleted. Every folder is validated before
+    /// records are removed: paths must be relative author/book directories
+    /// within the library, without symlinks or inaccessible ancestors.
     pub fn delete_books(&mut self, book_ids: &[BookId]) -> Result<Vec<PathBuf>, CalibreError> {
         let library_root = PathBuf::from(&self.db_path.library_path);
         self.conn.transaction(|conn| {
@@ -530,8 +532,13 @@ impl Library {
             for &book_id in book_ids {
                 let book =
                     book_queries::get(conn, book_id)?.ok_or(CalibreError::BookNotFound(book_id))?;
+                dirs.push(operations::assets::validated_book_delete_dir(
+                    &library_root,
+                    &book.path,
+                )?);
+            }
+            for &book_id in book_ids {
                 operations::assets::delete_book_records(conn, book_id)?;
-                dirs.push(library_root.join(&book.path));
             }
             Ok(dirs)
         })
