@@ -631,7 +631,7 @@ export type NewAuthor = { name: string; sortable_name: string | null }
  * credentials (see the auth integration) since it serves every network the
  * computer can reach.
  */
-export type OpdsBindTarget = "localNetworks" | "allInterfaces"
+export type OpdsBindTarget = "localNetworks" | "allInterfaces" | { addresses: { addresses: string[] } }
 /**
  * The stored secret, for the reader UI's reveal flow. The password is kept
  * reversibly on purpose (ADR 0005); the app process may show it to its user.

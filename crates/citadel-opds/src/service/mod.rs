@@ -668,6 +668,14 @@ impl OpdsService {
         let policy = BindPolicy {
             allow_global: stored.is_some(),
         };
+        if let OpdsBindTarget::Addresses { addresses } = &config.target {
+            super::network::validate_explicit_addresses(addresses, policy.allow_global).map_err(
+                |message| OpdsStatusError {
+                    code: OpdsErrorCode::ConfigurationConflict,
+                    message,
+                },
+            )?;
+        }
         if matches!(config.target, OpdsBindTarget::AllInterfaces) && !policy.allow_global {
             // AllInterfaces serves every network the computer can reach; it
             // exists to be paired with credentials.
@@ -796,6 +804,10 @@ async fn attempt_bind(
     auth: OpdsBasicAuth,
 ) -> BindOutcome {
     let desired = match target {
+        OpdsBindTarget::Addresses { .. } => match plan_bindings(&[], target, port, policy) {
+            super::network::BindPlan::Listen(sockets) => sockets,
+            super::network::BindPlan::Wait(reason) => return BindOutcome::Waiting(reason),
+        },
         OpdsBindTarget::AllInterfaces => {
             let mut sockets = BTreeSet::new();
             sockets.insert(SocketAddr::new(
@@ -1371,7 +1383,7 @@ mod tests {
 
         // Both sockets answer; then both shut down cleanly.
         let _ = std::net::TcpStream::connect(("127.0.0.1", port)).unwrap();
-        drop((v4, v6));
+        Listeners(vec![v4, v6]).drain().await;
         let probe2 = StdTcpListener::bind((Ipv4Addr::LOCALHOST, port)).unwrap();
         drop(probe2);
     }

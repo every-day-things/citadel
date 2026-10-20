@@ -287,6 +287,7 @@ impl WaitingReason {
 pub enum OpdsBindTarget {
     LocalNetworks,
     AllInterfaces,
+    Addresses { addresses: Vec<String> },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -309,6 +310,15 @@ pub(crate) fn plan_bindings(
     policy: BindPolicy,
 ) -> BindPlan {
     match target {
+        OpdsBindTarget::Addresses { addresses } => match explicit_addresses(addresses, policy) {
+            Ok(addresses) => BindPlan::Listen(
+                addresses
+                    .into_iter()
+                    .map(|address| SocketAddr::new(address, port))
+                    .collect(),
+            ),
+            Err(_) => BindPlan::Wait(WaitingReason::NoLocalInterface),
+        },
         OpdsBindTarget::AllInterfaces => {
             let mut sockets = BTreeSet::new();
             sockets.insert(SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), port));
@@ -632,5 +642,80 @@ mod tests {
                 row.label
             );
         }
+    }
+}
+
+/// Validate explicit hosts with the same exposure policy as desktop sharing.
+pub fn validate_explicit_addresses(
+    addresses: &[String],
+    authenticated: bool,
+) -> Result<(), String> {
+    explicit_addresses(
+        addresses,
+        BindPolicy {
+            allow_global: authenticated,
+        },
+    )
+    .map(|_| ())
+}
+
+fn explicit_addresses(addresses: &[String], policy: BindPolicy) -> Result<Vec<IpAddr>, String> {
+    if addresses.is_empty() {
+        return Err("At least one listener address is required.".into());
+    }
+    addresses
+        .iter()
+        .map(|address| {
+            let address: IpAddr = address
+                .parse()
+                .map_err(|_| "Invalid listener address.".to_string())?;
+            let scope = match address {
+                IpAddr::V4(a) => ipv4_scope(a),
+                IpAddr::V6(a) => ipv6_scope(a),
+            };
+            match scope {
+                AddressScope::Loopback | AddressScope::Private | AddressScope::Shared => {
+                    Ok(address)
+                }
+                AddressScope::Global if policy.allow_global => Ok(address),
+                AddressScope::Global => {
+                    Err("Public listener addresses require reader sign-in.".into())
+                }
+                _ => Err(
+                    "Wildcard, link-local and non-unicast listener addresses are not allowed."
+                        .into(),
+                ),
+            }
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod explicit_tests {
+    use super::*;
+    #[test]
+    fn explicit_hosts_enforce_exposure_policy() {
+        for address in [
+            "0.0.0.0",
+            "::",
+            "fe80::1",
+            "169.254.1.1",
+            "224.0.0.1",
+            "bad",
+        ] {
+            assert!(
+                validate_explicit_addresses(&[address.into()], true).is_err(),
+                "{address}"
+            );
+        }
+        assert!(validate_explicit_addresses(&[], true).is_err());
+        for address in ["127.0.0.1", "::1", "192.168.1.2", "fd00::1"] {
+            assert!(
+                validate_explicit_addresses(&[address.into()], false).is_ok(),
+                "{address}"
+            );
+        }
+        assert!(validate_explicit_addresses(&["8.8.8.8".into()], false).is_err());
+        assert!(validate_explicit_addresses(&["8.8.8.8".into()], true).is_ok());
     }
 }
