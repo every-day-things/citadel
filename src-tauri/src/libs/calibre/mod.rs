@@ -11,6 +11,7 @@ mod book;
 
 pub mod command;
 pub mod custom_columns;
+mod delete_books;
 pub mod onboarding;
 pub mod query;
 

@@ -341,8 +341,8 @@ pub fn clb_cmd_delete_author(
 }
 
 /// Result of [`clb_cmd_delete_books`]. The books are gone from the library
-/// either way; `trash_failures` lists book folders that could not be moved
-/// to the system trash and are still on disk.
+/// either way; `trash_failures` lists folder paths and errors for files
+/// that could not be moved to the system trash.
 #[derive(serde::Serialize, specta::Type)]
 pub struct DeleteBooksOutcome {
     pub deleted: u32,
@@ -368,26 +368,29 @@ pub fn clb_cmd_delete_books(
                 .map_err(|e| format!("Invalid book id '{raw}': {e}"))
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let library_root = state
-        .get_library_path()
-        .ok_or("No library loaded".to_string())?;
-
-    let dirs = state
-        .with_library(|lib| lib.delete_books(&ids))?
+    let (library_root, dirs) = state
+        .with_library(|lib| -> Result<_, libcalibre::CalibreError> {
+            let root = std::path::Path::new(lib.library_path()).canonicalize()?;
+            let dirs = lib.delete_books(&ids)?;
+            Ok((root, dirs))
+        })?
         .map_err(|e| e.to_string())?;
 
-    let library_root = std::path::Path::new(&library_root);
     let trash_failures = dirs
         .iter()
-        .filter(|dir| dir.exists())
-        .filter_map(|dir| match move_to_trash(dir) {
-            Ok(()) => {
-                remove_empty_author_dir(library_root, dir);
-                None
-            }
-            Err(e) => {
-                log::warn!("Failed to move {} to the trash: {e}", dir.display());
-                Some(dir.display().to_string())
+        .filter_map(|dir| {
+            match super::delete_books::trash_book_dir(&library_root, dir, |path| {
+                move_to_trash(path).map_err(|error| error.to_string())
+            }) {
+                Ok(true) => {
+                    remove_empty_author_dir(&library_root, dir);
+                    None
+                }
+                Ok(false) => None,
+                Err(e) => {
+                    log::warn!("Failed to move {} to the trash: {e}", dir.display());
+                    Some(format!("{}: {e}", dir.display()))
+                }
             }
         })
         .collect();

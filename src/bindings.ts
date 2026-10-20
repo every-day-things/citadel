@@ -499,8 +499,8 @@ export type CustomValueDto = { Bool: boolean } | { Int: number } | { Float: numb
 { Datetime: string } | { Enumeration: string }
 /**
  * Result of [`clb_cmd_delete_books`]. The books are gone from the library
- * either way; `trash_failures` lists book folders that could not be moved
- * to the system trash and are still on disk.
+ * either way; `trash_failures` lists folder paths and errors for files
+ * that could not be moved to the system trash.
  */
 export type DeleteBooksOutcome = { deleted: number; trash_failures: string[] }
 export type DetectedLibrary = { path: string; source: DetectionSource }
