@@ -5,5 +5,6 @@ pub mod book_identifiers;
 pub mod books;
 pub mod genres;
 pub mod languages;
+pub mod publishers;
 pub mod series;
 pub mod tags;

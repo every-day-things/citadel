@@ -688,3 +688,147 @@ fn test_list_series_returns_counts_sorted_by_name() {
     let earthsea = series.iter().find(|s| s.name == "Earthsea").unwrap();
     assert_eq!(earthsea.id, series_id_by_name(&mut lib, "Earthsea"));
 }
+
+// =============================================================================
+// Tag and publisher listing and filtering
+// =============================================================================
+
+/// `add_book` does not persist publishers yet, so link one directly.
+fn link_publisher(lib: &mut Library, book_id: BookId, name: &str) {
+    let mut conn = libcalibre::persistence::establish_connection(lib.database_path())
+        .expect("failed to open test db");
+    sql_query("INSERT OR IGNORE INTO publishers (name) VALUES (?)")
+        .bind::<Text, _>(name)
+        .execute(&mut conn)
+        .expect("failed to insert publisher");
+    sql_query(
+        "INSERT INTO books_publishers_link (book, publisher) \
+         SELECT ?, id FROM publishers WHERE name = ?",
+    )
+    .bind::<Integer, _>(book_id.as_i32())
+    .bind::<Text, _>(name)
+    .execute(&mut conn)
+    .expect("failed to link publisher");
+}
+
+#[test]
+fn test_list_tags_returns_book_counts() {
+    let (_temp, mut lib) = setup_with_library();
+
+    lib.add_book(BookAdd {
+        tags: Some(vec!["fantasy".to_string(), "Adventure".to_string()]),
+        ..book("A Wizard of Earthsea", &["Ursula K. Le Guin"])
+    })
+    .unwrap();
+    lib.add_book(BookAdd {
+        tags: Some(vec!["FANTASY".to_string()]),
+        ..book("The Tombs of Atuan", &["Ursula K. Le Guin"])
+    })
+    .unwrap();
+    lib.add_book(book("Untagged", &["Nobody"])).unwrap();
+
+    let tags = lib.list_tags().unwrap();
+    let summary: Vec<(&str, i64)> = tags
+        .iter()
+        .map(|t| (t.name.as_str(), t.book_count))
+        .collect();
+    assert_eq!(summary, [("Adventure", 1), ("fantasy", 2)]);
+}
+
+#[test]
+fn test_tag_id_filter() {
+    let (_temp, mut lib) = setup_with_library();
+
+    lib.add_book(BookAdd {
+        tags: Some(vec!["fantasy".to_string()]),
+        ..book("A Wizard of Earthsea", &["Ursula K. Le Guin"])
+    })
+    .unwrap();
+    lib.add_book(BookAdd {
+        tags: Some(vec!["fantasy".to_string(), "classic".to_string()]),
+        ..book("The Hobbit", &["J. R. R. Tolkien"])
+    })
+    .unwrap();
+    lib.add_book(BookAdd {
+        tags: Some(vec!["classic".to_string()]),
+        ..book("Emma", &["Jane Austen"])
+    })
+    .unwrap();
+
+    let tags = lib.list_tags().unwrap();
+    let fantasy = tags.iter().find(|t| t.name == "fantasy").unwrap();
+
+    let page = query(
+        &mut lib,
+        BookQuery {
+            tag_id: Some(fantasy.id),
+            ..BookQuery::default()
+        },
+    );
+    assert_eq!(titles(&page), ["The Hobbit", "A Wizard of Earthsea"]);
+    assert_eq!(page.total, 2);
+
+    // Composes with the text filter.
+    let page = query(
+        &mut lib,
+        BookQuery {
+            tag_id: Some(fantasy.id),
+            text: Some("hobbit".to_string()),
+            ..BookQuery::default()
+        },
+    );
+    assert_eq!(titles(&page), ["The Hobbit"]);
+    assert_eq!(page.total, 1);
+}
+
+#[test]
+fn test_list_publishers_and_publisher_id_filter() {
+    let (_temp, mut lib) = setup_with_library();
+
+    let wizard = lib
+        .add_book(book("A Wizard of Earthsea", &["Ursula K. Le Guin"]))
+        .unwrap();
+    let tombs = lib
+        .add_book(book("The Tombs of Atuan", &["Ursula K. Le Guin"]))
+        .unwrap();
+    let emma = lib.add_book(book("Emma", &["Jane Austen"])).unwrap();
+    lib.add_book(book("No Publisher", &["Nobody"])).unwrap();
+
+    link_publisher(&mut lib, wizard.id, "Parnassus Press");
+    link_publisher(&mut lib, tombs.id, "Parnassus Press");
+    link_publisher(&mut lib, emma.id, "john murray");
+
+    let publishers = lib.list_publishers().unwrap();
+    let summary: Vec<(&str, i64)> = publishers
+        .iter()
+        .map(|p| (p.name.as_str(), p.book_count))
+        .collect();
+    // Case-insensitive name sort.
+    assert_eq!(summary, [("john murray", 1), ("Parnassus Press", 2)]);
+
+    let parnassus = publishers
+        .iter()
+        .find(|p| p.name == "Parnassus Press")
+        .unwrap();
+    let page = query(
+        &mut lib,
+        BookQuery {
+            publisher_id: Some(parnassus.id),
+            ..BookQuery::default()
+        },
+    );
+    assert_eq!(
+        titles(&page),
+        ["The Tombs of Atuan", "A Wizard of Earthsea"]
+    );
+    assert_eq!(page.total, 2);
+}
+
+#[test]
+fn test_list_publishers_empty_library() {
+    let (_temp, mut lib) = setup_with_library();
+
+    lib.add_book(book("No Publisher", &[])).unwrap();
+
+    assert!(lib.list_publishers().unwrap().is_empty());
+}

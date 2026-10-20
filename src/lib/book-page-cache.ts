@@ -23,6 +23,8 @@ export interface BookGridFilter {
 	text: string;
 	authorId: string | null;
 	seriesId: number | null;
+	tagId: number | null;
+	publisherId: number | null;
 	hideRead: boolean;
 	sortOrder: LibraryBookSortOrderKey;
 }
@@ -31,6 +33,8 @@ export const ALL_BOOKS_FILTER: BookGridFilter = {
 	text: "",
 	authorId: null,
 	seriesId: null,
+	tagId: null,
+	publisherId: null,
 	hideRead: false,
 	sortOrder: "authorAz",
 };
@@ -56,6 +60,8 @@ export const serializeBookFilter = (filter: BookGridFilter): string =>
 		normalizedText(filter),
 		filter.authorId,
 		filter.seriesId,
+		filter.tagId,
+		filter.publisherId,
 		filter.hideRead,
 		filter.sortOrder,
 	]);
@@ -77,6 +83,8 @@ export const toBookQuery = (
 	text: normalizedText(filter),
 	author_id: filter.authorId,
 	series_id: filter.seriesId,
+	tag_id: filter.tagId,
+	publisher_id: filter.publisherId,
 	hide_read: filter.hideRead,
 	sort: SORT_ORDER_TO_BACKEND[filter.sortOrder],
 	limit: filter.seriesId !== null ? null : pageSize,

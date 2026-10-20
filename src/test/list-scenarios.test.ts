@@ -1,10 +1,12 @@
-import type { LibraryAuthor, LibrarySeries } from "@/bindings";
+import type { LibraryAuthor, LibrarySeries, LibraryTag } from "@/bindings";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const store = vi.hoisted(() => ({
 	state: {
 		series: [] as LibrarySeries[],
 		seriesLoading: true,
+		tags: null as LibraryTag[] | null,
+		tagsLoading: true,
 		authors: [] as LibraryAuthor[],
 		authorsLoading: true,
 		actions: {
@@ -28,6 +30,8 @@ describe("list fixture lifecycle", () => {
 	beforeEach(() => {
 		store.state.series = [{ id: 7, name: "Original series", book_count: 2 }];
 		store.state.seriesLoading = true;
+		store.state.tags = null;
+		store.state.tagsLoading = true;
 		store.state.authors = [
 			{
 				id: "8",
@@ -49,6 +53,17 @@ describe("list fixture lifecycle", () => {
 		restore();
 		expect(store.state.series).toBe(original.series);
 		expect(store.state.seriesLoading).toBe(original.seriesLoading);
+	});
+
+	it("restores the exact Tags data and loading state without changing Series", () => {
+		const original = { ...store.state };
+		const restore = getListScenario("tags").install(500, false);
+		expect(store.state.tags).toHaveLength(500);
+		expect(store.state.tagsLoading).toBe(false);
+		expect(store.state.series).toBe(original.series);
+		restore();
+		expect(store.state.tags).toBe(original.tags);
+		expect(store.state.tagsLoading).toBe(original.tagsLoading);
 	});
 
 	it("blocks Author writes while fixtures are installed and restores the original actions", async () => {

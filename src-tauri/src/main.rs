@@ -46,6 +46,8 @@ fn run_tauri_backend() -> std::io::Result<()> {
         calibre::query::clb_query_list_series,
         // Tag query commands
         calibre::query::clb_query_list_tags,
+        // Publisher query commands
+        calibre::query::clb_query_list_publishers,
         // Book manipulation commands
         calibre::command::clb_cmd_create_book,
         calibre::command::clb_cmd_update_book,

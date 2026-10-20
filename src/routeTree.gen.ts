@@ -9,12 +9,19 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TagsRouteImport } from './routes/tags'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SeriesRouteImport } from './routes/series'
+import { Route as PublishersRouteImport } from './routes/publishers'
 import { Route as AuthorsRouteImport } from './routes/authors'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BooksBookIdRouteImport } from './routes/books.$bookId'
 
+const TagsRoute = TagsRouteImport.update({
+  id: '/tags',
+  path: '/tags',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -23,6 +30,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const SeriesRoute = SeriesRouteImport.update({
   id: '/series',
   path: '/series',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PublishersRoute = PublishersRouteImport.update({
+  id: '/publishers',
+  path: '/publishers',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthorsRoute = AuthorsRouteImport.update({
@@ -44,43 +56,80 @@ const BooksBookIdRoute = BooksBookIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/authors': typeof AuthorsRoute
+  '/publishers': typeof PublishersRoute
   '/series': typeof SeriesRoute
   '/settings': typeof SettingsRoute
+  '/tags': typeof TagsRoute
   '/books/$bookId': typeof BooksBookIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/authors': typeof AuthorsRoute
+  '/publishers': typeof PublishersRoute
   '/series': typeof SeriesRoute
   '/settings': typeof SettingsRoute
+  '/tags': typeof TagsRoute
   '/books/$bookId': typeof BooksBookIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/authors': typeof AuthorsRoute
+  '/publishers': typeof PublishersRoute
   '/series': typeof SeriesRoute
   '/settings': typeof SettingsRoute
+  '/tags': typeof TagsRoute
   '/books/$bookId': typeof BooksBookIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/authors' | '/series' | '/settings' | '/books/$bookId'
+  fullPaths:
+    | '/'
+    | '/authors'
+    | '/publishers'
+    | '/series'
+    | '/settings'
+    | '/tags'
+    | '/books/$bookId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/authors' | '/series' | '/settings' | '/books/$bookId'
-  id: '__root__' | '/' | '/authors' | '/series' | '/settings' | '/books/$bookId'
+  to:
+    | '/'
+    | '/authors'
+    | '/publishers'
+    | '/series'
+    | '/settings'
+    | '/tags'
+    | '/books/$bookId'
+  id:
+    | '__root__'
+    | '/'
+    | '/authors'
+    | '/publishers'
+    | '/series'
+    | '/settings'
+    | '/tags'
+    | '/books/$bookId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthorsRoute: typeof AuthorsRoute
+  PublishersRoute: typeof PublishersRoute
   SeriesRoute: typeof SeriesRoute
   SettingsRoute: typeof SettingsRoute
+  TagsRoute: typeof TagsRoute
   BooksBookIdRoute: typeof BooksBookIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/tags': {
+      id: '/tags'
+      path: '/tags'
+      fullPath: '/tags'
+      preLoaderRoute: typeof TagsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -93,6 +142,13 @@ declare module '@tanstack/react-router' {
       path: '/series'
       fullPath: '/series'
       preLoaderRoute: typeof SeriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/publishers': {
+      id: '/publishers'
+      path: '/publishers'
+      fullPath: '/publishers'
+      preLoaderRoute: typeof PublishersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/authors': {
@@ -122,8 +178,10 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthorsRoute: AuthorsRoute,
+  PublishersRoute: PublishersRoute,
   SeriesRoute: SeriesRoute,
   SettingsRoute: SettingsRoute,
+  TagsRoute: TagsRoute,
   BooksBookIdRoute: BooksBookIdRoute,
 }
 export const routeTree = rootRouteImport

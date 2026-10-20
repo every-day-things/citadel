@@ -1,4 +1,3 @@
-import type { LibrarySeries } from "@/bindings";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useLayoutEffect, useRef, useState } from "react";
 
@@ -11,7 +10,12 @@ const findScrollParent = (element: HTMLElement): HTMLElement | null => {
 	return null;
 };
 
-export const useSeriesRows = (series: LibrarySeries[]) => {
+/**
+ * Virtualizes a page-level list of id-keyed rows (series, tags, publishers)
+ * inside the nearest scrolling ancestor, and scrolls back to the top when
+ * the list itself changes (e.g. a new search term).
+ */
+export const useNamedCountRows = <T extends { id: number }>(items: T[]) => {
 	const rowsRef = useRef<HTMLDivElement>(null);
 	const [scrollElement, setScrollElement] = useState<HTMLElement | null>(null);
 	const [scrollMargin, setScrollMargin] = useState(0);
@@ -37,21 +41,21 @@ export const useSeriesRows = (series: LibrarySeries[]) => {
 	}, []);
 
 	const virtualizer = useVirtualizer({
-		count: series.length,
+		count: items.length,
 		getScrollElement: () => scrollElement,
-		getItemKey: (index) => series[index]?.id ?? index,
+		getItemKey: (index) => items[index]?.id ?? index,
 		estimateSize: () => 40,
 		overscan: 10,
 		scrollMargin,
 	});
 
-	const previousSeries = useRef(series);
+	const previousItems = useRef(items);
 	useLayoutEffect(() => {
-		if (previousSeries.current !== series) {
+		if (previousItems.current !== items) {
 			if (scrollElement) scrollElement.scrollTop = 0;
-			previousSeries.current = series;
+			previousItems.current = items;
 		}
-	}, [series, scrollElement]);
+	}, [items, scrollElement]);
 
 	return { rowsRef, virtualizer, scrollMargin };
 };
