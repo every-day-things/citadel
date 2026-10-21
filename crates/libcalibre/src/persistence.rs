@@ -170,6 +170,39 @@ pub fn establish_connection(db_path: &str) -> Result<SqliteConnection, CalibreEr
     Ok(connection)
 }
 
+/// Open an existing database without changing its journal mode or schema.
+/// SQLite enforces read-only access while retaining normal locking and live WAL reads.
+pub fn establish_read_only_connection(db_path: &str) -> Result<SqliteConnection, CalibreError> {
+    let path = std::path::Path::new(db_path);
+    let path = if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        std::env::current_dir()
+            .map_err(CalibreError::database)?
+            .join(path)
+    };
+    let path = path.to_string_lossy();
+    #[cfg(windows)]
+    let path = path.replace('\\', "/");
+    let mut uri = String::from("file:");
+    if !path.starts_with('/') {
+        uri.push('/');
+    }
+    for byte in path.bytes() {
+        if byte.is_ascii_alphanumeric() || b"/-._~:".contains(&byte) {
+            uri.push(char::from(byte));
+        } else {
+            use std::fmt::Write;
+            write!(uri, "%{byte:02X}").expect("writing to a string cannot fail");
+        }
+    }
+    uri.push_str("?mode=ro");
+    let mut connection = SqliteConnection::establish(&uri).map_err(CalibreError::database)?;
+    connection.batch_execute("PRAGMA query_only = ON; PRAGMA busy_timeout = 3000;")?;
+    register_sql_functions(&mut connection)?;
+    Ok(connection)
+}
+
 /// An r2d2 pool of Calibre connections. Every connection it hands out has the
 /// PRAGMAs applied and the custom SQL functions registered.
 pub type CalibrePool = Pool<ConnectionManager<SqliteConnection>>;

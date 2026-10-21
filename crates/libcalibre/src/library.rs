@@ -9,7 +9,7 @@ use crate::{
     custom_columns::{self, CustomColumn, CustomColumnKind, CustomColumnSpec, CustomValue},
     entities::book_file::NewBookFile,
     operations,
-    persistence::establish_connection,
+    persistence::{establish_connection, establish_read_only_connection},
     queries::{authors as author_queries, book_files, books as book_queries},
     sorting,
     types::{AuthorId, BookId},
@@ -232,6 +232,13 @@ impl Library {
     pub fn new(db_path: ValidDbPath) -> Result<Self, CalibreError> {
         let conn = establish_connection(&db_path.database_path)?;
 
+        Ok(Self { db_path, conn })
+    }
+
+    /// Open an existing library for queries without changing its journal mode or triggers.
+    /// Mutation methods must not be used with this handle; SQLite rejects database writes.
+    pub fn open_read_only(db_path: ValidDbPath) -> Result<Self, CalibreError> {
+        let conn = establish_read_only_connection(&db_path.database_path)?;
         Ok(Self { db_path, conn })
     }
 
@@ -868,7 +875,14 @@ impl Library {
     }
 
     pub fn get_book_read_state(&mut self, book_id: BookId) -> Result<bool, CalibreError> {
-        let column = self.get_or_create_read_state_column()?;
+        let Some(column) = custom_columns::find_by_label_and_kind(
+            &mut self.conn,
+            "read",
+            &CustomColumnKind::Bool,
+        )?
+        else {
+            return Ok(false);
+        };
         let value = custom_columns::get_value(&mut self.conn, &column, book_id)?;
         Ok(matches!(value, Some(CustomValue::Bool(true))))
     }
@@ -892,7 +906,14 @@ impl Library {
             return Ok(HashMap::new());
         }
 
-        let column = self.get_or_create_read_state_column()?;
+        let Some(column) = custom_columns::find_by_label_and_kind(
+            &mut self.conn,
+            "read",
+            &CustomColumnKind::Bool,
+        )?
+        else {
+            return Ok(HashMap::new());
+        };
         let values = custom_columns::batch_get_values(&mut self.conn, &column, book_ids)?;
 
         Ok(values
