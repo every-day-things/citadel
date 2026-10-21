@@ -33,7 +33,7 @@ impl CalibreCatalogSource {
             .ok_or_else(|| "libraryPath must be valid UTF-8".to_string())?;
         let database = libcalibre::util::get_db_path(library_path)
             .ok_or_else(|| format!("libraryPath is not a Calibre library: {library_path}"))?;
-        let library = Library::new(database)
+        let library = Library::open_read_only(database)
             .map_err(|error| format!("could not open libraryPath: {error}"))?;
         Ok(Self {
             library: Mutex::new(library),
