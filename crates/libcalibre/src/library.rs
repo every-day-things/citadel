@@ -9,7 +9,7 @@ use crate::{
     custom_columns::{self, CustomColumn, CustomColumnKind, CustomColumnSpec, CustomValue},
     entities::book_file::NewBookFile,
     operations,
-    persistence::establish_connection,
+    persistence::{establish_connection, establish_read_only_connection},
     queries::{authors as author_queries, book_files, books as book_queries},
     sorting,
     types::{AuthorId, BookId},
@@ -232,6 +232,13 @@ impl Library {
     pub fn new(db_path: ValidDbPath) -> Result<Self, CalibreError> {
         let conn = establish_connection(&db_path.database_path)?;
 
+        Ok(Self { db_path, conn })
+    }
+
+    /// Open an existing library for queries without changing its journal mode or triggers.
+    /// Mutation methods must not be used with this handle; SQLite rejects database writes.
+    pub fn open_read_only(db_path: ValidDbPath) -> Result<Self, CalibreError> {
+        let conn = establish_read_only_connection(&db_path.database_path)?;
         Ok(Self { db_path, conn })
     }
 
