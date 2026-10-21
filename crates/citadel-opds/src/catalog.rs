@@ -862,7 +862,7 @@ fn facet_navigation_feed(
             .map(|facet| {
                 navigation_entry(
                     library_uuid,
-                    &facet.id.to_string(),
+                    &format!("{}/{}", kind.route(), facet.id),
                     &facet.title,
                     &format!("{}/{}", kind.route(), facet.id),
                     ATOM_TYPE,
@@ -1560,6 +1560,7 @@ mod tests {
         let (base, server) = loopback(Arc::new(FacetSource { facets })).await;
         let client = reqwest::Client::new();
 
+        let mut identities = std::collections::HashSet::new();
         for route in [
             "/opds/authors",
             "/opds/series",
@@ -1572,6 +1573,12 @@ mod tests {
             assert_eq!(first.status(), StatusCode::OK, "{route} page 1");
             let first = parsed_feed(&first.bytes().await.unwrap());
             assert_eq!(first.titles.len(), 50, "{route} page 1");
+            for id in &first.ids {
+                assert!(
+                    identities.insert(id.clone()),
+                    "duplicate facet identity: {id}"
+                );
+            }
             assert!(first.previous.is_none(), "{route} page 1");
             assert_eq!(first.next.as_deref(), Some(second_page.as_str()));
 
