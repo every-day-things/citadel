@@ -12,22 +12,14 @@ use citadel_opds::{
 use libcalibre::{BookId, BookPage, CalibreError, Library, ResolvedBookAsset};
 use serde::Deserialize;
 
-const CREDENTIAL_FILENAME: &str = "opds-credentials.json";
+const USERS_ENVIRONMENT: &str = "CITADEL_OPDS_USERS";
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ServerConfig {
     pub library_path: PathBuf,
-    pub state_directory: PathBuf,
+    pub state_directory: Option<PathBuf>,
     pub sharing: OpdsStartConfig,
-    pub credentials: Option<CredentialInput>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct CredentialInput {
-    pub username: String,
-    pub password_environment: String,
 }
 
 pub struct CalibreCatalogSource {
@@ -115,7 +107,11 @@ fn validate_config(config: &ServerConfig) -> Result<(), String> {
     if !config.library_path.is_absolute() {
         return Err("libraryPath must be absolute".to_string());
     }
-    if !config.state_directory.is_absolute() {
+    if config
+        .state_directory
+        .as_ref()
+        .is_some_and(|path| !path.is_absolute())
+    {
         return Err("stateDirectory must be absolute".to_string());
     }
     if config.sharing.port == 0 || config.sharing.port > u32::from(u16::MAX) {
@@ -128,46 +124,29 @@ fn validate_config(config: &ServerConfig) -> Result<(), String> {
         )?;
     }
 
-    if let Some(credentials) = &config.credentials {
-        if credentials.username.trim().is_empty() {
-            return Err("credentials.username must not be empty".to_string());
-        }
-        if credentials.password_environment.trim().is_empty() {
-            return Err("credentials.passwordEnvironment must not be empty".to_string());
-        }
-    }
     Ok(())
 }
 
 pub async fn run(config: ServerConfig) -> Result<(), String> {
     validate_config(&config)?;
-    std::fs::create_dir_all(&config.state_directory).map_err(|error| {
+    let state_directory = config
+        .state_directory
+        .clone()
+        .map(Ok)
+        .unwrap_or_else(default_state_directory)?;
+    std::fs::create_dir_all(&state_directory).map_err(|error| {
         format!(
             "could not create stateDirectory {}: {error}",
-            config.state_directory.display()
+            state_directory.display()
         )
     })?;
-    let source = Arc::new(CalibreCatalogSource::open(&config.library_path)?);
-    let service = OpdsService::new(source, config.state_directory.join(CREDENTIAL_FILENAME))
-        .map_err(|error| format!("could not load OPDS credentials: {error}"))?;
-
-    if let Some(credentials) = config.credentials {
-        let password = std::env::var_os(&credentials.password_environment).ok_or_else(|| {
-            format!(
-                "credential environment variable {} is not set",
-                credentials.password_environment
-            )
-        })?;
-        let password = password.into_string().map_err(|_| {
-            format!(
-                "credential environment variable {} is not valid UTF-8",
-                credentials.password_environment
-            )
-        })?;
-        service
-            .configure_credentials(credentials.username, password)
-            .map_err(|error| error.message)?;
+    let users = load_users(std::env::var_os(USERS_ENVIRONMENT))?;
+    if config.sharing.authentication_enabled && users.is_empty() {
+        return Err("Reader sign-in requires CITADEL_OPDS_USERS.".into());
     }
+    let source = Arc::new(CalibreCatalogSource::open(&config.library_path)?);
+    let service =
+        OpdsService::with_ephemeral_credentials(source, users).map_err(|error| error.message)?;
 
     let initial = service
         .start(config.sharing)
@@ -311,5 +290,92 @@ target = "localNetworks"
             };
             assert!(rejected);
         }
+    }
+}
+
+fn load_users(
+    value: Option<OsString>,
+) -> Result<Vec<citadel_opds::credential_store::OpdsCredentialSecret>, String> {
+    let Some(value) = value else {
+        return Ok(Vec::new());
+    };
+    let value = value
+        .into_string()
+        .map_err(|_| "CITADEL_OPDS_USERS must be valid UTF-8.".to_string())?;
+    let entries: Vec<String> = serde_json::from_str(&value).map_err(|_| {
+        "CITADEL_OPDS_USERS must be a JSON array of USER:PASSWORD strings.".to_string()
+    })?;
+    entries
+        .into_iter()
+        .map(|entry| {
+            let (username, password) = entry.split_once(':').ok_or_else(|| {
+                "Each CITADEL_OPDS_USERS entry must contain USER:PASSWORD.".to_string()
+            })?;
+            Ok(citadel_opds::credential_store::OpdsCredentialSecret {
+                username: username.into(),
+                password: password.into(),
+            })
+        })
+        .collect()
+}
+
+#[cfg(unix)]
+fn xdg_state_directory(xdg: Option<&Path>, home: Option<&Path>) -> Result<PathBuf, String> {
+    xdg.filter(|path| path.is_absolute())
+        .map(|path| path.join("citadel"))
+        .or_else(|| {
+            home.filter(|path| path.is_absolute())
+                .map(|path| path.join(".local/state/citadel"))
+        })
+        .ok_or_else(|| "Set an absolute stateDirectory or configure XDG_STATE_HOME/HOME.".into())
+}
+
+fn default_state_directory() -> Result<PathBuf, String> {
+    #[cfg(unix)]
+    {
+        xdg_state_directory(
+            std::env::var_os("XDG_STATE_HOME").as_deref().map(Path::new),
+            dirs::home_dir().as_deref(),
+        )
+    }
+    #[cfg(not(unix))]
+    {
+        dirs::data_local_dir()
+            .map(|path| path.join("citadel"))
+            .ok_or_else(|| "Set an absolute stateDirectory.".into())
+    }
+}
+
+#[cfg(test)]
+mod environment_tests {
+    use super::*;
+    #[test]
+    fn users_are_an_explicit_list_and_passwords_may_contain_colons() {
+        let users = load_users(Some(r#"["alice:one", "bob:two:three"]"#.into())).unwrap();
+        assert_eq!(users.len(), 2);
+        assert_eq!(users[1].password, "two:three");
+        assert!(load_users(None).unwrap().is_empty());
+        for invalid in ["alice:one", "[", r#"["missing-separator"]"#] {
+            assert!(load_users(Some(invalid.into())).is_err());
+        }
+    }
+    #[cfg(unix)]
+    #[test]
+    fn xdg_state_defaults_and_relative_xdg_values() {
+        assert_eq!(
+            xdg_state_directory(Some(Path::new("/state")), Some(Path::new("/home/reader")))
+                .unwrap(),
+            PathBuf::from("/state/citadel")
+        );
+        assert_eq!(
+            xdg_state_directory(None, Some(Path::new("/home/reader"))).unwrap(),
+            PathBuf::from("/home/reader/.local/state/citadel")
+        );
+        assert_eq!(
+            xdg_state_directory(Some(Path::new("relative")), Some(Path::new("/home/reader")))
+                .unwrap(),
+            PathBuf::from("/home/reader/.local/state/citadel")
+        );
+        assert!(xdg_state_directory(None, None).is_err());
     }
 }

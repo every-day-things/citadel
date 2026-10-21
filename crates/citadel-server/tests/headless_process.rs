@@ -75,7 +75,6 @@ fn real_process_serves_authenticated_catalog_and_acquisition_then_stops() {
         &config_path,
         format!(
             r#"libraryPath = "{}"
-stateDirectory = "{}"
 
 [sharing]
 port = {port}
@@ -84,12 +83,8 @@ authenticationEnabled = true
 [sharing.target.addresses]
 addresses = ["127.0.0.1"]
 
-[credentials]
-username = "reader"
-passwordEnvironment = "CITADEL_TEST_OPDS_PASSWORD"
 "#,
-            library_path.display(),
-            state_path.display()
+            library_path.display()
         ),
     )
     .unwrap();
@@ -97,7 +92,11 @@ passwordEnvironment = "CITADEL_TEST_OPDS_PASSWORD"
     let mut child = ServerProcess(
         Command::new(env!("CARGO_BIN_EXE_citadel-server"))
             .args(["--config", config_path.to_str().unwrap()])
-            .env("CITADEL_TEST_OPDS_PASSWORD", "secret")
+            .env(
+                "CITADEL_OPDS_USERS",
+                r#"["reader:secret","reviewer:second:secret"]"#,
+            )
+            .env("XDG_STATE_HOME", &state_path)
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit())
             .spawn()
@@ -147,6 +146,22 @@ passwordEnvironment = "CITADEL_TEST_OPDS_PASSWORD"
         .unwrap();
     assert!(feed.status().is_success());
     assert!(feed.text().unwrap().contains("Headless Citadel"));
+
+    let second = client
+        .get(&catalog_url)
+        .basic_auth("reviewer", Some("second:secret"))
+        .send()
+        .unwrap();
+    assert_eq!(second.status(), 200);
+    assert_eq!(
+        client
+            .get(&catalog_url)
+            .basic_auth("reader", Some("wrong"))
+            .send()
+            .unwrap()
+            .status(),
+        401
+    );
 
     let origin = catalog_url.strip_suffix("/opds").unwrap();
     let asset_url = format!(
@@ -205,9 +220,16 @@ passwordEnvironment = "CITADEL_TEST_OPDS_PASSWORD"
 
     observed.extend(lines_rx.try_iter());
     assert!(observed.iter().any(|line| line.contains("state=Stopped")));
-    let credential_file =
-        std::fs::read_to_string(state_path.join("opds-credentials.json")).unwrap();
-    assert!(credential_file.contains("reader"));
-    // Reversible storage is intentional: shared runtime credentials can be revealed.
-    assert!(credential_file.contains("secret"));
+    let state_directory = state_path.join("citadel");
+    assert!(state_directory.is_dir());
+    assert_eq!(std::fs::read_dir(&state_directory).unwrap().count(), 0);
+    let restart = Command::new(env!("CARGO_BIN_EXE_citadel-server"))
+        .args(["--config", config_path.to_str().unwrap()])
+        .env_remove("CITADEL_OPDS_USERS")
+        .env("XDG_STATE_HOME", &state_path)
+        .output()
+        .unwrap();
+    assert!(!restart.status.success());
+    assert!(String::from_utf8_lossy(&restart.stderr).contains("requires CITADEL_OPDS_USERS"));
+    assert_eq!(std::fs::read_dir(state_directory).unwrap().count(), 0);
 }

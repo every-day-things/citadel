@@ -480,6 +480,30 @@ impl OpdsService {
         ))
     }
 
+    /// Credentials supplied by an external host remain in memory for this process.
+    pub fn with_ephemeral_credentials(
+        source: Arc<dyn CatalogSource>,
+        users: Vec<crate::credential_store::OpdsCredentialSecret>,
+    ) -> Result<Self, OpdsStatusError> {
+        let mut names = BTreeSet::new();
+        let mut credentials = Vec::new();
+        for user in users {
+            let user = credentials::validate_credentials(user.username, user.password)?;
+            if !names.insert(user.username.clone()) {
+                return Err(OpdsStatusError {
+                    code: OpdsErrorCode::ConfigurationConflict,
+                    message: "Duplicate reader username.".into(),
+                });
+            }
+            credentials.push(user);
+        }
+        Ok(Self::with_dependencies_and_credentials(
+            source,
+            OpdsCredentialStore::ephemeral(credentials),
+            ServiceDependencies::default(),
+        ))
+    }
+
     #[cfg(test)]
     fn with_dependencies(
         source: Arc<dyn CatalogSource>,
@@ -970,6 +994,30 @@ mod tests {
         fn drop(&mut self) {
             self.active.lock().unwrap().remove(&self.address);
         }
+    }
+
+    #[test]
+    fn ephemeral_users_reject_duplicate_names_and_empty_passwords() {
+        use crate::credential_store::OpdsCredentialSecret;
+        let users = vec![
+            OpdsCredentialSecret {
+                username: "reader".into(),
+                password: "one".into(),
+            },
+            OpdsCredentialSecret {
+                username: " reader ".into(),
+                password: "two".into(),
+            },
+        ];
+        assert!(OpdsService::with_ephemeral_credentials(missing_source(), users).is_err());
+        assert!(OpdsService::with_ephemeral_credentials(
+            missing_source(),
+            vec![OpdsCredentialSecret {
+                username: "reader".into(),
+                password: String::new()
+            }]
+        )
+        .is_err());
     }
 
     struct TestSource {

@@ -51,7 +51,7 @@ pub(crate) struct OpdsCredentialStore {
 
 struct CredentialStoreInner {
     path: Option<PathBuf>,
-    credentials: RwLock<Option<StoredOpdsCredentials>>,
+    credentials: RwLock<Vec<StoredOpdsCredentials>>,
 }
 
 impl OpdsCredentialStore {
@@ -74,7 +74,7 @@ impl OpdsCredentialStore {
         Ok(Self {
             inner: Arc::new(CredentialStoreInner {
                 path: Some(path),
-                credentials: RwLock::new(credentials),
+                credentials: RwLock::new(credentials.into_iter().collect()),
             }),
         })
     }
@@ -84,39 +84,51 @@ impl OpdsCredentialStore {
         Self {
             inner: Arc::new(CredentialStoreInner {
                 path: None,
-                credentials: RwLock::new(None),
+                credentials: RwLock::new(Vec::new()),
             }),
         }
     }
 
-    fn read(&self) -> std::sync::RwLockReadGuard<'_, Option<StoredOpdsCredentials>> {
+    fn read(&self) -> std::sync::RwLockReadGuard<'_, Vec<StoredOpdsCredentials>> {
         self.inner
             .credentials
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
-    fn write(&self) -> std::sync::RwLockWriteGuard<'_, Option<StoredOpdsCredentials>> {
+    fn write(&self) -> std::sync::RwLockWriteGuard<'_, Vec<StoredOpdsCredentials>> {
         self.inner
             .credentials
             .write()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
-    /// Disk is the source of truth; memory mirrors the last successful disk
-    /// operation.
+    /// Desktop stores mirror disk; ephemeral host stores stay in memory.
     pub fn status(&self) -> OpdsCredentialStatus {
         let credentials = self.read();
         OpdsCredentialStatus {
-            configured: credentials.is_some(),
+            configured: !credentials.is_empty(),
             username: credentials
-                .as_ref()
+                .first()
                 .map(|credentials| credentials.username.clone()),
         }
     }
 
-    pub fn get(&self) -> Option<StoredOpdsCredentials> {
+    pub fn all(&self) -> Vec<StoredOpdsCredentials> {
         self.read().clone()
+    }
+
+    pub fn ephemeral(credentials: Vec<StoredOpdsCredentials>) -> Self {
+        Self {
+            inner: Arc::new(CredentialStoreInner {
+                path: None,
+                credentials: RwLock::new(credentials),
+            }),
+        }
+    }
+
+    pub fn get(&self) -> Option<StoredOpdsCredentials> {
+        self.read().first().cloned()
     }
 
     pub fn secret(&self) -> Option<OpdsCredentialSecret> {
@@ -130,7 +142,7 @@ impl OpdsCredentialStore {
         if let Some(path) = &self.inner.path {
             persist(path, &credentials)?;
         }
-        *self.write() = Some(credentials);
+        *self.write() = vec![credentials];
         Ok(())
     }
 
@@ -142,7 +154,7 @@ impl OpdsCredentialStore {
                 Err(error) => return Err(error),
             }
         }
-        *self.write() = None;
+        self.write().clear();
         Ok(())
     }
 }
