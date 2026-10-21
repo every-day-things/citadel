@@ -34,24 +34,7 @@ impl OpdsService {
         username: String,
         password: String,
     ) -> Result<OpdsCredentialStatus, OpdsStatusError> {
-        if username.trim().is_empty() || password.is_empty() {
-            return Err(OpdsStatusError {
-                code: OpdsErrorCode::Unexpected,
-                message: "Reader sign-in needs a non-empty username and password.".to_string(),
-            });
-        }
-        // HTTP Basic splits `user:pass` at the first colon, so a colon in the
-        // username could never authenticate.
-        if username.contains(USERNAME_FORBIDDEN) {
-            return Err(OpdsStatusError {
-                code: OpdsErrorCode::Unexpected,
-                message: "Usernames can't contain a colon (:).".to_string(),
-            });
-        }
-        let credentials = StoredOpdsCredentials {
-            username: username.trim().to_string(),
-            password,
-        };
+        let credentials = validate_credentials(username, password)?;
         self.inner
             .credentials
             .set(credentials)
@@ -85,11 +68,37 @@ impl OpdsService {
         let snapshot = self
             .inner
             .credentials
-            .get()
+            .all()
+            .into_iter()
             .map(|credentials| OpdsAuthCredentials {
                 username: credentials.username,
                 password: credentials.password,
-            });
-        self.inner.auth.swap_credentials(snapshot);
+            })
+            .collect();
+        self.inner.auth.swap_credential_list(snapshot);
     }
+}
+
+pub(super) fn validate_credentials(
+    username: String,
+    password: String,
+) -> Result<StoredOpdsCredentials, OpdsStatusError> {
+    if username.trim().is_empty() || password.is_empty() {
+        return Err(OpdsStatusError {
+            code: OpdsErrorCode::Unexpected,
+            message: "Reader sign-in needs a non-empty username and password.".to_string(),
+        });
+    }
+    // HTTP Basic splits `user:pass` at the first colon, so a colon in the
+    // username could never authenticate.
+    if username.contains(USERNAME_FORBIDDEN) {
+        return Err(OpdsStatusError {
+            code: OpdsErrorCode::Unexpected,
+            message: "Usernames can't contain a colon (:).".to_string(),
+        });
+    }
+    Ok(StoredOpdsCredentials {
+        username: username.trim().to_string(),
+        password,
+    })
 }

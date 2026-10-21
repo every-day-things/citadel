@@ -480,6 +480,30 @@ impl OpdsService {
         ))
     }
 
+    /// Credentials supplied by an external host remain in memory for this process.
+    pub fn with_ephemeral_credentials(
+        source: Arc<dyn CatalogSource>,
+        users: Vec<crate::credential_store::OpdsCredentialSecret>,
+    ) -> Result<Self, OpdsStatusError> {
+        let mut names = BTreeSet::new();
+        let mut credentials = Vec::new();
+        for user in users {
+            let user = credentials::validate_credentials(user.username, user.password)?;
+            if !names.insert(user.username.clone()) {
+                return Err(OpdsStatusError {
+                    code: OpdsErrorCode::ConfigurationConflict,
+                    message: "Duplicate reader username.".into(),
+                });
+            }
+            credentials.push(user);
+        }
+        Ok(Self::with_dependencies_and_credentials(
+            source,
+            OpdsCredentialStore::ephemeral(credentials),
+            ServiceDependencies::default(),
+        ))
+    }
+
     #[cfg(test)]
     fn with_dependencies(
         source: Arc<dyn CatalogSource>,
@@ -668,6 +692,14 @@ impl OpdsService {
         let policy = BindPolicy {
             allow_global: stored.is_some(),
         };
+        if let OpdsBindTarget::Addresses { addresses } = &config.target {
+            super::network::validate_explicit_addresses(addresses, policy.allow_global).map_err(
+                |message| OpdsStatusError {
+                    code: OpdsErrorCode::ConfigurationConflict,
+                    message,
+                },
+            )?;
+        }
         if matches!(config.target, OpdsBindTarget::AllInterfaces) && !policy.allow_global {
             // AllInterfaces serves every network the computer can reach; it
             // exists to be paired with credentials.
@@ -796,6 +828,10 @@ async fn attempt_bind(
     auth: OpdsBasicAuth,
 ) -> BindOutcome {
     let desired = match target {
+        OpdsBindTarget::Addresses { .. } => match plan_bindings(&[], target, port, policy) {
+            super::network::BindPlan::Listen(sockets) => sockets,
+            super::network::BindPlan::Wait(reason) => return BindOutcome::Waiting(reason),
+        },
         OpdsBindTarget::AllInterfaces => {
             let mut sockets = BTreeSet::new();
             sockets.insert(SocketAddr::new(
@@ -958,6 +994,30 @@ mod tests {
         fn drop(&mut self) {
             self.active.lock().unwrap().remove(&self.address);
         }
+    }
+
+    #[test]
+    fn ephemeral_users_reject_duplicate_names_and_empty_passwords() {
+        use crate::credential_store::OpdsCredentialSecret;
+        let users = vec![
+            OpdsCredentialSecret {
+                username: "reader".into(),
+                password: "one".into(),
+            },
+            OpdsCredentialSecret {
+                username: " reader ".into(),
+                password: "two".into(),
+            },
+        ];
+        assert!(OpdsService::with_ephemeral_credentials(missing_source(), users).is_err());
+        assert!(OpdsService::with_ephemeral_credentials(
+            missing_source(),
+            vec![OpdsCredentialSecret {
+                username: "reader".into(),
+                password: String::new()
+            }]
+        )
+        .is_err());
     }
 
     struct TestSource {
@@ -1371,7 +1431,7 @@ mod tests {
 
         // Both sockets answer; then both shut down cleanly.
         let _ = std::net::TcpStream::connect(("127.0.0.1", port)).unwrap();
-        drop((v4, v6));
+        Listeners(vec![v4, v6]).drain().await;
         let probe2 = StdTcpListener::bind((Ipv4Addr::LOCALHOST, port)).unwrap();
         drop(probe2);
     }

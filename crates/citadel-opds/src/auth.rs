@@ -2,7 +2,7 @@
 //!
 //! The credential snapshot is hot-swappable: listeners read it per request,
 //! so rotating or replacing credentials never interrupts a running share
-//! (see ADR 0005 for why the secret is stored reversibly). Consecutive
+//! (desktop persistence supports reveal; external hosts can supply ephemeral users). Consecutive
 //! rejections back off exponentially, which is the online-guessing defense.
 
 use std::{
@@ -80,7 +80,7 @@ pub struct OpdsBasicAuth {
 
 struct AuthInner {
     required: AtomicBool,
-    credentials: Mutex<Option<Arc<OpdsAuthCredentials>>>,
+    credentials: Mutex<Option<Arc<Vec<OpdsAuthCredentials>>>>,
     backoff: Mutex<Backoff>,
 }
 
@@ -112,8 +112,17 @@ impl OpdsBasicAuth {
         self.inner.required.load(Ordering::Relaxed)
     }
 
+    #[cfg(test)]
     pub(crate) fn swap_credentials(&self, credentials: Option<OpdsAuthCredentials>) {
-        *self.inner.credentials.lock().unwrap() = credentials.map(Arc::new);
+        self.swap_credential_list(credentials.into_iter().collect());
+    }
+
+    pub(crate) fn swap_credential_list(&self, credentials: Vec<OpdsAuthCredentials>) {
+        *self.inner.credentials.lock().unwrap() = if credentials.is_empty() {
+            None
+        } else {
+            Some(Arc::new(credentials))
+        };
     }
 
     fn authorize(&self, authorization: Option<&[u8]>) -> AuthOutcome {
@@ -130,8 +139,13 @@ impl OpdsBasicAuth {
 
         let credentials = self.inner.credentials.lock().unwrap().clone();
         let parsed = authorization.and_then(parse_basic_credentials);
-        let authorized = parsed
-            .is_some_and(|provided| credentials.is_some_and(|stored| stored.matches(&provided)));
+        let authorized = parsed.is_some_and(|provided| {
+            credentials.is_some_and(|stored| {
+                stored
+                    .iter()
+                    .fold(false, |matched, user| matched | user.matches(&provided))
+            })
+        });
         {
             let mut backoff = self.inner.backoff.lock().unwrap();
             if authorized {
@@ -428,5 +442,34 @@ mod tests {
             response.headers().get(WWW_AUTHENTICATE).unwrap(),
             "Basic realm=\"Citadel\", charset=\"UTF-8\""
         );
+    }
+    #[test]
+    fn multiple_users_have_independent_passwords() {
+        let auth = OpdsBasicAuth::new();
+        auth.set_required(true);
+        auth.swap_credential_list(vec![
+            OpdsAuthCredentials {
+                username: "alice".into(),
+                password: "one".into(),
+            },
+            OpdsAuthCredentials {
+                username: "bob".into(),
+                password: "two:three".into(),
+            },
+        ]);
+        for (user, password) in [("alice", "one"), ("bob", "two:three")] {
+            assert!(matches!(
+                auth.authorize(Some(&basic_header(user, password.as_bytes()))),
+                AuthOutcome::Authorized
+            ));
+        }
+        assert!(matches!(
+            auth.authorize(Some(&basic_header("alice", b"two:three"))),
+            AuthOutcome::Rejected
+        ));
+        assert!(matches!(
+            auth.authorize(Some(&basic_header("bob", b"two:three"))),
+            AuthOutcome::Authorized
+        ));
     }
 }
