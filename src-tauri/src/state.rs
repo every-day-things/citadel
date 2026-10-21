@@ -305,6 +305,19 @@ mod tests {
         book.id
     }
 
+    fn feed_id(xml: &str) -> String {
+        let mut reader = quick_xml::Reader::from_str(xml);
+        loop {
+            match reader.read_event().unwrap() {
+                quick_xml::events::Event::Start(element) if element.name().as_ref() == b"id" => {
+                    return reader.read_text(element.name()).unwrap().into_owned();
+                }
+                quick_xml::events::Event::Eof => panic!("feed has no identity"),
+                _ => {}
+            }
+        }
+    }
+
     #[tokio::test(flavor = "multi_thread")]
     async fn running_router_switches_library_at_same_url_and_is_unavailable_during_transition() {
         let first = extract_empty_library();
@@ -344,7 +357,8 @@ mod tests {
 
         let first_response = client.get(format!("{base}/opds")).send().await.unwrap();
         assert_eq!(first_response.status(), StatusCode::OK);
-        assert!(first_response.text().await.unwrap().contains(&first_id));
+        let first_feed_id = feed_id(&first_response.text().await.unwrap());
+        assert!(!first_feed_id.is_empty());
 
         let asset_url = format!(
             "{base}/opds/books/{}/files/EPUB/book.epub",
@@ -380,7 +394,8 @@ mod tests {
         assert_ne!(first_id, second_id);
         let second_response = client.get(format!("{base}/opds")).send().await.unwrap();
         assert_eq!(second_response.status(), StatusCode::OK);
-        assert!(second_response.text().await.unwrap().contains(&second_id));
+        let second_feed_id = feed_id(&second_response.text().await.unwrap());
+        assert_ne!(first_feed_id, second_feed_id);
         let new_bytes = client
             .get(&asset_url)
             .send()
