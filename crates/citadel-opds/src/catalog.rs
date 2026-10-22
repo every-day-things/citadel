@@ -699,14 +699,14 @@ fn acquisition_feed(
         FeedLink {
             rel: "start",
             href: "/opds".to_string(),
-            media_type: ATOM_TYPE,
+            media_type: NAVIGATION_TYPE,
         },
     ];
     if route != "/opds" {
         links.push(FeedLink {
             rel: "up",
             href: "/opds".to_string(),
-            media_type: ATOM_TYPE,
+            media_type: NAVIGATION_TYPE,
         });
     }
     if page_number > 1 {
@@ -1323,6 +1323,7 @@ mod tests {
         acquisition_hrefs: Vec<String>,
         image_hrefs: Vec<String>,
         subsection_hrefs: Vec<String>,
+        feed_links: Vec<(String, String, String)>,
         next: Option<String>,
         previous: Option<String>,
     }
@@ -1364,6 +1365,21 @@ mod tests {
                         .find(|attribute| attribute.key.as_ref() == b"href")
                         .and_then(|attribute| attribute.unescape_value().ok())
                         .map(|value| value.into_owned());
+                    if !in_entry {
+                        let media_type = element
+                            .attributes()
+                            .flatten()
+                            .find(|attribute| attribute.key.as_ref() == b"type")
+                            .and_then(|attribute| attribute.unescape_value().ok())
+                            .map(|value| value.into_owned());
+                        if let (Some(rel), Some(href), Some(media_type)) =
+                            (rel.as_ref(), href.as_ref(), media_type)
+                        {
+                            parsed
+                                .feed_links
+                                .push((rel.clone(), href.clone(), media_type));
+                        }
+                    }
                     match (rel.as_deref(), href) {
                         (Some(ACQUISITION_REL), Some(href)) if in_entry => {
                             parsed.acquisition_hrefs.push(href)
@@ -1470,6 +1486,45 @@ mod tests {
         assert_eq!(parsed.titles, ["A <Book> & More"]);
         assert_eq!(parsed.content, ["Words <with> & symbols"]);
         assert_eq!(parsed.acquisition_hrefs.len(), 1);
+    }
+
+    #[test]
+    fn acquisition_home_links_advertise_navigation_and_paging_stays_acquisition() {
+        let page = BookPage {
+            items: Vec::new(),
+            total: 101,
+        };
+        for route in [
+            "/opds/all",
+            "/opds/recent",
+            "/opds/unread",
+            "/opds/authors/1",
+            "/opds/series/1",
+            "/opds/tags/1",
+            "/opds/genres/1",
+            "/opds/search?q=space",
+        ] {
+            let feed = parsed_feed(
+                &acquisition_feed("library", None, &page, 2, 3, route, "Books").unwrap(),
+            );
+            for relation in ["start", "up"] {
+                let (_, href, media_type) = feed
+                    .feed_links
+                    .iter()
+                    .find(|(rel, _, _)| rel == relation)
+                    .unwrap();
+                assert_eq!(href, "/opds", "{route}: {relation}");
+                assert_eq!(media_type, NAVIGATION_TYPE, "{route}: {relation}");
+            }
+            for relation in ["self", "previous", "first", "next", "last"] {
+                let (_, _, media_type) = feed
+                    .feed_links
+                    .iter()
+                    .find(|(rel, _, _)| rel == relation)
+                    .unwrap();
+                assert_eq!(media_type, ATOM_TYPE, "{route}: {relation}");
+            }
+        }
     }
 
     #[test]
