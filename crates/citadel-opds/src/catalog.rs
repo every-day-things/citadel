@@ -10,29 +10,108 @@ use axum::{
 };
 use bytes::Bytes;
 use chrono::{NaiveDateTime, SecondsFormat};
-use libcalibre::{BookId, BookPage, CalibreError, ResolvedBookAsset};
+use libcalibre::{
+    AuthorId, BookId, BookPage, BookQuery, BookSortOrder, CalibreError, ResolvedBookAsset,
+};
 use serde::Deserialize;
 
-use super::assets::{self, AssetMethod, AssetResponseError};
-use super::auth::{require_basic_auth, OpdsBasicAuth};
-use crate::identity::{book_identity, library_identity};
+use super::{
+    assets::{self, AssetMethod, AssetResponseError},
+    auth::{require_basic_auth, OpdsBasicAuth},
+};
+use crate::identity::{book_identity, navigation_identity};
 
 const PAGE_SIZE: u64 = 50;
+const MAX_SEARCH_LENGTH: usize = 200;
 const ACQUISITION_REL: &str = "http://opds-spec.org/acquisition";
 pub(crate) const IMAGE_REL: &str = "http://opds-spec.org/image";
 const ATOM_TYPE: &str = "application/atom+xml;profile=opds-catalog;kind=acquisition";
 const ATOM_CONTENT_TYPE: &str =
     "application/atom+xml;profile=opds-catalog;kind=acquisition; charset=utf-8";
+const NAVIGATION_TYPE: &str = "application/atom+xml;profile=opds-catalog;kind=navigation";
+const NAVIGATION_CONTENT_TYPE: &str =
+    "application/atom+xml;profile=opds-catalog;kind=navigation; charset=utf-8";
+const OPENSEARCH_TYPE: &str = "application/opensearchdescription+xml";
 pub(crate) const IMAGE_TYPE: &str = "image/jpeg";
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum CatalogFilter {
+    All,
+    Unread,
+    Author(i32),
+    Series(i32),
+    Tag(i32),
+    Genre(i32),
+    Search(String),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CatalogSort {
+    Title,
+    Updated,
+    SeriesIndex,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CatalogBookQuery {
+    pub filter: CatalogFilter,
+    pub sort: CatalogSort,
+    pub limit: i64,
+    pub offset: i64,
+}
+
+impl CatalogBookQuery {
+    /// Translate the protocol query into libcalibre's bounded query contract.
+    pub fn into_calibre(self) -> BookQuery {
+        let mut query = BookQuery {
+            limit: Some(self.limit),
+            offset: self.offset,
+            sort: match self.sort {
+                CatalogSort::Title => BookSortOrder::TitleAsc,
+                CatalogSort::Updated => BookSortOrder::UpdatedDesc,
+                CatalogSort::SeriesIndex => BookSortOrder::SeriesIndexAsc,
+            },
+            ..BookQuery::default()
+        };
+        match self.filter {
+            CatalogFilter::All => {}
+            CatalogFilter::Unread => query.hide_read = true,
+            CatalogFilter::Author(id) => query.author_id = Some(AuthorId(id)),
+            CatalogFilter::Series(id) => query.series_id = Some(id),
+            CatalogFilter::Tag(id) => query.tag_id = Some(id),
+            CatalogFilter::Genre(id) => query.genre_id = Some(id),
+            CatalogFilter::Search(text) => query.text = Some(text),
+        }
+        query
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CatalogFacet {
+    pub id: i32,
+    pub title: String,
+    pub book_count: Option<i64>,
+}
 
 pub trait CatalogSource: Send + Sync + 'static {
     fn active_library_id(&self) -> Result<String, CalibreError>;
 
     fn book_page(
         &self,
-        limit: i64,
-        offset: i64,
+        query: CatalogBookQuery,
     ) -> Result<(String, Option<NaiveDateTime>, BookPage), CalibreError>;
+    fn authors(&self) -> Result<Vec<CatalogFacet>, CalibreError> {
+        Ok(Vec::new())
+    }
+    fn series(&self) -> Result<Vec<CatalogFacet>, CalibreError> {
+        Ok(Vec::new())
+    }
+    fn tags(&self) -> Result<Vec<CatalogFacet>, CalibreError> {
+        Ok(Vec::new())
+    }
+    fn genres(&self) -> Result<Vec<CatalogFacet>, CalibreError> {
+        Ok(Vec::new())
+    }
     fn book_file(&self, book_id: BookId, format: &str) -> Result<ResolvedBookAsset, CalibreError>;
     fn book_cover(&self, book_id: BookId) -> Result<ResolvedBookAsset, CalibreError>;
 }
@@ -76,9 +155,25 @@ pub(crate) struct FeedEntry {
 }
 
 pub fn router(source: Arc<dyn CatalogSource>, auth: OpdsBasicAuth) -> Router {
-    Router::new()
+    let feeds = Router::new()
         .route("/opds", get(root_feed))
         .route("/opds/all", get(all_books_feed))
+        .route("/opds/recent", get(recent_books_feed))
+        .route("/opds/unread", get(unread_books_feed))
+        .route("/opds/authors", get(authors_feed))
+        .route("/opds/authors/{id}", get(author_books_feed))
+        .route("/opds/series", get(series_feed))
+        .route("/opds/series/{id}", get(series_books_feed))
+        .route("/opds/tags", get(tags_feed))
+        .route("/opds/tags/{id}", get(tag_books_feed))
+        .route("/opds/genres", get(genres_feed))
+        .route("/opds/genres/{id}", get(genre_books_feed))
+        .route("/opds/search", get(search_feed))
+        .route("/opds/opensearch.xml", get(opensearch_description))
+        .with_state(CatalogState {
+            source: source.clone(),
+        });
+    let assets = Router::new()
         .route(
             "/opds/books/{book_id}/files/{format}/{filename}",
             get(book_file).head(book_file_head),
@@ -87,7 +182,10 @@ pub fn router(source: Arc<dyn CatalogSource>, auth: OpdsBasicAuth) -> Router {
             "/opds/books/{book_id}/cover",
             get(book_cover).head(book_cover_head),
         )
-        .with_state(CatalogState { source })
+        .with_state(CatalogState { source });
+    Router::new()
+        .merge(feeds)
+        .merge(assets)
         .layer(axum::middleware::from_fn_with_state(
             auth,
             require_basic_auth,
@@ -95,17 +193,175 @@ pub fn router(source: Arc<dyn CatalogSource>, auth: OpdsBasicAuth) -> Router {
 }
 
 async fn root_feed(state: State<CatalogState>, query: Query<PageQuery>) -> Response {
-    feed(state, query, "/opds").await
+    if query.page.unwrap_or(1) != 1 {
+        return public_error(StatusCode::NOT_FOUND, "Page not found");
+    }
+    let source = state.source.clone();
+    let library_uuid = match tokio::task::spawn_blocking(move || source.active_library_id()).await {
+        Ok(Ok(uuid)) => uuid,
+        Ok(Err(error)) => return calibre_error(error),
+        Err(_) => return public_error(StatusCode::INTERNAL_SERVER_ERROR, "Catalog unavailable"),
+    };
+    match root_navigation_feed(&library_uuid) {
+        Ok(xml) => xml_response(NAVIGATION_CONTENT_TYPE, xml),
+        Err(_) => public_error(StatusCode::INTERNAL_SERVER_ERROR, "Catalog unavailable"),
+    }
 }
 
 async fn all_books_feed(state: State<CatalogState>, query: Query<PageQuery>) -> Response {
-    feed(state, query, "/opds/all").await
+    acquisition_handler(
+        state,
+        query.0,
+        CatalogFilter::All,
+        CatalogSort::Title,
+        "/opds/all",
+        "All Books",
+    )
+    .await
 }
 
-async fn feed(
+async fn recent_books_feed(state: State<CatalogState>, query: Query<PageQuery>) -> Response {
+    acquisition_handler(
+        state,
+        query.0,
+        CatalogFilter::All,
+        CatalogSort::Updated,
+        "/opds/recent",
+        "Recently Modified",
+    )
+    .await
+}
+
+async fn unread_books_feed(state: State<CatalogState>, query: Query<PageQuery>) -> Response {
+    acquisition_handler(
+        state,
+        query.0,
+        CatalogFilter::Unread,
+        CatalogSort::Title,
+        "/opds/unread",
+        "Unread",
+    )
+    .await
+}
+
+async fn author_books_feed(
+    state: State<CatalogState>,
+    Path(id): Path<i32>,
+    query: Query<PageQuery>,
+) -> Response {
+    acquisition_handler(
+        state,
+        query.0,
+        CatalogFilter::Author(id),
+        CatalogSort::Title,
+        &format!("/opds/authors/{id}"),
+        "Books by Author",
+    )
+    .await
+}
+
+async fn series_books_feed(
+    state: State<CatalogState>,
+    Path(id): Path<i32>,
+    query: Query<PageQuery>,
+) -> Response {
+    acquisition_handler(
+        state,
+        query.0,
+        CatalogFilter::Series(id),
+        CatalogSort::SeriesIndex,
+        &format!("/opds/series/{id}"),
+        "Books in Series",
+    )
+    .await
+}
+
+async fn tag_books_feed(
+    state: State<CatalogState>,
+    Path(id): Path<i32>,
+    query: Query<PageQuery>,
+) -> Response {
+    acquisition_handler(
+        state,
+        query.0,
+        CatalogFilter::Tag(id),
+        CatalogSort::Title,
+        &format!("/opds/tags/{id}"),
+        "Books by Tag",
+    )
+    .await
+}
+
+async fn genre_books_feed(
+    state: State<CatalogState>,
+    Path(id): Path<i32>,
+    query: Query<PageQuery>,
+) -> Response {
+    acquisition_handler(
+        state,
+        query.0,
+        CatalogFilter::Genre(id),
+        CatalogSort::Title,
+        &format!("/opds/genres/{id}"),
+        "Books by Genre",
+    )
+    .await
+}
+
+#[derive(Deserialize)]
+struct SearchQuery {
+    q: Option<String>,
+    page: Option<u64>,
+}
+
+async fn search_feed(state: State<CatalogState>, Query(query): Query<SearchQuery>) -> Response {
+    let text = query.q.unwrap_or_default();
+    let text = text.trim();
+    if text.is_empty() {
+        return public_error(StatusCode::BAD_REQUEST, "Search query is required");
+    }
+    if text.chars().count() > MAX_SEARCH_LENGTH {
+        return public_error(StatusCode::BAD_REQUEST, "Search query is too long");
+    }
+    let route = format!("/opds/search?q={}", urlencoding::encode(text));
+    acquisition_handler(
+        state,
+        PageQuery { page: query.page },
+        CatalogFilter::Search(text.to_string()),
+        CatalogSort::Title,
+        &route,
+        "Search Results",
+    )
+    .await
+}
+
+async fn authors_feed(state: State<CatalogState>, query: Query<PageQuery>) -> Response {
+    facet_handler(state, query, CatalogFacetKind::Authors).await
+}
+
+async fn series_feed(state: State<CatalogState>, query: Query<PageQuery>) -> Response {
+    facet_handler(state, query, CatalogFacetKind::Series).await
+}
+
+async fn tags_feed(state: State<CatalogState>, query: Query<PageQuery>) -> Response {
+    facet_handler(state, query, CatalogFacetKind::Tags).await
+}
+
+async fn genres_feed(state: State<CatalogState>, query: Query<PageQuery>) -> Response {
+    facet_handler(state, query, CatalogFacetKind::Genres).await
+}
+
+async fn opensearch_description() -> Response {
+    xml_response(OPENSEARCH_TYPE, opensearch_xml())
+}
+
+async fn acquisition_handler(
     State(state): State<CatalogState>,
-    Query(query): Query<PageQuery>,
-    route: &'static str,
+    query: PageQuery,
+    filter: CatalogFilter,
+    sort: CatalogSort,
+    route: &str,
+    title: &str,
 ) -> Response {
     let (page_number, offset) = match page_params(&query) {
         Ok(params) => params,
@@ -113,8 +369,15 @@ async fn feed(
     };
 
     let source = state.source.clone();
-    let result =
-        tokio::task::spawn_blocking(move || source.book_page(PAGE_SIZE as i64, offset)).await;
+    let result = tokio::task::spawn_blocking(move || {
+        source.book_page(CatalogBookQuery {
+            filter,
+            sort,
+            limit: PAGE_SIZE as i64,
+            offset,
+        })
+    })
+    .await;
     let (library_uuid, updated_at, page) = match result {
         Ok(Ok(page)) => page,
         Ok(Err(error)) => return calibre_error(error),
@@ -133,6 +396,7 @@ async fn feed(
         page_number,
         last_page,
         route,
+        title,
     ) {
         Ok(xml) => (
             [(
@@ -144,6 +408,89 @@ async fn feed(
             .into_response(),
         Err(_) => public_error(StatusCode::INTERNAL_SERVER_ERROR, "Catalog unavailable"),
     }
+}
+
+#[derive(Clone, Copy)]
+enum CatalogFacetKind {
+    Authors,
+    Series,
+    Tags,
+    Genres,
+}
+
+impl CatalogFacetKind {
+    fn title(self) -> &'static str {
+        match self {
+            Self::Authors => "Authors",
+            Self::Series => "Series",
+            Self::Tags => "Tags",
+            Self::Genres => "Genres",
+        }
+    }
+
+    fn route(self) -> &'static str {
+        match self {
+            Self::Authors => "/opds/authors",
+            Self::Series => "/opds/series",
+            Self::Tags => "/opds/tags",
+            Self::Genres => "/opds/genres",
+        }
+    }
+}
+
+async fn facet_handler(
+    State(state): State<CatalogState>,
+    Query(query): Query<PageQuery>,
+    kind: CatalogFacetKind,
+) -> Response {
+    let page_number = query.page.unwrap_or(1);
+    if page_number == 0 {
+        return public_error(StatusCode::BAD_REQUEST, "Invalid page");
+    }
+    let source = state.source.clone();
+    let result = tokio::task::spawn_blocking(move || {
+        let library_uuid = source.active_library_id()?;
+        let facets = match kind {
+            CatalogFacetKind::Authors => source.authors()?,
+            CatalogFacetKind::Series => source.series()?,
+            CatalogFacetKind::Tags => source.tags()?,
+            CatalogFacetKind::Genres => source.genres()?,
+        };
+        Ok::<_, CalibreError>((library_uuid, facets))
+    })
+    .await;
+    let (library_uuid, facets) = match result {
+        Ok(Ok(result)) => result,
+        Ok(Err(error)) => return calibre_error(error),
+        Err(_) => return public_error(StatusCode::INTERNAL_SERVER_ERROR, "Catalog unavailable"),
+    };
+    let last_page = page_count(u64::try_from(facets.len()).unwrap_or(0)).max(1);
+    if page_number > last_page {
+        return public_error(StatusCode::NOT_FOUND, "Page not found");
+    }
+    let offset = match page_number
+        .checked_sub(1)
+        .and_then(|page| page.checked_mul(PAGE_SIZE))
+        .and_then(|offset| usize::try_from(offset).ok())
+    {
+        Some(offset) => offset,
+        None => return public_error(StatusCode::BAD_REQUEST, "Invalid page"),
+    };
+    let facets = facets
+        .get(offset..)
+        .unwrap_or_default()
+        .iter()
+        .take(PAGE_SIZE as usize)
+        .cloned()
+        .collect::<Vec<_>>();
+    match facet_navigation_feed(&library_uuid, kind, &facets, page_number, last_page) {
+        Ok(xml) => xml_response(NAVIGATION_CONTENT_TYPE, xml),
+        Err(_) => public_error(StatusCode::INTERNAL_SERVER_ERROR, "Catalog unavailable"),
+    }
+}
+
+fn xml_response(content_type: &'static str, xml: Vec<u8>) -> Response {
+    ([(header::CONTENT_TYPE, content_type)], xml).into_response()
 }
 
 fn page_params(query: &PageQuery) -> Result<(u64, i64), Response> {
@@ -323,6 +670,7 @@ fn acquisition_feed(
     page_number: u64,
     last_page: u64,
     route: &str,
+    title: &str,
 ) -> Result<Vec<u8>, quick_xml::Error> {
     let mut links = vec![
         FeedLink {
@@ -416,13 +764,153 @@ fn acquisition_feed(
         .collect();
 
     let feed = Feed {
-        id: library_identity(library_uuid),
-        title: "Citadel — All Books".to_string(),
+        id: navigation_identity(library_uuid, route),
+        title: format!("Citadel — {title}"),
         updated: feed_updated(updated_at),
         links,
         entries,
     };
     crate::xml::write_feed(&feed)
+}
+
+fn root_navigation_feed(library_uuid: &str) -> Result<Vec<u8>, quick_xml::Error> {
+    let entries = [
+        ("all", "All Books", "/opds/all", ATOM_TYPE),
+        ("recent", "Recently Modified", "/opds/recent", ATOM_TYPE),
+        ("unread", "Unread", "/opds/unread", ATOM_TYPE),
+        ("authors", "Authors", "/opds/authors", NAVIGATION_TYPE),
+        ("series", "Series", "/opds/series", NAVIGATION_TYPE),
+        ("tags", "Tags", "/opds/tags", NAVIGATION_TYPE),
+        ("genres", "Genres", "/opds/genres", NAVIGATION_TYPE),
+    ];
+    let feed = Feed {
+        id: navigation_identity(library_uuid, "/opds"),
+        title: "Citadel — Citadel".to_string(),
+        updated: feed_updated(None),
+        links: vec![
+            FeedLink {
+                rel: "self",
+                href: "/opds".to_string(),
+                media_type: NAVIGATION_TYPE,
+            },
+            FeedLink {
+                rel: "start",
+                href: "/opds".to_string(),
+                media_type: NAVIGATION_TYPE,
+            },
+            FeedLink {
+                rel: "search",
+                href: "/opds/opensearch.xml".to_string(),
+                media_type: OPENSEARCH_TYPE,
+            },
+        ],
+        entries: entries
+            .into_iter()
+            .map(|(id, title, href, media_type)| {
+                navigation_entry(library_uuid, id, title, href, media_type, None)
+            })
+            .collect::<Result<Vec<_>, _>>()?,
+    };
+    crate::xml::write_feed(&feed)
+}
+
+fn facet_navigation_feed(
+    library_uuid: &str,
+    kind: CatalogFacetKind,
+    facets: &[CatalogFacet],
+    page_number: u64,
+    last_page: u64,
+) -> Result<Vec<u8>, quick_xml::Error> {
+    let mut links = vec![
+        FeedLink {
+            rel: "self",
+            href: page_href(kind.route(), page_number),
+            media_type: NAVIGATION_TYPE,
+        },
+        FeedLink {
+            rel: "start",
+            href: "/opds".to_string(),
+            media_type: NAVIGATION_TYPE,
+        },
+        FeedLink {
+            rel: "up",
+            href: "/opds".to_string(),
+            media_type: NAVIGATION_TYPE,
+        },
+    ];
+    if page_number > 1 {
+        links.push(FeedLink {
+            rel: "previous",
+            href: page_href(kind.route(), page_number - 1),
+            media_type: NAVIGATION_TYPE,
+        });
+    }
+    if page_number < last_page {
+        links.push(FeedLink {
+            rel: "next",
+            href: page_href(kind.route(), page_number + 1),
+            media_type: NAVIGATION_TYPE,
+        });
+    }
+    let feed = Feed {
+        id: navigation_identity(library_uuid, &page_href(kind.route(), page_number)),
+        title: format!("Citadel — {}", kind.title()),
+        updated: feed_updated(None),
+        links,
+        entries: facets
+            .iter()
+            .map(|facet| {
+                navigation_entry(
+                    library_uuid,
+                    &format!("{}/{}", kind.route(), facet.id),
+                    &facet.title,
+                    &format!("{}/{}", kind.route(), facet.id),
+                    ATOM_TYPE,
+                    facet.book_count,
+                )
+            })
+            .collect::<Result<Vec<_>, _>>()?,
+    };
+    crate::xml::write_feed(&feed)
+}
+
+fn navigation_entry(
+    library_uuid: &str,
+    id: &str,
+    title: &str,
+    href: &str,
+    media_type: &str,
+    count: Option<i64>,
+) -> Result<FeedEntry, quick_xml::Error> {
+    Ok(FeedEntry {
+        id: navigation_identity(library_uuid, id),
+        title: title.to_string(),
+        updated: feed_updated(None),
+        authors: Vec::new(),
+        published: feed_updated(None),
+        languages: Vec::new(),
+        identifiers: Vec::new(),
+        categories: Vec::new(),
+        acquisition_links: vec![(
+            "subsection".to_string(),
+            href.to_string(),
+            media_type.to_string(),
+        )],
+        image_link: None,
+        content: count.map(|count| format!("{count} books")),
+    })
+}
+
+fn opensearch_xml() -> Vec<u8> {
+    br#"<?xml version="1.0" encoding="UTF-8"?>
+<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">
+  <ShortName>Citadel</ShortName>
+  <Description>Search the active Citadel library</Description>
+  <InputEncoding>UTF-8</InputEncoding>
+  <OutputEncoding>UTF-8</OutputEncoding>
+  <Url type="application/atom+xml;profile=opds-catalog;kind=acquisition" template="/opds/search?q={searchTerms}"/>
+</OpenSearchDescription>"#
+        .to_vec()
 }
 
 fn page_count(total: u64) -> u64 {
@@ -432,6 +920,8 @@ fn page_count(total: u64) -> u64 {
 fn page_href(route: &str, page: u64) -> String {
     if page == 1 {
         route.to_string()
+    } else if route.contains('?') {
+        format!("{route}&page={page}")
     } else {
         format!("{route}?page={page}")
     }
@@ -539,23 +1029,24 @@ mod tests {
         books: Vec<Book>,
     }
 
+    struct FacetSource {
+        facets: Vec<CatalogFacet>,
+    }
+
     impl CatalogSource for MemorySource {
         fn active_library_id(&self) -> Result<String, CalibreError> {
-            self.books
-                .first()
-                .map(|_| "memory-library".to_string())
-                .ok_or(CalibreError::LibraryNotInitialized)
+            Ok("550e8400-e29b-41d4-a716-446655440000".to_string())
         }
+
         fn book_page(
             &self,
-            limit: i64,
-            offset: i64,
+            query: CatalogBookQuery,
         ) -> Result<(String, Option<NaiveDateTime>, BookPage), CalibreError> {
             let items = self
                 .books
                 .iter()
-                .skip(offset as usize)
-                .take(limit as usize)
+                .skip(query.offset as usize)
+                .take(query.limit as usize)
                 .cloned()
                 .collect();
             Ok((
@@ -566,6 +1057,54 @@ mod tests {
                     total: self.books.len() as u64,
                 },
             ))
+        }
+
+        fn book_file(
+            &self,
+            book_id: BookId,
+            format: &str,
+        ) -> Result<ResolvedBookAsset, CalibreError> {
+            Err(CalibreError::BookFileNotFound(book_id, format.to_string()))
+        }
+
+        fn book_cover(&self, book_id: BookId) -> Result<ResolvedBookAsset, CalibreError> {
+            Err(CalibreError::BookCoverNotFound(book_id))
+        }
+    }
+
+    impl CatalogSource for FacetSource {
+        fn active_library_id(&self) -> Result<String, CalibreError> {
+            Ok("550e8400-e29b-41d4-a716-446655440000".to_string())
+        }
+
+        fn book_page(
+            &self,
+            _query: CatalogBookQuery,
+        ) -> Result<(String, Option<NaiveDateTime>, BookPage), CalibreError> {
+            Ok((
+                "550e8400-e29b-41d4-a716-446655440000".to_string(),
+                None,
+                BookPage {
+                    items: Vec::new(),
+                    total: 0,
+                },
+            ))
+        }
+
+        fn authors(&self) -> Result<Vec<CatalogFacet>, CalibreError> {
+            Ok(self.facets.clone())
+        }
+
+        fn series(&self) -> Result<Vec<CatalogFacet>, CalibreError> {
+            Ok(self.facets.clone())
+        }
+
+        fn tags(&self) -> Result<Vec<CatalogFacet>, CalibreError> {
+            Ok(self.facets.clone())
+        }
+
+        fn genres(&self) -> Result<Vec<CatalogFacet>, CalibreError> {
+            Ok(self.facets.clone())
         }
 
         fn book_file(
@@ -593,10 +1132,10 @@ mod tests {
         fn active_library_id(&self) -> Result<String, CalibreError> {
             Err(CalibreError::LibraryNotInitialized)
         }
+
         fn book_page(
             &self,
-            _limit: i64,
-            _offset: i64,
+            _query: CatalogBookQuery,
         ) -> Result<(String, Option<NaiveDateTime>, BookPage), CalibreError> {
             Err(CalibreError::LibraryNotInitialized)
         }
@@ -618,10 +1157,10 @@ mod tests {
         fn active_library_id(&self) -> Result<String, CalibreError> {
             Err((self.0)())
         }
+
         fn book_page(
             &self,
-            _limit: i64,
-            _offset: i64,
+            _query: CatalogBookQuery,
         ) -> Result<(String, Option<NaiveDateTime>, BookPage), CalibreError> {
             Err((self.0)())
         }
@@ -646,14 +1185,77 @@ mod tests {
 
         fn book_page(
             &self,
-            limit: i64,
-            offset: i64,
+            query: CatalogBookQuery,
         ) -> Result<(String, Option<NaiveDateTime>, BookPage), CalibreError> {
             let mut library = self.library.lock().unwrap();
             let uuid = library.library_uuid()?;
             let updated = library.catalog_updated_at()?;
-            let page = library.query_acquirable_books(limit, offset)?;
+            let page = library.query_acquirable_books_with(query.into_calibre())?;
             Ok((uuid, updated, page))
+        }
+
+        fn authors(&self) -> Result<Vec<CatalogFacet>, CalibreError> {
+            let mut library = self.library.lock().unwrap();
+            library
+                .catalog_facets(libcalibre::CatalogFacetKind::Authors)
+                .map(|items| {
+                    items
+                        .into_iter()
+                        .map(|item| CatalogFacet {
+                            id: item.id,
+                            title: item.name,
+                            book_count: Some(item.book_count),
+                        })
+                        .collect()
+                })
+        }
+
+        fn series(&self) -> Result<Vec<CatalogFacet>, CalibreError> {
+            let mut library = self.library.lock().unwrap();
+            library
+                .catalog_facets(libcalibre::CatalogFacetKind::Series)
+                .map(|items| {
+                    items
+                        .into_iter()
+                        .map(|item| CatalogFacet {
+                            id: item.id,
+                            title: item.name,
+                            book_count: Some(item.book_count),
+                        })
+                        .collect()
+                })
+        }
+
+        fn tags(&self) -> Result<Vec<CatalogFacet>, CalibreError> {
+            let mut library = self.library.lock().unwrap();
+            library
+                .catalog_facets(libcalibre::CatalogFacetKind::Tags)
+                .map(|items| {
+                    items
+                        .into_iter()
+                        .map(|item| CatalogFacet {
+                            id: item.id,
+                            title: item.name,
+                            book_count: Some(item.book_count),
+                        })
+                        .collect()
+                })
+        }
+
+        fn genres(&self) -> Result<Vec<CatalogFacet>, CalibreError> {
+            let mut library = self.library.lock().unwrap();
+            library
+                .catalog_facets(libcalibre::CatalogFacetKind::Genres)
+                .map(|items| {
+                    items
+                        .into_iter()
+                        .map(|item| CatalogFacet {
+                            id: item.id,
+                            title: item.name,
+                            book_count: Some(item.book_count),
+                        })
+                        .collect()
+                })
         }
 
         fn book_file(
@@ -702,6 +1304,7 @@ mod tests {
         content: Vec<String>,
         acquisition_hrefs: Vec<String>,
         image_hrefs: Vec<String>,
+        subsection_hrefs: Vec<String>,
         next: Option<String>,
         previous: Option<String>,
     }
@@ -748,6 +1351,9 @@ mod tests {
                             parsed.acquisition_hrefs.push(href)
                         }
                         (Some(IMAGE_REL), Some(href)) if in_entry => parsed.image_hrefs.push(href),
+                        (Some("subsection"), Some(href)) if in_entry => {
+                            parsed.subsection_hrefs.push(href)
+                        }
                         (Some("next"), Some(href)) => parsed.next = Some(href),
                         (Some("previous"), Some(href)) => parsed.previous = Some(href),
                         _ => {}
@@ -827,9 +1433,10 @@ mod tests {
             items: vec![legacy_book],
             total: 1,
         };
-        let xml =
-            String::from_utf8(acquisition_feed("bad-library", None, &page, 1, 1, "/opds").unwrap())
-                .unwrap();
+        let xml = String::from_utf8(
+            acquisition_feed("bad-library", None, &page, 1, 1, "/opds", "All Books").unwrap(),
+        )
+        .unwrap();
         assert!(xml.contains("A &lt;Book&gt; &amp; More"));
         assert!(xml.contains("A &lt;Writer&gt; &amp; Co"));
         assert!(xml.contains("Words &lt;with&gt; &amp; symbols"));
@@ -853,37 +1460,199 @@ mod tests {
             items: Vec::new(),
             total: 101,
         };
-        let first =
-            String::from_utf8(acquisition_feed("id", None, &page, 1, 3, "/opds/all").unwrap())
-                .unwrap();
+        let first = String::from_utf8(
+            acquisition_feed("id", None, &page, 1, 3, "/opds/all", "All Books").unwrap(),
+        )
+        .unwrap();
         assert!(first.contains("rel=\"next\" href=\"/opds/all?page=2\""));
         assert!(!first.contains("rel=\"previous\""));
-        let last =
-            String::from_utf8(acquisition_feed("id", None, &page, 3, 3, "/opds/all").unwrap())
-                .unwrap();
+        let last = String::from_utf8(
+            acquisition_feed("id", None, &page, 3, 3, "/opds/all", "All Books").unwrap(),
+        )
+        .unwrap();
         assert!(last.contains("rel=\"previous\" href=\"/opds/all?page=2\""));
         assert!(!last.contains("rel=\"next\""));
     }
 
     #[test]
+    fn catalog_queries_translate_to_bounded_library_queries() {
+        let query = CatalogBookQuery {
+            filter: CatalogFilter::Unread,
+            sort: CatalogSort::Updated,
+            limit: 50,
+            offset: 100,
+        }
+        .into_calibre();
+        assert!(query.hide_read);
+        assert_eq!(query.sort, BookSortOrder::UpdatedDesc);
+        assert_eq!(query.limit, Some(50));
+        assert_eq!(query.offset, 100);
+
+        let genre = CatalogBookQuery {
+            filter: CatalogFilter::Genre(1),
+            sort: CatalogSort::Title,
+            limit: 50,
+            offset: 0,
+        }
+        .into_calibre();
+        assert_eq!(genre.genre_id, Some(1));
+    }
+
+    #[tokio::test]
+    async fn root_exposes_v1_navigation_and_opensearch() {
+        let (base, server) = loopback(Arc::new(MemorySource { books: Vec::new() })).await;
+        let response = reqwest::get(format!("{base}/opds")).await.unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response.headers()[header::CONTENT_TYPE],
+            NAVIGATION_CONTENT_TYPE
+        );
+        let bytes = response.bytes().await.unwrap();
+        let feed = parsed_feed(&bytes);
+        assert_eq!(
+            feed.titles,
+            [
+                "All Books",
+                "Recently Modified",
+                "Unread",
+                "Authors",
+                "Series",
+                "Tags",
+                "Genres",
+            ]
+        );
+        assert_eq!(
+            feed.subsection_hrefs,
+            [
+                "/opds/all",
+                "/opds/recent",
+                "/opds/unread",
+                "/opds/authors",
+                "/opds/series",
+                "/opds/tags",
+                "/opds/genres",
+            ]
+        );
+        let xml = String::from_utf8(bytes.to_vec()).unwrap();
+        assert!(xml.contains("rel=\"search\""));
+        assert!(xml.contains("/opds/opensearch.xml"));
+
+        let search = reqwest::get(format!("{base}/opds/opensearch.xml"))
+            .await
+            .unwrap();
+        assert_eq!(search.status(), StatusCode::OK);
+        assert_eq!(search.headers()[header::CONTENT_TYPE], OPENSEARCH_TYPE);
+        let search = search.text().await.unwrap();
+        assert!(search.contains("{searchTerms}"));
+        assert!(search.contains("/opds/search?q="));
+        server.abort();
+    }
+
+    #[tokio::test]
+    async fn facet_navigation_routes_are_bounded_and_paginated() {
+        let facets = (1..=101)
+            .map(|id| CatalogFacet {
+                id,
+                title: format!("Facet {id:03}"),
+                book_count: Some(i64::from(id)),
+            })
+            .collect();
+        let (base, server) = loopback(Arc::new(FacetSource { facets })).await;
+        let client = reqwest::Client::new();
+
+        let mut identities = std::collections::HashSet::new();
+        for route in [
+            "/opds/authors",
+            "/opds/series",
+            "/opds/tags",
+            "/opds/genres",
+        ] {
+            let second_page = format!("{route}?page=2");
+            let third_page = format!("{route}?page=3");
+            let first = client.get(format!("{base}{route}")).send().await.unwrap();
+            assert_eq!(first.status(), StatusCode::OK, "{route} page 1");
+            let first = parsed_feed(&first.bytes().await.unwrap());
+            assert_eq!(first.titles.len(), 50, "{route} page 1");
+            for id in &first.ids {
+                assert!(
+                    identities.insert(id.clone()),
+                    "duplicate facet identity: {id}"
+                );
+            }
+            assert!(first.previous.is_none(), "{route} page 1");
+            assert_eq!(first.next.as_deref(), Some(second_page.as_str()));
+
+            let second = client
+                .get(format!("{base}{route}?page=2"))
+                .send()
+                .await
+                .unwrap();
+            assert_eq!(second.status(), StatusCode::OK, "{route} page 2");
+            let second = parsed_feed(&second.bytes().await.unwrap());
+            assert_eq!(second.titles.len(), 50, "{route} page 2");
+            assert_eq!(second.previous.as_deref(), Some(route));
+            assert_eq!(second.next.as_deref(), Some(third_page.as_str()));
+
+            let third = client
+                .get(format!("{base}{route}?page=3"))
+                .send()
+                .await
+                .unwrap();
+            assert_eq!(third.status(), StatusCode::OK, "{route} page 3");
+            let third = parsed_feed(&third.bytes().await.unwrap());
+            assert_eq!(third.titles, ["Facet 101"], "{route} page 3");
+            assert_eq!(third.previous.as_deref(), Some(second_page.as_str()));
+            assert!(third.next.is_none(), "{route} page 3");
+
+            let missing = client
+                .get(format!("{base}{route}?page=4"))
+                .send()
+                .await
+                .unwrap();
+            assert_eq!(missing.status(), StatusCode::NOT_FOUND, "{route} page 4");
+        }
+
+        server.abort();
+    }
+
+    #[tokio::test]
+    async fn search_is_limited_and_preserves_query_in_pagination_links() {
+        let books = (0..51)
+            .map(|id| book(&format!("Result {id}"), &format!("uuid-{id}"), id + 1))
+            .collect();
+        let (base, server) = loopback(Arc::new(MemorySource { books })).await;
+        let response = reqwest::get(format!("{base}/opds/search?q=space%20%25%20_"))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let feed = parsed_feed(&response.bytes().await.unwrap());
+        assert_eq!(
+            feed.next.as_deref(),
+            Some("/opds/search?q=space%20%25%20_&page=2")
+        );
+
+        for query in [String::new(), "x".repeat(MAX_SEARCH_LENGTH + 1)] {
+            let response = reqwest::get(format!(
+                "{base}/opds/search?q={}",
+                urlencoding::encode(&query)
+            ))
+            .await
+            .unwrap();
+            assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        }
+        server.abort();
+    }
+
+    #[test]
     fn valid_uuids_are_normalized_and_fallbacks_are_deterministic() {
         assert_eq!(
-            library_identity("550E8400-E29B-41D4-A716-446655440000"),
+            crate::identity::library_identity("550E8400-E29B-41D4-A716-446655440000"),
             "urn:uuid:550e8400-e29b-41d4-a716-446655440000"
         );
         assert_eq!(
             book_identity("lib", Some("bad"), BookId(7)),
             book_identity("lib", Some("bad"), BookId(7))
         );
-    }
-
-    #[test]
-    fn page_count_is_zero_for_empty_totals_and_one_for_a_single_book() {
-        assert_eq!(page_count(0), 0);
-        assert_eq!(page_count(1), 1);
-        assert_eq!(page_count(50), 1);
-        assert_eq!(page_count(51), 2);
-        assert_eq!(page_count(101), 3);
     }
 
     #[tokio::test]
@@ -1036,12 +1805,16 @@ mod tests {
         }))
         .await;
         let client = reqwest::Client::new();
-        let feed_head = client.head(format!("{base}/opds")).send().await.unwrap();
+        let feed_head = client
+            .head(format!("{base}/opds/all"))
+            .send()
+            .await
+            .unwrap();
         assert_eq!(feed_head.status(), StatusCode::OK);
         assert_eq!(feed_head.headers()[header::CONTENT_TYPE], ATOM_CONTENT_TYPE);
         assert!(feed_head.headers().get(header::LAST_MODIFIED).is_none());
         assert!(feed_head.bytes().await.unwrap().is_empty());
-        let response = client.get(format!("{base}/opds")).send().await.unwrap();
+        let response = client.get(format!("{base}/opds/all")).send().await.unwrap();
         assert_eq!(response.status(), StatusCode::OK);
         let bytes = response.bytes().await.unwrap();
         let xml = String::from_utf8(bytes.to_vec()).unwrap();
@@ -1128,7 +1901,7 @@ mod tests {
         }))
         .await;
         let client = reqwest::Client::new();
-        let first = client.get(format!("{base}/opds")).send().await.unwrap();
+        let first = client.get(format!("{base}/opds/all")).send().await.unwrap();
         assert_eq!(first.status(), StatusCode::OK);
         let first = parsed_feed(&first.bytes().await.unwrap());
         assert_eq!(first.ids.len(), 50);
@@ -1153,9 +1926,69 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn real_library_genre_navigation_is_distinct_from_tags() {
+        let (directory, mut library) = test_library();
+        let source_path = directory.path().join("shared.epub");
+        std::fs::write(&source_path, b"book").unwrap();
+        let fantasy = library
+            .add_book(BookAdd {
+                title: "Genre Match".to_string(),
+                author_names: vec!["Author".to_string()],
+                tags: Some(vec!["Unrelated Tag".to_string()]),
+                series: None,
+                series_index: None,
+                publisher: None,
+                publication_date: None,
+                rating: None,
+                comments: None,
+                identifiers: HashMap::new(),
+                language: None,
+                file_paths: vec![source_path.clone()],
+            })
+            .unwrap();
+        library
+            .add_book(BookAdd {
+                title: "Other Book".to_string(),
+                author_names: vec!["Author".to_string()],
+                tags: Some(vec!["Fantasy".to_string()]),
+                series: None,
+                series_index: None,
+                publisher: None,
+                publication_date: None,
+                rating: None,
+                comments: None,
+                identifiers: HashMap::new(),
+                language: None,
+                file_paths: vec![source_path],
+            })
+            .unwrap();
+        library
+            .set_book_genres(fantasy.id, vec!["Fantasy".to_string()])
+            .unwrap();
+
+        let (base, server) = loopback(Arc::new(LibrarySource {
+            library: Mutex::new(library),
+        }))
+        .await;
+        let navigation = reqwest::get(format!("{base}/opds/genres")).await.unwrap();
+        assert_eq!(navigation.status(), StatusCode::OK);
+        let navigation = parsed_feed(&navigation.bytes().await.unwrap());
+        assert_eq!(navigation.titles, ["Fantasy"]);
+        assert_eq!(navigation.subsection_hrefs.len(), 1);
+
+        let books = reqwest::get(format!("{base}{}", navigation.subsection_hrefs[0]))
+            .await
+            .unwrap();
+        assert_eq!(books.status(), StatusCode::OK);
+        let books = parsed_feed(&books.bytes().await.unwrap());
+        assert_eq!(books.titles, ["Genre Match"]);
+        server.abort();
+    }
+
+    #[tokio::test]
     async fn empty_and_unavailable_catalogs_return_valid_non_sensitive_responses() {
         let (base, server) = loopback(Arc::new(MemorySource { books: Vec::new() })).await;
-        let response = reqwest::get(format!("{base}/opds")).await.unwrap();
+        let response = reqwest::get(format!("{base}/opds/all")).await.unwrap();
         assert_eq!(response.status(), StatusCode::OK);
         assert_eq!(response.headers()[header::CONTENT_TYPE], ATOM_CONTENT_TYPE);
         let feed = parsed_feed(&response.bytes().await.unwrap());
@@ -1184,20 +2017,20 @@ mod tests {
         let (base, server) = loopback(Arc::new(MemorySource { books: Vec::new() })).await;
         for page in ["0", "18446744073709551615"] {
             let response = client
-                .get(format!("{base}/opds?page={page}"))
+                .get(format!("{base}/opds/all?page={page}"))
                 .send()
                 .await
                 .unwrap();
             assert_eq!(response.status(), StatusCode::BAD_REQUEST);
         }
         let response = client
-            .get(format!("{base}/opds?page=2"))
+            .get(format!("{base}/opds/all?page=2"))
             .send()
             .await
             .unwrap();
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
         let response = client
-            .get(format!("{base}/opds?page=nope"))
+            .get(format!("{base}/opds/all?page=nope"))
             .send()
             .await
             .unwrap();
@@ -1221,5 +2054,46 @@ mod tests {
         assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
         assert_eq!(response.text().await.unwrap(), "Catalog unavailable");
         server.abort();
+    }
+
+    #[tokio::test]
+    async fn empty_facets_are_valid_navigation_feeds() {
+        let (base, server) = loopback(Arc::new(FacetSource { facets: Vec::new() })).await;
+        for route in ["authors", "series", "tags", "genres"] {
+            let response = reqwest::get(format!("{base}/opds/{route}")).await.unwrap();
+            assert_eq!(response.status(), StatusCode::OK);
+            assert!(parsed_feed(&response.bytes().await.unwrap())
+                .titles
+                .is_empty());
+            assert_eq!(
+                reqwest::get(format!("{base}/opds/{route}?page=2"))
+                    .await
+                    .unwrap()
+                    .status(),
+                StatusCode::NOT_FOUND
+            );
+        }
+        server.abort();
+    }
+    #[test]
+    fn filtered_feed_ids_are_distinct_and_stable_across_pages() {
+        let page = BookPage {
+            items: Vec::new(),
+            total: 101,
+        };
+        let identity = |route, number| {
+            parsed_feed(
+                &acquisition_feed("library", None, &page, number, 3, route, "Books").unwrap(),
+            )
+            .feed_id
+            .unwrap()
+        };
+        assert_eq!(identity("/opds/all", 1), identity("/opds/all", 2));
+        assert_ne!(identity("/opds/all", 1), identity("/opds/unread", 1));
+        assert_ne!(
+            identity("/opds/search?q=one", 1),
+            identity("/opds/search?q=two", 1)
+        );
+        assert!(identity("/opds/all", 1).starts_with("urn:citadel:feed:"));
     }
 }

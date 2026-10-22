@@ -27,3 +27,11 @@ fn hex(bytes: &[u8]) -> String {
     }
     result
 }
+
+pub(crate) fn navigation_identity(library_uuid: &str, key: &str) -> String {
+    format!(
+        "urn:citadel:feed:{}:{}",
+        hex(library_identity(library_uuid).as_bytes()),
+        hex(key.as_bytes())
+    )
+}

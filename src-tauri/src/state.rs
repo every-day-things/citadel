@@ -6,7 +6,7 @@ use std::sync::{
 use chrono::NaiveDateTime;
 use libcalibre::{BookId, BookPage, CalibreError, Library, ResolvedBookAsset};
 
-use citadel_opds::CatalogSource;
+use citadel_opds::{CatalogBookQuery, CatalogFacet, CatalogSource};
 
 #[derive(Clone)]
 pub struct CitadelState {
@@ -140,8 +140,7 @@ impl CitadelState {
 
     pub fn opds_book_page(
         &self,
-        limit: i64,
-        offset: i64,
+        query: CatalogBookQuery,
     ) -> Result<(String, Option<NaiveDateTime>, BookPage), CalibreError> {
         let mut library = self.inner.library.lock().expect("Library mutex poisoned");
         if self.is_library_transitioning() {
@@ -152,8 +151,23 @@ impl CitadelState {
             .ok_or(CalibreError::LibraryNotInitialized)?;
         let library_uuid = library.library_uuid()?;
         let updated_at = library.catalog_updated_at()?;
-        let page = library.query_acquirable_books(limit, offset)?;
+        let page = library.query_acquirable_books_with(query.into_calibre())?;
         Ok((library_uuid, updated_at, page))
+    }
+
+    fn with_opds_library<T>(
+        &self,
+        operation: impl FnOnce(&mut Library) -> Result<T, CalibreError>,
+    ) -> Result<T, CalibreError> {
+        let mut library = self.inner.library.lock().expect("Library mutex poisoned");
+        if self.is_library_transitioning() {
+            return Err(CalibreError::LibraryNotInitialized);
+        }
+        operation(
+            library
+                .as_mut()
+                .ok_or(CalibreError::LibraryNotInitialized)?,
+        )
     }
 }
 
@@ -164,10 +178,77 @@ impl CatalogSource for CitadelState {
 
     fn book_page(
         &self,
-        limit: i64,
-        offset: i64,
+        query: CatalogBookQuery,
     ) -> Result<(String, Option<NaiveDateTime>, BookPage), CalibreError> {
-        self.opds_book_page(limit, offset)
+        self.opds_book_page(query)
+    }
+
+    fn authors(&self) -> Result<Vec<CatalogFacet>, CalibreError> {
+        self.with_opds_library(|library| {
+            library
+                .catalog_facets(libcalibre::CatalogFacetKind::Authors)
+                .map(|items| {
+                    items
+                        .into_iter()
+                        .map(|item| CatalogFacet {
+                            id: item.id,
+                            title: item.name,
+                            book_count: Some(item.book_count),
+                        })
+                        .collect()
+                })
+        })
+    }
+
+    fn series(&self) -> Result<Vec<CatalogFacet>, CalibreError> {
+        self.with_opds_library(|library| {
+            library
+                .catalog_facets(libcalibre::CatalogFacetKind::Series)
+                .map(|items| {
+                    items
+                        .into_iter()
+                        .map(|item| CatalogFacet {
+                            id: item.id,
+                            title: item.name,
+                            book_count: Some(item.book_count),
+                        })
+                        .collect()
+                })
+        })
+    }
+
+    fn tags(&self) -> Result<Vec<CatalogFacet>, CalibreError> {
+        self.with_opds_library(|library| {
+            library
+                .catalog_facets(libcalibre::CatalogFacetKind::Tags)
+                .map(|items| {
+                    items
+                        .into_iter()
+                        .map(|item| CatalogFacet {
+                            id: item.id,
+                            title: item.name,
+                            book_count: Some(item.book_count),
+                        })
+                        .collect()
+                })
+        })
+    }
+
+    fn genres(&self) -> Result<Vec<CatalogFacet>, CalibreError> {
+        self.with_opds_library(|library| {
+            library
+                .catalog_facets(libcalibre::CatalogFacetKind::Genres)
+                .map(|items| {
+                    items
+                        .into_iter()
+                        .map(|item| CatalogFacet {
+                            id: item.id,
+                            title: item.name,
+                            book_count: Some(item.book_count),
+                        })
+                        .collect()
+                })
+        })
     }
 
     fn book_file(&self, book_id: BookId, format: &str) -> Result<ResolvedBookAsset, CalibreError> {
@@ -224,6 +305,19 @@ mod tests {
         book.id
     }
 
+    fn feed_id(xml: &str) -> String {
+        let mut reader = quick_xml::Reader::from_str(xml);
+        loop {
+            match reader.read_event().unwrap() {
+                quick_xml::events::Event::Start(element) if element.name().as_ref() == b"id" => {
+                    return reader.read_text(element.name()).unwrap().into_owned();
+                }
+                quick_xml::events::Event::Eof => panic!("feed has no identity"),
+                _ => {}
+            }
+        }
+    }
+
     #[tokio::test(flavor = "multi_thread")]
     async fn running_router_switches_library_at_same_url_and_is_unavailable_during_transition() {
         let first = extract_empty_library();
@@ -263,7 +357,8 @@ mod tests {
 
         let first_response = client.get(format!("{base}/opds")).send().await.unwrap();
         assert_eq!(first_response.status(), StatusCode::OK);
-        assert!(first_response.text().await.unwrap().contains(&first_id));
+        let first_feed_id = feed_id(&first_response.text().await.unwrap());
+        assert!(!first_feed_id.is_empty());
 
         let asset_url = format!(
             "{base}/opds/books/{}/files/EPUB/book.epub",
@@ -299,7 +394,8 @@ mod tests {
         assert_ne!(first_id, second_id);
         let second_response = client.get(format!("{base}/opds")).send().await.unwrap();
         assert_eq!(second_response.status(), StatusCode::OK);
-        assert!(second_response.text().await.unwrap().contains(&second_id));
+        let second_feed_id = feed_id(&second_response.text().await.unwrap());
+        assert_ne!(first_feed_id, second_feed_id);
         let new_bytes = client
             .get(&asset_url)
             .send()

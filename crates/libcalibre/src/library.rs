@@ -151,6 +151,8 @@ pub enum BookSortOrder {
     TitleDesc,
     AuthorAsc,
     AuthorDesc,
+    UpdatedDesc,
+    SeriesIndexAsc,
 }
 
 /// A paged, sorted, filtered book query. All filters compose (AND).
@@ -998,9 +1000,56 @@ impl Library {
         limit: i64,
         offset: i64,
     ) -> Result<BookPage, CalibreError> {
+        self.query_acquirable_books_with(BookQuery {
+            limit: Some(limit),
+            offset,
+            ..BookQuery::default()
+        })
+    }
+
+    /// Run a filtered, sorted catalog query while excluding books whose file
+    /// records cannot be resolved safely beneath the library root. Candidate
+    /// rows are scanned without hydrating books; only the selected page is
+    /// hydrated.
+    pub fn query_acquirable_books_with(
+        &mut self,
+        query: BookQuery,
+    ) -> Result<BookPage, CalibreError> {
+        let hide_read_column = if query.hide_read {
+            custom_columns::find_by_label_and_kind(&mut self.conn, "read", &CustomColumnKind::Bool)?
+                .map(|column| column.id)
+        } else {
+            None
+        };
+        let genre_column = match query.genre_id {
+            Some(genre_id) => match self.genres_column(false)? {
+                Some(column) => Some((column.id, genre_id)),
+                None => {
+                    return Ok(BookPage {
+                        items: Vec::new(),
+                        total: 0,
+                    })
+                }
+            },
+            None => None,
+        };
+        let filters = book_queries::BookPageFilters {
+            text: query
+                .text
+                .as_deref()
+                .map(str::trim)
+                .filter(|text| !text.is_empty()),
+            author_id: query.author_id,
+            series_id: query.series_id,
+            tag_id: query.tag_id,
+            publisher_id: query.publisher_id,
+            genre_column,
+            hide_read_column,
+        };
         let mut resolvable_ids = Vec::new();
         let mut seen = std::collections::HashSet::new();
-        for candidate in book_queries::acquisition_candidates(&mut self.conn)? {
+        for candidate in book_queries::acquisition_candidates(&mut self.conn, &filters, query.sort)?
+        {
             let book_id = BookId(candidate.book_id);
             if seen.contains(&book_id) {
                 continue;
@@ -1016,8 +1065,11 @@ impl Library {
             }
         }
         let total = u64::try_from(resolvable_ids.len()).expect("usize fits in u64");
-        let start = usize::try_from(offset.max(0)).unwrap_or(usize::MAX);
-        let page_len = usize::try_from(limit.max(0)).unwrap_or(usize::MAX);
+        let start = usize::try_from(query.offset.max(0)).unwrap_or(usize::MAX);
+        let page_len = query
+            .limit
+            .map(|limit| usize::try_from(limit.max(0)).unwrap_or(usize::MAX))
+            .unwrap_or(usize::MAX);
         let book_ids = resolvable_ids
             .into_iter()
             .skip(start)
@@ -1296,4 +1348,110 @@ fn unique_tag_names<'a>(tag_names: &'a [String]) -> Vec<&'a str> {
     }
 
     unique
+}
+
+#[derive(Clone, Copy)]
+pub enum CatalogFacetKind {
+    Authors,
+    Series,
+    Tags,
+    Genres,
+}
+
+#[derive(Clone, Debug)]
+pub struct CatalogFacetSummary {
+    pub id: i32,
+    pub name: String,
+    pub book_count: i64,
+}
+
+impl Library {
+    /// Count only safely downloadable books, using lightweight candidate/link rows.
+    /// This scans library candidates; it never hydrates the whole book collection.
+    pub fn catalog_facets(
+        &mut self,
+        kind: CatalogFacetKind,
+    ) -> Result<Vec<CatalogFacetSummary>, CalibreError> {
+        use diesel::sql_types::{Integer, Text};
+        #[derive(QueryableByName)]
+        struct Link {
+            #[diesel(sql_type = Integer)]
+            id: i32,
+            #[diesel(sql_type = Text)]
+            name: String,
+            #[diesel(sql_type = Integer)]
+            book: i32,
+        }
+        let (table, links, value) = match kind {
+            CatalogFacetKind::Authors => (
+                "authors".to_string(),
+                "books_authors_link".to_string(),
+                "author",
+            ),
+            CatalogFacetKind::Series => (
+                "series".to_string(),
+                "books_series_link".to_string(),
+                "series",
+            ),
+            CatalogFacetKind::Tags => ("tags".to_string(), "books_tags_link".to_string(), "tag"),
+            CatalogFacetKind::Genres => {
+                let Some(column) = self.genres_column(false)? else {
+                    return Ok(Vec::new());
+                };
+                (
+                    format!("custom_column_{}", column.id),
+                    format!("books_custom_column_{}_link", column.id),
+                    "value",
+                )
+            }
+        };
+        let name = if matches!(kind, CatalogFacetKind::Genres) {
+            "value"
+        } else {
+            "name"
+        };
+        let rows: Vec<Link> = sql_query(format!("SELECT f.id AS id, f.{name} AS name, l.book AS book FROM {table} f JOIN {links} l ON l.{value} = f.id ORDER BY f.{name} COLLATE NOCASE, f.{name}, f.id")).load(&mut self.conn)?;
+        let filters = book_queries::BookPageFilters {
+            text: None,
+            author_id: None,
+            series_id: None,
+            tag_id: None,
+            publisher_id: None,
+            genre_column: None,
+            hide_read_column: None,
+        };
+        let mut eligible = std::collections::HashSet::new();
+        for candidate in
+            book_queries::acquisition_candidates(&mut self.conn, &filters, BookSortOrder::TitleAsc)?
+        {
+            if !eligible.contains(&candidate.book_id)
+                && operations::assets::is_resolvable_book_file(
+                    &self.db_path.library_path,
+                    &candidate.book_path,
+                    &candidate.name,
+                    &candidate.format,
+                )
+            {
+                eligible.insert(candidate.book_id);
+            }
+        }
+        let mut facets = Vec::<CatalogFacetSummary>::new();
+        let mut positions = HashMap::new();
+        let mut counted = std::collections::HashSet::new();
+        for row in rows {
+            if !eligible.contains(&row.book) || !counted.insert((row.id, row.book)) {
+                continue;
+            }
+            let index = *positions.entry(row.id).or_insert_with(|| {
+                facets.push(CatalogFacetSummary {
+                    id: row.id,
+                    name: row.name,
+                    book_count: 0,
+                });
+                facets.len() - 1
+            });
+            facets[index].book_count += 1;
+        }
+        Ok(facets)
+    }
 }

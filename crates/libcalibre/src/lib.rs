@@ -20,8 +20,9 @@ pub use custom_columns::{CustomColumn, CustomColumnKind, CustomColumnSpec, Custo
 pub use error::CalibreError;
 pub use library::{
     Author as LibraryAuthor, AuthorAdd, AuthorUpdate, Book as LibraryBook, BookAdd, BookFileInfo,
-    BookIdentifier, BookPage, BookQuery, BookSortOrder, BookUpdate, GenreSummary, Library,
-    PublisherSummary, ResolvedBookAsset, SeriesSummary, TagSummary,
+    BookIdentifier, BookPage, BookQuery, BookSortOrder, BookUpdate, CatalogFacetKind,
+    CatalogFacetSummary, GenreSummary, Library, PublisherSummary, ResolvedBookAsset, SeriesSummary,
+    TagSummary,
 };
 pub use stats::{library_stats, LibraryStats};
 pub use types::{AuthorId, BookFileId, BookId};
