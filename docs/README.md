@@ -60,3 +60,8 @@ Modules are deep, and errors are defined out of existence. For more, see
   the total match count plus sparse 100-book pages fetched on demand and
   invalidated (by generation stamp) after mutations. Authors and the tag
   vocabulary are still loaded as full lists.
+
+## OPDS sharing
+
+- [Desktop sharing and reader setup](opds-sharing.md)
+- [Headless server and validation fixture](headless-server.md)

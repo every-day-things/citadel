@@ -29,13 +29,13 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           prefix-key: "v1-rust"
-          workspaces: "src-tauri"
+          workspaces: "."
 
       - name: (Ubuntu only) Install dependencies
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
 
       - name: Install node packages
         run: bun install
@@ -58,8 +58,8 @@ jobs:
         with:
           name: linux-deb-and-appimage
           path: |
-            src-tauri/target/release/bundle/deb/*.deb
-            src-tauri/target/release/bundle/appimage/*.AppImage
+            target/release/bundle/deb/*.deb
+            target/release/bundle/appimage/*.AppImage
 
       - name: (macOS only) Upload build artifacts
         if: matrix.platform == 'macos-15'
@@ -67,5 +67,5 @@ jobs:
         with:
           name: macos-app-and-dmg
           path: |
-            src-tauri/target/release/bundle/macos/Citadel.app
-            src-tauri/target/release/bundle/dmg/*.dmg
+            target/release/bundle/macos/Citadel.app
+            target/release/bundle/dmg/*.dmg
