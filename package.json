@@ -11,10 +11,10 @@
     "dev:web": "vite dev",
     "format": "bun format:web; bun format:backend",
     "format:backend": "cargo fmt --all",
-    "format:web": "biome format --write src/ tools/testing/",
-    "format:check": "biome format src/ tools/testing/ && cargo fmt --check --all",
+    "format:web": "biome format --write src/ tools/testing/ tools/api/",
+    "format:check": "biome format src/ tools/testing/ tools/api/ && cargo fmt --check --all",
     "lint": "bun lint:web && bun lint:backend",
-    "lint:web": "biome lint src/ tools/testing/",
+    "lint:web": "biome lint src/ tools/testing/ tools/api/",
     "lint:backend": "cargo clippy --workspace",
     "quality": "bun format:check; bun lint",
     "preview:web": "vite preview",
@@ -22,7 +22,9 @@
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
     "typecheck": "tsgo",
-    "test:lists": "python3 tools/testing/check-lists.py"
+    "test:lists": "python3 tools/testing/check-lists.py",
+    "api:generate": "bun tools/api/generate.ts",
+    "api:check": "bun tools/api/generate.ts --check"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.1",
@@ -41,6 +43,7 @@
     "@typescript/native-preview": "^7.0.0-dev.20260624.1",
     "@vitejs/plugin-react-swc": "^4.3.1",
     "autoprefixer": "^10.5.1",
+    "openapi-typescript": "7.13.0",
     "postcss": "^8.5.15",
     "postcss-load-config": "^6.0.1",
     "storybook": "^10.4.6",
@@ -71,6 +74,7 @@
     "@types/dompurify": "^3.2.0",
     "clsx": "^2.1.1",
     "dompurify": "^3.4.11",
+    "openapi-fetch": "0.17.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "zustand": "^5.0.14"

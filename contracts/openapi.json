@@ -1,0 +1,552 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Citadel library API",
+    "description": "Utoipa's axum bindings for seamless integration for the two",
+    "contact": {
+      "name": "Juha Kukkonen",
+      "email": "juha7kukkonen@gmail.com"
+    },
+    "license": {
+      "name": "MIT OR Apache-2.0",
+      "identifier": "MIT OR Apache-2.0"
+    },
+    "version": "1"
+  },
+  "paths": {
+    "/api/books/query": {
+      "post": {
+        "description": "Query the configured library. HTTP requires an explicit limit between 0 and 200; zero returns only the total. No arbitrary library paths are accepted.",
+        "operationId": "queryBooks",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LibraryBookQuery"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryBookPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryError"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryError"
+                }
+              }
+            }
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryError"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryError"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryError"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "reader": []
+          }
+        ]
+      }
+    },
+    "/api/books/{book_id}": {
+      "get": {
+        "operationId": "getBook",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "description": "Library book ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryBook"
+                }
+              }
+            }
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryError"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryError"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryError"
+                }
+              }
+            }
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryError"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryError"
+                }
+              }
+            }
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "reader": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BookFile": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "Local"
+            ],
+            "properties": {
+              "Local": {
+                "$ref": "#/components/schemas/LocalFile"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "Remote"
+            ],
+            "properties": {
+              "Remote": {
+                "$ref": "#/components/schemas/RemoteFile"
+              }
+            }
+          }
+        ]
+      },
+      "BookSortOrder": {
+        "type": "string",
+        "enum": [
+          "TitleAsc",
+          "TitleDesc",
+          "AuthorAsc",
+          "AuthorDesc"
+        ]
+      },
+      "Identifier": {
+        "type": "object",
+        "description": "Book identifiers, such as ISBN, DOI, Google Books ID, etc.",
+        "required": [
+          "id",
+          "label",
+          "value"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "label": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "LibraryAuthor": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "sortable_name",
+          "book_count"
+        ],
+        "properties": {
+          "book_count": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Number of books in the library linked to this author, from\n`Library::author_book_counts` (one GROUP BY pass over\n`books_authors_link`). The Authors page renders this directly\ninstead of deriving counts from the whole book list.",
+            "minimum": 0
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sortable_name": {
+            "type": "string"
+          }
+        }
+      },
+      "LibraryBook": {
+        "type": "object",
+        "required": [
+          "id",
+          "uuid",
+          "title",
+          "author_list",
+          "tag_list",
+          "sortable_title",
+          "file_list",
+          "cover_image",
+          "identifier_list",
+          "description",
+          "is_read",
+          "series",
+          "series_index",
+          "language_list"
+        ],
+        "properties": {
+          "author_list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LibraryAuthor"
+            }
+          },
+          "cover_image": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/LocalOrRemoteUrl"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "file_list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BookFile"
+            }
+          },
+          "id": {
+            "type": "string"
+          },
+          "identifier_list": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Identifier"
+            }
+          },
+          "is_read": {
+            "type": "boolean"
+          },
+          "language_list": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Canonical Calibre language codes (ISO 639-2/3, e.g. `eng`, `fra`),\nordered. Empty when the book has no language metadata."
+          },
+          "series": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "series_index": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "format": "float"
+          },
+          "sortable_title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tag_list": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "title": {
+            "type": "string"
+          },
+          "uuid": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "LibraryBookPage": {
+        "type": "object",
+        "required": [
+          "items",
+          "total"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LibraryBook"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Total number of books matching the filters, ignoring limit/offset.",
+            "minimum": 0
+          }
+        }
+      },
+      "LibraryBookQuery": {
+        "type": "object",
+        "required": [
+          "hide_read",
+          "sort",
+          "offset"
+        ],
+        "properties": {
+          "author_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "hide_read": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Page size. `None` returns all matches.",
+            "minimum": 0
+          },
+          "offset": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "publisher_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "series_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/BookSortOrder"
+          },
+          "tag_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "text": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Substring match across title, author names, and series names.\n`None` or empty text matches all books."
+          }
+        }
+      },
+      "LibraryError": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/LibraryErrorCode"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "LibraryErrorCode": {
+        "type": "string",
+        "enum": [
+          "invalidArgument",
+          "unauthorized",
+          "rateLimited",
+          "notFound",
+          "unavailable",
+          "internal"
+        ]
+      },
+      "LocalFile": {
+        "type": "object",
+        "required": [
+          "path",
+          "mime_type"
+        ],
+        "properties": {
+          "mime_type": {
+            "type": "string",
+            "description": "The MIME type of the file. Common values are `application/pdf` and `application/epub+zip`."
+          },
+          "path": {
+            "type": "string",
+            "description": "The absolute path to the file, including extension."
+          }
+        }
+      },
+      "LocalOrRemote": {
+        "type": "string",
+        "enum": [
+          "Local",
+          "Remote"
+        ]
+      },
+      "LocalOrRemoteUrl": {
+        "type": "object",
+        "required": [
+          "kind",
+          "url",
+          "local_path"
+        ],
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/LocalOrRemote"
+          },
+          "local_path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "RemoteFile": {
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "properties": {
+          "url": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "reader": {
+        "type": "http",
+        "scheme": "basic"
+      }
+    }
+  }
+}

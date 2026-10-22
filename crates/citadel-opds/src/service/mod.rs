@@ -472,6 +472,21 @@ enum BindOutcome {
 }
 
 impl OpdsService {
+    /// Protect additional read-only catalog routes with this service's live
+    /// credentials and shared request/body/deadline limits. Hosts must start
+    /// the service before accepting requests on those routes.
+    pub fn protect_http_routes(&self, router: axum::Router) -> axum::Router {
+        router
+            .layer(axum::middleware::from_fn_with_state(
+                self.inner.auth.clone(),
+                crate::auth::require_basic_auth,
+            ))
+            .layer(axum::middleware::from_fn_with_state(
+                self.inner.auth.limits(),
+                crate::limits::enforce,
+            ))
+    }
+
     pub fn new(
         source: Arc<dyn CatalogSource>,
         credential_path: std::path::PathBuf,

@@ -1,3 +1,5 @@
+pub mod api;
+
 use std::{
     ffi::OsString,
     path::{Path, PathBuf},
@@ -21,6 +23,7 @@ pub struct ServerConfig {
     pub library_path: PathBuf,
     pub state_directory: Option<PathBuf>,
     pub sharing: OpdsStartConfig,
+    pub api: Option<api::ApiConfig>,
 }
 
 pub struct CalibreCatalogSource {
@@ -188,6 +191,17 @@ fn validate_config(config: &ServerConfig) -> Result<(), String> {
         )?;
     }
 
+    if let Some(api) = &config.api {
+        if api.listen.port() == 0 {
+            return Err("api.listen must use a nonzero port".into());
+        }
+        if !config.sharing.authentication_enabled {
+            return Err(
+                "The JSON API requires sharing.authenticationEnabled and CITADEL_OPDS_USERS".into(),
+            );
+        }
+        citadel_opds::network::validate_explicit_addresses(&[api.listen.ip().to_string()], true)?;
+    }
     Ok(())
 }
 
@@ -209,8 +223,8 @@ pub async fn run(config: ServerConfig) -> Result<(), String> {
         return Err("Reader sign-in requires CITADEL_OPDS_USERS.".into());
     }
     let source = Arc::new(CalibreCatalogSource::open(&config.library_path)?);
-    let service =
-        OpdsService::with_ephemeral_credentials(source, users).map_err(|error| error.message)?;
+    let service = OpdsService::with_ephemeral_credentials(source.clone(), users)
+        .map_err(|error| error.message)?;
 
     let initial = service
         .start(config.sharing)
@@ -224,6 +238,21 @@ pub async fn run(config: ServerConfig) -> Result<(), String> {
             .unwrap_or_else(|| "OPDS failed to start".to_string()));
     }
 
+    let mut api = if let Some(config) = &config.api {
+        match api::start(config, api::router(source, &service)).await {
+            Ok(api) => {
+                println!("citadel_server api=http://{}", config.listen);
+                Some(api)
+            }
+            Err(error) => {
+                service.stop().await;
+                return Err(error);
+            }
+        }
+    } else {
+        None
+    };
+
     let mut last_status = initial;
     let mut interval = tokio::time::interval(Duration::from_secs(2));
     interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
@@ -235,6 +264,15 @@ pub async fn run(config: ServerConfig) -> Result<(), String> {
                 result?;
                 break;
             }
+            error = async {
+                match &mut api {
+                    Some(api) => api.wait().await,
+                    None => std::future::pending::<String>().await,
+                }
+            } => {
+                service.stop().await;
+                return Err(error);
+            }
             _ = interval.tick() => {
                 let status = service.status().await;
                 if status != last_status {
@@ -245,6 +283,9 @@ pub async fn run(config: ServerConfig) -> Result<(), String> {
         }
     }
 
+    if let Some(api) = api {
+        api.stop().await;
+    }
     let stopped = service.stop().await;
     log_status(&stopped);
     Ok(())
@@ -320,6 +361,29 @@ mod tests {
         );
         assert!(config_path_from_args(["citadel-server"]).is_err());
         assert!(config_path_from_args(["citadel-server", "server.toml"]).is_err());
+    }
+
+    #[test]
+    fn api_is_opt_in_and_requires_authentication_and_a_valid_listener() {
+        let base = r#"libraryPath = "/tmp/library"
+[sharing]
+port = 8080
+authenticationEnabled = false
+target = "localNetworks"
+"#;
+        let config: ServerConfig = toml::from_str(base).unwrap();
+        assert!(config.api.is_none());
+        assert!(validate_config(&config).is_ok());
+        let with_api = format!("{base}\n[api]\nlisten = \"127.0.0.1:8081\"\n");
+        let config: ServerConfig = toml::from_str(&with_api).unwrap();
+        assert!(validate_config(&config).unwrap_err().contains("requires"));
+        let authenticated = with_api.replace(
+            "authenticationEnabled = false",
+            "authenticationEnabled = true",
+        );
+        assert!(validate_config(&toml::from_str::<ServerConfig>(&authenticated).unwrap()).is_ok());
+        let invalid = authenticated.replace("127.0.0.1:8081", "127.0.0.1:0");
+        assert!(validate_config(&toml::from_str::<ServerConfig>(&invalid).unwrap()).is_err());
     }
 
     #[test]

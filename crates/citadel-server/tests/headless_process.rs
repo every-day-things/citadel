@@ -70,11 +70,17 @@ fn real_process_serves_authenticated_catalog_and_acquisition_then_stops() {
     let reservation = TcpListener::bind("0.0.0.0:0").unwrap();
     let port = reservation.local_addr().unwrap().port();
     drop(reservation);
+    let api_reservation = TcpListener::bind("127.0.0.1:0").unwrap();
+    let api_port = api_reservation.local_addr().unwrap().port();
+    drop(api_reservation);
     let config_path = directory.path().join("server.toml");
     std::fs::write(
         &config_path,
         format!(
             r#"libraryPath = "{}"
+
+[api]
+listen = "127.0.0.1:{api_port}"
 
 [sharing]
 port = {port}
@@ -169,6 +175,29 @@ addresses = ["127.0.0.1"]
         401
     );
 
+    // OPDS reports Running before the optional API listener starts.
+    while !observed.iter().any(|line| line.contains("api=http://")) {
+        assert!(Instant::now() < deadline, "API did not start: {observed:?}");
+        observed.push(lines_rx.recv_timeout(Duration::from_secs(5)).unwrap());
+    }
+    let api_origin = format!("http://127.0.0.1:{api_port}");
+    assert_eq!(
+        client
+            .get(format!("{api_origin}/api/openapi.json"))
+            .send()
+            .unwrap()
+            .status(),
+        401
+    );
+    let api_book = client
+        .get(format!("{api_origin}/api/books/{}", book.id.as_i32()))
+        .basic_auth("reader", Some("secret"))
+        .send()
+        .unwrap();
+    assert_eq!(api_book.status(), 200);
+    let api_book: serde_json::Value = serde_json::from_str(&api_book.text().unwrap()).unwrap();
+    assert_eq!(api_book["title"], "Headless Citadel");
+
     let origin = catalog_url.strip_suffix("/opds").unwrap();
     let asset_url = format!(
         "{origin}/opds/books/{}/files/EPUB/book.epub",
@@ -223,6 +252,9 @@ addresses = ["127.0.0.1"]
         std::thread::sleep(Duration::from_millis(50));
     };
     assert!(exit.success());
+    let released =
+        TcpListener::bind(("127.0.0.1", api_port)).expect("API listener released on shutdown");
+    drop(released);
 
     observed.extend(lines_rx.try_iter());
     assert!(observed.iter().any(|line| line.contains("state=Stopped")));

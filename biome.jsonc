@@ -32,7 +32,9 @@
 			"src/**/*.ts",
 			"src/**/*.tsx",
 			"src/**/*.css",
+			"tools/api/**/*.ts",
 			"!src/bindings.ts",
+			"!src/lib/api/schema.generated.d.ts",
 			"!src/routeTree.gen.ts"
 		]
 	}

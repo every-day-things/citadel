@@ -80,6 +80,24 @@ impl CitadelState {
         }
     }
 
+    pub fn with_library_service<T>(
+        &self,
+        operation: impl FnOnce(
+            &mut citadel_core::library::LibraryService<'_>,
+        ) -> Result<T, citadel_core::error::LibraryError>,
+    ) -> Result<T, citadel_core::error::LibraryError> {
+        self.with_library(|library| {
+            operation(&mut citadel_core::library::LibraryService::new(
+                library,
+                &citadel_core::AssetUrlBuilder,
+            ))
+        })
+        .map_err(|message| citadel_core::error::LibraryError {
+            code: citadel_core::error::LibraryErrorCode::Unavailable,
+            message,
+        })?
+    }
+
     /// Get the current library path
     pub fn get_library_path(&self) -> Option<String> {
         self.inner
@@ -303,6 +321,58 @@ mod tests {
             })
             .unwrap();
         book.id
+    }
+
+    #[test]
+    fn shared_queries_use_desktop_assets_and_structured_errors() {
+        use citadel_core::{
+            contracts::{BookSortOrder, LibraryBookQuery},
+            error::LibraryErrorCode,
+            BookFile,
+        };
+        let state = CitadelState::new();
+        assert_eq!(
+            state
+                .with_library_service(|service| service.get_book("1"))
+                .err()
+                .unwrap()
+                .code,
+            LibraryErrorCode::Unavailable
+        );
+        let directory = extract_empty_library();
+        let id = add_asset(directory.path(), b'A', 10).as_i32().to_string();
+        state
+            .init_library(directory.path().to_string_lossy().into_owned())
+            .unwrap();
+        let book = state
+            .with_library_service(|service| service.get_book(&id))
+            .unwrap();
+        assert!(matches!(book.file_list[0], BookFile::Local(_)));
+        let page = state
+            .with_library_service(|service| {
+                service.query_books(LibraryBookQuery {
+                    text: None,
+                    author_id: None,
+                    series_id: None,
+                    tag_id: None,
+                    publisher_id: None,
+                    hide_read: false,
+                    sort: BookSortOrder::TitleAsc,
+                    limit: Some(0),
+                    offset: 0,
+                })
+            })
+            .unwrap();
+        assert_eq!(page.total, 1);
+        assert!(page.items.is_empty());
+        assert_eq!(
+            state
+                .with_library_service(|service| service.get_book("bad"))
+                .err()
+                .unwrap()
+                .code,
+            LibraryErrorCode::InvalidArgument
+        );
     }
 
     fn feed_id(xml: &str) -> String {

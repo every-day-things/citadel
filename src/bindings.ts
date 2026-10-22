@@ -72,7 +72,7 @@ async clbQuerySearchBooks(query: string) : Promise<Result<LibraryBook[], string>
     else return { status: "error", error: e  as any };
 }
 },
-async clbQueryBooks(query: LibraryBookQuery) : Promise<Result<LibraryBookPage, string>> {
+async clbQueryBooks(query: LibraryBookQuery) : Promise<Result<LibraryBookPage, LibraryError>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("clb_query_books", { query }) };
 } catch (e) {
@@ -80,7 +80,7 @@ async clbQueryBooks(query: LibraryBookQuery) : Promise<Result<LibraryBookPage, s
     else return { status: "error", error: e  as any };
 }
 },
-async clbQueryGetBook(bookId: string) : Promise<Result<LibraryBook, string>> {
+async clbQueryGetBook(bookId: string) : Promise<Result<LibraryBook, LibraryError>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("clb_query_get_book", { bookId }) };
 } catch (e) {
@@ -486,7 +486,7 @@ supported: boolean;
  */
 enum_values: string[] }
 /**
- * A custom-column value crossing the Tauri boundary.
+ * A custom-column value crossing the application boundary.
  * 
  * Mirrors `libcalibre::CustomValue`, except datetimes travel as RFC3339
  * strings and integers as `i32` (specta cannot export `i64` without bigint
@@ -587,26 +587,15 @@ text: string | null; author_id: string | null; series_id: number | null; tag_id:
  * Page size. `None` returns all matches.
  */
 limit: number | null; offset: number }
-/**
- * One publisher in the library with its linked-book count. `id` is what
- * [`LibraryBookQuery::publisher_id`] filters on.
- */
+export type LibraryError = { code: LibraryErrorCode; message: string }
+export type LibraryErrorCode = "invalidArgument" | "unauthorized" | "rateLimited" | "notFound" | "unavailable" | "internal"
 export type LibraryPublisher = { id: number; name: string; book_count: number }
-/**
- * One series in the library. `id` is what [`LibraryBookQuery::series_id`]
- * filters on; the frontend otherwise only ever sees series names.
- */
 export type LibrarySeries = { id: number; name: string; book_count: number }
 /**
  * Headline counts for the post-open reveal. i64 mirrors SQLite's COUNT;
  * exported to TS as `number` (see the bigint exporter setting in main.rs).
  */
 export type LibraryStats = { book_count: number; author_count: number }
-/**
- * One tag in the library with its linked-book count. `name` is what the
- * tag autocomplete suggests; `id` is what [`LibraryBookQuery::tag_id`]
- * filters on.
- */
 export type LibraryTag = { id: number; name: string; book_count: number }
 export type LocalFile = { 
 /**

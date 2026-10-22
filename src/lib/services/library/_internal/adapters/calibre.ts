@@ -48,7 +48,7 @@ const genLocalCalibreClient = async (
 		queryBooks: async (query: LibraryBookQuery) => {
 			const results = await commands.clbQueryBooks(query);
 			if (results.status === "error") {
-				throw new Error(results.error);
+				throw new Error(results.error.message);
 			}
 
 			for (const book of results.data.items) {
@@ -91,7 +91,7 @@ const genLocalCalibreClient = async (
 		getBook: async (bookId) => {
 			const result = await commands.clbQueryGetBook(bookId);
 			if (result.status === "error") {
-				throw new Error(result.error);
+				throw new Error(result.error.message);
 			}
 
 			const book = result.data;

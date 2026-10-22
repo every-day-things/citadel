@@ -1,15 +1,15 @@
 use std::path::Path;
 
+use citadel_core::error::LibraryError;
 use libcalibre::mime_type::MIMETYPE;
 use serde::{Deserialize, Serialize};
 
 use crate::book::{ImportableBookMetadata, LibraryAuthor};
-use crate::calibre::book;
 use crate::libs::cover_thumbs::{self, CoverThumbnail};
 use crate::libs::file_formats;
 use crate::{book::LibraryBook, state::CitadelState};
 
-use super::custom_columns::{BookCustomValue, CustomColumnDef, CustomValueDto};
+use super::custom_columns::{BookCustomValue, CustomColumnDef};
 use super::onboarding::{self, DetectedLibrary, SyncStatus};
 use super::ImportableFile;
 
@@ -19,12 +19,9 @@ pub fn clb_query_search_books(
     state: tauri::State<CitadelState>,
     query: String,
 ) -> Result<Vec<LibraryBook>, String> {
-    let library_root = state
-        .get_library_path()
-        .ok_or("No library loaded".to_string())?;
-
-    let books = state.with_library(|lib| book::search(library_root, lib, &query))?;
-    books.map_err(|e| e.to_string())
+    state
+        .with_library_service(|service| service.search_books(&query))
+        .map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -53,87 +50,15 @@ pub fn clb_query_list_cover_thumbnails(
     Ok(cover_thumbs::list_thumbnails(&app_cache_dir, &library_root))
 }
 
-#[derive(Serialize, Deserialize, specta::Type, Clone, Copy, Debug)]
-pub enum BookSortOrder {
-    TitleAsc,
-    TitleDesc,
-    AuthorAsc,
-    AuthorDesc,
-}
-
-impl From<BookSortOrder> for libcalibre::BookSortOrder {
-    fn from(sort: BookSortOrder) -> Self {
-        match sort {
-            BookSortOrder::TitleAsc => libcalibre::BookSortOrder::TitleAsc,
-            BookSortOrder::TitleDesc => libcalibre::BookSortOrder::TitleDesc,
-            BookSortOrder::AuthorAsc => libcalibre::BookSortOrder::AuthorAsc,
-            BookSortOrder::AuthorDesc => libcalibre::BookSortOrder::AuthorDesc,
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, specta::Type, Clone, Debug)]
-pub struct LibraryBookQuery {
-    /// Substring match across title, author names, and series names.
-    /// `None` or empty text matches all books.
-    pub text: Option<String>,
-    pub author_id: Option<String>,
-    pub series_id: Option<i32>,
-    pub tag_id: Option<i32>,
-    pub publisher_id: Option<i32>,
-    pub hide_read: bool,
-    pub sort: BookSortOrder,
-    /// Page size. `None` returns all matches.
-    pub limit: Option<u32>,
-    pub offset: u32,
-}
-
-#[derive(Serialize, Deserialize, specta::Type, Clone)]
-pub struct LibraryBookPage {
-    pub items: Vec<LibraryBook>,
-    /// Total number of books matching the filters, ignoring limit/offset.
-    pub total: u32,
-}
+pub use citadel_core::contracts::{BookSortOrder, LibraryBookPage, LibraryBookQuery};
 
 #[tauri::command]
 #[specta::specta]
 pub fn clb_query_books(
     state: tauri::State<CitadelState>,
     query: LibraryBookQuery,
-) -> Result<LibraryBookPage, String> {
-    let library_root = state
-        .get_library_path()
-        .ok_or("No library loaded".to_string())?;
-
-    let author_id = query
-        .author_id
-        .as_deref()
-        .map(|raw| {
-            raw.parse::<libcalibre::AuthorId>()
-                .map_err(|e| format!("Invalid author id '{raw}': {e}"))
-        })
-        .transpose()?;
-
-    let book_query = libcalibre::BookQuery {
-        text: query.text,
-        author_id,
-        series_id: query.series_id,
-        tag_id: query.tag_id,
-        publisher_id: query.publisher_id,
-        genre_id: None,
-        hide_read: query.hide_read,
-        sort: query.sort.into(),
-        limit: query.limit.map(i64::from),
-        offset: i64::from(query.offset),
-    };
-
-    let page = state.with_library(|lib| book::query_page(library_root, lib, book_query))?;
-    let (items, total) = page.map_err(|e| e.to_string())?;
-
-    Ok(LibraryBookPage {
-        items,
-        total: u32::try_from(total).unwrap_or(u32::MAX),
-    })
+) -> Result<LibraryBookPage, LibraryError> {
+    state.with_library_service(|service| service.query_books(query))
 }
 
 #[tauri::command]
@@ -141,102 +66,49 @@ pub fn clb_query_books(
 pub fn clb_query_get_book(
     state: tauri::State<CitadelState>,
     book_id: String,
-) -> Result<LibraryBook, String> {
-    let library_root = state
-        .get_library_path()
-        .ok_or("No library loaded".to_string())?;
-
-    let book_id_int = book_id
-        .parse::<i32>()
-        .map_err(|e| format!("Invalid book id '{book_id}': {e}"))?;
-
-    let book = state.with_library(|lib| {
-        book::get_one(library_root, lib, libcalibre::BookId::from(book_id_int))
-    })?;
-    book.map_err(|e| e.to_string())
+) -> Result<LibraryBook, LibraryError> {
+    state.with_library_service(|service| service.get_book(&book_id))
 }
 
 /// One series in the library. `id` is what [`LibraryBookQuery::series_id`]
 /// filters on; the frontend otherwise only ever sees series names.
-#[derive(Serialize, Deserialize, specta::Type, Clone)]
-pub struct LibrarySeries {
-    pub id: i32,
-    pub name: String,
-    pub book_count: u32,
-}
+pub use citadel_core::contracts::LibrarySeries;
 
 #[tauri::command]
 #[specta::specta]
 pub fn clb_query_list_series(
     state: tauri::State<CitadelState>,
 ) -> Result<Vec<LibrarySeries>, String> {
-    let summaries = state
-        .with_library(|lib| lib.list_series())?
-        .map_err(|e| e.to_string())?;
-
-    Ok(summaries
-        .into_iter()
-        .map(|series| LibrarySeries {
-            id: series.id,
-            name: series.name,
-            book_count: u32::try_from(series.book_count).unwrap_or(u32::MAX),
-        })
-        .collect())
+    state
+        .with_library_service(|service| service.list_series())
+        .map_err(|error| error.to_string())
 }
 
 /// One tag in the library with its linked-book count. `name` is what the
 /// tag autocomplete suggests; `id` is what [`LibraryBookQuery::tag_id`]
 /// filters on.
-#[derive(Serialize, Deserialize, specta::Type, Clone)]
-pub struct LibraryTag {
-    pub id: i32,
-    pub name: String,
-    pub book_count: u32,
-}
+pub use citadel_core::contracts::LibraryTag;
 
 #[tauri::command]
 #[specta::specta]
 pub fn clb_query_list_tags(state: tauri::State<CitadelState>) -> Result<Vec<LibraryTag>, String> {
-    let tags = state
-        .with_library(|lib| lib.list_tags())?
-        .map_err(|e| e.to_string())?;
-
-    Ok(tags
-        .into_iter()
-        .map(|tag| LibraryTag {
-            id: tag.id,
-            name: tag.name,
-            book_count: u32::try_from(tag.book_count).unwrap_or(u32::MAX),
-        })
-        .collect())
+    state
+        .with_library_service(|service| service.list_tags())
+        .map_err(|error| error.to_string())
 }
 
 /// One publisher in the library with its linked-book count. `id` is what
 /// [`LibraryBookQuery::publisher_id`] filters on.
-#[derive(Serialize, Deserialize, specta::Type, Clone)]
-pub struct LibraryPublisher {
-    pub id: i32,
-    pub name: String,
-    pub book_count: u32,
-}
+pub use citadel_core::contracts::LibraryPublisher;
 
 #[tauri::command]
 #[specta::specta]
 pub fn clb_query_list_publishers(
     state: tauri::State<CitadelState>,
 ) -> Result<Vec<LibraryPublisher>, String> {
-    let publishers = state
-        .with_library(|lib| lib.list_publishers())?
-        .map_err(|e| e.to_string())?;
-
-    Ok(publishers
-        .into_iter()
-        .map(|publisher| LibraryPublisher {
-            id: publisher.id,
-            name: publisher.name,
-            book_count: u32::try_from(publisher.book_count).unwrap_or(u32::MAX),
-        })
-        .collect())
+    state
+        .with_library_service(|service| service.list_publishers())
+        .map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -245,16 +117,8 @@ pub fn clb_query_list_all_authors(
     state: tauri::State<CitadelState>,
 ) -> Result<Vec<LibraryAuthor>, String> {
     state
-        .with_library(|lib| {
-            let book_counts = lib.author_book_counts()?;
-            lib.authors().map(|author_list| {
-                author_list
-                    .iter()
-                    .map(|author| LibraryAuthor::from_author(author, &book_counts))
-                    .collect()
-            })
-        })
-        .and_then(|result| result.map_err(|e| format!("Failed to list authors: {}", e)))
+        .with_library_service(|service| service.list_authors())
+        .map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -288,11 +152,9 @@ pub fn clb_query_list_all_filetypes() -> Vec<(String, String)> {
 pub fn clb_query_list_custom_columns(
     state: tauri::State<CitadelState>,
 ) -> Result<Vec<CustomColumnDef>, String> {
-    state.with_library(|lib| {
-        lib.custom_columns()
-            .map(|columns| columns.iter().map(CustomColumnDef::from).collect())
-            .map_err(|e| e.to_string())
-    })?
+    state
+        .with_library_service(|service| service.list_custom_columns())
+        .map_err(|error| error.to_string())
 }
 
 #[tauri::command]
@@ -301,26 +163,9 @@ pub fn clb_query_get_custom_values_for_book(
     state: tauri::State<CitadelState>,
     book_id: String,
 ) -> Result<Vec<BookCustomValue>, String> {
-    state.with_library(|lib| {
-        let book_id_int = book_id.parse::<i32>().map_err(|e| e.to_string())?;
-        let values = lib
-            .get_custom_values_for_book(libcalibre::BookId::from(book_id_int))
-            .map_err(|e| e.to_string())?;
-
-        // Skip values that cannot cross the Tauri boundary (e.g. an i64 out
-        // of i32 range) instead of failing the whole command and hiding
-        // every other column from the UI.
-        let mut book_values = values
-            .into_iter()
-            .filter_map(|(column_id, value)| {
-                CustomValueDto::try_from(value)
-                    .map(|value| BookCustomValue { column_id, value })
-                    .ok()
-            })
-            .collect::<Vec<_>>();
-        book_values.sort_by_key(|book_value| book_value.column_id);
-        Ok(book_values)
-    })?
+    state
+        .with_library_service(|service| service.get_custom_values(&book_id))
+        .map_err(|error| error.to_string())
 }
 
 #[tauri::command]

@@ -64,3 +64,41 @@ cargo run -p libcalibre --example create_opds_validation_library -- \
 ```
 
 The fixture includes 105 downloadable books, multiple pages, Unicode/XML metadata, assigned genres, missing covers, a large file and a fileless book. It is intended for smoke tests, not for an existing library.
+
+## Shared library HTTP API (foundation)
+
+The optional JSON listener exposes the same `citadel-core` book queries used by
+Tauri. It is a foundation for the web client; the existing desktop client still
+uses IPC. Add this top-level table to the server config to enable it:
+
+```toml
+[api]
+listen = "127.0.0.1:8081"
+```
+
+Omitting `[api]` leaves the listener disabled. Enable
+`sharing.authenticationEnabled` and provide `CITADEL_OPDS_USERS`; the API uses the
+same in-memory users and request limits as OPDS. Use TLS at a reverse proxy for
+connections beyond a trusted local network. The address must pass the same
+explicit-address checks as OPDS. A bind failure fails startup rather than
+silently leaving only part of the configured server running.
+
+Initial routes (all require HTTP Basic authentication):
+
+- `POST /api/books/query`: shared `LibraryBookQuery` JSON; HTTP requires an explicit
+  `limit` between 0 and 200. Zero returns only the count. Desktop retains its
+  existing unbounded-query behavior.
+- `GET /api/books/{book_id}`: one book, using the existing numeric string ID.
+- `GET /api/openapi.json`: generated OpenAPI 3.1 contract.
+
+Errors have `{ "code": "notFound", "message": "…" }` shape, with HTTP statuses
+for invalid input (400), authentication (401), missing books (404), admission
+limits (429), unavailable library (503), and internal failures (500). Internal
+database/filesystem diagnostics are hidden from remote callers. Responses retain
+required nullable fields; request `Option` fields may be omitted or null.
+
+This listener opens the library read-only. File/cover URLs describe the shared
+remote DTO shape; the corresponding `/api` asset routes and the complete browser
+library adapter are follow-up work. OPDS acquisition routes remain available.
+Mutations, uploads, metadata-provider calls, and desktop administration are not
+exposed by this API.

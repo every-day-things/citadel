@@ -24,8 +24,8 @@ mod metadata;
 pub mod opds;
 mod state;
 
-fn run_tauri_backend() -> std::io::Result<()> {
-    let builder = Builder::<tauri::Wry>::new().commands(collect_commands![
+fn command_builder() -> Builder<tauri::Wry> {
+    Builder::<tauri::Wry>::new().commands(collect_commands![
         // Library and initialization commands
         calibre::init_client,
         calibre::query::clb_query_is_path_valid_library,
@@ -86,7 +86,11 @@ fn run_tauri_backend() -> std::io::Result<()> {
         opds::commands::clb_query_opds_credential_secret,
         // Window commands
         menu::clb_cmd_open_settings,
-    ]);
+    ])
+}
+
+fn run_tauri_backend() -> std::io::Result<()> {
+    let builder = command_builder();
 
     #[cfg(debug_assertions)] // <- Only export on non-release builds
     builder
@@ -211,5 +215,37 @@ fn run_tauri_backend() -> std::io::Result<()> {
 }
 
 fn main() -> std::io::Result<()> {
+    #[cfg(debug_assertions)]
+    if std::env::args().nth(1).as_deref() == Some("--export-bindings") {
+        command_builder()
+            .export(
+                Typescript::default().bigint(specta_typescript::BigIntExportBehavior::Number),
+                std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../src/bindings.ts"),
+            )
+            .map_err(std::io::Error::other)?;
+        return Ok(());
+    }
     run_tauri_backend()
+}
+
+#[cfg(test)]
+mod contract_tests {
+    #[test]
+    fn ipc_bindings_match_committed_contract() {
+        let output = tempfile::tempdir().unwrap();
+        let path = output.path().join("bindings.ts");
+        super::command_builder()
+            .export(
+                specta_typescript::Typescript::default()
+                    .bigint(specta_typescript::BigIntExportBehavior::Number),
+                &path,
+            )
+            .unwrap();
+        let committed = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../src/bindings.ts");
+        assert_eq!(
+            std::fs::read_to_string(path).unwrap(),
+            std::fs::read_to_string(committed).unwrap(),
+            "Regenerate IPC bindings with cargo run -p citadel-desktop -- --export-bindings"
+        );
+    }
 }

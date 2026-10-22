@@ -1,11 +1,11 @@
 [package]
-name = "citadel-rs"
+name = "citadel-desktop"
 version = "0.6.1"
-description = "Backend for Citadel, embedded into the Tauri app or run stand-alone."
+description = "Citadel desktop application and Tauri IPC adapters."
 authors = ["Phil Denhoff"]
 license = "MIT"
 repository = "https://github.com/every-day-things/citadel"
-default-run = "citadel-rs"
+default-run = "citadel-desktop"
 edition = "2021"
 rust-version.workspace = true
 

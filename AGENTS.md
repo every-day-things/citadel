@@ -34,10 +34,10 @@ unresponsive (repeated 409 `state_transition_conflict`), launch a fresh one:
 ## Architecture
 - **Tauri app**: Backend in Rust (src-tauri/), frontend in React/TypeScript (src/)
 - **libcalibre**: Internal library for Calibre database operations (SQLite via Diesel ORM)
-- **Main binary**: citadel-rs, runs embedded in Tauri
-- **Tauri commands**: Tauri commands in `src-tauri/src/libs/calibre/{command,query}.rs` expose API to frontend
+- **Main binary**: citadel-desktop, runs embedded in Tauri
+- **Shared library API**: `crates/citadel-core` owns shared DTOs, errors and `LibraryService` operations. Tauri adapters in `src-tauri/src/libs/calibre/{command,query}.rs` and Axum routes in `crates/citadel-server/src/api` delegate to it. See `docs/adr/0007-shared-library-contract.md`.
 - **Tauri state**: Global state managed via CitadelState in `src-tauri/src/state.rs`
-- **Database**: SQLite Calibre library, schema in `src-tauri/libcalibre/src/schema.rs`, migrations via diesel_migrations
+- **Database**: SQLite Calibre library, schema in `crates/libcalibre/src/schema.rs`, migrations via diesel_migrations
 
 ## Code Style
 
