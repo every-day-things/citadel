@@ -18,11 +18,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if arguments.next().is_some() {
         return Err("usage: create_opds_validation_library TARGET SOURCE_EPUB".into());
     }
+    create_validation_library(target, source_epub)
+}
+
+fn create_validation_library(
+    target: PathBuf,
+    source_epub: PathBuf,
+) -> Result<(), Box<dyn std::error::Error>> {
     if target.exists() && fs::read_dir(&target)?.next().is_some() {
         return Err(format!("target is not empty: {}", target.display()).into());
     }
     if source_epub.extension().and_then(|value| value.to_str()) != Some("epub") {
         return Err("SOURCE_EPUB must use the .epub extension".into());
+    }
+
+    let source = fs::File::open(&source_epub)
+        .map_err(|error| format!("cannot read SOURCE_EPUB {}: {error}", source_epub.display()))?;
+    if !source.metadata()?.is_file() {
+        return Err("SOURCE_EPUB must be a regular file".into());
     }
 
     fs::create_dir_all(&target)?;
@@ -127,4 +140,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     fs::remove_file(coverless_source)?;
     println!("{}", target.display());
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn missing_source_does_not_create_output() {
+        let directory = tempfile::tempdir().unwrap();
+        let target = directory.path().join("output");
+        let missing = directory.path().join("missing.epub");
+        let error = create_validation_library(target.clone(), missing).unwrap_err();
+        assert!(error.to_string().contains("cannot read SOURCE_EPUB"));
+        assert!(!target.exists());
+    }
+
+    #[test]
+    fn source_directory_does_not_create_output() {
+        let directory = tempfile::tempdir().unwrap();
+        let target = directory.path().join("output");
+        let source = directory.path().join("directory.epub");
+        fs::create_dir(&source).unwrap();
+        assert!(create_validation_library(target.clone(), source).is_err());
+        assert!(!target.exists());
+    }
 }

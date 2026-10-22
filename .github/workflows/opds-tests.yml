@@ -35,3 +35,5 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev pkg-config libssl-dev
       - name: Test runtime and headless host without Tauri
         run: cargo test --locked -p citadel-opds -p citadel-server
+      - name: Test validation fixture input checks
+        run: cargo test --locked -p libcalibre --example create_opds_validation_library
