@@ -159,7 +159,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           prefix-key: "v2-release-rust"
-          workspaces: "src-tauri"
+          workspaces: "."
 
       - name: (Ubuntu only) Install dependencies
         if: matrix.platform == 'ubuntu-22.04'
