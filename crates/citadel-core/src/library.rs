@@ -130,6 +130,10 @@ impl<'a> LibraryService<'a> {
             .collect())
     }
 
+    pub fn create_book(&mut self, book: libcalibre::BookAdd) -> Result<String> {
+        Ok(self.library.add_book(book)?.id.as_i32().to_string())
+    }
+
     pub fn update_book(&mut self, id: &str, updates: BookUpdate) -> Result<i32> {
         Ok(self
             .library

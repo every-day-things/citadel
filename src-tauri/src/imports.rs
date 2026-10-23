@@ -3,7 +3,10 @@ use std::{collections::HashMap, path::PathBuf};
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
-pub use citadel_core::{LibraryAuthor, LibraryBook};
+#[derive(Serialize, Deserialize, specta::Type, Debug)]
+pub struct ImportableFile {
+    pub(crate) path: PathBuf,
+}
 
 #[derive(Serialize, Deserialize, specta::Type)]
 pub enum ImportableBookType {

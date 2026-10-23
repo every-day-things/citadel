@@ -20,8 +20,8 @@ fn fixture() -> (tempfile::TempDir, Library, String) {
     let mut library = Library::new(path).unwrap();
     let source = directory.path().join("source.txt");
     std::fs::write(&source, "contract parity").unwrap();
-    let book = library
-        .add_book(BookAdd {
+    let id = LibraryService::new(&mut library, &AssetUrlBuilder)
+        .create_book(BookAdd {
             title: "Contract Book".into(),
             author_names: vec!["Contract Author".into()],
             tags: Some(vec!["contract".into()]),
@@ -36,7 +36,7 @@ fn fixture() -> (tempfile::TempDir, Library, String) {
             file_paths: vec![source],
         })
         .unwrap();
-    (directory, library, book.id.as_i32().to_string())
+    (directory, library, id)
 }
 fn query(limit: Option<u32>) -> LibraryBookQuery {
     LibraryBookQuery {

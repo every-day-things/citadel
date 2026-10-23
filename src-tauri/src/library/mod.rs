@@ -1,22 +1,11 @@
-use std::path::PathBuf;
-
 use crate::state::CitadelState;
 
-use serde::Deserialize;
 use serde::Serialize;
 
-mod author;
-
 pub mod command;
-pub mod custom_columns;
 mod delete_books;
 pub mod onboarding;
 pub mod query;
-
-#[derive(Serialize, Deserialize, specta::Type, Debug)]
-pub struct ImportableFile {
-    pub(crate) path: PathBuf,
-}
 
 #[derive(Serialize, specta::Type)]
 pub struct CalibreClientConfig {
@@ -55,5 +44,3 @@ pub async fn init_client(
 
     Ok(CalibreClientConfig { library_path })
 }
-
-pub use citadel_core::contracts::{AuthorUpdate, BookUpdate};

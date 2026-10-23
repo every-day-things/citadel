@@ -107,12 +107,6 @@ impl CitadelState {
             .clone()
     }
 
-    /// Check if a library is currently loaded
-    pub fn is_initialized(&self) -> bool {
-        let library = self.inner.library.lock().expect("Library mutex poisoned");
-        !self.is_library_transitioning() && library.is_some()
-    }
-
     pub fn is_library_transitioning(&self) -> bool {
         self.inner.library_transitioning.load(Ordering::Acquire)
     }

@@ -1,15 +1,14 @@
 use tauri::Manager;
 
-use crate::book::ImportableBookMetadata;
-use crate::book::LibraryAuthor;
-use crate::calibre::author::NewAuthor;
+use crate::imports::ImportableBookMetadata;
 use crate::libs::cover_thumbs::{self, CoverThumbnail};
 use crate::state::CitadelState;
+use citadel_core::{
+    contracts::{custom_columns::CustomValueDto, AuthorUpdate, BookUpdate, NewAuthor},
+    LibraryAuthor,
+};
 
-use super::custom_columns::CustomValueDto;
 use super::onboarding::{self, CreateTargetBlocker};
-use super::AuthorUpdate;
-use super::BookUpdate;
 
 /// Exact error strings `clb_cmd_create_library` returns when it refuses the
 /// target folder. The frontend matches on them to offer alternatives: "open
@@ -105,12 +104,9 @@ pub fn clb_cmd_create_book(
     state: tauri::State<CitadelState>,
     md: ImportableBookMetadata,
 ) -> Result<String, String> {
-    state.with_library(|lib| {
-        let book_add = md.to_book_add();
-        lib.add_book(book_add)
-            .map(|book| book.id.as_i32().to_string())
-            .map_err(|e| e.to_string())
-    })?
+    state
+        .with_library_service(|service| service.create_book(md.to_book_add()))
+        .map_err(|error| error.to_string())
 }
 
 #[tauri::command]

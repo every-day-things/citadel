@@ -3,14 +3,18 @@
 `citadel-core` owns serializable library contracts, error codes, and synchronous
 `LibraryService` operations. It depends on libcalibre, not Tauri or Axum. Hosts own
 library selection, locking, authentication, filesystem/URL ingestion and asset
-URL policy. Keep these boundaries when moving further commands.
+URL policy. Shared library behavior belongs in core; host-only work stays in its host.
 
 The desktop package is named `citadel-desktop`; its directory remains `src-tauri`
 for Tauri tooling convenience. IPC handlers delegate shared work to core while
 retaining desktop-only setup, dialogs, imports, thumbnails and deletion/trash
-orchestration. Existing legacy commands retain string errors; book query/get use
-the shared structured error contract. This is an incremental migration, not a
-claim that every desktop command is transport-neutral yet.
+orchestration. The desktop `library` module owns the IPC adapters and native
+library setup; `imports` owns local-file import types. Adapters import shared
+types directly from citadel-core, with no compatibility re-export modules.
+Existing mutation IPC commands map shared errors to their string wire format;
+book query/get expose the structured error contract directly. Those conversions
+are transport responsibilities. Candidate-path discovery, asset caching and
+native Trash handling remain host operations.
 
 `citadel-server` maps Axum requests into those same operations. Utoipa derives
 OpenAPI schemas alongside Specta from Rust DTOs; utoipa-axum registers handlers

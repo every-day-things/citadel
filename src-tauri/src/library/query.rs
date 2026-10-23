@@ -1,17 +1,22 @@
 use std::path::Path;
 
-use citadel_core::error::LibraryError;
+use citadel_core::{
+    contracts::{
+        custom_columns::{BookCustomValue, CustomColumnDef},
+        LibraryBookPage, LibraryBookQuery, LibraryPublisher, LibrarySeries, LibraryTag,
+    },
+    error::LibraryError,
+    LibraryAuthor, LibraryBook,
+};
 use libcalibre::mime_type::MIMETYPE;
 use serde::{Deserialize, Serialize};
 
-use crate::book::{ImportableBookMetadata, LibraryAuthor};
+use crate::imports::{ImportableBookMetadata, ImportableFile};
 use crate::libs::cover_thumbs::{self, CoverThumbnail};
 use crate::libs::file_formats;
-use crate::{book::LibraryBook, state::CitadelState};
+use crate::state::CitadelState;
 
-use super::custom_columns::{BookCustomValue, CustomColumnDef};
 use super::onboarding::{self, DetectedLibrary, SyncStatus};
-use super::ImportableFile;
 
 #[tauri::command]
 #[specta::specta]
@@ -50,8 +55,6 @@ pub fn clb_query_list_cover_thumbnails(
     Ok(cover_thumbs::list_thumbnails(&app_cache_dir, &library_root))
 }
 
-pub use citadel_core::contracts::{BookSortOrder, LibraryBookPage, LibraryBookQuery};
-
 #[tauri::command]
 #[specta::specta]
 pub fn clb_query_books(
@@ -70,10 +73,6 @@ pub fn clb_query_get_book(
     state.with_library_service(|service| service.get_book(&book_id))
 }
 
-/// One series in the library. `id` is what [`LibraryBookQuery::series_id`]
-/// filters on; the frontend otherwise only ever sees series names.
-pub use citadel_core::contracts::LibrarySeries;
-
 #[tauri::command]
 #[specta::specta]
 pub fn clb_query_list_series(
@@ -84,11 +83,6 @@ pub fn clb_query_list_series(
         .map_err(|error| error.to_string())
 }
 
-/// One tag in the library with its linked-book count. `name` is what the
-/// tag autocomplete suggests; `id` is what [`LibraryBookQuery::tag_id`]
-/// filters on.
-pub use citadel_core::contracts::LibraryTag;
-
 #[tauri::command]
 #[specta::specta]
 pub fn clb_query_list_tags(state: tauri::State<CitadelState>) -> Result<Vec<LibraryTag>, String> {
@@ -96,10 +90,6 @@ pub fn clb_query_list_tags(state: tauri::State<CitadelState>) -> Result<Vec<Libr
         .with_library_service(|service| service.list_tags())
         .map_err(|error| error.to_string())
 }
-
-/// One publisher in the library with its linked-book count. `id` is what
-/// [`LibraryBookQuery::publisher_id`] filters on.
-pub use citadel_core::contracts::LibraryPublisher;
 
 #[tauri::command]
 #[specta::specta]
