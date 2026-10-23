@@ -365,13 +365,17 @@ mod tests {
 
     #[test]
     fn api_is_opt_in_and_requires_authentication_and_a_valid_listener() {
-        let base = r#"libraryPath = "/tmp/library"
+        let directory = tempfile::tempdir().unwrap();
+        let base = format!(
+            r#"libraryPath = {}
 [sharing]
 port = 8080
 authenticationEnabled = false
 target = "localNetworks"
-"#;
-        let config: ServerConfig = toml::from_str(base).unwrap();
+"#,
+            toml::Value::String(directory.path().to_string_lossy().into_owned())
+        );
+        let config: ServerConfig = toml::from_str(&base).unwrap();
         assert!(config.api.is_none());
         assert!(validate_config(&config).is_ok());
         let with_api = format!("{base}\n[api]\nlisten = \"127.0.0.1:8081\"\n");
