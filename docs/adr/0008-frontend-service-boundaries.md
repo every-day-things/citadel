@@ -1,0 +1,39 @@
+# Frontend service boundaries
+
+Components and hooks consume service interfaces. Generated Rust contract types
+can be imported with `import type`; generated commands and native runtime APIs
+belong exclusively to their owning adapters.
+
+| Boundary | Responsibility | Implementation |
+| --- | --- | --- |
+| Library | Queries and mutations on the selected library, custom fields, genres, covers and import commit | `src/lib/services/library` |
+| LibraryCatalog | Discover, validate, inspect, create and open a library | `src/lib/services/library-catalog` |
+| Metadata | Provider search, ISBN lookup and provider credential/connectivity tests | `src/lib/services/metadata` |
+| Platform | Settings persistence, clipboard, dialogs, paths, menu events, window lifecycle/theme and desktop updates | `src/lib/platform` |
+| OPDS administration | Local listener configuration and credentials | `src/lib/services/opds` |
+
+LibraryCatalog opens the backend before constructing its Library handle. The
+store retains serialized opens and shadow-switch/restore guards. New custom-field,
+genre and cover entry points reject while the backend is diverted, reject results
+from a superseded library, and invalidate book caches only after successful
+writes. UI edit/metadata operations retain the originating library identity across
+awaits. The native cover downloader also checks the original library root under
+the backend mutex before applying the downloaded image.
+
+Metadata-provider descriptors and aggregation are independent of the IPC
+transport. The registry delegates provider operations to Metadata; applying a
+result uses Library actions. A provider cannot directly mutate a book.
+
+Host detection is isolated in Platform adapter selection. Browser adapters never
+invoke native commands: local library discovery yields no candidate, unsupported
+operations fail explicitly, and native window/menu lifecycle methods are inert.
+Remote LibraryCatalog/Library and Metadata HTTP transports remain subsequent
+work; there is no remote client full of placeholder methods. No ordinary library
+operation should gain arbitrary server filesystem discovery or administration.
+
+`bun lint:boundaries` parses TypeScript imports and command accesses. It rejects
+runtime bindings/native imports outside adapters, direct consumption of private
+transport adapters, and commands owned by another service. Its ownership map
+assigns every generated command to exactly one adapter. Type-only contracts are
+allowed throughout the app. `bun lint:web` includes this check, and quality CI
+runs the frontend tests, including the boundary check's regression cases.

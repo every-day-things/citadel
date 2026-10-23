@@ -1,5 +1,5 @@
 import type { BookMetadata } from "@/bindings";
-import { commands } from "@/bindings";
+import { metadataService } from "@/lib/services/metadata";
 import type { ProviderAdapter, ProviderDescriptor, ProviderId } from "./types";
 
 /**
@@ -96,45 +96,13 @@ const DESCRIPTORS: Record<ProviderId, ProviderDescriptor> = {
 	},
 };
 
-const unwrap = (
-	result:
-		| { status: "ok"; data: BookMetadata[] }
-		| { status: "error"; error: string },
-): BookMetadata[] => {
-	if (result.status === "error") {
-		throw new Error(result.error);
-	}
-	return result.data;
-};
-
-/**
- * Build an adapter for a descriptor. Every provider speaks the same three
- * provider-agnostic Tauri commands, so one factory serves all of them — the
- * only per-provider data is the descriptor.
- */
 const makeAdapter = (descriptor: ProviderDescriptor): ProviderAdapter => ({
 	descriptor,
-	search: async (query, config) =>
-		unwrap(
-			await commands.clbQueryMetadataSearch(
-				descriptor.id,
-				query,
-				config.apiKey,
-			),
-		),
-	searchByIsbn: async (isbn, config) =>
-		unwrap(
-			await commands.clbQueryMetadataByIsbn(descriptor.id, isbn, config.apiKey),
-		),
-	test: async (config) => {
-		const result = await commands.clbCmdTestMetadataProvider(
-			descriptor.id,
-			config.apiKey,
-		);
-		return result.status === "ok"
-			? { ok: result.data.is_valid, message: result.data.message }
-			: { ok: false, message: result.error };
-	},
+	search: (query, config) =>
+		metadataService.search(descriptor.id, query, config.apiKey),
+	searchByIsbn: (isbn, config) =>
+		metadataService.byIsbn(descriptor.id, isbn, config.apiKey),
+	test: (config) => metadataService.test(descriptor.id, config.apiKey),
 });
 
 const ADAPTERS: Record<ProviderId, ProviderAdapter> = {

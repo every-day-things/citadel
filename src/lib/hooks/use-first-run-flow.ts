@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { commands } from "@/bindings";
+import { libraryCatalog } from "@/lib/services/library-catalog";
 import type {
 	FlowEffect,
 	FlowEvent,
@@ -144,11 +144,9 @@ const runEffect = async (
 ): Promise<void> => {
 	switch (effect.kind) {
 		case "detect": {
-			let detection: Awaited<
-				ReturnType<typeof commands.clbQueryDetectCalibreLibrary>
-			> = null;
+			let detection: Awaited<ReturnType<typeof libraryCatalog.detect>> = null;
 			try {
-				detection = await commands.clbQueryDetectCalibreLibrary();
+				detection = await libraryCatalog.detect();
 			} catch (error) {
 				console.error("Calibre library detection failed:", error);
 			}
@@ -158,12 +156,8 @@ const runEffect = async (
 
 		case "load-default-path": {
 			try {
-				const result = await commands.clbQueryDefaultNewLibraryPath();
-				if (result.status === "ok") {
-					send({ type: "DEFAULT_PATH_LOADED", path: result.data });
-					return;
-				}
-				console.error("Failed to resolve default library path:", result.error);
+				const path = await libraryCatalog.defaultNewPath();
+				send({ type: "DEFAULT_PATH_LOADED", path });
 			} catch (error) {
 				console.error("Failed to resolve default library path:", error);
 			}
@@ -199,7 +193,7 @@ const runEffect = async (
 			const token = validateToken.current;
 			let valid = false;
 			try {
-				valid = await commands.clbQueryIsPathValidLibrary(effect.path);
+				valid = await libraryCatalog.isValid(effect.path);
 			} catch (error) {
 				console.error("Library validation failed:", error);
 			}
@@ -211,7 +205,7 @@ const runEffect = async (
 
 		case "check-sync": {
 			try {
-				const status = await commands.clbQueryPathSyncStatus(effect.path);
+				const status = await libraryCatalog.syncStatus(effect.path);
 				send({
 					type: "SYNC_RESULT",
 					synced: status.synced,
@@ -228,21 +222,14 @@ const runEffect = async (
 
 		case "create-library": {
 			try {
-				const result = await commands.clbCmdCreateLibrary(effect.path);
-				if (result.status === "ok") {
-					send({ type: "CREATED" });
-					return;
-				}
-				const code =
-					CREATE_ERROR_CODES[result.error as keyof typeof CREATE_ERROR_CODES] ??
-					"create-failed";
-				send({ type: "CREATE_FAILED", code, message: result.error });
+				await libraryCatalog.create(effect.path);
+				send({ type: "CREATED" });
 			} catch (error) {
-				send({
-					type: "CREATE_FAILED",
-					code: "create-failed",
-					message: error instanceof Error ? error.message : String(error),
-				});
+				const message = error instanceof Error ? error.message : String(error);
+				const code =
+					CREATE_ERROR_CODES[message as keyof typeof CREATE_ERROR_CODES] ??
+					"create-failed";
+				send({ type: "CREATE_FAILED", code, message });
 			}
 			return;
 		}
@@ -283,7 +270,7 @@ const runEffect = async (
 			const started = Date.now();
 			let ok = false;
 			try {
-				ok = await commands.clbQueryIsPathValidLibrary(effect.path);
+				ok = await libraryCatalog.isValid(effect.path);
 			} catch (error) {
 				console.error("Library revalidation failed:", error);
 			}
@@ -322,8 +309,8 @@ export const useBootDecision = (): BootDecision => {
 			return;
 		}
 		const path = active.value.absolutePath;
-		void commands
-			.clbQueryIsPathValidLibrary(path)
+		void libraryCatalog
+			.isValid(path)
 			.catch((error: unknown) => {
 				console.error("Boot library validation failed:", error);
 				return false;

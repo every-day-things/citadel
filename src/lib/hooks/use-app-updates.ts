@@ -1,18 +1,15 @@
 import { create } from "zustand";
 import { toast } from "@/components/ui";
 import { IS_DEV } from "@/lib/env";
-import {
-	checkForUpdates,
-	installUpdateIfAvailable,
-} from "@/lib/services/app-updates";
+import type { PlatformAdapter } from "@/lib/platform/types";
 
 interface AppUpdatesStore {
 	isCheckingForUpdates: boolean;
 	isUpdatePromptOpen: boolean;
 	isInstallingUpdate: boolean;
 	closeUpdatePrompt: () => void;
-	checkForUpdatesNow: (supportsAutoUpdates: boolean) => Promise<void>;
-	installAvailableUpdate: () => Promise<void>;
+	checkForUpdatesNow: (platform: PlatformAdapter) => Promise<void>;
+	installAvailableUpdate: (platform: PlatformAdapter) => Promise<void>;
 }
 
 export const useAppUpdates = create<AppUpdatesStore>((set) => ({
@@ -24,8 +21,8 @@ export const useAppUpdates = create<AppUpdatesStore>((set) => ({
 		set({ isUpdatePromptOpen: false });
 	},
 
-	checkForUpdatesNow: async (supportsAutoUpdates) => {
-		if (!supportsAutoUpdates) return;
+	checkForUpdatesNow: async (platform) => {
+		if (!platform.capabilities.supportsAutoUpdates) return;
 
 		set({ isCheckingForUpdates: true });
 		toast.show({
@@ -36,7 +33,7 @@ export const useAppUpdates = create<AppUpdatesStore>((set) => ({
 		});
 
 		try {
-			const updateCheckResult = await checkForUpdates();
+			const updateCheckResult = await platform.updates.check();
 			if (updateCheckResult.has_update) {
 				if (IS_DEV) {
 					toast.update("check-for-updates", {
@@ -77,7 +74,8 @@ export const useAppUpdates = create<AppUpdatesStore>((set) => ({
 		}
 	},
 
-	installAvailableUpdate: async () => {
+	installAvailableUpdate: async (platform) => {
+		if (!platform.capabilities.supportsAutoUpdates) return;
 		set({ isInstallingUpdate: true });
 		toast.show({
 			id: "install-update",
@@ -87,7 +85,7 @@ export const useAppUpdates = create<AppUpdatesStore>((set) => ({
 		});
 
 		try {
-			const result = await installUpdateIfAvailable();
+			const result = await platform.updates.install();
 			if (result === "no-update") {
 				toast.update("install-update", {
 					title: "No update available",

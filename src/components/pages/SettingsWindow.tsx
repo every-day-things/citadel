@@ -1,6 +1,5 @@
 import { useRouter } from "@tanstack/react-router";
-import { isTauri } from "@tauri-apps/api/core";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { usePlatform } from "@/lib/platform/context";
 import { useCallback, useEffect } from "react";
 import { SettingsPanes } from "@/components/organisms/SettingsPanes";
 import classes from "@/components/pages/SettingsWindow.module.css";
@@ -40,6 +39,7 @@ const resolveTokenColor = (token: string): [number, number, number] | null => {
  * when not running under Tauri.
  */
 export const SettingsWindow = () => {
+	const platform = usePlatform();
 	const theme = useSettings((state) => state.theme);
 	const router = useRouter();
 	useNativeThemeSync();
@@ -54,52 +54,48 @@ export const SettingsWindow = () => {
 	const scheme = useResolvedColorScheme(theme);
 	// biome-ignore lint/correctness/useExhaustiveDependencies: scheme is a re-run trigger; the value is read from the DOM after the attribute effect above applies.
 	useEffect(() => {
-		if (!isTauri()) return;
+		if (!platform.capabilities.supportsNativeWindows) return;
 		const rgb = resolveTokenColor("--ctd-bg");
 		if (!rgb) return;
-		void getCurrentWindow().setBackgroundColor([...rgb, 255]);
-	}, [scheme]);
+		void platform.window.setBackgroundColor([...rgb, 255]);
+	}, [scheme, platform]);
 
 	// The window is created hidden (menu.rs); the main window's reveal path
-	// (showMainWindow after library init) never runs on this route, so this
+	// (window.show after library init) never runs on this route, so this
 	// window must show itself. Two rAF ticks push the reveal past the first
 	// real paint so no white or unstyled frame is ever visible.
 	useEffect(() => {
-		if (!isTauri()) return;
+		if (!platform.capabilities.supportsNativeWindows) return;
 		let cancelled = false;
 		const outer = requestAnimationFrame(() => {
 			requestAnimationFrame(() => {
 				if (cancelled) return;
-				const window = getCurrentWindow();
-				void window.show().then(() => window.setFocus());
+				void platform.window.show();
 			});
 		});
 		return () => {
 			cancelled = true;
 			cancelAnimationFrame(outer);
 		};
-	}, []);
+	}, [platform]);
 
 	// Hide on close instead of destroying the webview, so reopening from the
 	// menu is instant (menu.rs shows + focuses the existing window).
 	useEffect(() => {
-		if (!isTauri()) return;
-		const unlisten = getCurrentWindow().onCloseRequested((event) => {
-			event.preventDefault();
-			void getCurrentWindow().hide();
-		});
+		if (!platform.capabilities.supportsNativeWindows) return;
+		const unlisten = platform.window.hideOnClose();
 		return () => {
 			void unlisten.then((fn) => fn());
 		};
-	}, []);
+	}, [platform]);
 
 	const requestClose = useCallback(() => {
-		if (isTauri()) {
-			void getCurrentWindow().hide();
+		if (platform.capabilities.supportsNativeWindows) {
+			void platform.window.hide();
 		} else {
 			router.history.back();
 		}
-	}, [router]);
+	}, [router, platform]);
 
 	return (
 		<div className={classes.window}>

@@ -1,22 +1,33 @@
-import { homeDir } from "@tauri-apps/api/path";
+import { usePlatform } from "@/lib/platform/context";
 import { useEffect, useState } from "react";
 
-let cachedHome: string | null = null;
+const cachedHomes = new WeakMap<
+	ReturnType<typeof usePlatform>,
+	string | null
+>();
 
 /**
  * The user's home directory (no trailing slash), or null until known / on
  * non-Tauri platforms. Used to render paths the macOS way (`~/Books/…`).
  */
 export const useHomeDir = (): string | null => {
-	const [home, setHome] = useState<string | null>(cachedHome);
+	const platform = usePlatform();
+	const [home, setHome] = useState<string | null>(
+		cachedHomes.get(platform) ?? null,
+	);
 
 	useEffect(() => {
-		if (cachedHome !== null) return;
+		if (cachedHomes.has(platform)) {
+			setHome(cachedHomes.get(platform) ?? null);
+			return;
+		}
+		setHome(null);
 		let alive = true;
-		homeDir()
+		platform
+			.homeDirectory()
 			.then((dir) => {
-				cachedHome = dir.replace(/\/+$/, "");
-				if (alive) setHome(cachedHome);
+				cachedHomes.set(platform, dir);
+				if (alive) setHome(dir);
 			})
 			.catch(() => {
 				// Non-Tauri platform: paths render unabbreviated.
@@ -24,7 +35,7 @@ export const useHomeDir = (): string | null => {
 		return () => {
 			alive = false;
 		};
-	}, []);
+	}, [platform]);
 
 	return home;
 };

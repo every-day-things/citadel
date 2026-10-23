@@ -7,7 +7,7 @@ import type {
 	OpdsStartConfig,
 } from "@/bindings";
 import type { OpdsClient } from "@/lib/services/opds";
-import { opdsClientForPlatform, tauriOpdsClient } from "@/lib/services/opds";
+import { opdsClientForPlatform } from "@/lib/services/opds";
 
 const POLL_INTERVAL_MS = 1_000;
 /** Only surface the busy state when an action is actually slow. */
@@ -91,10 +91,7 @@ export const startOutcome = (
  * reports, never local component state, so a restart elsewhere reads
  * correctly here too. */
 export const useOpdsSharing = (supported: boolean): OpdsSharingController => {
-	const client = useMemo(
-		() => opdsClientForPlatform(supported, tauriOpdsClient),
-		[supported],
-	);
+	const client = useMemo(() => opdsClientForPlatform(supported), [supported]);
 	const [status, setStatus] = useState<OpdsServiceStatus | null>(null);
 	const [credentials, setCredentials] = useState<OpdsCredentialStatus>({
 		configured: false,

@@ -144,12 +144,22 @@ pub async fn clb_cmd_set_book_cover_from_url(
     book_id: String,
     image_url: String,
 ) -> Result<(), String> {
+    download_book_cover(state.inner(), book_id, image_url, &reqwest::Client::new()).await
+}
+
+async fn download_book_cover(
+    state: &CitadelState,
+    book_id: String,
+    image_url: String,
+    client: &reqwest::Client,
+) -> Result<(), String> {
+    let library_root = state.with_library(|library| library.library_path().to_owned())?;
     let image_url = image_url.trim();
     if image_url.is_empty() {
         return Err("Image URL is empty".to_string());
     }
 
-    let response = reqwest::Client::new()
+    let response = client
         .get(image_url)
         .send()
         .await
@@ -167,9 +177,14 @@ pub async fn clb_cmd_set_book_cover_from_url(
         .await
         .map_err(|e| format!("Failed to read cover image bytes: {}", e))?;
 
-    state
-        .with_library_service(|service| service.set_cover(&book_id, bytes.to_vec()))
-        .map_err(|error| error.to_string())
+    state.with_library(|library| {
+        if library.library_path() != library_root {
+            return Err("Library changed while downloading the cover".to_string());
+        }
+        citadel_core::library::LibraryService::new(library, &citadel_core::AssetUrlBuilder)
+            .set_cover(&book_id, bytes.to_vec())
+            .map_err(|error| error.to_string())
+    })?
 }
 
 #[tauri::command]
@@ -406,4 +421,112 @@ pub fn clb_cmd_create_authors(
     state
         .with_library_service(|service| service.create_authors(new_authors))
         .map_err(|error| error.to_string())
+}
+
+#[cfg(test)]
+mod cover_download_tests {
+    use super::*;
+    use std::{path::Path, sync::Arc, time::Duration};
+    use tokio::sync::Notify;
+
+    fn fixture() -> tempfile::TempDir {
+        let directory = tempfile::tempdir().unwrap();
+        let archive = std::fs::File::open(
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("resources/empty_7_2_calibre_lib.zip"),
+        )
+        .unwrap();
+        zip::ZipArchive::new(archive)
+            .unwrap()
+            .extract(directory.path())
+            .unwrap();
+        let database = libcalibre::util::get_db_path(directory.path().to_str().unwrap()).unwrap();
+        let mut library = libcalibre::Library::new(database).unwrap();
+        library
+            .add_book(libcalibre::BookAdd {
+                title: "Cover Target".into(),
+                author_names: vec!["Author".into()],
+                tags: None,
+                series: None,
+                series_index: None,
+                publisher: None,
+                publication_date: None,
+                rating: None,
+                comments: None,
+                identifiers: Default::default(),
+                language: None,
+                file_paths: Vec::new(),
+            })
+            .unwrap();
+        directory
+    }
+
+    #[tokio::test]
+    async fn download_cannot_apply_its_cover_to_a_newly_selected_library() {
+        use axum::{routing::get, Router};
+        let a = fixture();
+        let b = fixture();
+        let state = CitadelState::new();
+        state
+            .init_library(a.path().to_str().unwrap().into())
+            .unwrap();
+        let started = Arc::new(Notify::new());
+        let release = Arc::new(Notify::new());
+        let app = Router::new().route(
+            "/cover",
+            get({
+                let started = started.clone();
+                let release = release.clone();
+                move || {
+                    let started = started.clone();
+                    let release = release.clone();
+                    async move {
+                        started.notify_one();
+                        release.notified().await;
+                        "downloaded cover"
+                    }
+                }
+            }),
+        );
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let url = format!("http://{}/cover", listener.local_addr().unwrap());
+        let server = tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+        let download = tokio::spawn({
+            let state = state.clone();
+            async move {
+                download_book_cover(
+                    &state,
+                    "1".into(),
+                    url,
+                    &reqwest::Client::builder().no_proxy().build().unwrap(),
+                )
+                .await
+            }
+        });
+        tokio::time::timeout(Duration::from_secs(10), started.notified())
+            .await
+            .unwrap();
+        state
+            .init_library(b.path().to_str().unwrap().into())
+            .unwrap();
+        release.notify_one();
+        let result = download.await.unwrap();
+        server.abort();
+        assert!(result.unwrap_err().contains("Library changed"));
+        assert!(!state
+            .with_library(|library| library
+                .get_book(libcalibre::BookId::from(1))
+                .unwrap()
+                .has_cover)
+            .unwrap());
+        let database = libcalibre::util::get_db_path(a.path().to_str().unwrap()).unwrap();
+        assert!(
+            !libcalibre::Library::open_read_only(database)
+                .unwrap()
+                .get_book(libcalibre::BookId::from(1))
+                .unwrap()
+                .has_cover
+        );
+    }
 }

@@ -2,6 +2,9 @@ import { create } from "zustand";
 
 import type {
 	AuthorUpdate,
+	BookCustomValue,
+	CustomColumnDef,
+	CustomValueDto,
 	BookUpdate,
 	CoverThumbnail,
 	DeleteBooksOutcome,
@@ -13,7 +16,6 @@ import type {
 	LibraryTag,
 	NewAuthor,
 } from "@/bindings";
-import { commands } from "@/bindings";
 import {
 	ALL_BOOKS_FILTER,
 	advanceSnapshot,
@@ -32,7 +34,7 @@ import {
 } from "@/lib/book-page-cache";
 import { sortAuthors } from "@/lib/domain/author";
 import type { Library, Options } from "@/lib/services/library";
-import { initClient } from "@/lib/services/library";
+import { libraryCatalog } from "@/lib/services/library-catalog";
 
 export enum LibraryState {
 	uninitialized = "uninitialized",
@@ -74,14 +76,19 @@ interface LibraryActions {
 	invalidateBooks: () => void;
 
 	// Library management
-	createLibrary: (libraryRoot: string) => Promise<void>;
+	listCustomColumns: () => Promise<CustomColumnDef[]>;
+	getCustomValuesForBook: (bookId: string) => Promise<BookCustomValue[]>;
+	setCustomValue: (
+		bookId: string,
+		columnId: number,
+		value: CustomValueDto | null,
+	) => Promise<void>;
+	addBookGenres: (bookId: string, genres: string[]) => Promise<void>;
+	setBookCoverFromUrl: (bookId: string, imageUrl: string) => Promise<void>;
 	listValidFileTypes: () => Promise<string[]>;
 	getImportableBookMetadata: (
 		filePath: string,
 	) => Promise<ImportableBookMetadata | undefined>;
-	commitAddBook: (
-		metadata: ImportableBookMetadata,
-	) => Promise<string | undefined>;
 
 	// Book and author mutations
 	updateBook: (bookId: string, updates: BookUpdate) => Promise<void>;
@@ -199,7 +206,7 @@ const requestedThumbIds = new Set<string>();
 // Shadow-switch machinery (module scope: non-reactive coordination).
 //
 // A switch loads the target library into a SHADOW generation while the old
-// content stays rendered: `initClient` + authors/series/total + first page
+// content stays rendered: `LibraryCatalog.open` + authors/series/total + first page
 // all resolve into locals, and only a fully-loaded shadow commits (the
 // flip). `pendingSwitch` identifies the one shadow allowed to flip; every
 // other async commit site checks `canCommitActive`, so results fetched for
@@ -212,7 +219,7 @@ let pendingSwitch: { token: number; path: string } | null = null;
 // restore token holds the same guard as a pending shadow for that window,
 // so no read or mutation reaches the wrong library in between.
 let pendingRestore: number | null = null;
-// The backend holds ONE global library; `initClient` swaps it. Opens are
+// The backend holds ONE global library; `LibraryCatalog.open` swaps it. Opens are
 // serialized so a cancel's restore cannot race a superseded shadow's open
 // (last call in the chain always wins the global, in call order).
 let backendOpenChain: Promise<unknown> = Promise.resolve();
@@ -226,7 +233,7 @@ const isBackendDiverted = (): boolean =>
 
 const openBackend = (libraryPath: string): Promise<Library> => {
 	const open = backendOpenChain.then(() =>
-		initClient(localLibraryFromPath(libraryPath)),
+		libraryCatalog.open(localLibraryFromPath(libraryPath)),
 	);
 	backendOpenChain = open.catch(() => undefined);
 	return open;
@@ -254,12 +261,31 @@ const settleWithMessage = async <T>(
 };
 
 export const useLibraryStore = create<LibraryStoreState>((set, get) => {
-	/**
-	 * Whether an async result captured under `generation` may still commit to
-	 * the ACTIVE state. Dead while the backend is diverted (a pending shadow
-	 * or restore — the global may point at another library) or once a later
-	 * generation owns the cache (flip, filter change, invalidation, reset).
-	 */
+	/** Run a complete operation against one confirmed library; reject stale completions. */
+	const withActiveLibrary = async <T>(
+		operation: (library: Library, assertCurrent: () => void) => Promise<T>,
+		invalidate: boolean | ((result: T) => boolean) = false,
+	): Promise<T> => {
+		if (isBackendDiverted()) throw new Error(SWITCH_IN_PROGRESS_ERROR);
+		const library = get().library;
+		const token = shadowTokenCounter;
+		if (!library) throw new Error("Library not initialized");
+		const assertCurrent = () => {
+			if (
+				isBackendDiverted() ||
+				get().library !== library ||
+				token !== shadowTokenCounter
+			) {
+				throw new Error("Library changed while the operation was in progress");
+			}
+		};
+		const result = await operation(library, assertCurrent);
+		assertCurrent();
+		if (typeof invalidate === "function" ? invalidate(result) : invalidate)
+			get().actions.invalidateBooks();
+		return result;
+	};
+
 	const canCommitActive = (generation: number): boolean =>
 		!isBackendDiverted() && generation === get().bookCache.generation;
 
@@ -770,13 +796,22 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 				}));
 			},
 
-			createLibrary: async (libraryRoot: string) => {
-				const create = await commands.clbCmdCreateLibrary(libraryRoot);
-				if (create.status === "error") {
-					console.error("Failed to create library", create.error);
-					return;
-				}
-			},
+			listCustomColumns: () =>
+				withActiveLibrary((library) => library.listCustomColumns()),
+			getCustomValuesForBook: (id) =>
+				withActiveLibrary((library) => library.getCustomValuesForBook(id)),
+			setCustomValue: (id, columnId, value) =>
+				withActiveLibrary(
+					(library) => library.setCustomValue(id, columnId, value),
+					true,
+				),
+			addBookGenres: (id, genres) =>
+				withActiveLibrary((library) => library.addBookGenres(id, genres), true),
+			setBookCoverFromUrl: (id, url) =>
+				withActiveLibrary(
+					(library) => library.setBookCoverFromUrl(id, url),
+					true,
+				),
 
 			listValidFileTypes: async () => {
 				const { library } = get();
@@ -804,106 +839,60 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => {
 				return metadata;
 			},
 
-			commitAddBook: async (metadata: ImportableBookMetadata) => {
-				if (isBackendDiverted()) throw new Error(SWITCH_IN_PROGRESS_ERROR);
-				const { library } = get();
-				if (!library) return;
+			updateBook: (id, updates) =>
+				withActiveLibrary((library) => library.updateBook(id, updates), true),
 
-				const bookId = await library.addImportableFileByMetadata(metadata);
-				return bookId;
-			},
-			updateBook: async (
-				bookId: string,
-				updates: BookUpdate,
-			): Promise<void> => {
-				if (isBackendDiverted()) throw new Error(SWITCH_IN_PROGRESS_ERROR);
-				const { library } = get();
-				if (!library) throw new Error("Library not initialized");
-				await library.updateBook(bookId, updates);
-				get().actions.invalidateBooks();
-			},
+			updateAuthor: (id, updates) =>
+				withActiveLibrary(async (library, assertCurrent) => {
+					await library.updateAuthor(id, updates);
+					assertCurrent();
+					await get().actions.loadAuthors();
+				}, true),
 
-			updateAuthor: async (
-				authorId: string,
-				updates: AuthorUpdate,
-			): Promise<void> => {
-				if (isBackendDiverted()) throw new Error(SWITCH_IN_PROGRESS_ERROR);
-				const { library } = get();
-				if (!library) throw new Error("Library not initialized");
-				await library.updateAuthor(authorId, updates);
-				await get().actions.loadAuthors();
-				// Cached pages render the old author name (and sort position).
-				get().actions.invalidateBooks();
-			},
+			createAuthors: (authors) =>
+				withActiveLibrary(async (library, assertCurrent) => {
+					await library.createAuthors(authors);
+					assertCurrent();
+					await get().actions.loadAuthors();
+				}),
 
-			createAuthors: async (newAuthors: NewAuthor[]): Promise<void> => {
-				if (isBackendDiverted()) throw new Error(SWITCH_IN_PROGRESS_ERROR);
-				const { library } = get();
-				if (!library) throw new Error("Library not initialized");
-				await library.createAuthors(newAuthors);
-				await get().actions.loadAuthors();
-			},
+			deleteAuthor: (id) =>
+				withActiveLibrary(async (library, assertCurrent) => {
+					await library.deleteAuthor(id);
+					assertCurrent();
+					await get().actions.loadAuthors();
+				}),
 
-			deleteAuthor: async (authorId: string): Promise<void> => {
-				if (isBackendDiverted()) throw new Error(SWITCH_IN_PROGRESS_ERROR);
-				const { library } = get();
-				if (!library) throw new Error("Library not initialized");
-				await library.deleteAuthor(authorId);
-				await get().actions.loadAuthors();
-			},
+			deleteBooks: (bookIds) =>
+				withActiveLibrary(async (library, assertCurrent) => {
+					const outcome = await library.deleteBooks(bookIds);
+					assertCurrent();
+					set((state) => {
+						const coverThumbs = new Map(state.coverThumbs);
+						for (const id of bookIds) coverThumbs.delete(id);
+						return { coverThumbs };
+					});
+					return outcome;
+				}, true),
 
-			deleteBooks: async (
-				bookIds: LibraryBook["id"][],
-			): Promise<DeleteBooksOutcome> => {
-				if (isBackendDiverted()) throw new Error(SWITCH_IN_PROGRESS_ERROR);
-				const { library } = get();
-				if (!library) throw new Error("Library not initialized");
-				const outcome = await library.deleteBooks(bookIds);
-				set((state) => {
-					const coverThumbs = new Map(state.coverThumbs);
-					for (const id of bookIds) coverThumbs.delete(id);
-					return { coverThumbs };
-				});
-				get().actions.invalidateBooks();
-				return outcome;
-			},
+			deleteBookIdentifier: (id, identifierId) =>
+				withActiveLibrary(
+					(library) => library.deleteBookIdentifier(id, identifierId),
+					true,
+				),
 
-			deleteBookIdentifier: async (
-				bookId: string,
-				identifierId: number,
-			): Promise<void> => {
-				if (isBackendDiverted()) throw new Error(SWITCH_IN_PROGRESS_ERROR);
-				const { library } = get();
-				if (!library) throw new Error("Library not initialized");
-				await library.deleteBookIdentifier(bookId, identifierId);
-				get().actions.invalidateBooks();
-			},
+			upsertBookIdentifier: (id, identifierId, label, value) =>
+				withActiveLibrary(
+					(library) =>
+						library.upsertBookIdentifier(id, identifierId, label, value),
+					true,
+				),
 
-			upsertBookIdentifier: async (
-				bookId: string,
-				identifierId: number | null,
-				label: string,
-				value: string,
-			): Promise<void> => {
-				if (isBackendDiverted()) throw new Error(SWITCH_IN_PROGRESS_ERROR);
-				const { library } = get();
-				if (!library) throw new Error("Library not initialized");
-				await library.upsertBookIdentifier(bookId, identifierId, label, value);
-				get().actions.invalidateBooks();
-			},
-
-			addBook: async (
-				metadata: ImportableBookMetadata,
-			): Promise<string | undefined> => {
-				if (isBackendDiverted()) throw new Error(SWITCH_IN_PROGRESS_ERROR);
-				const { library } = get();
-				if (!library) throw new Error("Library not initialized");
-				const bookId = await library.addImportableFileByMetadata(metadata);
-				if (bookId) {
-					get().actions.invalidateBooks();
-				}
-				return bookId;
-			},
+			addBook: (metadata) =>
+				withActiveLibrary(
+					(library) => library.addImportableFileByMetadata(metadata),
+					Boolean,
+				),
 		},
 	};
 });

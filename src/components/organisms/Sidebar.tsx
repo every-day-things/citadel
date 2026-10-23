@@ -6,6 +6,7 @@ import { F7Pencil } from "@/components/icons/F7Pencil";
 import { F7Trash } from "@/components/icons/F7Trash";
 import { AlertDialog, IconButton, TextInput } from "@/components/ui";
 import { safeAsyncEventHandler } from "@/lib/async";
+import { usePlatform } from "@/lib/platform/context";
 import { useAppUpdates } from "@/lib/hooks/use-app-updates";
 import { useOpenSettings } from "@/lib/hooks/use-open-settings";
 import type { SmartShelf } from "@/lib/platform/settings/types";
@@ -17,6 +18,7 @@ import { LibraryPicker } from "./LibraryPicker";
 import styles from "./Sidebar.module.css";
 
 export const Sidebar = () => {
+	const platform = usePlatform();
 	const state = useLibraryState();
 	const { location } = useRouterState();
 	const openSettings = useOpenSettings();
@@ -49,7 +51,7 @@ export const Sidebar = () => {
 					isInstallingUpdate ? "Installing…" : "Install and restart"
 				}
 				cancelLabel="Later"
-				onConfirm={() => void installAvailableUpdate()}
+				onConfirm={() => void installAvailableUpdate(platform)}
 			/>
 			<SidebarPure
 				currentPathname={location.pathname}

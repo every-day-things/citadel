@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { BookMetadata, LibraryBook } from "@/bindings";
-import { commands } from "@/bindings";
+import { useLibraryActions, useLibraryStore } from "@/stores/library/store";
 import { normalizeIsbn } from "@/lib/isbn";
 import type {
 	AggregatedResult,
@@ -58,6 +58,12 @@ export const useMetadataBookActions = ({
 	onCreateAuthor,
 }: UseMetadataBookActionsParams) => {
 	const platform = usePlatform();
+	const actions = useLibraryActions();
+	const sourceLibrary = useLibraryStore((state) => state.library);
+	const assertLibrary = () => {
+		if (useLibraryStore.getState().library !== sourceLibrary)
+			throw new Error("Library changed during metadata lookup");
+	};
 	const enabledProviders = useEnabledProviders();
 	const getConfig = useResolvedProviderConfig();
 	const anySourceEnabled = enabledProviders.length > 0;
@@ -96,7 +102,9 @@ export const useMetadataBookActions = ({
 
 	/** Apply a chosen record to the library, preserving the reload→form-reset dance. */
 	const applyBookToLibrary = async (chosen: BookMetadata) => {
+		assertLibrary();
 		for (const authorName of chosen.authors) {
+			assertLibrary();
 			if (!allAuthorNames.includes(authorName)) {
 				await onCreateAuthor(authorName);
 			}
@@ -109,6 +117,7 @@ export const useMetadataBookActions = ({
 			const existing = book.identifier_list.find(
 				(id) => id.label.toLowerCase() === chosen.identifier_label,
 			);
+			assertLibrary();
 			await onUpsertIdentifier(
 				book.id,
 				existing?.id ?? null,
@@ -120,6 +129,7 @@ export const useMetadataBookActions = ({
 		if (chosen.isbn) {
 			const normalized = normalizeIsbn(chosen.isbn);
 			if (normalized) {
+				assertLibrary();
 				await onUpsertIdentifier(
 					book.id,
 					isbnIdentifier?.id ?? null,
@@ -130,7 +140,8 @@ export const useMetadataBookActions = ({
 		}
 
 		if (chosen.image_url) {
-			await commands.clbCmdSetBookCoverFromUrl(book.id, chosen.image_url);
+			assertLibrary();
+			await actions.setBookCoverFromUrl(book.id, chosen.image_url);
 			await onReloadBooks();
 		}
 
@@ -138,6 +149,7 @@ export const useMetadataBookActions = ({
 		// form) before we set form values. Matches the original Hardcover flow.
 		await new Promise((resolve) => setTimeout(resolve, 0));
 
+		assertLibrary();
 		if (chosen.title) form.setFieldValue("title", chosen.title);
 		if (chosen.description)
 			form.setFieldValue("description", chosen.description);

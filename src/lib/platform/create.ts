@@ -1,3 +1,8 @@
+import { isDesktop } from "./runtime";
+import { homeDirectory } from "./paths/tauri";
+import { onAddBook } from "./menu/tauri";
+import { tauriUpdates } from "./updates/tauri";
+import { webUpdates } from "./updates/web";
 import { createTauriClipboard } from "./clipboard/tauri";
 import { createWebClipboard } from "./clipboard/web";
 import { createTauriDialogs } from "./dialogs/tauri";
@@ -13,6 +18,7 @@ import { createWebWindow } from "./window/web";
 
 export const createTauriPlatform = (): PlatformAdapter => ({
 	capabilities: {
+		supportsNativeWindows: true,
 		canPickLocalFiles: true,
 		canRevealInFileManager: true,
 		canCopyToClipboard: true,
@@ -20,6 +26,9 @@ export const createTauriPlatform = (): PlatformAdapter => ({
 		supportsAutoUpdates: true,
 		supportsLocalOpdsServer: true,
 	},
+	homeDirectory,
+	menu: { onAddBook },
+	updates: tauriUpdates,
 	dialogs: createTauriDialogs(),
 	clipboard: createTauriClipboard(),
 	fileOpener: createTauriFileOpener(),
@@ -29,6 +38,7 @@ export const createTauriPlatform = (): PlatformAdapter => ({
 
 export const createWebPlatform = (): PlatformAdapter => ({
 	capabilities: {
+		supportsNativeWindows: false,
 		canPickLocalFiles: false,
 		canRevealInFileManager: false,
 		canCopyToClipboard: true,
@@ -36,9 +46,15 @@ export const createWebPlatform = (): PlatformAdapter => ({
 		supportsAutoUpdates: false,
 		supportsLocalOpdsServer: false,
 	},
+	homeDirectory: async () => null,
+	menu: { onAddBook: async () => () => {} },
+	updates: webUpdates,
 	dialogs: createWebDialogs(),
 	clipboard: createWebClipboard(),
 	fileOpener: createWebFileOpener(),
 	window: createWebWindow(),
 	settings: createWebSettingsManager(defaultSettings),
 });
+
+export const createPlatform = (): PlatformAdapter =>
+	isDesktop ? createTauriPlatform() : createWebPlatform();

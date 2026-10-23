@@ -1,7 +1,9 @@
 import type { WindowAdapter } from "../types";
-
 export const createWebWindow = (): WindowAdapter => ({
-	showMainWindow: async () => {
-		// no-op: window is always visible in web
-	},
+	show: async () => {},
+	hide: async () => {},
+	openSettings: async () => {},
+	setTheme: async () => {},
+	setBackgroundColor: async () => {},
+	hideOnClose: async () => () => {},
 });

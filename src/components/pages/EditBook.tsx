@@ -1,3 +1,4 @@
+import { useLibraryActions, useLibraryStore } from "@/stores/library/store";
 import { Link as RouterLink } from "@tanstack/react-router";
 import DOMPurify from "dompurify";
 import {
@@ -9,12 +10,11 @@ import {
 	useMemo,
 	useState,
 } from "react";
-import {
-	type BookUpdate,
-	type CustomColumnDef,
-	type LibraryAuthor,
-	type LibraryBook,
-	commands,
+import type {
+	BookUpdate,
+	CustomColumnDef,
+	LibraryAuthor,
+	LibraryBook,
 } from "@/bindings";
 import {
 	AlertDialog,
@@ -410,6 +410,12 @@ const EditBookForm = ({
 		value: string,
 	) => Promise<void>;
 }) => {
+	const actions = useLibraryActions();
+	const sourceLibrary = useLibraryStore((state) => state.library);
+	const isCurrentLibrary = useCallback(
+		() => useLibraryStore.getState().library === sourceLibrary,
+		[sourceLibrary],
+	);
 	const [values, setValues] = useState<EditBookFormValues>(() =>
 		formValuesFromBook(book),
 	);
@@ -452,15 +458,12 @@ const EditBookForm = ({
 
 	const loadCustomColumns = useCallback(
 		async (isCancelled: () => boolean = () => false) => {
-			const columnsResult = await commands.clbQueryListCustomColumns();
-			if (isCancelled()) {
+			const columns = await actions.listCustomColumns();
+			if (isCancelled() || !isCurrentLibrary()) {
 				return;
 			}
-			if (columnsResult.status === "error") {
-				throw new Error(columnsResult.error);
-			}
 
-			const editable = editableCustomColumns(columnsResult.data);
+			const editable = editableCustomColumns(columns);
 			if (editable.length === 0) {
 				setCustomColumns([]);
 				setCustomSnapshot({});
@@ -468,22 +471,16 @@ const EditBookForm = ({
 				return;
 			}
 
-			const valuesResult = await commands.clbQueryGetCustomValuesForBook(
-				book.id,
-			);
-			if (isCancelled()) {
-				return;
-			}
-			if (valuesResult.status === "error") {
-				throw new Error(valuesResult.error);
-			}
+			if (!isCurrentLibrary()) return;
+			const values = await actions.getCustomValuesForBook(book.id);
+			if (isCancelled() || !isCurrentLibrary()) return;
 
-			const fieldValues = buildCustomFieldValues(editable, valuesResult.data);
+			const fieldValues = buildCustomFieldValues(editable, values);
 			setCustomColumns(editable);
 			setCustomSnapshot(fieldValues);
 			setCustomValues(fieldValues);
 		},
-		[book.id],
+		[book.id, actions, isCurrentLibrary],
 	);
 
 	useEffect(() => {
@@ -519,22 +516,22 @@ const EditBookForm = ({
 		const attemptedValues = { ...customValues };
 		const failures: { columnId: number; message: string }[] = [];
 		for (const change of customChanges) {
-			const result = await commands.clbCmdSetCustomValue(
-				book.id,
-				change.columnId,
-				change.value,
-			);
-			if (result.status === "error") {
+			if (!isCurrentLibrary()) return;
+			try {
+				await actions.setCustomValue(book.id, change.columnId, change.value);
+			} catch (error) {
+				if (!isCurrentLibrary()) return;
 				const columnName =
 					customColumns.find((column) => column.column_id === change.columnId)
 						?.name ?? `column ${change.columnId}`;
 				failures.push({
 					columnId: change.columnId,
-					message: `${columnName}: ${result.error}`,
+					message: `${columnName}: ${error instanceof Error ? error.message : String(error)}`,
 				});
 			}
 		}
 
+		if (!isCurrentLibrary()) return;
 		await loadCustomColumns();
 
 		if (failures.length > 0) {
@@ -553,7 +550,15 @@ const EditBookForm = ({
 		} else {
 			setCustomColumnError(null);
 		}
-	}, [book.id, customChanges, customColumns, customValues, loadCustomColumns]);
+	}, [
+		book.id,
+		customChanges,
+		customColumns,
+		customValues,
+		loadCustomColumns,
+		actions,
+		isCurrentLibrary,
+	]);
 
 	const meta = useMetadataBookActions({
 		book,
@@ -599,14 +604,19 @@ const EditBookForm = ({
 	}, [meta.lastResolvedGenres, storedGenres]);
 	const addGenres = useCallback(
 		async (genres: string[]) => {
-			const result = await commands.clbCmdAddBookGenres(book.id, genres);
-			if (result.status === "error") {
-				setCustomColumnError(result.error);
-				return;
+			if (!isCurrentLibrary()) return;
+			try {
+				await actions.addBookGenres(book.id, genres);
+				if (!isCurrentLibrary()) return;
+				await loadCustomColumns();
+			} catch (error) {
+				if (isCurrentLibrary())
+					setCustomColumnError(
+						error instanceof Error ? error.message : String(error),
+					);
 			}
-			await loadCustomColumns();
 		},
-		[book.id, loadCustomColumns],
+		[book.id, loadCustomColumns, actions, isCurrentLibrary],
 	);
 
 	const handleAuthorsChange = (next: string[]) => {

@@ -1,6 +1,5 @@
 import type { KeyboardEvent, ReactNode } from "react";
 import { useCallback, useId, useRef, useState } from "react";
-import { commands } from "@/bindings";
 import { F7BookFill } from "@/components/icons/F7BookFill";
 import { F7Gear } from "@/components/icons/F7Gear";
 import { F7Wifi } from "@/components/icons/F7Wifi";
@@ -14,7 +13,7 @@ import { SharingSettings } from "@/components/organisms/SharingSettings";
 import { Button, SegmentedControl, Switch, TextInput } from "@/components/ui";
 import { useAppUpdates } from "@/lib/hooks/use-app-updates";
 import { useLibrarySelection } from "@/lib/hooks/use-library-selection";
-import { getDescriptor } from "@/lib/metadata-providers/registry";
+import { getAdapter, getDescriptor } from "@/lib/metadata-providers/registry";
 import type { ProviderId } from "@/lib/metadata-providers/types";
 import { none, some } from "@/lib/option";
 import { usePlatform } from "@/lib/platform/context";
@@ -272,7 +271,7 @@ const GeneralTab = () => {
 							size="sm"
 							variant="default"
 							disabled={!supportsAutoUpdates || isCheckingForUpdates}
-							onClick={() => void checkForUpdatesNow(supportsAutoUpdates)}
+							onClick={() => void checkForUpdatesNow(platform)}
 						>
 							{isCheckingForUpdates ? "Checking…" : "Check for Updates…"}
 						</Button>
@@ -376,18 +375,13 @@ const ProviderRow = ({ id }: { id: ProviderId }) => {
 		setIsTesting(true);
 		setTestResult(null);
 		try {
-			const result = await commands.clbCmdTestMetadataProvider(
-				id,
-				requiresKey ? apiKeyInput : "",
-			);
-			if (result.status === "ok") {
-				setTestResult({
-					success: result.data.is_valid,
-					message: result.data.is_valid ? "Reachable." : result.data.message,
-				});
-			} else {
-				setTestResult({ success: false, message: result.error });
-			}
+			const result = await getAdapter(id).test({
+				apiKey: requiresKey ? apiKeyInput : "",
+			});
+			setTestResult({
+				success: result.ok,
+				message: result.ok ? "Reachable." : result.message,
+			});
 		} catch (error) {
 			setTestResult({
 				success: false,

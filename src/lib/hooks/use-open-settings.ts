@@ -1,7 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
-import { isTauri } from "@tauri-apps/api/core";
 import { useCallback } from "react";
-import { commands } from "@/bindings";
+import { usePlatform } from "@/lib/platform/context";
 
 /**
  * Opens the Settings UI. Settings live in their own window on the desktop; the
@@ -10,12 +9,13 @@ import { commands } from "@/bindings";
  * in-app /settings page instead.
  */
 export const useOpenSettings = (): (() => void) => {
+	const platform = usePlatform();
 	const navigate = useNavigate();
 	return useCallback(() => {
-		if (isTauri()) {
-			void commands.clbCmdOpenSettings();
+		if (platform.capabilities.supportsNativeWindows) {
+			void platform.window.openSettings();
 		} else {
 			void navigate({ to: "/settings" });
 		}
-	}, [navigate]);
+	}, [navigate, platform]);
 };

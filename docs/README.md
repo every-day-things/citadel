@@ -8,6 +8,7 @@ browser engine installed on the user's system.
 
 ## 📚 Architecture Documentation
 
+- **[Frontend service boundaries](adr/0008-frontend-service-boundaries.md)** - Library, LibraryCatalog, Metadata, Platform and adapter-only runtime imports
 - **[Shared Rust operations and HTTP contracts](adr/0007-shared-library-contract.md)** - Core/desktop/server boundaries and generated bindings
 
 `ai-docs/` is point-in-time AI-generated analysis; it may not reflect the current code.

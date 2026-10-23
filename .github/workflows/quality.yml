@@ -71,5 +71,10 @@ jobs:
       - name: Check Linting
         run: bun lint
 
+      - name: Test frontend services and boundaries
+        run: |
+          bun typecheck
+          bun run test --run
+
       - name: Test desktop adapters and IPC contract
         run: cargo test --locked -p citadel-desktop

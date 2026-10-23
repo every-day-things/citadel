@@ -1,3 +1,4 @@
+import { createWebPlatform } from "@/lib/platform/create";
 import type { Meta, StoryObj } from "@storybook/react";
 import type { LibraryStatsState } from "@/lib/hooks/use-library-stats";
 import { PlatformProvider } from "@/lib/platform/context";
@@ -6,32 +7,10 @@ import type { PlatformAdapter } from "@/lib/platform/types";
 import { LibraryListCard } from "./LibraryListCard";
 
 const MOCK_PLATFORM: PlatformAdapter = {
+	...createWebPlatform(),
 	capabilities: {
+		...createWebPlatform().capabilities,
 		canPickLocalFiles: true,
-		canRevealInFileManager: true,
-		canCopyToClipboard: true,
-		canOpenLocalPaths: true,
-		supportsAutoUpdates: true,
-		supportsLocalOpdsServer: true,
-	},
-	dialogs: {
-		openFile: async () => null,
-		openDirectory: async () => null,
-	},
-	clipboard: { writeText: async () => {} },
-	fileOpener: {
-		openPath: async () => {},
-		revealInFileManager: async () => {},
-	},
-	window: { showMainWindow: async () => {} },
-	settings: {
-		initialize: async () => {
-			throw new Error("Settings are not available in stories");
-		},
-		set: async () => {},
-		get: async () => {
-			throw new Error("Settings are not available in stories");
-		},
 	},
 };
 

@@ -3,10 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const initClient = vi.fn<(options: Options) => Promise<Library>>();
 
-vi.mock("@/lib/services/library", () => ({
-	initClient: (options: Options) => initClient(options),
+vi.mock("@/lib/services/library-catalog", () => ({
+	libraryCatalog: { open: (options: Options) => initClient(options) },
 }));
-vi.mock("@/bindings", () => ({ commands: {} }));
 
 const PATH_A = "/Users/reader/Library A";
 const PATH_B = "/Users/reader/Library B";
@@ -36,6 +35,13 @@ const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 const fakeLibrary = () => {
 	const fake = {
+		listCustomColumns: vi.fn(async () => []),
+		getCustomValuesForBook: vi.fn(async (_id: string) => []),
+		setCustomValue: vi.fn(
+			async (_id: string, _column: number, _value: unknown) => undefined,
+		),
+		addBookGenres: vi.fn(async (_id: string, _genres: string[]) => undefined),
+		setBookCoverFromUrl: vi.fn(async (_id: string, _url: string) => undefined),
 		queryBooks: vi.fn(async () => ({ items: [], total: 250 })),
 		listAuthors: vi.fn(async () => []),
 		listSeries: vi.fn(async () => []),
@@ -188,5 +194,80 @@ describe("deleteBooks", () => {
 		expect(useLibraryStore.getState().bookCache.generation).toBeGreaterThan(
 			generationBefore,
 		);
+	});
+});
+
+describe("selected-library custom fields, genres and covers", () => {
+	beforeEach(() => {
+		initClient.mockReset();
+	});
+	it("guards all five entry points while a switch diverts the backend", async () => {
+		const { useLibraryStore, a } = await bootOnA();
+		const openB = deferred<Library>();
+		initClient.mockReturnValueOnce(openB.promise);
+		const { actions } = useLibraryStore.getState();
+		const switching = actions.initialize(PATH_B);
+		for (const operation of [
+			() => actions.listCustomColumns(),
+			() => actions.getCustomValuesForBook("1"),
+			() => actions.setCustomValue("1", 1, null),
+			() => actions.addBookGenres("1", ["Fantasy"]),
+			() => actions.setBookCoverFromUrl("1", "https://example.test/cover.jpg"),
+		])
+			await expect(operation()).rejects.toThrow("switch is in progress");
+		for (const method of [
+			a.fake.listCustomColumns,
+			a.fake.getCustomValuesForBook,
+			a.fake.setCustomValue,
+			a.fake.addBookGenres,
+			a.fake.setBookCoverFromUrl,
+		])
+			expect(method).not.toHaveBeenCalled();
+		openB.resolve(fakeLibrary().library);
+		await switching;
+	});
+	it("invalidates after successful writes and preserves caches on failure", async () => {
+		const { useLibraryStore, a } = await bootOnA();
+		const { actions } = useLibraryStore.getState();
+		for (const operation of [
+			() => actions.setCustomValue("1", 1, null),
+			() => actions.addBookGenres("1", ["Fantasy"]),
+			() => actions.setBookCoverFromUrl("1", "https://example.test/cover.jpg"),
+		]) {
+			const generation = useLibraryStore.getState().bookCache.generation;
+			await operation();
+			expect(useLibraryStore.getState().bookCache.generation).toBeGreaterThan(
+				generation,
+			);
+		}
+		a.fake.setCustomValue.mockRejectedValueOnce(new Error("invalid field"));
+		const generation = useLibraryStore.getState().bookCache.generation;
+		await expect(actions.setCustomValue("1", 1, null)).rejects.toThrow(
+			"invalid field",
+		);
+		expect(useLibraryStore.getState().bookCache.generation).toBe(generation);
+	});
+	it("discards stale reads and mutation completions after a library switch", async () => {
+		const { useLibraryStore, a } = await bootOnA();
+		const fields = deferred<[]>();
+		const cover = deferred<undefined>();
+		a.fake.getCustomValuesForBook.mockReturnValueOnce(fields.promise);
+		a.fake.setBookCoverFromUrl.mockReturnValueOnce(cover.promise);
+		const { actions } = useLibraryStore.getState();
+		const read = actions.getCustomValuesForBook("1");
+		const write = actions.setBookCoverFromUrl(
+			"1",
+			"https://example.test/cover.jpg",
+		);
+		const b = fakeLibrary();
+		initClient.mockResolvedValueOnce(b.library);
+		await actions.initialize(PATH_B);
+		const generation = useLibraryStore.getState().bookCache.generation;
+		fields.resolve([]);
+		cover.resolve(undefined);
+		await expect(read).rejects.toThrow("Library changed");
+		await expect(write).rejects.toThrow("Library changed");
+		expect(useLibraryStore.getState().bookCache.generation).toBe(generation);
+		expect(b.fake.setBookCoverFromUrl).not.toHaveBeenCalled();
 	});
 });

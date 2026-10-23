@@ -1,3 +1,4 @@
+import type { UpdateCheckResult } from "@/bindings";
 import type { SettingsManager } from "./settings/types";
 
 export interface PlatformAdapter {
@@ -6,10 +7,14 @@ export interface PlatformAdapter {
 	readonly clipboard: ClipboardAdapter;
 	readonly fileOpener: FileOpenerAdapter;
 	readonly window: WindowAdapter;
+	readonly homeDirectory: () => Promise<string | null>;
+	readonly menu: { onAddBook(handler: () => void): Promise<() => void> };
+	readonly updates: UpdatesAdapter;
 	readonly settings: SettingsManager;
 }
 
 export interface PlatformCapabilities {
+	supportsNativeWindows: boolean;
 	canPickLocalFiles: boolean;
 	canRevealInFileManager: boolean;
 	canCopyToClipboard: boolean;
@@ -36,5 +41,15 @@ export interface FileOpenerAdapter {
 }
 
 export interface WindowAdapter {
-	showMainWindow(): Promise<void>;
+	show(): Promise<void>;
+	hide(): Promise<void>;
+	openSettings(): Promise<void>;
+	setTheme(theme: "dark" | "light" | null): Promise<void>;
+	setBackgroundColor(color: [number, number, number, number]): Promise<void>;
+	hideOnClose(): Promise<() => void>;
+}
+
+export interface UpdatesAdapter {
+	check(): Promise<UpdateCheckResult>;
+	install(): Promise<"no-update">;
 }

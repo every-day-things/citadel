@@ -1,5 +1,8 @@
 import type {
 	AuthorUpdate,
+	BookCustomValue,
+	CustomColumnDef,
+	CustomValueDto,
 	BookUpdate,
 	CoverThumbnail,
 	DeleteBooksOutcome,
@@ -25,6 +28,15 @@ export interface FileType {
 }
 
 export interface Library {
+	listCustomColumns(): Promise<CustomColumnDef[]>;
+	getCustomValuesForBook(bookId: string): Promise<BookCustomValue[]>;
+	setCustomValue(
+		bookId: string,
+		columnId: number,
+		value: CustomValueDto | null,
+	): Promise<void>;
+	addBookGenres(bookId: string, genres: string[]): Promise<void>;
+	setBookCoverFromUrl(bookId: string, imageUrl: string): Promise<void>;
 	createAuthors(newAuthors: NewAuthor[]): Promise<LibraryAuthor[]>;
 	/**
 	 * One page of a filtered, sorted book query (the cover grid's data

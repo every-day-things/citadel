@@ -33,6 +33,8 @@
 			"src/**/*.tsx",
 			"src/**/*.css",
 			"tools/api/**/*.ts",
+			"tools/testing/**/*.ts",
+			"tools/testing/**/*.mjs",
 			"!src/bindings.ts",
 			"!src/lib/api/schema.generated.d.ts",
 			"!src/routeTree.gen.ts"

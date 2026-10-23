@@ -1,6 +1,7 @@
+import type { UpdatesAdapter } from "../types";
 import { commands, type UpdateCheckResult } from "@/bindings";
 
-export const checkForUpdates = async (): Promise<UpdateCheckResult> => {
+const checkForUpdates = async (): Promise<UpdateCheckResult> => {
 	const result = await commands.clbCmdCheckForUpdates();
 
 	if (result.status === "error") {
@@ -10,7 +11,7 @@ export const checkForUpdates = async (): Promise<UpdateCheckResult> => {
 	return result.data;
 };
 
-export const installUpdateIfAvailable = async (): Promise<"no-update"> => {
+const installUpdateIfAvailable = async (): Promise<"no-update"> => {
 	const result = await commands.clbCmdInstallUpdateIfAvailable();
 
 	if (result.status === "error") {
@@ -18,4 +19,9 @@ export const installUpdateIfAvailable = async (): Promise<"no-update"> => {
 	}
 
 	return result.data as "no-update";
+};
+
+export const tauriUpdates: UpdatesAdapter = {
+	check: checkForUpdates,
+	install: installUpdateIfAvailable,
 };
