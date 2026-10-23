@@ -1,5 +1,3 @@
-import { isTauri } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import {
 	createContext,
 	type ReactNode,
@@ -11,7 +9,6 @@ import {
 	useState,
 } from "react";
 import type { ImportableBookMetadata, NewAuthor } from "@/bindings";
-import { commands } from "@/bindings";
 import {
 	AddBookForm,
 	title as addBookFormTitle,
@@ -21,11 +18,13 @@ import {
 	applyMetadataToBook,
 	type PendingMetadata,
 } from "@/lib/metadata-import";
+import type { Library } from "@/lib/services/library";
 import { usePlatform } from "@/lib/platform/context";
 import {
 	LibraryState,
 	useAuthors,
 	useLibraryActions,
+	useLibraryStore,
 	useLibraryState,
 } from "@/stores/library/store";
 
@@ -48,6 +47,8 @@ export const AddBookProvider = ({ children }: { children: ReactNode }) => {
 	const actions = useLibraryActions();
 	const authors = useAuthors();
 	const platform = usePlatform();
+	const activeLibrary = useLibraryStore((state) => state.library);
+	const importLibraryRef = useRef<Library | null>(null);
 
 	const [metadata, setMetadata] = useState<ImportableBookMetadata | null>();
 	// Incremented per picked file so AddBookForm (and its metadata lookup
@@ -81,6 +82,8 @@ export const AddBookProvider = ({ children }: { children: ReactNode }) => {
 				name: newAuthorName,
 				sortable_name: newAuthorName,
 			};
+			if (importLibraryRef.current !== useLibraryStore.getState().library)
+				throw new Error("Library changed during import");
 			await actions.createAuthors([newAuthor]);
 		},
 		[actions],
@@ -97,17 +100,21 @@ export const AddBookProvider = ({ children }: { children: ReactNode }) => {
 				? document.activeElement
 				: null;
 
+		const targetLibrary = useLibraryStore.getState().library;
 		void (async () => {
 			try {
 				const extensions = await actions.listValidFileTypes();
 				const filePath = await platform.dialogs.openFile({
 					filters: [{ name: "Importable files", extensions }],
 				});
-				if (!filePath) return;
+				if (!filePath || useLibraryStore.getState().library !== targetLibrary)
+					return;
 
 				const importableMetadata =
 					await actions.getImportableBookMetadata(filePath);
+				if (useLibraryStore.getState().library !== targetLibrary) return;
 				if (importableMetadata) {
+					importLibraryRef.current = targetLibrary;
 					pendingMetadataRef.current = null;
 					createdBookIdRef.current = null;
 					setImportSession((session) => session + 1);
@@ -123,17 +130,37 @@ export const AddBookProvider = ({ children }: { children: ReactNode }) => {
 	// File > Add Book… in the native menu emits this event to the main window
 	// (see src-tauri/src/menu.rs); it triggers the same flow as the button.
 	useEffect(() => {
-		if (!isTauri()) return;
-		const unlisten = listen("menu://add-book", () => {
+		const unlisten = platform.menu.onAddBook(() => {
 			startAddBook();
 		});
 		return () => {
 			void unlisten.then((dispose) => dispose());
 		};
-	}, [startAddBook]);
+	}, [startAddBook, platform]);
+
+	useEffect(() => {
+		if (
+			importLibraryRef.current !== null &&
+			importLibraryRef.current !== activeLibrary
+		) {
+			importLibraryRef.current = null;
+			createdBookIdRef.current = null;
+			pendingMetadataRef.current = null;
+			setMetadata(null);
+			closeModal();
+		}
+	}, [activeLibrary, closeModal]);
 
 	const addBookByMetadataWithEffects = async (form: AddBookForm) => {
 		if (!metadata || state !== LibraryState.ready) return;
+		const targetLibrary = importLibraryRef.current;
+		const assertLibrary = () => {
+			if (
+				targetLibrary === null ||
+				useLibraryStore.getState().library !== targetLibrary
+			)
+				throw new Error("Library changed during import");
+		};
 		const pendingMetadata = pendingMetadataRef.current;
 		const editedMetadata: ImportableBookMetadata = {
 			...metadata,
@@ -143,33 +170,32 @@ export const AddBookProvider = ({ children }: { children: ReactNode }) => {
 			identifier: pendingMetadata?.isbn ?? metadata.identifier,
 		};
 		try {
+			assertLibrary();
 			// If a previous attempt created the book but failed while applying
 			// metadata, reuse that book on retry instead of creating a duplicate.
 			let bookId = createdBookIdRef.current;
 			if (!bookId) {
 				bookId = (await actions.addBook(editedMetadata)) ?? null;
+				assertLibrary();
 				createdBookIdRef.current = bookId;
 			}
 			if (bookId && pendingMetadata) {
 				await applyMetadataToBook(bookId, pendingMetadata, {
-					upsertBookIdentifier: actions.upsertBookIdentifier,
-					updateBook: actions.updateBook,
-					setBookCoverFromUrl: async (id, imageUrl) => {
-						const result = await commands.clbCmdSetBookCoverFromUrl(
-							id,
-							imageUrl,
-						);
-						if (result.status === "error") {
-							throw new Error(result.error);
-						}
+					upsertBookIdentifier: async (...args) => {
+						assertLibrary();
+						await actions.upsertBookIdentifier(...args);
+					},
+					updateBook: async (...args) => {
+						assertLibrary();
+						await actions.updateBook(...args);
+					},
+					setBookCoverFromUrl: async (...args) => {
+						assertLibrary();
+						await actions.setBookCoverFromUrl(...args);
 					},
 				});
-				// addBook/upsertBookIdentifier/updateBook already invalidate the
-				// book caches; only a cover change happens outside those.
-				if (pendingMetadata.image_url) {
-					actions.invalidateBooks();
-				}
 			}
+			assertLibrary();
 			createdBookIdRef.current = null;
 			closeAddBookModal();
 			setMetadata(null);

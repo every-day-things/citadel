@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { commands, type LibraryStats } from "@/bindings";
+import type { LibraryStats } from "@/bindings";
+import { libraryCatalog } from "@/lib/services/library-catalog";
 
 export type LibraryStatsState =
 	| { status: "loading" }
@@ -36,16 +37,12 @@ export const useLibraryStats = (
 		}
 		let alive = true;
 		setState({ status: "loading" });
-		commands
-			.clbQueryLibraryStats(libraryRoot)
-			.then((result) => {
+		libraryCatalog
+			.stats(libraryRoot)
+			.then((stats) => {
 				if (!alive) return;
-				if (result.status === "ok") {
-					statsCache.set(libraryRoot, result.data);
-					setState({ status: "loaded", stats: result.data });
-				} else {
-					setState({ status: "error" });
-				}
+				statsCache.set(libraryRoot, stats);
+				setState({ status: "loaded", stats });
 			})
 			.catch(() => {
 				if (alive) setState({ status: "error" });

@@ -10,7 +10,6 @@ import { IS_DEV } from "@/lib/env";
 import { useInitializeLibraryStore } from "@/lib/hooks/use-initialize-library-store";
 import { useLibrarySwitch } from "@/lib/hooks/use-library-switch";
 import { usePlatform } from "@/lib/platform/context";
-import { checkForUpdates } from "@/lib/services/app-updates";
 import { useApplyColorScheme } from "@/lib/theme-manager";
 import { safeAsyncEventHandler } from "$lib/async";
 import { FirstRunGate } from "./components/organisms/FirstRunFlow";
@@ -62,7 +61,7 @@ export const App = () => {
 
 	useEffect(() => {
 		if (hydrated) {
-			safeAsyncEventHandler(() => platform.window.showMainWindow())();
+			safeAsyncEventHandler(() => platform.window.show())();
 		}
 	}, [hydrated, platform]);
 
@@ -87,7 +86,7 @@ export const App = () => {
 		}
 
 		safeAsyncEventHandler(async () => {
-			const updateCheckResult = await checkForUpdates();
+			const updateCheckResult = await platform.updates.check();
 			if (
 				updateCheckResult.has_update &&
 				updateCheckResult.version !== lastNotifiedUpdateVersion

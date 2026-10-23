@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { commands } from "@/bindings";
+import { libraryCatalog } from "@/lib/services/library-catalog";
 import { toast } from "@/components/ui";
 import { ADOPT_INVALID_ERROR } from "@/lib/first-run/machine";
 import type { LibraryPath } from "@/lib/platform/settings/types";
@@ -51,9 +51,7 @@ export const useLibrarySelection = (): LibrarySelection => {
 			const library = libraries.find((entry) => entry.id === id);
 			if (!library) return;
 			try {
-				const valid = await commands.clbQueryIsPathValidLibrary(
-					library.absolutePath,
-				);
+				const valid = await libraryCatalog.isValid(library.absolutePath);
 				if (!valid) {
 					toast.show({
 						id: INVALID_LIBRARY_TOAST_ID,
@@ -77,7 +75,7 @@ export const useLibrarySelection = (): LibrarySelection => {
 
 	const adoptLibrary = useCallback(
 		async (absolutePath: string): Promise<AdoptLibraryResult> => {
-			const valid = await commands.clbQueryIsPathValidLibrary(absolutePath);
+			const valid = await libraryCatalog.isValid(absolutePath);
 			if (!valid) return { ok: false, message: ADOPT_INVALID_ERROR };
 			const newLibraryId = await createLibrary(absolutePath);
 			await setActiveLibrary(newLibraryId);

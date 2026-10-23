@@ -2,17 +2,19 @@ import React, { Suspense } from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "./App";
 import "./styles.css";
-import { isTauri } from "@tauri-apps/api/core";
 import { PlatformProvider } from "@/lib/platform/context";
-import { createTauriPlatform, createWebPlatform } from "@/lib/platform/create";
+import { createPlatform } from "@/lib/platform/create";
 import { useSettings } from "@/stores/settings/store";
 
-const platform = isTauri() ? createTauriPlatform() : createWebPlatform();
+const platform = createPlatform();
 
 // The macOS window paints an NSVisualEffectView behind a transparent webview;
 // only there may the page background go transparent (elsewhere it would show
 // through to nothing).
-if (isTauri() && navigator.userAgent.includes("Mac")) {
+if (
+	platform.capabilities.supportsNativeWindows &&
+	navigator.userAgent.includes("Mac")
+) {
 	document.documentElement.dataset.vibrancy = "true";
 }
 

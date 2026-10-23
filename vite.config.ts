@@ -24,6 +24,6 @@ export default defineConfig({
 		},
 	},
 	test: {
-		include: ["src/**/*.{test,spec}.{js,ts}"],
+		include: ["src/**/*.{test,spec}.{js,ts}", "tools/testing/**/*.test.ts"],
 	},
 });
