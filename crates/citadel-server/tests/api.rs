@@ -227,8 +227,7 @@ async fn api_auth_errors_bounds_and_schema_are_consistent() {
 
 #[test]
 fn committed_openapi_matches_routes() {
-    let committed: Value =
-        serde_json::from_str(include_str!("../../../contracts/openapi.json")).unwrap();
+    let committed: Value = serde_json::from_str(include_str!("../../../api/openapi.json")).unwrap();
     assert_eq!(
         committed,
         serde_json::to_value(api::openapi()).unwrap(),

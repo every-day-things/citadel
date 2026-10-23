@@ -25,7 +25,7 @@ bun api:generate
 bun api:check
 ```
 
-This writes `contracts/openapi.json` and `src/lib/api/schema.generated.d.ts`.
+This writes `api/openapi.json` and `src/lib/api/schema.generated.d.ts`.
 `createCitadelHttpClient` wraps openapi-fetch with those generated paths. It is an
 internal transport client, not a separate published SDK. The caller supplies the
 server URL, credentials and fetch implementation. Do not edit generated files.

@@ -19,7 +19,7 @@ if (result.status !== 0) process.exit(result.status ?? 1);
 const schema = `${JSON.stringify(JSON.parse(result.stdout), null, 2)}\n`;
 const types = astToString(await openapiTS(JSON.parse(schema)));
 const files = {
-	"contracts/openapi.json": schema,
+	"api/openapi.json": schema,
 	"src/lib/api/schema.generated.d.ts": types,
 };
 for (const [path, content] of Object.entries(files)) {
