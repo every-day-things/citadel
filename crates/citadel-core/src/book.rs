@@ -5,59 +5,73 @@ use serde::{Deserialize, Serialize};
 use crate::author::LibraryAuthor;
 use crate::url::BookUrlBuilder;
 
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[derive(Serialize, specta::Type, Deserialize, Clone)]
 pub enum LocalOrRemote {
     Local,
     Remote,
 }
 
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[derive(Serialize, specta::Type, Deserialize, Clone)]
 pub struct LocalOrRemoteUrl {
     pub kind: LocalOrRemote,
     pub url: String,
+    #[cfg_attr(feature = "openapi", schema(value_type = Option<String>, required = true))]
     pub local_path: Option<PathBuf>,
 }
 
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[derive(Serialize, specta::Type, Deserialize, Clone, Debug)]
 pub struct LocalFile {
     /// The absolute path to the file, including extension.
+    #[cfg_attr(feature = "openapi", schema(value_type = String))]
     pub path: PathBuf,
     /// The MIME type of the file. Common values are `application/pdf` and `application/epub+zip`.
     pub mime_type: String,
 }
 
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[derive(Serialize, specta::Type, Deserialize, Clone, Debug)]
 pub struct RemoteFile {
     pub url: String,
 }
 
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[derive(Serialize, specta::Type, Deserialize, Clone, Debug)]
 pub enum BookFile {
     Local(LocalFile),
     Remote(RemoteFile),
 }
 
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[derive(Serialize, specta::Type, Deserialize, Clone)]
 pub struct LibraryBook {
     pub id: String,
+    #[cfg_attr(feature = "openapi", schema(required = true))]
     pub uuid: Option<String>,
     pub title: String,
     pub author_list: Vec<LibraryAuthor>,
     pub tag_list: Vec<String>,
 
+    #[cfg_attr(feature = "openapi", schema(required = true))]
     pub sortable_title: Option<String>,
 
     pub file_list: Vec<BookFile>,
 
+    #[cfg_attr(feature = "openapi", schema(required = true))]
     pub cover_image: Option<LocalOrRemoteUrl>,
 
     pub identifier_list: Vec<Identifier>,
 
+    #[cfg_attr(feature = "openapi", schema(required = true))]
     pub description: Option<String>,
 
     pub is_read: bool,
 
+    #[cfg_attr(feature = "openapi", schema(required = true))]
     pub series: Option<String>,
+    #[cfg_attr(feature = "openapi", schema(required = true))]
     pub series_index: Option<f32>,
 
     /// Canonical Calibre language codes (ISO 639-2/3, e.g. `eng`, `fra`),
@@ -138,6 +152,7 @@ fn book_cover_url(
 }
 
 /// Book identifiers, such as ISBN, DOI, Google Books ID, etc.
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[derive(Serialize, Deserialize, Clone, specta::Type)]
 pub struct Identifier {
     pub id: i32,

@@ -1,9 +1,10 @@
-//! DTOs bridging libcalibre's custom-column types across the Tauri boundary.
+//! DTOs bridging libcalibre's custom-column types across the application boundary.
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 /// A custom column definition, as exposed to the frontend.
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[derive(Serialize, Deserialize, specta::Type, Debug)]
 pub struct CustomColumnDef {
     pub column_id: i32,
@@ -36,11 +37,12 @@ impl From<&libcalibre::CustomColumn> for CustomColumnDef {
     }
 }
 
-/// A custom-column value crossing the Tauri boundary.
+/// A custom-column value crossing the application boundary.
 ///
 /// Mirrors `libcalibre::CustomValue`, except datetimes travel as RFC3339
 /// strings and integers as `i32` (specta cannot export `i64` without bigint
 /// support).
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[derive(Serialize, Deserialize, specta::Type, Debug, Clone)]
 pub enum CustomValueDto {
     Bool(bool),
@@ -90,6 +92,7 @@ impl TryFrom<CustomValueDto> for libcalibre::CustomValue {
 }
 
 /// One book's value for one custom column.
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[derive(Serialize, Deserialize, specta::Type, Debug)]
 pub struct BookCustomValue {
     pub column_id: i32,

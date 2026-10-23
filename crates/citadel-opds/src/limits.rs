@@ -83,13 +83,13 @@ pub(crate) async fn enforce(
     };
     let feed = !request.uri().path().starts_with("/opds/books/");
     let (parts, body) = request.into_parts();
-    // Consume even chunked bodies under a deadline; GET handlers ignore their content.
-    match tokio::time::timeout(limits.deadline, to_bytes(body, BODY_BYTES)).await {
-        Ok(Ok(_)) => {}
+    // Bound even chunked bodies under a deadline, retaining JSON for API handlers.
+    let body = match tokio::time::timeout(limits.deadline, to_bytes(body, BODY_BYTES)).await {
+        Ok(Ok(bytes)) => bytes,
         Ok(Err(_)) => return StatusCode::PAYLOAD_TOO_LARGE.into_response(),
         Err(_) => return busy(),
-    }
-    let request = Request::from_parts(parts, Body::empty());
+    };
+    let request = Request::from_parts(parts, Body::from(body));
     let response = if feed {
         match tokio::time::timeout(limits.deadline, next.run(request)).await {
             Ok(response) => response,

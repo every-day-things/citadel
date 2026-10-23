@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use crate::book::ImportableBookType;
+use crate::imports::ImportableBookType;
 
 pub struct TxtMetadata {
     pub title: String,

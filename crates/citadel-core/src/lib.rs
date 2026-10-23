@@ -3,9 +3,10 @@
 //! Owns the frontend-facing DTOs ([`LibraryBook`], [`LibraryAuthor`],
 //! [`LocalOrRemoteUrl`], the file list) and the conversion from a `libcalibre`
 //! [`Book`](libcalibre::library::Book) into them. None of this depends on
-//! Tauri: the cover/file URL scheme is injected through [`BookUrlBuilder`], so
-//! the Tauri app supplies an [`AssetUrlBuilder`] (`asset://`) and a future
-//! `citadel-server` supplies an [`HttpUrlBuilder`] (`https://…/api/…`).
+//! Tauri. Shared queries and mutations live in [`library::LibraryService`], with
+//! serializable inputs in [`contracts`] and transport-independent [`error`] codes.
+//! The cover/file URL scheme is injected through [`BookUrlBuilder`]: desktop
+//! supplies [`AssetUrlBuilder`] and the server supplies [`HttpUrlBuilder`].
 
 mod author;
 mod book;
@@ -16,3 +17,7 @@ pub use book::{
     BookFile, Identifier, LibraryBook, LocalFile, LocalOrRemote, LocalOrRemoteUrl, RemoteFile,
 };
 pub use url::{path_to_asset_url, AssetUrlBuilder, BookUrlBuilder, HttpUrlBuilder};
+
+pub mod contracts;
+pub mod error;
+pub mod library;

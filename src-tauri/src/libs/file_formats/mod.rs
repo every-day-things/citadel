@@ -3,8 +3,8 @@ use serde::Serialize;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
-use super::calibre::ImportableFile;
-use crate::book::{ImportableBookMetadata, ImportableBookType};
+use crate::imports::ImportableFile;
+use crate::imports::{ImportableBookMetadata, ImportableBookType};
 
 mod epub;
 mod mobi;

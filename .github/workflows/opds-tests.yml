@@ -34,6 +34,16 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev pkg-config libssl-dev
       - name: Test runtime and headless host without Tauri
-        run: cargo test --locked -p citadel-opds -p citadel-server
+        run: cargo test --locked -p citadel-core --features citadel-core/openapi -p citadel-opds -p citadel-server
       - name: Test validation fixture input checks
         run: cargo test --locked -p libcalibre --example create_opds_validation_library
+
+      - uses: oven-sh/setup-bun@v2
+        if: runner.os == 'Linux'
+      - name: Check generated HTTP contract and client
+        if: runner.os == 'Linux'
+        run: |
+          bun install --frozen-lockfile
+          bun api:check
+          bun typecheck
+          bun run test src/lib/api/client.test.ts --run

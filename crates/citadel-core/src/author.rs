@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[derive(Serialize, specta::Type, Deserialize, Clone)]
 pub struct LibraryAuthor {
     pub id: String,

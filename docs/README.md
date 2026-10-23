@@ -8,6 +8,8 @@ browser engine installed on the user's system.
 
 ## 📚 Architecture Documentation
 
+- **[Shared Rust operations and HTTP contracts](adr/0007-shared-library-contract.md)** - Core/desktop/server boundaries and generated bindings
+
 `ai-docs/` is point-in-time AI-generated analysis; it may not reflect the current code.
 
 - **[Architecture Recommendations](../ai-docs/ARCHITECTURE_RECOMMENDATIONS.md)** - Detailed recommendations for Svelte-inspired React + Tauri/remote architecture
@@ -25,7 +27,8 @@ browser engine installed on the user's system.
 
 ## Overview
 
-Citadel ships as a single bundled desktop app; a headless server & web app is exploratory only.
+Citadel ships a bundled desktop app and a headless OPDS server. The server also
+has an optional read-only library HTTP API; the complete browser client is future work.
 
 <figure>
   <img src="./assets/images/arch-overview.png" alt="Diagram showing that the UI has a Calibre client that uses IPC to talk to the backend's calibre adapter, which calls out to libcalibre. Space is left open to demonstrate that other clients and adapters are possible." />
